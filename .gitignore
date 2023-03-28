@@ -1,0 +1,7 @@
+logs/
+log/
+*.key*
+reports/
+build/
+.gradle/
+.idea/
