@@ -13,7 +13,7 @@
         * [🌟 To Use](#-to-use)
 <!-- TOC -->
 
-![SkyeNet](C:\Users\andre\code\aicoder\SkyeNet\skyenet.svg)
+![SkyeNet](skyenet.svg)
 
 Greetings, intrepid explorer! You have stumbled upon the delightful realm of SkyeNet, a general-purpose AI assistant
 that combines the linguistic prowess of OpenAI ChatGPT with the nimble GraalVM JavaScript engine. SkyeNet is a unique
