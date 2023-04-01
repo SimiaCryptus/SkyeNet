@@ -4,13 +4,13 @@
 
 <!-- TOC -->
 * [SkyeNet - A Helpful Pup! 🐾⚡](#skyenet---a-helpful-pup-)
-  * [🧪 The SkyeNet Experiment](#-the-skyenet-experiment)
-  * [🏗️ The Building Blocks of SkyeNet](#-the-building-blocks-of-skyenet)
-  * [🎨 Customizing Your SkyeNet Experience](#-customizing-your-skyenet-experience)
-  * [🚀 Unleashing SkyeNet's Potential](#-unleashing-skyenets-potential)
-  * [💡 Example Usage](#-example-usage)
-    * [📦 To Import](#-to-import)
-    * [🌟 To Use](#-to-use)
+    * [🧪 The SkyeNet Experiment](#-the-skyenet-experiment)
+    * [🏗️ The Building Blocks of SkyeNet](#-the-building-blocks-of-skyenet)
+    * [🎨 Customizing Your SkyeNet Experience](#-customizing-your-skyenet-experience)
+    * [🚀 Unleashing SkyeNet's Potential](#-unleashing-skyenets-potential)
+    * [💡 Example Usage](#-example-usage)
+        * [📦 To Import](#-to-import)
+        * [🌟 To Use](#-to-use)
 <!-- TOC -->
 
 Greetings, intrepid explorer! You have stumbled upon the delightful realm of SkyeNet, a general-purpose AI assistant
@@ -34,22 +34,21 @@ create a cohesive and lively AI assistant.
 
 SkyeNet's components work together harmoniously, much like the body parts of a fantastical creature:
 
-* Brain: The nucleus of SkyeNet's intellect, the brain interfaces with the OpenAI API, giving life to our endearing AI
-  assistant.
-* Body: Acting as the AI's vessel, the body connects the heart and brain, providing a framework for action and allowing
-  SkyeNet to interact with its environment.
-* Ears: These auditory organs capture sounds and transform them into actionable data, granting SkyeNet the gift of
-  hearing.
-* Mouth: Bestowed with the ability to speak, SkyeNet's mouth interfaces with the Google Text-to-Speech API, enabling it
-  to
-  communicate with users through speech.
-* Head: The command center of the AI assistant, the head is responsible for capturing audio through the ears,
-  interacting
-  with the user via the face, and relaying commands to the body.
-* Face: The face is the graphical user interface, allowing SkyeNet to communicate with users visually and provide input
-  and output in a user-friendly manner.
-* Heart: The heart is the interface to the GraalVM JavaScript engine that powers SkyeNet, pumping life into the body and
-  allowing the AI assistant to perform its various functions.
+* **[Brain](src/main/kotlin/com/simiacryptus/skyenet/Brain.kt)**: The nucleus of SkyeNet's intellect, the brain
+  interfaces with the OpenAI API, giving life to our endearing AI assistant.
+* **[Body](src/main/kotlin/com/simiacryptus/skyenet/Body.kt)**: Acting as the AI's vessel, the body connects the heart
+  and brain, providing a framework for action and allowing SkyeNet to interact with its environment.
+* **[Ears](src/main/kotlin/com/simiacryptus/skyenet/Ears.kt)**: These auditory organs capture sounds and transform them
+  into actionable data, granting SkyeNet the gift of hearing.
+* **[Mouth](src/main/kotlin/com/simiacryptus/skyenet/Mouth.kt)**: Bestowed with the ability to speak, SkyeNet's mouth
+  interfaces with the Google Text-to-Speech API, enabling it to communicate with users through speech.
+* **[Head](src/main/kotlin/com/simiacryptus/skyenet/Head.kt)**: The command center of the AI assistant, the head is
+  responsible for capturing audio through the ears, interacting with the user via the face, and relaying commands to the
+  body.
+* **[Face](src/main/kotlin/com/simiacryptus/skyenet/Face.kt)**: The face is the graphical user interface, allowing
+  SkyeNet to communicate with users visually and provide input and output in a user-friendly manner.
+* **[Heart](src/main/kotlin/com/simiacryptus/skyenet/Heart.kt)**: The heart is the interface to the GraalVM JavaScript
+  engine that powers SkyeNet, pumping life into the body and allowing the AI assistant to perform its various functions.
 
 ## 🎨 Customizing Your SkyeNet Experience
 
