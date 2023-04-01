@@ -7,10 +7,10 @@
   * [🧪 The SkyeNet Experiment](#-the-skyenet-experiment)
   * [🏗️ The Building Blocks of SkyeNet](#-the-building-blocks-of-skyenet)
   * [🎨 Customizing Your SkyeNet Experience](#-customizing-your-skyenet-experience)
-  * [🚀 Unleashing SkyeNet's Potential](#-unleashing-skyenets-potential)
   * [💡 Example Usage](#-example-usage)
     * [📦 To Import](#-to-import)
     * [🌟 To Use](#-to-use)
+  * [🚀 Unleashing SkyeNet's Potential](#-unleashing-skyenets-potential)
 <!-- TOC -->
 
 ![SkyeNet](skyenet.svg)
@@ -28,13 +28,11 @@ capable of understanding a wide variety of commands, making it a versatile and p
 interactive AI companion. SkyeNet's components can be customized to meet the needs of different applications or to
 create a unique and engaging user experience.
 
-As you venture deeper into SkyeNet, you'll discover that the project's anthropomorphic component naming adds a touch of
-humor to the experience. Drawing inspiration from the fabled Dr. Frankenstein, SkyeNet's various parts come together to
-create a cohesive and lively AI assistant.
+![UI Screenshots](ui_screenshot.png)
 
 ## 🏗️ The Building Blocks of SkyeNet
 
-SkyeNet's components work together harmoniously, much like the body parts of a fantastical creature:
+SkyeNet's components work together harmoniously to create a cohesive and lively AI assistant:
 
 * **[Brain](src/main/kotlin/com/simiacryptus/skyenet/Brain.kt)**: The nucleus of SkyeNet's intellect, the brain
   interfaces with the OpenAI API, giving life to our endearing AI assistant.
@@ -54,35 +52,14 @@ SkyeNet's components work together harmoniously, much like the body parts of a f
 
 ## 🎨 Customizing Your SkyeNet Experience
 
-SkyeNet is designed to be flexible and adaptable, with components that can be customized to better serve your needs or
-to create a unique user experience. By modifying SkyeNet's various components, you can tailor the AI assistant to your
-preferences, making it a more personal and engaging companion.
-
-For example, you can customize the voice recognition and text-to-speech components by integrating different APIs or
-altering the existing ones. Additionally, you can modify the user interface to create a more visually appealing
-experience, or even experiment with new input and output methods to push the boundaries of the AI assistant's
-capabilities.
-
-Furthermore, SkyeNet's ability to interpret natural language commands and execute them as JavaScript code allows you to
+SkyeNet's ability to interpret natural language commands and execute them as JavaScript code allows you to
 extend its functionality and create custom commands specific to your needs. This level of customization opens up a world
 of possibilities for users to explore, making SkyeNet a versatile and powerful tool that can be adapted to a wide
 variety of situations and tasks.
 
-## 🚀 Unleashing SkyeNet's Potential
-
-SkyeNet's unique combination of natural language understanding, voice recognition, text-to-speech, and JavaScript
-execution capabilities opens up endless possibilities for users to harness the power of AI in creative and innovative
-ways. From automating mundane tasks to developing complex applications, SkyeNet's versatility makes it an invaluable
-assistant for both novice and experienced developers alike.
-
-The possibilities are virtually endless, limited only by your imagination and ingenuity. As you embark on your SkyeNet
-adventure, you'll find that the AI assistant is not only a versatile and powerful tool but also a delightful and
-engaging companion that can help you push the boundaries of what's possible.
-
-So, brave adventurer, are you ready to unleash the power of SkyeNet and embark on an extraordinary journey into the
-world of AI? With its anthropomorphic components, humorous naming, and lively personality, SkyeNet is sure to capture
-your heart and inspire your creativity. Don your lab coat, channel your inner Dr. Frankenstein, and prepare to awaken
-the adorably powerful AI assistant that is SkyeNet!
+Key to this customization is the ability to define custom tools that can be used in commands. These tools can be
+anything from simple functions to complex classes, and can be used to perform a wide variety of tasks. For example, a
+tool could be used to perform a calculation, retrieve data from an API, or even call back into GPT via a JoePenai proxy.
 
 ## 💡 Example Usage
 
@@ -143,3 +120,19 @@ class TestTools(keyfile: String) {
     fun speak(text: String) = mouth.speak(text)
 }
 ```
+
+## 🚀 Unleashing SkyeNet's Potential
+
+SkyeNet's unique combination of natural language understanding, voice recognition, text-to-speech, and JavaScript
+execution capabilities opens up endless possibilities for users to harness the power of AI in creative and innovative
+ways. From automating mundane tasks to developing complex applications, SkyeNet's versatility makes it an invaluable
+assistant for both novice and experienced developers alike.
+
+The possibilities are virtually endless, limited only by your imagination and ingenuity. As you embark on your SkyeNet
+adventure, you'll find that the AI assistant is not only a versatile and powerful tool but also a delightful and
+engaging companion that can help you push the boundaries of what's possible.
+
+So, brave adventurer, are you ready to unleash the power of SkyeNet and embark on an extraordinary journey into the
+world of AI? With its anthropomorphic components, humorous naming, and lively personality, SkyeNet is sure to capture
+your heart and inspire your creativity. Don your lab coat, channel your inner Dr. Frankenstein, and prepare to awaken
+the adorably powerful AI assistant that is SkyeNet!

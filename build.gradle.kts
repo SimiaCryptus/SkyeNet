@@ -35,8 +35,8 @@ kotlin {
 }
 
 dependencies {
-//    implementation("com.simiacryptus:joe-penai:1.0.4")
-    implementation("com.simiacryptus:JoePenai:1.0.4")
+    implementation("com.simiacryptus:joe-penai:1.0.4")
+//    implementation("com.simiacryptus:JoePenai:1.0.4")
     implementation(files("lib/ui.jar"))
 
     implementation("com.google.cloud:google-cloud-texttospeech:2.0.0")
