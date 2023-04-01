@@ -1,4 +1,3 @@
 rootProject.name = "SkyeNet"
 
-include("interpreter", "main")
-
+//includeBuild("../JoePenai/")
