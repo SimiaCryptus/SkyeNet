@@ -25,11 +25,6 @@ repositories {
     }
 }
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
-
 kotlin {
     jvmToolchain(17)
 }
@@ -75,12 +70,32 @@ tasks {
     wrapper {
         gradleVersion = properties("gradleVersion")
     }
+
 }
 
 tasks.withType(ShadowJar::class.java).configureEach {
     archiveClassifier.set("")
     mergeServiceFiles()
     append("META-INF/kotlin_module")
+
+    exclude("**/META-INF/*.SF")
+    exclude("**/META-INF/*.DSA")
+    exclude("**/META-INF/*.RSA")
+    exclude("**/META-INF/*.MF")
+    exclude("META-INF/versions/9/module-info.class")
+
+    include("com/simiacryptus/**", "com/intellij/uiDesigner/core/**")
+    from(zipTree("lib/ui.jar"))
+}
+
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+    from(tasks.javadoc)
+}
+
+val sourcesJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("sources")
+    from(sourceSets.main.get().allSource)
 }
 
 publishing {
@@ -90,7 +105,8 @@ publishing {
             artifact(tasks.shadowJar.get()) {
                 classifier = null
             }
-//            from(components["java"])
+            artifact(javadocJar)
+            artifact(sourcesJar)
             versionMapping {
                 usage("java-api") {
                     fromResolutionOf("runtimeClasspath")
