@@ -65,7 +65,7 @@ tool could be used to perform a calculation, retrieve data from an API, or even 
 
 ### 📦 To Import
 
-https://mvnrepository.com/artifact/com.simiacryptus/joe-penai
+https://mvnrepository.com/artifact/com.simiacryptus/skyenet
 
 Maven:
 
