@@ -1,28 +1,95 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import java.net.URI
 
 fun properties(key: String) = project.findProperty(key).toString()
 group = properties("libraryGroup")
 version = properties("libraryVersion")
 
+
 plugins {
+    java
+    `java-library`
+    id("org.jetbrains.kotlin.jvm") version "1.7.21"
     `maven-publish`
     id("signing")
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 repositories {
-    mavenCentral()
+    mavenCentral() {
+        metadataSources {
+            mavenPom()
+            artifact()
+        }
+    }
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+kotlin {
+    jvmToolchain(17)
+}
+
+dependencies {
+    implementation("com.simiacryptus:joe-penai:1.0.4")
+//    implementation("com.simiacryptus:JoePenai:1.0.4")
+    implementation(files("lib/ui.jar"))
+
+    implementation("com.google.cloud:google-cloud-texttospeech:2.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+    implementation("org.graalvm.js:js:22.3.1")
+
+    implementation("org.slf4j:slf4j-api:2.0.5")
+    implementation("org.slf4j:slf4j-simple:2.0.5")
+    implementation("commons-io:commons-io:2.11.0")
+
+    implementation(kotlin("stdlib"))
+    testImplementation(kotlin("script-runtime"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+}
+
+
 tasks {
+    compileKotlin {
+        kotlinOptions {
+            javaParameters = true
+        }
+    }
+    compileTestKotlin {
+        kotlinOptions {
+            javaParameters = true
+        }
+    }
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
     wrapper {
         gradleVersion = properties("gradleVersion")
     }
+}
+
+tasks.withType(ShadowJar::class.java).configureEach {
+    archiveClassifier.set("")
+    mergeServiceFiles()
+    append("META-INF/kotlin_module")
 }
 
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             artifactId = "skyenet"
+            artifact(tasks.shadowJar.get()) {
+                classifier = null
+            }
 //            from(components["java"])
             versionMapping {
                 usage("java-api") {
@@ -79,7 +146,6 @@ publishing {
 
 if (System.getenv("GPG_PRIVATE_KEY") != null && System.getenv("GPG_PASSPHRASE") != null) {
     apply<SigningPlugin>()
-
     configure<SigningExtension> {
         useInMemoryPgpKeys(System.getenv("GPG_PRIVATE_KEY"), System.getenv("GPG_PASSPHRASE"))
         sign(configurations.archives.get())
