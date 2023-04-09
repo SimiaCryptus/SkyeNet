@@ -29,27 +29,38 @@ kotlin {
     jvmToolchain(17)
 }
 
+val kotlin_version = "1.7.21"
 dependencies {
-    implementation("com.simiacryptus:joe-penai:1.0.4")
-//    implementation("com.simiacryptus:JoePenai:1.0.4")
+//    implementation("com.simiacryptus:JoePenai:1.0.5")
+    implementation("com.simiacryptus:joe-penai:1.0.5")
     implementation(files("lib/ui.jar"))
 
     implementation("com.google.cloud:google-cloud-texttospeech:2.0.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+
+    implementation("org.jetbrains.kotlin:kotlin-scripting-jsr223:$kotlin_version")
+    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlin_version")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("org.jetbrains.kotlin:kotlin-script-util:$kotlin_version")
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version")
+
     implementation("org.graalvm.js:js:22.3.1")
+    implementation("org.graalvm.js:js-scriptengine:22.3.1")
 
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("org.slf4j:slf4j-simple:2.0.5")
     implementation("commons-io:commons-io:2.11.0")
-
     implementation(kotlin("stdlib"))
+
     testImplementation(kotlin("script-runtime"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+
+
 }
 
 
 tasks {
+
     compileKotlin {
         kotlinOptions {
             javaParameters = true
@@ -62,16 +73,22 @@ tasks {
     }
     test {
         useJUnitPlatform()
+        systemProperty("surefire.useManifestOnlyJar", "false")
         testLogging {
             events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
+        jvmArgs(
+            "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+            "--add-opens", "java.base/java.util=ALL-UNNAMED",
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED"
+        )
     }
     wrapper {
         gradleVersion = properties("gradleVersion")
     }
-
 }
+
 
 tasks.withType(ShadowJar::class.java).configureEach {
     archiveClassifier.set("")
@@ -99,6 +116,7 @@ val sourcesJar by tasks.registering(Jar::class) {
 }
 
 publishing {
+
     publications {
         create<MavenPublication>("mavenJava") {
             artifactId = "skyenet"

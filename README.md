@@ -136,3 +136,36 @@ So, brave adventurer, are you ready to unleash the power of SkyeNet and embark o
 world of AI? With its anthropomorphic components, humorous naming, and lively personality, SkyeNet is sure to capture
 your heart and inspire your creativity. Don your lab coat, channel your inner Dr. Frankenstein, and prepare to awaken
 the adorably powerful AI assistant that is SkyeNet!
+
+
+# Disclaimer
+
+This project is **_NOT_** affiliated with:
+- OpenAI
+- Google
+- The Terminator Movie Franchise
+- Paw Patrol
+- Nickelodeon
+- Paramount Pictures
+- https://skyenet.tech/
+- https://www.skyenet.co.uk/
+- Skyenet wireless communications
+- https://www.skye-nets.com/
+- https://skyenet.social/
+- https://www.facebook.com/Skyenetpro/
+- https://eagleskyenet.com/
+- https://www.instagram.com/skyenet/
+- https://www.pinterest.com/Skyenetblog/
+- SKYENET LIMITED UK Company number 12770700
+- Skyenet Internet Solutions in Youngsville PA
+- Skyenet - Email Format & Email Checker Service
+- SKYENET INVESTMENTS PTY LTD
+- Skynet Worldwide Express
+- Skyenet Computer Services
+- SkyeNet Solutions, LLC
+- SKYEnet.live
+- E Skyenet Ltd, Rotherham
+- SkyeNet Investment Nig. Ltd
+- SKYENET GLOBAL, LLC in Sugar Land, TX
+- Any similarly named personas on any other social network
+- etc

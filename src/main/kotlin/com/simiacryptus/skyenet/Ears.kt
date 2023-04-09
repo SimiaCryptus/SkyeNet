@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.proxy.ChatProxy
 import com.simiacryptus.util.*
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
@@ -15,10 +16,27 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 @Suppress("MemberVisibilityCanBePrivate")
 class Ears(
-    val brain: Brain,
-    val keyFile: File = File("C:\\Users\\andre\\code\\all-projects\\openai.key"),
+    val api: OpenAIClient,
     val secondsPerAudioPacket : Double = 0.25,
 ) {
+
+    interface CommandRecognizer {
+        fun listenForCommand(inputBuffer: DictationBuffer): CommandRecognized
+
+        data class DictationBuffer(
+            val text: String? = null,
+        )
+
+        data class CommandRecognized(
+            val commandRecognized: Boolean? = null,
+            val command: String? = null,
+        )
+    }
+
+    val commandRecognizer = ChatProxy(
+        clazz = CommandRecognizer::class.java,
+        api = api
+    ).create()
 
     fun timeout(ms: Long): () -> Boolean {
         val endTime = System.currentTimeMillis() + ms
@@ -26,6 +44,7 @@ class Ears(
     }
 
     fun listenForCommand(
+        client: OpenAIClient,
         minCaptureMs: Int = 1000,
         continueFn: () -> Boolean = timeout(120, TimeUnit.SECONDS),
         rawBuffer: Deque<ByteArray> = startAudioCapture(continueFn),
@@ -35,6 +54,7 @@ class Ears(
         val commandsProcessed = AtomicInteger(0)
         var lastCommandCheckTime = System.currentTimeMillis()
         startDictationListener(
+            client,
             continueFn = { continueFn() && 0 == commandsProcessed.get() },
             rawBuffer = rawBuffer
         ) {
@@ -42,13 +62,13 @@ class Ears(
             if (System.currentTimeMillis() - lastCommandCheckTime > minCaptureMs) {
                 log.info("Checking for command: $buffer")
                 lastCommandCheckTime = System.currentTimeMillis()
-                val inputBuffer = Brain.DictationBuffer(buffer.toString())
-                brain.listenForCommand(inputBuffer).let { result ->
-                    if (result.commandRecognized) {
+                val inputBuffer = CommandRecognizer.DictationBuffer(buffer.toString())
+                commandRecognizer.listenForCommand(inputBuffer).let { result ->
+                    if (result.commandRecognized ?: false) {
                         log.info("Command recognized: ${result.command}")
                         commandsProcessed.incrementAndGet()
                         buffer.clear()
-                        commandHandler(result.command)
+                        if(null != result.command) commandHandler(result.command)
                     }
                 }
             }
@@ -56,7 +76,7 @@ class Ears(
     }
 
     fun startDictationListener(
-        client: OpenAIClient = OpenAIClient(FileUtils.readFileToString(keyFile, "UTF-8").trim()),
+        client: OpenAIClient,
         continueFn: () -> Boolean = timeout(60, TimeUnit.SECONDS),
         rawBuffer: Deque<ByteArray> = startAudioCapture(continueFn),
         textAppend: (String) -> Unit,

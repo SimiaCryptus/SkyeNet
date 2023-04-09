@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet
 
+import com.simiacryptus.openai.OpenAIClient
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.io.ByteArrayOutputStream
@@ -15,12 +16,11 @@ import javax.swing.JFrame
  * 3. Relaying commands to the Body
  */
 class Head(
-    val brain: Brain,
-    val ears: Ears = Ears(brain),
-    val body : Body = Body(brain),
+    val body : Body,
+    val ears: Ears,
     val face : Face = Face()
 ) {
-    fun start() : JFrame {
+    fun start(client: OpenAIClient) : JFrame {
         val frame = JFrame("SkyeNet - A Helpful Pup")
         val starting = AtomicReference(true)
         try {
@@ -31,7 +31,7 @@ class Head(
                     try {
                         val buffer = ears.startAudioCapture { audioCaptureOn.get() }
                         buffer.clear()
-                        ears.listenForCommand(rawBuffer=buffer) {
+                        ears.listenForCommand(client, rawBuffer=buffer) {
                             face.commandText.text = it
                             face.submitCommandButton.doClick()
                         }
@@ -45,14 +45,14 @@ class Head(
                 Thread {
                     face.submitCommandButton.isEnabled = false
                     try {
-                        val commandToCode = body.commandToCode(
+                        val commandToCode = body.brain.implement(
                             face.commandText.text
                         )
-                        face.scriptedCommand.text = commandToCode.javascript
-                        if(face.autorunCheckbox.isSelected) {
+                        face.scriptedCommand.text = commandToCode
+                        if (face.autorunCheckbox.isSelected) {
                             try {
                                 val value = body.heart.run(
-                                    commandToCode.javascript
+                                    commandToCode
                                 )
                                 face.scriptingResult.text = value.toString()
                             } catch (e: Exception) {
