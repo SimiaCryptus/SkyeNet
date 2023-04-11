@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.proxy.ChatProxy
 import com.simiacryptus.util.AudioRecorder
 import com.simiacryptus.util.LookbackLoudnessWindowBuffer
 import com.simiacryptus.util.TranscriptionProcessor
@@ -10,6 +9,7 @@ import java.awt.Button
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
+import javax.script.ScriptEngineManager
 import javax.swing.JFrame
 import javax.swing.JPanel
 
@@ -24,21 +24,54 @@ class DevTests {
      */
     @Test
     fun testHead() {
-        val brain = ChatProxy(
-            Brain::class.java,
-            File(openAIKey).readText().trim()
-        ).create()
-        val body = Body(
-            brain,
-            mapOf(
-                "toolObj" to TestTools(googleSpeechKey)
-            )
+        val apiObjects = mapOf(
+            "toolObj" to TestTools(googleSpeechKey)
         )
-        val head = Head(brain, body = body)
-        val jFrame = head.start()
+        val body = Body(
+            api = OpenAIClient(apiKey),
+            apiObjects = apiObjects
+        )
+        val head = Head(body = body, ears = Ears(api = OpenAIClient(apiKey)))
+        val jFrame = head.start(client = OpenAIClient(apiKey))
         while (jFrame.isVisible) {
             Thread.sleep(100)
         }
+    }
+
+    @Test
+    fun testBody() {
+        val body = Body(
+            api = OpenAIClient(apiKey),
+            apiObjects = mapOf(
+                "toolObj" to TestTools(googleSpeechKey)
+            )
+        )
+        val head = Head(body = body, ears = Ears(api = OpenAIClient(apiKey)))
+        val jFrame = head.start(client = OpenAIClient(apiKey))
+        while (jFrame.isVisible) {
+            Thread.sleep(100)
+        }
+    }
+
+    @Test
+    fun testKotlinScript() {
+        val scriptEngineManager = ScriptEngineManager()
+        scriptEngineManager.engineFactories.forEach {
+            println(
+                """
+                EngineName: ${it.engineName}
+                EngineVersion: ${it.engineVersion}
+                LanguageName: ${it.languageName}
+                LanguageVersion: ${it.languageVersion}
+                Names: ${it.names}
+                Extensions: ${it.extensions}
+                MimeTypes: ${it.mimeTypes}
+            """.trimIndent()
+            )
+        }
+        val engineByExtension = scriptEngineManager.getEngineByExtension("kts")
+
+        require(engineByExtension != null) { "No kotlin script engine found" }
     }
 
     @Test
@@ -94,17 +127,16 @@ class DevTests {
     @Test
     fun testEars() {
         val button = Button("Listen")
-        val brain = ChatProxy(Brain::class.java, File(openAIKey).readText().trim()).create()
-        val ears = Ears(brain)
+        val ears = Ears(api = OpenAIClient(apiKey))
         button.addActionListener {
             Thread {
                 button.isEnabled = false
                 try {
-                    ears.listenForCommand {
-                        val body = Body(brain, mapOf("toolObj" to TestTools(googleSpeechKey)))
-                        body.commandToCode(it).let {
-                            println(it.javascript)
-                            body.heart.run(it.javascript)
+                    ears.listenForCommand(client = OpenAIClient(apiKey)) {
+                        val body = Body(api = OpenAIClient(apiKey), mapOf("toolObj" to TestTools(googleSpeechKey)))
+                        body.brain.implement(it).let {
+                            println(it)
+                            body.heart.run(it)
                         }
                     }
                 } finally {
@@ -126,25 +158,24 @@ class DevTests {
 
     @Test
     fun testHands() {
-        val brain = ChatProxy(Brain::class.java, File(openAIKey).readText().trim()).create()
-        val body = Body(brain, mapOf("toolObj" to TestTools(googleSpeechKey)))
-        body.commandToCode(
+        val apiObjects = mapOf("toolObj" to TestTools(googleSpeechKey))
+        val body = Body(api = OpenAIClient(apiKey), apiObjects)
+        body.brain.implement(
             "Find the largest prime number less than 1000 and show it in a dialog box."
         ).let {
-            println(it.javascript)
-            body.heart.run(it.javascript)
+            println(it)
+            body.heart.run(it)
         }
     }
 
     @Test
     fun testPOA() {
-        val brain = ChatProxy(Brain::class.java, File(openAIKey).readText().trim()).create()
-        val body = Body(brain, mapOf("toolObj" to TestTools(googleSpeechKey)))
-        body.commandToCode(
+        val body = Body(api = OpenAIClient(apiKey), mapOf("toolObj" to TestTools(googleSpeechKey)))
+        body.brain.implement(
             "Speak the Pledge of Allegiance."
         ).let {
-            println(it.javascript)
-            body.heart.run(it.javascript)
+            println(it)
+            body.heart.run(it)
         }
     }
 
@@ -170,7 +201,7 @@ class DevTests {
                 e.printStackTrace()
             }
         }, "dictation-audio-processor").start()
-        val dictationProcessor = TranscriptionProcessor(client, wavBuffer, continueFn){ println(it) }
+        val dictationProcessor = TranscriptionProcessor(client, wavBuffer, continueFn) { println(it) }
         val dictationThread = Thread({
             try {
                 dictationProcessor.run()
