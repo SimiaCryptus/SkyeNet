@@ -54,14 +54,16 @@ open class Mouth(
     fun playAudio(audioData: ByteArray) {
         val audioFormat = AudioFormat(22050F, 16, 1, true, false)
         val info = DataLine.Info(SourceDataLine::class.java, audioFormat)
-        val line = AudioSystem.getLine(info) as SourceDataLine
-        line.use { sourceDataLine ->
+        val sourceDataLine = AudioSystem.getLine(info) as SourceDataLine
+        try {
             sourceDataLine.open(audioFormat)
             sourceDataLine.start()
             val wavHeaderSize = 44 // The size of a standard WAV header is 44 bytes
             sourceDataLine.write(audioData, wavHeaderSize, audioData.size - wavHeaderSize)
             sourceDataLine.drain()
             sourceDataLine.stop()
+        } finally {
+            sourceDataLine.close()
         }
     }
 }

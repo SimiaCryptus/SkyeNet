@@ -1,13 +1,11 @@
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.skyenet.heart.JSR223Interpreter
+interface Heart {
 
+    fun getLanguage(): String
+    fun run(code: String): Any?
+    fun validate(code: String): Exception?
 
-/**
- * The heart is the interface to the GraalVM JavaScript engine for the SkyeNet system
- * It powers the body.
- */
-class Heart(
-    prefix: String = "",
-    defs: Map<String, Any> = mapOf(),
-) : JSR223Interpreter(prefix, defs)
+    fun wrapCode(code: String): String = code
+    fun <T : Any> wrapExecution(fn: () -> T?): T? = fn()
+}

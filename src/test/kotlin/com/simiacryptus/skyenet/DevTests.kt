@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.skyenet.heart.KotlinInterpreter
 import com.simiacryptus.util.AudioRecorder
 import com.simiacryptus.util.LookbackLoudnessWindowBuffer
 import com.simiacryptus.util.TranscriptionProcessor
@@ -32,7 +33,7 @@ class DevTests {
             apiObjects = apiObjects
         )
         val head = Head(body = body, ears = Ears(api = OpenAIClient(apiKey)))
-        val jFrame = head.start(client = OpenAIClient(apiKey))
+        val jFrame = head.start(api = OpenAIClient(apiKey))
         while (jFrame.isVisible) {
             Thread.sleep(100)
         }
@@ -47,7 +48,7 @@ class DevTests {
             )
         )
         val head = Head(body = body, ears = Ears(api = OpenAIClient(apiKey)))
-        val jFrame = head.start(client = OpenAIClient(apiKey))
+        val jFrame = head.start(api = OpenAIClient(apiKey))
         while (jFrame.isVisible) {
             Thread.sleep(100)
         }
@@ -76,13 +77,13 @@ class DevTests {
 
     @Test
     fun testAutoScript() {
-        Heart().run("println(\"Hello World\")")
+        KotlinInterpreter().run("println(\"Hello World\")")
     }
 
 
     @Test
     fun testHeart() {
-        Heart(
+        KotlinInterpreter(
             defs = mapOf(
                 "toolObj" to TestTools(googleSpeechKey)
             )
@@ -92,7 +93,7 @@ class DevTests {
     @Test
     fun testSpeak() {
         try {
-            Heart().run(
+            KotlinInterpreter().run(
                 """
             speak("Hello World");
             """.trimIndent()
