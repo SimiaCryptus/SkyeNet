@@ -3,8 +3,9 @@ package com.simiacryptus.skyenet
 import com.simiacryptus.openai.ChatMessage
 import com.simiacryptus.openai.ChatRequest
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.util.DescriptorUtil.toYaml
 import com.simiacryptus.util.JsonUtil.toJson
+import com.simiacryptus.util.YamlDescriber
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.util.concurrent.atomic.AtomicInteger
@@ -17,6 +18,8 @@ class Brain(
     var verbose: Boolean = false,
     var maxTokens: Int = 8192,
     var temperature: Double = 0.3,
+    var yamlDescriber : YamlDescriber = YamlDescriber(),
+    val language: String = "Kotlin",
     private val moderated: Boolean = true,
 ) {
     val metrics: Map<String, Any>
@@ -32,16 +35,17 @@ class Brain(
     protected val totalApiDescriptionLength: AtomicInteger = AtomicInteger(0)
 
 
+
     fun implement(prompt: String): String {
         if (verbose) log.info(prompt)
         val request = ChatRequest()
-        val apiDescription = apiDescription(apiObjects)
+        val apiDescription = apiDescription(apiObjects, yamlDescriber)
         request.messages = (
                 listOf(
                     ChatMessage(
                         ChatMessage.Role.system, """
                 |You will translate natural language instructions into 
-                |an implementation using Kotlin and the script context.
+                |an implementation using $language and the script context.
                 |Do not include explaining text outside of the code blocks.
                 |Defined symbols include ${apiObjects.keys.joinToString(", ")}.
                 |The runtime context is described below:
@@ -62,15 +66,16 @@ class Brain(
     fun fixCommand(prompt: String, previousCode: String, errorMessage: String): String {
         if (verbose) log.info(prompt)
         val request = ChatRequest()
-        val apiDescription = apiDescription(apiObjects)
+        val apiDescription = apiDescription(apiObjects, yamlDescriber)
         request.messages = (
                 listOf(
                     ChatMessage(
                         ChatMessage.Role.system, """
                 |You will translate natural language instructions into 
-                |an implementation using Kotlin and the script context.
+                |an implementation using $language and the script context.
                 |Do not include explaining text outside of the code blocks.
                 |Defined symbols include ${apiObjects.keys.joinToString(", ")}.
+                |Do not include wrapping code blocks, assume a REPL context.
                 |The runtime context is described below:
                 |
                 |$apiDescription
@@ -86,18 +91,23 @@ class Brain(
                         ChatMessage.Role.system,
                         """
                 |The previous code failed with the following error:
-                |```kotlin
-                |${errorMessage.indent()}
+                |
                 |```
+                |${errorMessage.trim().indent()}
+                |```
+                |
                 |The previous code was:
-                |```kotlin
+                |
+                |```${language.toLowerCaseAsciiOnly()}
                 |${previousCode.indent()}
                 |```
+                |
                 |""".trimMargin().trim()
                     )
                 )).toTypedArray()
         totalApiDescriptionLength.addAndGet(apiDescription.length)
-        return run(request)
+        val response = run(request)
+        return response
     }
 
     private fun run(request: ChatRequest): String {
@@ -139,15 +149,15 @@ class Brain(
 
         val <T> Class<T>.superclasses: List<Class<*>>
             get() {
-
                 val superclass = superclass
                 val supers = if (superclass == null) listOf()
                 else superclass.superclasses + listOf(superclass)
                 return (interfaces.toList() + supers).distinct()
             }
 
-        fun apiDescription(apiObjects: Map<String, Any>): String {
+        fun apiDescription(apiObjects: Map<String, Any>, yamlDescriber : YamlDescriber): String {
             val types = ArrayList<Class<*>>()
+
             val apiobjs = apiObjects.map { (name, utilityObj) ->
                 val clazz = Class.forName(utilityObj.javaClass.typeName)
                 val methods = clazz.methods
@@ -161,7 +171,7 @@ class Brain(
                 """
                     |$name:
                     |  operations:
-                    |    ${joinYamlList(methods.map { it.toYaml(true) }).indent().indent()}
+                    |    ${joinYamlList(methods.map { yamlDescriber.toYaml(it) }).indent().indent()}
                     |""".trimMargin().trim()
             }.toTypedArray()
             val typeDescriptions = types
@@ -172,7 +182,7 @@ class Brain(
                 .distinct().map {
                     """
                 |${it.simpleName}:
-                |  ${it.toYaml().indent()}
+                |  ${yamlDescriber.toYaml(it).indent()}
                 """.trimMargin().trim()
                 }.toTypedArray()
             return """

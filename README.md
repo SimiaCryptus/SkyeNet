@@ -3,23 +3,25 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 <!-- TOC -->
+
 * [SkyeNet - A Helpful Pup! 🐾⚡](#skyenet---a-helpful-pup-)
-  * [🧪 The SkyeNet Experiment](#-the-skyenet-experiment)
-  * [🏗️ The Building Blocks of SkyeNet](#-the-building-blocks-of-skyenet)
-  * [🎨 Customizing Your SkyeNet Experience](#-customizing-your-skyenet-experience)
-  * [💡 Example Usage](#-example-usage)
-    * [📦 To Import](#-to-import)
-    * [🌟 To Use](#-to-use)
-  * [🚀 Unleashing SkyeNet's Potential](#-unleashing-skyenets-potential)
+    * [🧪 The SkyeNet Experiment](#-the-skyenet-experiment)
+    * [🏗️ The Building Blocks of SkyeNet](#-the-building-blocks-of-skyenet)
+    * [🎨 Customizing Your SkyeNet Experience](#-customizing-your-skyenet-experience)
+    * [💡 Example Usage](#-example-usage)
+        * [📦 To Import](#-to-import)
+        * [🌟 To Use](#-to-use)
+    * [🚀 Unleashing SkyeNet's Potential](#-unleashing-skyenets-potential)
+
 <!-- TOC -->
 
 ![SkyeNet](skyenet.svg)
 
 Greetings, intrepid explorer! You have stumbled upon the delightful realm of SkyeNet, a general-purpose AI assistant
-that combines the linguistic prowess of OpenAI ChatGPT with the nimble GraalVM JavaScript engine. SkyeNet is a unique
-proof-of-concept designed to bring an interactive, engaging AI experience to life. With the added capabilities of OpenAI
-Whisper and Google Cloud Platform, SkyeNet lends its voice recognition and text-to-speech talents to users brave enough
-to embark on this journey.
+that combines the linguistic prowess of OpenAI ChatGPT with Java's JSR223 scripting engine and Kotlin compiler. SkyeNet
+is a unique proof-of-concept designed to bring an interactive, engaging AI experience to life. With the added
+capabilities of OpenAI Whisper and Google Cloud Platform, SkyeNet lends its voice recognition and text-to-speech talents
+to users brave enough to embark on this journey.
 
 ## 🧪 The SkyeNet Experiment
 
@@ -35,7 +37,7 @@ create a unique and engaging user experience.
 SkyeNet's components work together harmoniously to create a cohesive and lively AI assistant:
 
 * **[Brain](src/main/kotlin/com/simiacryptus/skyenet/Brain.kt)**: The nucleus of SkyeNet's intellect, the brain
-  interfaces with the OpenAI API, giving life to our endearing AI assistant.
+  interfaces with the OpenAI API and uses ChatGPT to perform coding tasks, giving life to our endearing AI assistant.
 * **[Body](src/main/kotlin/com/simiacryptus/skyenet/Body.kt)**: Acting as the AI's vessel, the body connects the heart
   and brain, providing a framework for action and allowing SkyeNet to interact with its environment.
 * **[Ears](src/main/kotlin/com/simiacryptus/skyenet/Ears.kt)**: These auditory organs capture sounds and transform them
@@ -47,8 +49,8 @@ SkyeNet's components work together harmoniously to create a cohesive and lively 
   body.
 * **[Face](src/main/kotlin/com/simiacryptus/skyenet/Face.kt)**: The face is the graphical user interface, allowing
   SkyeNet to communicate with users visually and provide input and output in a user-friendly manner.
-* **[Heart](src/main/kotlin/com/simiacryptus/skyenet/Heart.kt)**: The heart is the interface to the GraalVM JavaScript
-  engine that powers SkyeNet, pumping life into the body and allowing the AI assistant to perform its various functions.
+* **[Heart](src/main/kotlin/com/simiacryptus/skyenet/Heart.kt)**: The heart is the interface to the script evaluation
+  engines that power SkyeNet, pumping life into the body and allowing the AI assistant to perform its various functions.
 
 ## 🎨 Customizing Your SkyeNet Experience
 
@@ -92,23 +94,16 @@ implementation("com.simiacryptus:skyenet:1.0.0")
 
 ```kotlin
 // Define OpenAI client
-val brain = ChatProxy(
-    Brain::class.java,
-    File(openAIKey).readText().trim()
-).create()
 val body = Body(
-    brain,
-    mapOf(
-        // Define tools that can be used in commands
-        "toolObj" to TestTools(googleSpeechKey)
-    )
+  api = OpenAIClient(apiKey),
+  apiObjects = mapOf(
+    "toolObj" to TestTools(googleSpeechKey)
+  )
 )
-// Launch the user interface
-val head = Head(brain, body = body)
-val jFrame = head.start()
-// Wait for the window to close
+val head = Head(body = body, ears = Ears(api = OpenAIClient(apiKey)))
+val jFrame = head.start(client = OpenAIClient(apiKey))
 while (jFrame.isVisible) {
-    Thread.sleep(100)
+  Thread.sleep(100)
 }
 
 class TestTools(keyfile: String) {
@@ -137,10 +132,10 @@ world of AI? With its anthropomorphic components, humorous naming, and lively pe
 your heart and inspire your creativity. Don your lab coat, channel your inner Dr. Frankenstein, and prepare to awaken
 the adorably powerful AI assistant that is SkyeNet!
 
-
 # Disclaimer
 
 This project is **_NOT_** affiliated with:
+
 - OpenAI
 - Google
 - The Terminator Movie Franchise

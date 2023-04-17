@@ -5,8 +5,8 @@ import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JFrame
 
 /**
@@ -20,7 +20,7 @@ class Head(
     val ears: Ears,
     val face : Face = Face()
 ) {
-    fun start(client: OpenAIClient) : JFrame {
+    fun start(api: OpenAIClient) : JFrame {
         val frame = JFrame("SkyeNet - A Helpful Pup")
         val starting = AtomicReference(true)
         try {
@@ -31,7 +31,7 @@ class Head(
                     try {
                         val buffer = ears.startAudioCapture { audioCaptureOn.get() }
                         buffer.clear()
-                        ears.listenForCommand(client, rawBuffer=buffer) {
+                        ears.listenForCommand(api, rawBuffer=buffer) {
                             face.commandText.text = it
                             face.submitCommandButton.doClick()
                         }
@@ -45,15 +45,19 @@ class Head(
                 Thread {
                     face.submitCommandButton.isEnabled = false
                     try {
-                        val commandToCode = body.brain.implement(
-                            face.commandText.text
+                        val commandToCode = body.validate(
+                            describedInstruction = face.commandText.text
                         )
                         face.scriptedCommand.text = commandToCode
                         if (face.autorunCheckbox.isSelected) {
                             try {
-                                val value = body.heart.run(
-                                    commandToCode
+                                val finalCode = AtomicReference(commandToCode)
+                                val value = body.execute(
+                                    describedInstruction = face.commandText.text,
+                                    codedInstruction = commandToCode,
+                                    finalCode = finalCode
                                 )
+                                face.scriptedCommand.text = finalCode.get()
                                 face.scriptingResult.text = value.toString()
                             } catch (e: Exception) {
                                 // print exception to string output stream
@@ -72,9 +76,19 @@ class Head(
                 Thread {
                     face.executeCodeButton.isEnabled = false
                     try {
-                        body.heart.run(
-                            face.scriptedCommand.text
+                        val finalCode = AtomicReference(face.scriptedCommand.text)
+                        val execute = body.execute(
+                            describedInstruction = face.commandText.text,
+                            codedInstruction = face.scriptedCommand.text,
+                            finalCode = finalCode
                         )
+                        face.scriptedCommand.text = finalCode.get()
+                        println(execute)
+                    } catch (e: Throwable) {
+                        val byteArrayOutputStream = ByteArrayOutputStream()
+                        val printStream = PrintStream(byteArrayOutputStream)
+                        e.printStackTrace(printStream)
+                        face.scriptingResult.text = byteArrayOutputStream.toString()
                     } finally {
                         face.executeCodeButton.isEnabled = true
                     }
