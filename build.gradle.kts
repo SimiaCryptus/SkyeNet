@@ -68,21 +68,6 @@ dependencies {
 
 }
 
-
-tasks.withType(ShadowJar::class.java).configureEach {
-    archiveClassifier.set("")
-    mergeServiceFiles()
-    append("META-INF/kotlin_module")
-    from(files("lib/ui.jar"))
-
-    exclude("**/META-INF/*.SF")
-    exclude("**/META-INF/*.DSA")
-    exclude("**/META-INF/*.RSA")
-    exclude("**/META-INF/*.MF")
-    exclude("META-INF/versions/9/module-info.class")
-}
-
-
 tasks {
 
     compileKotlin {
@@ -111,6 +96,22 @@ tasks {
     wrapper {
         gradleVersion = properties("gradleVersion")
     }
+}
+
+
+tasks.withType(ShadowJar::class.java).configureEach {
+    archiveClassifier.set("")
+    mergeServiceFiles()
+    append("META-INF/kotlin_module")
+
+    exclude("**/META-INF/*.SF")
+    exclude("**/META-INF/*.DSA")
+    exclude("**/META-INF/*.RSA")
+    exclude("**/META-INF/*.MF")
+    exclude("META-INF/versions/9/module-info.class")
+
+    include("com/simiacryptus/**", "com/intellij/uiDesigner/core/**")
+    from(zipTree("lib/ui.jar"))
 }
 
 val javadocJar by tasks.registering(Jar::class) {
