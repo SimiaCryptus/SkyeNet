@@ -5,7 +5,6 @@ import com.simiacryptus.openai.ChatRequest
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.util.JsonUtil.toJson
 import com.simiacryptus.util.YamlDescriber
-import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.util.concurrent.atomic.AtomicInteger
@@ -98,7 +97,7 @@ class Brain(
                 |
                 |The previous code was:
                 |
-                |```${language.toLowerCaseAsciiOnly()}
+                |```${language.lowercase()}
                 |${previousCode.indent()}
                 |```
                 |

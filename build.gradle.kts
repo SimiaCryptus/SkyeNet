@@ -6,14 +6,14 @@ fun properties(key: String) = project.findProperty(key).toString()
 group = properties("libraryGroup")
 version = properties("libraryVersion")
 
-
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.7.21"
     `maven-publish`
     id("signing")
     id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("org.jetbrains.kotlin.jvm") version "1.7.21"
+//    kotlin("jvm") version "1.8.20"
 }
 
 repositories {
@@ -37,24 +37,14 @@ dependencies {
     implementation("com.simiacryptus:joe-penai:1.0.6")
 
     implementation(files("lib/ui.jar"))
+    implementation(project(":core"))
+    implementation(project(":kotlin"))
+    implementation(project(":java"))
+    implementation(project(":groovy"))
 
-    // Used in GroovyInterpreter
-    implementation("org.codehaus.groovy:groovy-all:2.5.14")
-
-    // Used in KotlinInterpreterAlternate
-    implementation("org.jetbrains.kotlin:kotlin-script-runtime:$kotlin_version")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:$kotlin_version")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlin_version")
-
-    // Used in KotlinInterpreter
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
-    implementation("org.jetbrains.kotlin:kotlin-script-util:$kotlin_version")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version")
-
-//    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:$kotlin_version")
-//    implementation("org.jetbrains.kotlin:kotlin-scripting-jsr223:$kotlin_version")
-//    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlin_version")
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation(kotlin("stdlib-jdk8"))
 
     implementation("com.google.cloud:google-cloud-texttospeech:2.0.0")
 
@@ -65,6 +55,61 @@ dependencies {
     testImplementation(kotlin("script-runtime"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+
+}
+
+tasks.withType(ShadowJar::class.java).configureEach {
+    archiveClassifier.set("")
+    mergeServiceFiles()
+    append("META-INF/kotlin_module")
+
+    exclude("**/META-INF/*.SF")
+    exclude("**/META-INF/*.DSA")
+    exclude("**/META-INF/*.RSA")
+    exclude("**/META-INF/*.MF")
+    exclude("META-INF/versions/9/module-info.class")
+    exclude("META-INF/**")
+
+    exclude("dependencies.properties")
+    exclude("kotlinManifest.properties")
+    exclude("testng-1.0.dtd")
+    exclude("testng.css")
+
+    exclude("com/beust/**")
+    exclude("com/fasterxml/**")
+    exclude("com/google/**")
+    exclude("com/sun/**")
+    exclude("com/thoughtworks/**")
+    exclude("com/simiacryptus/openai/**")
+    exclude("com/simiacryptus/util/**")
+
+    exclude("edu/**")
+    exclude("*.bin")
+    exclude("android/**")
+    exclude("gnu/**")
+    exclude("google/**")
+    exclude("groovy/**")
+    exclude("groovyjarjarantlr/**")
+    exclude("groovyjarjarasm/**")
+    exclude("groovyjarjarcommonscli/**")
+    exclude("groovyjarjarpicocli/**")
+    exclude("grpc/**")
+    exclude("images/**")
+    exclude("io/**")
+    exclude("javaslang/**")
+    exclude("javax/**")
+    exclude("jline/**")
+    exclude("junit/**")
+    exclude("kotlin/**")
+    exclude("kotlinx/**")
+    exclude("messages/**")
+    exclude("misc/**")
+    exclude("mozilla/**")
+    exclude("net/**")
+    exclude("org/**")
+    exclude("picocli/**")
+    exclude("testngtasks/**")
+    exclude("org/**")
 
 }
 
@@ -98,21 +143,6 @@ tasks {
     }
 }
 
-
-tasks.withType(ShadowJar::class.java).configureEach {
-    archiveClassifier.set("")
-    mergeServiceFiles()
-    append("META-INF/kotlin_module")
-
-    exclude("**/META-INF/*.SF")
-    exclude("**/META-INF/*.DSA")
-    exclude("**/META-INF/*.RSA")
-    exclude("**/META-INF/*.MF")
-    exclude("META-INF/versions/9/module-info.class")
-
-    include("com/simiacryptus/**", "com/intellij/uiDesigner/core/**")
-    from(zipTree("lib/ui.jar"))
-}
 
 val javadocJar by tasks.registering(Jar::class) {
     archiveClassifier.set("javadoc")
@@ -164,6 +194,34 @@ publishing {
                     developerConnection.set("scm:git:ssh://git@github.com/SimiaCryptus/SkyeNet.git")
                     url.set("https://github.com/SimiaCryptus/SkyeNet")
                 }
+                withXml {
+                    asNode().appendNode("dependencies").apply {
+                        // Required dependencies
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "com.simiacryptus")
+                            appendNode("artifactId", "joe-penai")
+                            appendNode("version", "1.0.6")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.slf4j")
+                            appendNode("artifactId", "slf4j-api")
+                            appendNode("version", "2.0.5")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "commons-io")
+                            appendNode("artifactId", "commons-io")
+                            appendNode("version", "2.11.0")
+                        }
+                        // Optional dependencies
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "com.google.cloud")
+                            appendNode("artifactId", "google-cloud-texttospeech")
+                            appendNode("version", "2.0.0")
+                            appendNode("optional", "true")
+                        }
+                    }
+                }
+
             }
         }
     }

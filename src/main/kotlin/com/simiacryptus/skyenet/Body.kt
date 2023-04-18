@@ -3,7 +3,6 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.heart.KotlinInterpreter
 import java.util.Collections.emptyMap
 import java.util.concurrent.atomic.AtomicReference
 
@@ -19,7 +18,7 @@ class Body(
         api = api,
         apiObjects = apiObjects,
     ),
-    val heart: Heart = KotlinInterpreter(apiObjects),
+    val heart: Heart,
 ) {
     fun run(
         describedInstruction: String,

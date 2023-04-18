@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineBase
 import org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmDaemonLocalEvalScriptEngineFactory
 import javax.script.ScriptEngine
 
-open class KotlinInterpreter(
+open class KotlinDaemonInterpreter(
     defs: Map<String, Any> = mapOf(),
 ) : Heart {
 
