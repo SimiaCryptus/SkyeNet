@@ -8,13 +8,15 @@ import java.util.*
 import javax.tools.*
 import javax.tools.DiagnosticCollector
 import javax.tools.JavaFileObject
-open class JavaInterpreter(val defs: Map<String, Any> = mapOf()) : Heart {
-    private val guidMap = mutableMapOf<String, Any>()
+open class JavaInterpreter(val defs: Map<String, Any> = HashMap()) : Heart {
+    private val guidMap = HashMap<String, Any>()
 
     init {
-        defs.forEach { (key, value) ->
+        defs.entries.forEach { t ->
+            val key = t.key
+            val value = t.value
             val guid = UUID.randomUUID().toString()
-            guidMap[guid] = value
+            guidMap.put(guid, value)
             System.setProperty("java.def.$key", guid)
         }
     }
@@ -38,11 +40,14 @@ open class JavaInterpreter(val defs: Map<String, Any> = mapOf()) : Heart {
                     throw e.cause ?: e
                 }
             } else {
-                val errors = diagnosticCollector.diagnostics.joinToString("\n") { it.toString() }
+                val errors = diagnosticCollector.diagnostics.joinToString("\n")
                 Exception("Compilation errors:\n$errors")
             }
         }
     }
+
+    data class Pair<A, B>(val a: A, val b: B)
+
     private fun compile(
         className: String,
         wrappedCode: String,

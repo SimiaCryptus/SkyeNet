@@ -4,7 +4,7 @@ import com.simiacryptus.skyenet.Heart
 import org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineBase
 import org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmLocalScriptEngineFactory
 
-open class KotlinInterpreterAlternate(
+open class KotlinLocalInterpreter(
     defs: Map<String, Any> = mapOf(),
 ) : Heart {
 
