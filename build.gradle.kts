@@ -94,6 +94,12 @@ tasks.withType(ShadowJar::class.java).configureEach {
     exclude("testng-1.0.dtd")
     exclude("testng.css")
 
+    exclude("jakarta/**")
+    exclude("models/**")
+    exclude("scala/**")
+    exclude("software/**")
+    exclude("com/amazonaws/**")
+    exclude("org/apache/**")
     exclude("com/beust/**")
     exclude("com/fasterxml/**")
     exclude("com/google/**")
