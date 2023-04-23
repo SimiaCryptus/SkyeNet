@@ -225,7 +225,7 @@ publishing {
                         appendNode("dependency").apply {
                             appendNode("groupId", "com.simiacryptus")
                             appendNode("artifactId", "joe-penai")
-                            appendNode("version", "1.0.6")
+                            appendNode("version", "1.0.7")
                         }
                         appendNode("dependency").apply {
                             appendNode("groupId", "org.slf4j")
@@ -242,6 +242,102 @@ publishing {
                             appendNode("groupId", "com.google.cloud")
                             appendNode("artifactId", "google-cloud-texttospeech")
                             appendNode("version", "2.0.0")
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.eclipse.jetty")
+                            appendNode("artifactId", "jetty-server")
+                            appendNode("version", jetty_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.eclipse.jetty")
+                            appendNode("artifactId", "jetty-servlet")
+                            appendNode("version", jetty_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.eclipse.jetty")
+                            appendNode("artifactId", "jetty-annotations")
+                            appendNode("version", jetty_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.eclipse.jetty.websocket")
+                            appendNode("artifactId", "websocket-jetty-server")
+                            appendNode("version", jetty_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.eclipse.jetty.websocket")
+                            appendNode("artifactId", "websocket-jetty-client")
+                            appendNode("version", jetty_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.eclipse.jetty.websocket")
+                            appendNode("artifactId", "websocket-servlet")
+                            appendNode("version", jetty_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "com.google.api-client")
+                            appendNode("artifactId", "google-api-client")
+                            appendNode("version", "1.35.2")
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "com.google.oauth-client")
+                            appendNode("artifactId", "google-oauth-client-jetty")
+                            appendNode("version", "1.34.1")
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "com.google.apis")
+                            appendNode("artifactId", "google-api-services-oauth2")
+                            appendNode("version", "v2-rev157-1.25.0")
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "com.amazonaws")
+                            appendNode("artifactId", "aws-java-sdk")
+                            appendNode("version", "1.12.454")
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.scala-lang")
+                            appendNode("artifactId", "scala-library")
+                            appendNode("version", scala_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.scala-lang")
+                            appendNode("artifactId", "scala-compiler")
+                            appendNode("version", scala_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.scala-lang")
+                            appendNode("artifactId", "scala-reflect")
+                            appendNode("version", scala_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.jetbrains.kotlin")
+                            appendNode("artifactId", "kotlin-stdlib")
+                            appendNode("version", kotlin_version)
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.jetbrains.kotlinx")
+                            appendNode("artifactId", "kotlinx-coroutines-core")
+                            appendNode("version", "1.6.4")
+                            appendNode("optional", "true")
+                        }
+                        appendNode("dependency").apply {
+                            appendNode("groupId", "org.jetbrains.kotlin")
+                            appendNode("artifactId", "stdlib-jdk8")
+                            appendNode("version", kotlin_version)
                             appendNode("optional", "true")
                         }
                     }
