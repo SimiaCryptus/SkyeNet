@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * The ears are the interface to the audio input for the SkyeNet system
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class Ears(
+open class Ears(
     val api: OpenAIClient,
     val secondsPerAudioPacket : Double = 0.25,
 ) {
@@ -33,17 +33,17 @@ class Ears(
         )
     }
 
-    val commandRecognizer = ChatProxy(
+    open val commandRecognizer = ChatProxy(
         clazz = CommandRecognizer::class.java,
         api = api
     ).create()
 
-    fun timeout(ms: Long): () -> Boolean {
+    open fun timeout(ms: Long): () -> Boolean {
         val endTime = System.currentTimeMillis() + ms
         return { System.currentTimeMillis() < endTime }
     }
 
-    fun listenForCommand(
+    open fun listenForCommand(
         client: OpenAIClient,
         minCaptureMs: Int = 1000,
         continueFn: () -> Boolean = timeout(120, TimeUnit.SECONDS),
@@ -75,7 +75,7 @@ class Ears(
         }
     }
 
-    fun startDictationListener(
+    open fun startDictationListener(
         client: OpenAIClient,
         continueFn: () -> Boolean = timeout(60, TimeUnit.SECONDS),
         rawBuffer: Deque<ByteArray> = startAudioCapture(continueFn),
@@ -104,7 +104,7 @@ class Ears(
         dictationThread.join()
     }
 
-    fun startAudioCapture(continueFn: () -> Boolean): ConcurrentLinkedDeque<ByteArray> {
+    open fun startAudioCapture(continueFn: () -> Boolean): ConcurrentLinkedDeque<ByteArray> {
         val rawBuffer = ConcurrentLinkedDeque<ByteArray>()
         Thread({
             try {

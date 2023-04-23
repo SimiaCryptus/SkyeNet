@@ -20,7 +20,7 @@ open class Mouth(
     val keyfile: String
 ) {
 
-    fun speak(text: String) {
+    open fun speak(text: String) {
         runBlocking {
             synthesizeAndPlay("""<speak><break time="1s"/>$text</speak>""")
         }
@@ -32,11 +32,11 @@ open class Mouth(
         TextToSpeechClient.create(TextToSpeechSettings.newBuilder().setCredentialsProvider { credentials }.build())
     }
 
-    suspend fun synthesizeAndPlay(ssml: String) {
+    open suspend fun synthesizeAndPlay(ssml: String) {
         playAudio(synthesize(ssml).toByteArray())
     }
 
-    suspend fun synthesize(ssml: String): ByteString {
+    open suspend fun synthesize(ssml: String): ByteString {
         val input = SynthesisInput.newBuilder().setSsml(ssml).build()
         val voice = VoiceSelectionParams.newBuilder()
             .setLanguageCode("en-US")
@@ -51,7 +51,7 @@ open class Mouth(
         return audioContent
     }
 
-    fun playAudio(audioData: ByteArray) {
+    open fun playAudio(audioData: ByteArray) {
         val audioFormat = AudioFormat(22050F, 16, 1, true, false)
         val info = DataLine.Info(SourceDataLine::class.java, audioFormat)
         val sourceDataLine = AudioSystem.getLine(info) as SourceDataLine

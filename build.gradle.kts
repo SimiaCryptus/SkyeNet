@@ -31,16 +31,35 @@ kotlin {
 }
 
 val kotlin_version = "1.7.21"
+val jetty_version = "11.0.15"
+val scala_version = "2.13.8"
 dependencies {
 
 //    implementation("com.simiacryptus:JoePenai:1.0.7")
-    implementation("com.simiacryptus:joe-penai:1.0.6")
+    implementation("com.simiacryptus:joe-penai:1.0.7")
 
     implementation(files("lib/ui.jar"))
     implementation(project(":core"))
     implementation(project(":kotlin"))
     implementation(project(":java"))
     implementation(project(":groovy"))
+
+    implementation("org.eclipse.jetty:jetty-server:$jetty_version")
+    implementation("org.eclipse.jetty:jetty-servlet:$jetty_version")
+    implementation("org.eclipse.jetty:jetty-annotations:$jetty_version")
+    implementation("org.eclipse.jetty.websocket:websocket-jetty-server:$jetty_version")
+    implementation("org.eclipse.jetty.websocket:websocket-jetty-client:$jetty_version")
+    implementation("org.eclipse.jetty.websocket:websocket-servlet:$jetty_version")
+
+    implementation("com.google.api-client:google-api-client:1.35.2")
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
+    implementation("com.google.apis:google-api-services-oauth2:v2-rev157-1.25.0")
+
+    implementation("com.amazonaws:aws-java-sdk:1.12.454")
+
+    implementation("org.scala-lang:scala-library:$scala_version")
+    implementation("org.scala-lang:scala-compiler:$scala_version")
+    implementation("org.scala-lang:scala-reflect:$scala_version")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")

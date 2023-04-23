@@ -11,44 +11,32 @@ import java.util.concurrent.atomic.AtomicReference
  * The body is the physical manifestation of the brain.
  * It connects the heart and the brain, providing a framework for action
  */
-class Body(
+open class Body(
     val api: OpenAIClient,
     val apiObjects: Map<String, Any> = emptyMap(),
+    val heart: Heart,
     val brain: Brain = Brain(
         api = api,
         apiObjects = apiObjects,
+        language = heart.getLanguage(),
     ),
-    val heart: Heart,
 ) {
-    fun run(
+
+    open fun run(
         describedInstruction: String,
         codedInstruction: String = brain.implement(describedInstruction),
         retries: Int = 3,
-    ): Any? = execute(
-        describedInstruction = describedInstruction,
-        codedInstruction = codedInstruction,
-        retries = retries
-    )
-
-    fun execute(
-        describedInstruction: String,
-        codedInstruction: String,
-        retries: Int = 3,
-        finalCode: AtomicReference<String> = AtomicReference(codedInstruction),
     ): Any? {
         try {
-            val code = validate(describedInstruction, codedInstruction, retries)
-            val run = heart.run(code)
-            return run
+            return heart.run(codedInstruction)
         } catch (e: Exception) {
             if (retries <= 0) throw e
-            val fixCommand = brain.fixCommand(describedInstruction, codedInstruction, e.message ?: "")
-            finalCode.set(fixCommand)
-            return execute(describedInstruction, fixCommand, retries - 1, finalCode)
+            val fixCommand = brain.fixCommand(describedInstruction, codedInstruction, e)
+            return run(describedInstruction, fixCommand, retries - 1)
         }
     }
 
-    fun validate(
+    open fun validate(
         describedInstruction: String,
         codedInstruction: String = brain.implement(describedInstruction),
         retries: Int = 3,
@@ -58,13 +46,12 @@ class Body(
             if (retries <= 0) throw exception
             if (null == exception.message || exception.message.toString().trim().isEmpty()) throw exception
             log.info("Error: ${exception.message}")
-            val fixCommand = brain.fixCommand(describedInstruction, codedInstruction, exception.message ?: "")
+            val fixCommand = brain.fixCommand(describedInstruction, codedInstruction, exception)
             return validate(describedInstruction, fixCommand, retries - 1)
         } else {
             return codedInstruction
         }
     }
-
 
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(Body::class.java)!!

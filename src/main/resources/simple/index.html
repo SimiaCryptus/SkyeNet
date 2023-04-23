@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Client</title>
+    <link href="chat.css" rel="stylesheet"/>
+    <script src="chat.js"></script>
+</head>
+<body>
+<div id="messages"></div>
+<form id="form">
+    <input type="text" id="message" placeholder="Type a message">
+    <button type="submit">Send</button>
+</form>
+<script>
+    const form = document.getElementById('form');
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        send(document.getElementById('message').value);
+    });
+
+    function receive(event) {
+        console.log('WebSocket message:', event);
+        const messagesDiv = document.getElementById('messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+        messageDiv.textContent = event.data;
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const sessionId = getSessionId();
+        if (sessionId) {
+            connect(sessionId, receive);
+        } else {
+            connect(undefined, receive);
+        }
+    });
+</script>
+<div id="disconnected-overlay">
+    <p>Disconnected. Attempting to reconnect...</p>
+</div>
+</body>
+</html>
