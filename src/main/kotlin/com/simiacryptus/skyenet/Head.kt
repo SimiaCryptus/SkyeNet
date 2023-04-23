@@ -15,83 +15,28 @@ import javax.swing.JFrame
  * 2. Interacting with the user via the Face
  * 3. Relaying commands to the Body
  */
-class Head(
+open class Head(
     val body : Body,
     val ears: Ears,
     val face : Face = Face()
 ) {
-    fun start(api: OpenAIClient) : JFrame {
+    open fun start(api: OpenAIClient) : JFrame {
         val frame = JFrame("SkyeNet - A Helpful Pup")
         val starting = AtomicReference(true)
         try {
             face.dictationButton.addActionListener {
                 Thread {
-                    face.dictationButton.isEnabled = false
-                    val audioCaptureOn = AtomicBoolean(true)
-                    try {
-                        val buffer = ears.startAudioCapture { audioCaptureOn.get() }
-                        buffer.clear()
-                        ears.listenForCommand(api, rawBuffer=buffer) {
-                            face.commandText.text = it
-                            face.submitCommandButton.doClick()
-                        }
-                    } finally {
-                        audioCaptureOn.set(false)
-                        face.dictationButton.isEnabled = true
-                    }
+                    handleTranscribe(api)
                 }.start()
             }
             face.submitCommandButton.addActionListener {
                 Thread {
-                    face.submitCommandButton.isEnabled = false
-                    try {
-                        val commandToCode = body.validate(
-                            describedInstruction = face.commandText.text
-                        )
-                        face.scriptedCommand.text = commandToCode
-                        if (face.autorunCheckbox.isSelected) {
-                            try {
-                                val finalCode = AtomicReference(commandToCode)
-                                val value = body.execute(
-                                    describedInstruction = face.commandText.text,
-                                    codedInstruction = commandToCode,
-                                    finalCode = finalCode
-                                )
-                                face.scriptedCommand.text = finalCode.get()
-                                face.scriptingResult.text = value.toString()
-                            } catch (e: Exception) {
-                                // print exception to string output stream
-                                val byteArrayOutputStream = ByteArrayOutputStream()
-                                val printStream = PrintStream(byteArrayOutputStream)
-                                e.printStackTrace(printStream)
-                                face.scriptingResult.text = byteArrayOutputStream.toString()
-                            }
-                        }
-                    } finally {
-                        face.submitCommandButton.isEnabled = true
-                    }
+                    handleSubmitCommand()
                 }.start()
             }
             face.executeCodeButton.addActionListener {
                 Thread {
-                    face.executeCodeButton.isEnabled = false
-                    try {
-                        val finalCode = AtomicReference(face.scriptedCommand.text)
-                        val execute = body.execute(
-                            describedInstruction = face.commandText.text,
-                            codedInstruction = face.scriptedCommand.text,
-                            finalCode = finalCode
-                        )
-                        face.scriptedCommand.text = finalCode.get()
-                        println(execute)
-                    } catch (e: Throwable) {
-                        val byteArrayOutputStream = ByteArrayOutputStream()
-                        val printStream = PrintStream(byteArrayOutputStream)
-                        e.printStackTrace(printStream)
-                        face.scriptingResult.text = byteArrayOutputStream.toString()
-                    } finally {
-                        face.executeCodeButton.isEnabled = true
-                    }
+                    handleExecuteCode()
                 }.start()
             }
             frame.contentPane = face.panel1
@@ -107,6 +52,67 @@ class Head(
             return frame
         } finally {
             starting.set(false)
+        }
+    }
+
+    open fun handleExecuteCode() {
+        face.executeCodeButton.isEnabled = false
+        try {
+            val execute = body.run(
+                describedInstruction = face.commandText.text,
+                codedInstruction = face.scriptedCommand.text
+            )
+            println(execute)
+        } catch (e: Throwable) {
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            val printStream = PrintStream(byteArrayOutputStream)
+            e.printStackTrace(printStream)
+            face.scriptingResult.text = byteArrayOutputStream.toString()
+        } finally {
+            face.executeCodeButton.isEnabled = true
+        }
+    }
+
+    open fun handleSubmitCommand() {
+        face.submitCommandButton.isEnabled = false
+        try {
+            val commandToCode = body.validate(
+                describedInstruction = face.commandText.text
+            )
+            face.scriptedCommand.text = commandToCode
+            if (face.autorunCheckbox.isSelected) {
+                try {
+                    val value = body.run(
+                        describedInstruction = face.commandText.text,
+                        codedInstruction = commandToCode
+                    )
+                    face.scriptingResult.text = face.scriptingResult.text + "\n" + value.toString()
+                } catch (e: Exception) {
+                    // print exception to string output stream
+                    val byteArrayOutputStream = ByteArrayOutputStream()
+                    val printStream = PrintStream(byteArrayOutputStream)
+                    e.printStackTrace(printStream)
+                    face.scriptingResult.text = face.scriptingResult.text + "\n" + byteArrayOutputStream.toString()
+                }
+            }
+        } finally {
+            face.submitCommandButton.isEnabled = true
+        }
+    }
+
+    open fun handleTranscribe(api: OpenAIClient) {
+        face.dictationButton.isEnabled = false
+        val audioCaptureOn = AtomicBoolean(true)
+        try {
+            val buffer = ears.startAudioCapture { audioCaptureOn.get() }
+            buffer.clear()
+            ears.listenForCommand(api, rawBuffer = buffer) {
+                face.commandText.text = it
+                face.submitCommandButton.doClick()
+            }
+        } finally {
+            audioCaptureOn.set(false)
+            face.dictationButton.isEnabled = true
         }
     }
 }

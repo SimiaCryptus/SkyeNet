@@ -10,14 +10,14 @@ import java.lang.reflect.Modifier
 import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("MemberVisibilityCanBePrivate")
-class Brain(
+open class Brain(
     val api: OpenAIClient,
     val apiObjects: Map<String, Any> = mapOf(),
     var model: String = "gpt-3.5-turbo", // "gpt-4-0314"
     var verbose: Boolean = false,
     var maxTokens: Int = 8192,
     var temperature: Double = 0.3,
-    var yamlDescriber : YamlDescriber = YamlDescriber(),
+    var yamlDescriber: YamlDescriber = YamlDescriber(),
     val language: String = "Kotlin",
     private val moderated: Boolean = true,
 ) {
@@ -34,35 +34,56 @@ class Brain(
     protected val totalApiDescriptionLength: AtomicInteger = AtomicInteger(0)
 
 
+    open fun implement(prompt: String): String {
+        val response = _implement(prompt)
+        return extractCodeBlock(response)
+    }
 
-    fun implement(prompt: String): String {
+    open fun respondWithCode(prompt: String): Pair<String, List<Pair<String, String>>> {
+        val response = _implement(prompt)
+        return Pair(response, extractCodeBlocks(response))
+    }
+
+    protected fun _implement(prompt: String): String {
         if (verbose) log.info(prompt)
         val request = ChatRequest()
         val apiDescription = apiDescription(apiObjects, yamlDescriber)
         request.messages = (
-                listOf(
-                    ChatMessage(
-                        ChatMessage.Role.system, """
-                |You will translate natural language instructions into 
-                |an implementation using $language and the script context.
-                |Do not include explaining text outside of the code blocks.
-                |Defined symbols include ${apiObjects.keys.joinToString(", ")}.
-                |The runtime context is described below:
-                |
-                |$apiDescription
-                |""".trimMargin().trim()
-                    )
-                ) + listOf(
+                getChatMessages(apiDescription) + listOf(
                     ChatMessage(
                         ChatMessage.Role.user,
                         prompt
                     )
                 )).toTypedArray()
         totalApiDescriptionLength.addAndGet(apiDescription.length)
-        return run(request)
+        val response = run(request)
+        return response
     }
 
-    fun fixCommand(prompt: String, previousCode: String, errorMessage: String): String {
+    open fun getChatMessages(apiDescription: String): List<ChatMessage> = listOf(
+        ChatMessage(
+            ChatMessage.Role.system, """
+                        |You will translate natural language instructions into 
+                        |an implementation using $language and the script context.
+                        |Use ``` code blocks labeled with $language where appropriate.
+                        |Defined symbols include ${apiObjects.keys.joinToString(", ")}.
+                        |The runtime context is described below:
+                        |
+                        |$apiDescription
+                        |""".trimMargin().trim()
+        )
+    )
+
+    open fun fixCommand(prompt: String, previousCode: String, error: Exception): String {
+        return extractCodeBlock(_fixCommand(prompt, error, previousCode))
+    }
+
+    open fun fixCommand2(prompt: String, previousCode: String, error: Exception): Pair<String, List<Pair<String, String>>> {
+        val response = _fixCommand(prompt, error, previousCode)
+        return Pair(response, extractCodeBlocks(response))
+    }
+
+    private fun _fixCommand(prompt: String, error: Exception, previousCode: String): String {
         if (verbose) log.info(prompt)
         val request = ChatRequest()
         val apiDescription = apiDescription(apiObjects, yamlDescriber)
@@ -70,38 +91,40 @@ class Brain(
                 listOf(
                     ChatMessage(
                         ChatMessage.Role.system, """
-                |You will translate natural language instructions into 
-                |an implementation using $language and the script context.
-                |Do not include explaining text outside of the code blocks.
-                |Defined symbols include ${apiObjects.keys.joinToString(", ")}.
-                |Do not include wrapping code blocks, assume a REPL context.
-                |The runtime context is described below:
-                |
-                |$apiDescription
-                |""".trimMargin().trim()
+                            |You will translate natural language instructions into 
+                            |an implementation using $language and the script context.
+                            |Use ``` code blocks labeled with $language where appropriate.
+                            |Defined symbols include ${apiObjects.keys.joinToString(", ")}.
+                            |Do not include wrapping code blocks, assume a REPL context.
+                            |The runtime context is described below:
+                            |
+                            |$apiDescription
+                            |""".trimMargin().trim()
                     )
                 ) + listOf(
                     ChatMessage(
                         ChatMessage.Role.user,
                         prompt
-                    )
-                ) + listOf(
+                    ),
+                    ChatMessage(
+                        ChatMessage.Role.assistant,
+                        """
+                            |```${language.lowercase()}
+                            |${previousCode}
+                            |```
+                            |""".trimMargin().trim()
+                    ),
                     ChatMessage(
                         ChatMessage.Role.system,
                         """
-                |The previous code failed with the following error:
-                |
-                |```
-                |${errorMessage.trim().indent()}
-                |```
-                |
-                |The previous code was:
-                |
-                |```${language.lowercase()}
-                |${previousCode.indent()}
-                |```
-                |
-                |""".trimMargin().trim()
+                            |The previous code failed with the following error:
+                            |
+                            |```
+                            |${error.message?.trim() ?: ""}
+                            |```
+                            |
+                            |Correct the code and try again.
+                            |""".trimMargin().trim()
                     )
                 )).toTypedArray()
         totalApiDescriptionLength.addAndGet(apiDescription.length)
@@ -120,18 +143,8 @@ class Brain(
         if (verbose) log.info(response)
         totalOutputLength.addAndGet(response.length)
         response = response.trim()
-
-        // If the response is wrapped in a code block, remove it
-        if(response.contains("```")) {
-            val startIndex = response.indexOf('\n', response.indexOf("```"))
-            val endIndex = response.lastIndexOf("```")
-            val trim = response.substring(startIndex, endIndex).trim()
-            response = trim
-        }
-
         return response
     }
-
 
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(Brain::class.java)
@@ -154,7 +167,7 @@ class Brain(
                 return (interfaces.toList() + supers).distinct()
             }
 
-        fun apiDescription(apiObjects: Map<String, Any>, yamlDescriber : YamlDescriber): String {
+        fun apiDescription(apiObjects: Map<String, Any>, yamlDescriber: YamlDescriber): String {
             val types = ArrayList<Class<*>>()
 
             val apiobjs = apiObjects.map { (name, utilityObj) ->
@@ -193,6 +206,55 @@ class Brain(
             """.trimMargin()
         }
 
+        /***
+         * The input stream is parsed based on ```language\n...\n``` blocks.
+         * A list of tuples is returned, where the first element is the language and the second is the code block
+         * For intermediate non-code blocks, the language is "text"
+         * For unlabeled code blocks, the language is "code"
+         */
+        fun extractCodeBlocks(response: String): List<Pair<String, String>> {
+            val codeBlockRegex = Regex("(?s)```(.*?)\\n(.*?)```")
+            val languageRegex = Regex("([a-zA-Z0-9-_]+)")
+
+            val result = mutableListOf<Pair<String, String>>()
+            var startIndex = 0
+
+            for (match in codeBlockRegex.findAll(response)) {
+                // Add non-code block before the current match as "text"
+                if (startIndex < match.range.first) {
+                    result.add(Pair("text", response.substring(startIndex, match.range.first)))
+                }
+
+                // Extract language and code
+                val languageMatch = languageRegex.find(match.groupValues[1])
+                val language = languageMatch?.groupValues?.get(0) ?: "code"
+                val code = match.groupValues[2]
+
+                // Add code block to the result
+                result.add(Pair(language, code))
+
+                // Update the start index
+                startIndex = match.range.last + 1
+            }
+
+            // Add any remaining non-code text after the last code block as "text"
+            if (startIndex < response.length) {
+                result.add(Pair("text", response.substring(startIndex)))
+            }
+
+            return result
+        }
+
+        fun extractCodeBlock(response: String): String {
+            var response1 = response
+            if (response1.contains("```")) {
+                val startIndex = response1.indexOf('\n', response1.indexOf("```"))
+                val endIndex = response1.lastIndexOf("```")
+                val trim = response1.substring(startIndex, endIndex).trim()
+                response1 = trim
+            }
+            return response1
+        }
     }
 
 }

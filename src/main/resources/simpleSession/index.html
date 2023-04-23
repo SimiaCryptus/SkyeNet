@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Client</title>
+    <link href="chat.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/themes/prism-funky.min.css" rel="stylesheet"/>
+    <script src="chat.js"></script>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-groovy.min.js"></script>
+
+<div id="toolbar">
+    <a href="#" id="api">API</a>
+</div>
+
+<div id="container">
+    <div id="messages"></div>
+    <form id="form">
+        <textarea id="message" placeholder="Type a message" rows="3" class="chat-input"></textarea>
+        <button type="submit">Send</button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById('form');
+    const messageInput = document.getElementById('message');
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        send(messageInput.value);
+        messageInput.value = '';
+    });
+
+    messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    function receive(event) {
+        console.log('WebSocket message:', event);
+        const messagesDiv = document.getElementById('messages');
+
+        // Find the first comma and split the received data into ID and message content
+        const firstCommaIndex = event.data.indexOf(',');
+        const messageId = event.data.substring(0, firstCommaIndex);
+        const messageContent = event.data.substring(firstCommaIndex + 1);
+
+        let messageDiv = document.getElementById(messageId);
+
+        if (messageDiv) {
+            messageDiv.innerHTML = messageContent;
+        } else {
+            messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-container'; // Add the message-container class
+            messageDiv.id = messageId;
+            messageDiv.innerHTML = messageContent;
+            messagesDiv.appendChild(messageDiv);
+        }
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        Prism.highlightAll();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const sessionId = getSessionId();
+        if (sessionId) {
+            connect(sessionId, receive);
+        } else {
+            connect(undefined, receive);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.classList.contains('play-button')) {
+                const messageId = target.getAttribute('data-id');
+                send('!' + messageId + ',run');
+            } else if (target.classList.contains('cancel-button')) {
+                const messageId = target.getAttribute('data-id');
+                send('!' + messageId + ',stop');
+            }
+        });
+    });
+
+</script>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <pre id="yaml-content"></pre>
+    </div>
+</div>
+
+<script>
+    document.getElementById('api').addEventListener('click', showModal);
+    document.querySelector('.close').addEventListener('click', closeModal);
+
+    window.addEventListener('click', (event) => {
+        if (event.target === document.getElementById('modal')) {
+            closeModal();
+        }
+    });
+
+    function showModal() {
+        fetchYaml();
+        document.getElementById('modal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    async function fetchYaml() {
+        try {
+            const response = await fetch('/yamlDescriptor');
+            const yamlText = await response.text();
+            document.getElementById('yaml-content').innerHTML = "<pre><code class=\"language-yaml\">" + yamlText + "</code></pre>";
+            Prism.highlightAll();
+        } catch (error) {
+            console.error('Error fetching yaml:', error);
+        }
+    }
+</script>
+
+<div id="disconnected-overlay">
+    <p>Disconnected. Attempting to reconnect...</p>
+</div>
+</body>
+</html>
