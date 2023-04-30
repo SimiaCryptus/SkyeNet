@@ -75,7 +75,7 @@ publishing {
 
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = "skyenet"
+            artifactId = "skyenet-scala"
             from(components["java"])
             versionMapping {
                 usage("java-api") {
@@ -86,7 +86,7 @@ publishing {
                 }
             }
             pom {
-                name.set("SkyeNet")
+                name.set("SkyeNet Scala Interpreter")
                 description.set("A very helpful puppy")
                 url.set("https://github.com/SimiaCryptus/SkyeNet")
                 licenses {
