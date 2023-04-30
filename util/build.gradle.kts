@@ -8,9 +8,9 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.7.21"
     `maven-publish`
     id("signing")
+    id("org.jetbrains.kotlin.jvm") version "1.7.21"
 }
 
 repositories {
@@ -24,20 +24,30 @@ repositories {
 
 kotlin {
     jvmToolchain(11)
+//    jvmToolchain(17)
 }
 
 val kotlin_version = "1.7.21"
+val jetty_version = "11.0.15"
+val scala_version = "2.13.8"
 dependencies {
 
+//    implementation("com.simiacryptus:JoePenai:1.0.8")
+    implementation("com.simiacryptus:joe-penai:1.0.7")
+
     implementation(project(":core"))
+    implementation(project(":webui"))
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation(kotlin("stdlib-jdk8"))
 
+    implementation("com.google.cloud:google-cloud-texttospeech:2.0.0")
+
+    implementation("org.eclipse.jetty:jetty-server:$jetty_version")
     implementation("org.slf4j:slf4j-api:2.0.5")
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.9")
-    runtimeOnly("ch.qos.logback:logback-core:1.2.9")
+    implementation("ch.qos.logback:logback-classic:1.2.9")
+    implementation("ch.qos.logback:logback-core:1.2.9")
     implementation("commons-io:commons-io:2.11.0")
 
     testImplementation(kotlin("script-runtime"))
@@ -72,7 +82,6 @@ tasks {
         )
     }
 }
-
 
 
 val javadocJar by tasks.registering(Jar::class) {

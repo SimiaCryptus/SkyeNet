@@ -130,7 +130,7 @@ open class JavaInterpreter(val defs: Map<String, Any> = HashMap()) : Heart {
     }
 
     class InMemoryJavaFileManager(private val compiler: JavaCompiler, private val classLoader: InMemoryClassLoader) :
-        javax.tools.ForwardingJavaFileManager<JavaFileManager>(compiler.getStandardFileManager(null, null, null)) {
+        ForwardingJavaFileManager<JavaFileManager>(compiler.getStandardFileManager(null, null, null)) {
         override fun getJavaFileForOutput(
             location: JavaFileManager.Location?,
             className: String,

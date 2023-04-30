@@ -6,14 +6,14 @@ import groovy.lang.Script
 import org.codehaus.groovy.control.CompilationFailedException
 import org.codehaus.groovy.control.CompilerConfiguration
 
-open class GroovyInterpreter(defs: Map<String, Any> = mapOf()) : Heart {
+open class GroovyInterpreter(defs: java.util.Map<String, Object>) : Heart {
 
     private val shell: GroovyShell
 
     init {
         val compilerConfiguration = CompilerConfiguration()
         shell = GroovyShell(compilerConfiguration)
-        defs.forEach { (key, value) ->
+        defs.forEach { key, value ->
             shell.setVariable(key, value)
         }
     }
