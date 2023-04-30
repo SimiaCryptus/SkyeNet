@@ -12,7 +12,7 @@ open class KotlinLocalInterpreter(
 
     init {
         val factory = KotlinJsr223JvmLocalScriptEngineFactory()
-        engine = factory.getScriptEngine() as KotlinJsr223JvmScriptEngineBase
+        engine = factory.scriptEngine as KotlinJsr223JvmScriptEngineBase
         defs.forEach { (key, value) ->
             engine.put(key, value)
         }

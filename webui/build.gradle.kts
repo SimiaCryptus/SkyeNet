@@ -24,12 +24,36 @@ repositories {
 
 kotlin {
     jvmToolchain(11)
+//    jvmToolchain(17)
 }
 
 val kotlin_version = "1.7.21"
+val jetty_version = "11.0.15"
+val scala_version = "2.13.8"
+val jackson_version = "2.15.0"
 dependencies {
 
+//    implementation("com.simiacryptus:JoePenai:1.0.8")
+    implementation("com.simiacryptus:joe-penai:1.0.7")
+
     implementation(project(":core"))
+
+    implementation("org.eclipse.jetty:jetty-server:$jetty_version")
+    implementation("org.eclipse.jetty:jetty-servlet:$jetty_version")
+    implementation("org.eclipse.jetty:jetty-annotations:$jetty_version")
+    implementation("org.eclipse.jetty.websocket:websocket-jetty-server:$jetty_version")
+    implementation("org.eclipse.jetty.websocket:websocket-jetty-client:$jetty_version")
+    implementation("org.eclipse.jetty.websocket:websocket-servlet:$jetty_version")
+
+    // Jackson
+    implementation("com.fasterxml.jackson.core:jackson-core:$jackson_version")
+    implementation("com.fasterxml.jackson.core:jackson-databind:$jackson_version")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:$jackson_version")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jackson_version")
+
+    implementation("com.google.api-client:google-api-client:1.35.2")
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
+    implementation("com.google.apis:google-api-services-oauth2:v2-rev157-1.25.0")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
@@ -45,6 +69,7 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 
 }
+
 
 tasks {
 
@@ -72,7 +97,6 @@ tasks {
         )
     }
 }
-
 
 
 val javadocJar by tasks.registering(Jar::class) {
