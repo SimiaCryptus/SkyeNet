@@ -86,8 +86,10 @@ publishing {
 
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = "skyenet-core"
+            artifactId = "core"
             from(components["java"])
+            artifact(sourcesJar.get())
+            artifact(javadocJar.get())
             versionMapping {
                 usage("java-api") {
                     fromResolutionOf("runtimeClasspath")

@@ -93,8 +93,10 @@ publishing {
 
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = "skyenet-kotlin"
+            artifactId = "kotlin"
             from(components["java"])
+            artifact(sourcesJar.get())
+            artifact(javadocJar.get())
             versionMapping {
                 usage("java-api") {
                     fromResolutionOf("runtimeClasspath")

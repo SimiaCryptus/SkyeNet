@@ -75,8 +75,10 @@ publishing {
 
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = "skyenet-scala"
+            artifactId = "scala"
             from(components["java"])
+            artifact(sourcesJar.get())
+            artifact(javadocJar.get())
             versionMapping {
                 usage("java-api") {
                     fromResolutionOf("runtimeClasspath")
