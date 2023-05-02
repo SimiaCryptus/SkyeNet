@@ -8,16 +8,6 @@ import java.io.File
 class SessionDataStorage(
     val dataDir: File = File("sessionData")
 ) {
-    private val objectMapper = ObjectMapper().registerModule(
-        KotlinModule.Builder()
-            .withReflectionCacheSize(512)
-            .configure(KotlinFeature.NullToEmptyCollection, false)
-            .configure(KotlinFeature.NullToEmptyMap, false)
-            .configure(KotlinFeature.NullIsSameAsDefault, false)
-            .configure(KotlinFeature.SingletonSupport, false)
-            .configure(KotlinFeature.StrictNullChecks, false)
-            .build()
-    )
 
     init {
         if (!dataDir.exists()) {
@@ -29,14 +19,14 @@ class SessionDataStorage(
         val operationDir = getOperationDir(sessionId)
         val operationFile = File(operationDir, "$operationId.json")
 
-        objectMapper.writeValue(operationFile, value)
+        Companion.objectMapper.writeValue(operationFile, value)
     }
 
     fun updateMessage(sessionId: String, messageId: String, value: String) {
         val messageDir = getMessageDir(sessionId)
         val messageFile = File(messageDir, "$messageId.json")
 
-        objectMapper.writeValue(messageFile, value)
+        Companion.objectMapper.writeValue(messageFile, value)
     }
 
     fun loadOperations(sessionId: String): MutableMap<String, OperationStatus> {
@@ -44,7 +34,7 @@ class SessionDataStorage(
         val operations = mutableMapOf<String, OperationStatus>()
 
         operationDir.listFiles()?.forEach { file ->
-            val operation = objectMapper.readValue(file, OperationStatus::class.java)
+            val operation = Companion.objectMapper.readValue(file, OperationStatus::class.java)
             operations[file.nameWithoutExtension] = operation
         }
 
@@ -56,7 +46,7 @@ class SessionDataStorage(
         val messages = LinkedHashMap<String, String>()
 
         messageDir.listFiles()?.forEach { file ->
-            val message = objectMapper.readValue(file, String::class.java)
+            val message = Companion.objectMapper.readValue(file, String::class.java)
             messages[file.nameWithoutExtension] = message
         }
 
@@ -107,14 +97,27 @@ class SessionDataStorage(
         val operationFiles = operationDir.listFiles()?.filter { file ->
             file.isFile
         }?.sortedBy { file ->
-            objectMapper.readValue(file, OperationStatus::class.java).created
+            Companion.objectMapper.readValue(file, OperationStatus::class.java).created
         } ?: listOf()
         if (operationFiles.isNotEmpty()) {
             val operationFile = operationFiles.first()
-            val operationStatus = objectMapper.readValue(operationFile, OperationStatus::class.java)
+            val operationStatus = Companion.objectMapper.readValue(operationFile, OperationStatus::class.java)
             return operationStatus.instruction
         } else {
             return sessionId
         }
+    }
+
+    companion object {
+        val objectMapper = ObjectMapper().registerModule(
+            KotlinModule.Builder()
+                .withReflectionCacheSize(512)
+                .configure(KotlinFeature.NullToEmptyCollection, false)
+                .configure(KotlinFeature.NullToEmptyMap, false)
+                .configure(KotlinFeature.NullIsSameAsDefault, false)
+                .configure(KotlinFeature.SingletonSupport, false)
+                .configure(KotlinFeature.StrictNullChecks, false)
+                .build()
+        )
     }
 }
