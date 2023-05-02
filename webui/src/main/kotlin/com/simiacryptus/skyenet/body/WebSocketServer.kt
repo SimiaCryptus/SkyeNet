@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.server.Server
+import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.util.resource.Resource
 import org.eclipse.jetty.webapp.WebAppContext
@@ -14,7 +15,7 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer
 import java.util.*
 
-abstract class WebSocketServer(private val resourceBase: String) {
+abstract class WebSocketServer(val resourceBase: String) {
 
     inner class NewSessionServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
@@ -150,19 +151,23 @@ abstract class WebSocketServer(private val resourceBase: String) {
 
     open fun configure(server: Server) {
         val webAppContext = WebAppContext()
-        webAppContext.baseResource = Resource.newClassPathResource(resourceBase)
+//        webAppContext.baseResource = ClasspathResource(javaClass.classLoader.getResource(resourceBase))
+        webAppContext.baseResource = baseResource
         webAppContext.contextPath = "/"
         webAppContext.welcomeFiles = arrayOf("index.html")
         configure(webAppContext)
         server.handler = webAppContext
     }
 
+    open val baseResource: Resource? get() = Resource.newResource(javaClass.classLoader.getResource(resourceBase))
+
     open fun configure(webAppContext: WebAppContext) {
         JettyWebSocketServletContainerInitializer.configure(webAppContext, null)
-        val webSocketServletHolder = ServletHolder("ws", WebSocketHandler())
-        webAppContext.addServlet(webSocketServletHolder, "/ws/*")
-        val newSessionServletHolder = ServletHolder("newSession", NewSessionServlet())
-        webAppContext.addServlet(newSessionServletHolder, "/newSession")
+        val defaultServlet = DefaultServlet()
+        //defaultServlet.dirAllowed = false
+        webAppContext.addServlet(ServletHolder("default", defaultServlet), "/")
+        webAppContext.addServlet(ServletHolder("ws", WebSocketHandler()), "/ws/*")
+        webAppContext.addServlet(ServletHolder("newSession", NewSessionServlet()), "/newSession")
     }
 
     companion object {

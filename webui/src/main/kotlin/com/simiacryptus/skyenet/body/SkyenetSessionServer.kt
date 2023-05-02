@@ -27,7 +27,7 @@ abstract class SkyenetSessionServer(
     private var maxHistoryCharacters: Int = 4000,
     val baseURL: String = "http://localhost:8080",
     val model: String = "gpt-3.5-turbo",
-    var useHistory: Boolean = true
+    var useHistory: Boolean = true,
 ) : WebSocketServer(resourceBase) {
 
     abstract fun hands(): java.util.Map<String, Object>
@@ -35,7 +35,7 @@ abstract class SkyenetSessionServer(
 
     protected open val apiKey: String = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
 
-    val api = OpenAIClient(apiKey)
+    open val api = OpenAIClient(apiKey)
 
     private val spinner =
         """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
@@ -69,15 +69,46 @@ abstract class SkyenetSessionServer(
 
         context.addServlet(
             ServletHolder(
+                "appInfo",
+                object : HttpServlet() {
+                    override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+                        resp.contentType = "text/json"
+                        resp.status = HttpServletResponse.SC_OK
+                        resp.writer.write(
+                            SessionDataStorage.objectMapper.writeValueAsString(
+                                mapOf(
+                                    "applicationName" to applicationName,
+                                    "baseURL" to baseURL,
+                                    "model" to model,
+                                    "useHistory" to useHistory,
+                                    "maxHistoryCharacters" to maxHistoryCharacters,
+                                    "maxRetries" to maxRetries,
+                                    "autoRun" to autoRun,
+                                    "apiKey" to apiKey
+                                )
+                            )
+                        )
+                    }
+                }),
+            "/appInfo"
+        )
+
+        context.addServlet(
+            ServletHolder(
                 "sessionList",
                 object : HttpServlet() {
                     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
                         resp.contentType = "text/html"
                         resp.status = HttpServletResponse.SC_OK
                         val links = sessionDataStorage.listSessions().joinToString("<br/>") {
-                            """<a href="javascript:void(0)" onclick="window.location.href='/#$it';window.location.reload();">${sessionDataStorage.getSessionName(it)}</a><br/>"""
+                            """<a href="javascript:void(0)" onclick="window.location.href='/#$it';window.location.reload();">${
+                                sessionDataStorage.getSessionName(
+                                    it
+                                )
+                            }</a><br/>"""
                         }
-                        resp.writer.write("""
+                        resp.writer.write(
+                            """
                     |<html>
                     |<head>
                     |<title>Sessions</title>
@@ -86,7 +117,8 @@ abstract class SkyenetSessionServer(
                     |$links
                     |</body>
                     |</html>
-                """.trimMargin())
+                """.trimMargin()
+                        )
                     }
                 }),
             "/sessions"
@@ -97,7 +129,8 @@ abstract class SkyenetSessionServer(
         return SkyenetSession(sessionId)
     }
 
-    inner class SkyenetSession(sessionId: String) : SessionStateByID(sessionId, sessionDataStorage.loadMessages(sessionId)) {
+    inner class SkyenetSession(sessionId: String) :
+        SessionStateByID(sessionId, sessionDataStorage.loadMessages(sessionId)) {
         val hands = hands()
         val heart = heart(hands)
         val history: MutableMap<String, OperationStatus> by lazy {
@@ -191,7 +224,8 @@ abstract class SkyenetSessionServer(
                     |</div>
                     |""".trimMargin().trim()
                 //language=HTML
-                val triple = implement(messageTrail, describedInstruction, renderedResponse, codedInstruction, language, status)
+                val triple =
+                    implement(messageTrail, describedInstruction, renderedResponse, codedInstruction, language, status)
                 codedInstruction = triple.first
                 messageTrail = triple.second
                 renderedResponse = triple.third

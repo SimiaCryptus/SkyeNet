@@ -20,6 +20,7 @@ open class Brain(
     var yamlDescriber: YamlDescriber = YamlDescriber(),
     val language: String = "Kotlin",
     private val moderated: Boolean = true,
+    val apiDescription: String = apiDescription(hands, yamlDescriber),
 ) {
     val metrics: Map<String, Any>
         get() = hashMapOf(
@@ -47,7 +48,7 @@ open class Brain(
     protected fun _implement(prompt: String): String {
         if (verbose) log.info(prompt)
         val request = ChatRequest()
-        val apiDescription = apiDescription(hands, yamlDescriber)
+
         request.messages = (
                 getChatMessages(apiDescription) + listOf(
                     ChatMessage(
@@ -82,7 +83,6 @@ open class Brain(
     private fun _fixCommand(prompt: String, error: Exception, previousCode: String, output: String): String {
         if (verbose) log.info(prompt)
         val request = ChatRequest()
-        val apiDescription = apiDescription(hands, yamlDescriber)
         request.messages = (
                 listOf(
                     ChatMessage(
