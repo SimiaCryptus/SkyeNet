@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.Brain
+import com.simiacryptus.skyenet.Brain.Companion.extractCodeBlocks
 import com.simiacryptus.skyenet.Heart
 import com.simiacryptus.skyenet.body.SkyenetSessionServer
 import java.awt.Desktop
@@ -25,7 +26,8 @@ abstract class AgentDemoBase {
             language = heart.getLanguage(),
         )
         brain.model = "gpt-4-0314"
-        heart.run(brain.implement(command))
+        val response = brain.implement(command)
+        heart.run(response)
     }
 
     fun launchWebAgent() {

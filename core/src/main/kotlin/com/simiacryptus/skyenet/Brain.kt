@@ -36,26 +36,15 @@ open class Brain(
 
 
     open fun implement(prompt: String): String {
-        val response = _implement(prompt)
-        return extractCodeBlock(response)
-    }
-
-    open fun respondWithCode(prompt: String): Pair<String, List<Pair<String, String>>> {
-        val response = _implement(prompt)
-        return Pair(response, extractCodeBlocks(response))
-    }
-
-    protected fun _implement(prompt: String): String {
         if (verbose) log.info(prompt)
         val request = ChatRequest()
-
         request.messages = (
                 getChatMessages(apiDescription) + listOf(
                     ChatMessage(
                         ChatMessage.Role.user,
                         prompt
                     )
-                )).toTypedArray()
+                )).toTypedArray<ChatMessage>()
         totalApiDescriptionLength.addAndGet(apiDescription.length)
         val response = run(request)
         return response
@@ -75,12 +64,12 @@ open class Brain(
         )
     )
 
-    open fun fixCommand(prompt: String, previousCode: String, error: Exception, output: String): Pair<String, List<Pair<String, String>>> {
-        val response = _fixCommand(prompt, error, previousCode, output)
-        return Pair(response, extractCodeBlocks(response))
-    }
-
-    private fun _fixCommand(prompt: String, error: Exception, previousCode: String, output: String): String {
+    open fun fixCommand(
+        prompt: String,
+        previousCode: String,
+        error: Exception,
+        output: String
+    ): Pair<String, List<Pair<String, String>>> {
         if (verbose) log.info(prompt)
         val request = ChatRequest()
         request.messages = (
@@ -127,10 +116,10 @@ open class Brain(
                             |Correct the code and try again.
                             |""".trimMargin().trim()
                     )
-                )).toTypedArray()
+                )).toTypedArray<ChatMessage>()
         totalApiDescriptionLength.addAndGet(apiDescription.length)
         val response = run(request)
-        return response
+        return Pair(response, extractCodeBlocks(response))
     }
 
     private fun run(request: ChatRequest): String {

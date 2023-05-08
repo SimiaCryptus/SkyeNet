@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.Brain
+import com.simiacryptus.skyenet.Brain.Companion.extractCodeBlocks
 import com.simiacryptus.skyenet.Heart
 import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.skyenet.body.SessionServerUtil.getCode
@@ -37,21 +38,21 @@ abstract class SkyenetSessionServer(
 
     open val api = OpenAIClient(apiKey)
 
-    private val spinner =
+    open val spinner =
         """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
 
-    val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
+    open val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
 
     override fun configure(context: WebAppContext) {
         super.configure(context)
 
-        if (null != oauthConfig) object : AuthenticatedWebsite() {
+        if (null != oauthConfig) (object : AuthenticatedWebsite() {
             override val redirectUri = "$baseURL/oauth2callback"
             override val applicationName: String = this@SkyenetSessionServer.applicationName
             override fun getKey(): InputStream? {
                 return FileUtils.openInputStream(File(oauthConfig))
             }
-        }.configure(context)
+        }).configure(context)
 
         context.addServlet(
             ServletHolder(
@@ -101,23 +102,21 @@ abstract class SkyenetSessionServer(
                         resp.contentType = "text/html"
                         resp.status = HttpServletResponse.SC_OK
                         val links = sessionDataStorage.listSessions().joinToString("<br/>") {
-                            """<a href="javascript:void(0)" onclick="window.location.href='/#$it';window.location.reload();">${
-                                sessionDataStorage.getSessionName(
-                                    it
-                                )
-                            }</a><br/>"""
+                            """<a href="javascript:void(0)" onclick="window.location.href='/#$it';window.location.reload();">
+                            |${sessionDataStorage.getSessionName(it)}
+                            |</a><br/>""".trimMargin()
                         }
                         resp.writer.write(
                             """
-                    |<html>
-                    |<head>
-                    |<title>Sessions</title>
-                    |</head>
-                    |<body>
-                    |$links
-                    |</body>
-                    |</html>
-                """.trimMargin()
+                            |<html>
+                            |<head>
+                            |<title>Sessions</title>
+                            |</head>
+                            |<body>
+                            |$links
+                            |</body>
+                            |</html>
+                            """.trimMargin()
                         )
                     }
                 }),
@@ -129,14 +128,14 @@ abstract class SkyenetSessionServer(
         return SkyenetSession(sessionId)
     }
 
-    inner class SkyenetSession(sessionId: String) :
+    open inner class SkyenetSession(sessionId: String) :
         SessionStateByID(sessionId, sessionDataStorage.loadMessages(sessionId)) {
         val hands = hands()
         val heart = heart(hands)
         val history: MutableMap<String, OperationStatus> by lazy {
             sessionDataStorage.loadOperations(sessionId)
         }
-        val brain by lazy {
+        open val brain by lazy {
             object : Brain(
                 api = api,
                 hands = hands,
@@ -181,11 +180,11 @@ abstract class SkyenetSessionServer(
             }
         }
 
-        open fun SessionStateByID.run(
+        open fun run(
             describedInstruction: String,
         ) {
             OutputInterceptor.setupInterceptor()
-            logger.debug("$sessionId - Processing message: $describedInstruction")
+            logger.debug("${sessionId} - Processing message: $describedInstruction")
             val operationID = (0..5).map { ('a'..'z').random() }.joinToString("")
             val status = OperationStatus(
                 operationID = operationID,
@@ -195,95 +194,62 @@ abstract class SkyenetSessionServer(
             history[operationID] = status
             sessionDataStorage.updateOperationStatus(sessionId, operationID, status)
             var retries = maxRetries
-            var renderedResponse = ""
             var codedInstruction = ""
-            var messageTrail = """$operationID,
-            |<button class="cancel-button" data-id="$operationID">&times;</button>
-        """.trimMargin()
+            var messageTrail = """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
             val language = heart.getLanguage()
             if (describedInstruction.startsWith("!!!")) {
                 codedInstruction = describedInstruction.substringAfter("!!!")
                 retries = 0
                 //language=HTML
-                messageTrail += """
-                    |<div>
-                    |<h3>Code:</h3>
-                    |<pre><code class="language-$language">
-                    |$codedInstruction
-                    |</code></pre>
-                    |</div>
-                    |""".trimMargin().trim()
+                messageTrail += """<div><h3>Code:</h3><pre><code class="language-$language">$codedInstruction</code></pre></div>"""
             } else {
                 //language=HTML
-                messageTrail += """
-                    |<div>
-                    |<h3>Command:</h3>
-                    |<pre>
-                    |$describedInstruction
-                    |</pre>
-                    |</div>
-                    |""".trimMargin().trim()
+                messageTrail += """<div><h3>Command:</h3><pre>$describedInstruction</pre></div>"""
                 //language=HTML
                 val triple =
-                    implement(messageTrail, describedInstruction, renderedResponse, codedInstruction, language, status)
+                    implement(messageTrail, describedInstruction, language, status)
                 codedInstruction = triple.first
-                messageTrail = triple.second
-                renderedResponse = triple.third
-                //language=HTML
+                messageTrail += triple.second
             }
 
             try {
                 while (retries >= 0 && !status.cancelFlag.get()) {
                     try {
-                        send(
-                            """
-                            |$messageTrail
-                            |<div>
-                            |<button class="play-button" data-id="$operationID">▶</button>
-                            |</div>
-                        """.trimMargin().trim()
-                        )
                         if (status.cancelFlag.get()) {
-                            status.status = OperationStatus.OperationState.Complete
-                            sessionDataStorage.updateOperationStatus(sessionId, operationID, status)
+                            status.status = OperationStatus.OperationState.Cancelled
                             break
                         }
                         if (!autoRun) {
-                            logger.debug("$sessionId - Waiting for run")
+                            //language=HTML
+                            send("""$messageTrail<div><button class="play-button" data-id="$operationID">▶</button></div>""")
+                            logger.debug("${sessionId} - Waiting for run")
                             status.runSemaphore.acquire()
-                            logger.debug("$sessionId - Run received")
+                            logger.debug("${sessionId} - Run received")
                         }
                         if (status.cancelFlag.get()) {
-                            status.status = OperationStatus.OperationState.Complete
-                            sessionDataStorage.updateOperationStatus(sessionId, operationID, status)
-                            logger.debug("$sessionId - Cancelled")
+                            status.status = OperationStatus.OperationState.Cancelled
                             break
                         }
-                        messageTrail = execute(messageTrail, status, codedInstruction)
+                        send("""$messageTrail<div>$spinner</div>""")
+                        status.status = OperationStatus.OperationState.Running
+                        sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
+                        messageTrail += execute(messageTrail, status, codedInstruction)
+                        status.status = OperationStatus.OperationState.Complete
+                        send(messageTrail)
                         break
                     } catch (e: Exception) {
-                        logger.info("$sessionId - Error", e)
+                        logger.info("${sessionId} - Error", e)
                         //language=HTML
-                        messageTrail += """
-                                |<div>
-                                |<h3>Error:</h3>
-                                |<pre>
-                                |${toString(e)}
-                                |</pre>
-                                |</div>
-                                """.trimMargin().trim()
+                        messageTrail += """<div><h3>Error:</h3><pre>${toString(e)}</pre></div>"""
                         status.status = OperationStatus.OperationState.Error
                         status.resultOutput = OutputInterceptor.getThreadOutput()
                         status.resultValue = toString(e)
                         sessionDataStorage.updateOperationStatus(sessionId, operationID, status)
                         if (retries <= 0 || status.cancelFlag.get()) {
-                            messageTrail += """
-                                |<div>
-                                |<h3>Out of Retries!</h3>
-                                |</div>
-                                """.trimMargin().trim()
-                            logger.debug("$sessionId - Out of retries")
-                            send(messageTrail)
+                            //language=HTML
+                            messageTrail += """<div><h3>Out of Retries!</h3></div>"""
+                            logger.debug("${sessionId} - Out of retries")
+                            this@SkyenetSession.send(messageTrail)
                             break
                         } else {
                             retries--
@@ -293,27 +259,23 @@ abstract class SkyenetSessionServer(
                                 describedInstruction,
                                 codedInstruction,
                                 e,
-                                renderedResponse,
                                 language,
                                 status
                             )
                             codedInstruction = pair.first
-                            messageTrail = pair.second
+                            messageTrail += pair.second
+                            status.status = OperationStatus.OperationState.Implemented
+                            sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
                         }
                     }
                 }
             } catch (e: Exception) {
                 //language=HTML
-                messageTrail += """
-                    |<div>
-                    |<h3>Error:</h3>
-                    |<pre>
-                    |${e.message}
-                    |</pre>
-                    |</div>
-                """.trimMargin().trim()
-                logger.warn("$sessionId - Error: ${e.message}")
-                send(messageTrail)
+                messageTrail += """<div><h3>Error:</h3><pre>${e.message}</pre></div>"""
+                logger.warn("${sessionId} - Error: ${e.message}")
+                this@SkyenetSession.send(messageTrail)
+            } finally {
+                sessionDataStorage.updateOperationStatus(sessionId, operationID, status)
             }
         }
 
@@ -322,131 +284,66 @@ abstract class SkyenetSessionServer(
             super.setMessage(key, value)
         }
 
-        private fun implement(
+
+        open fun implement(
             messageTrail: String,
             describedInstruction: String,
-            renderedResponse: String,
-            codedInstruction: String,
             language: String,
             status: OperationStatus,
         ): Triple<String, String, String> {
-            var messageTrail1 = messageTrail
-            var renderedResponse1 = renderedResponse
-            var codedInstruction1 = codedInstruction
-            send(
-                """$messageTrail1
-                |<div>
-                |<h3>Code:</h3>
-                |$spinner
-                |</div>
-                |""".trimMargin().trim()
-            )
-            var respondWithCode = brain.respondWithCode(describedInstruction)
-            renderedResponse1 = getRenderedResponse(respondWithCode)
-            codedInstruction1 = getCode(language, respondWithCode.second)
-            logger.debug("$sessionId - Response: $renderedResponse1")
-            logger.debug("$sessionId - Code: $codedInstruction1")
-            status.responseText = renderedResponse1
-            status.responseCode = codedInstruction1
+            //language=HTML
+            send("""$messageTrail<div><h3>Code:</h3>$spinner</div>""")
+            val response = brain.implement(describedInstruction)
+            val codeBlocks = extractCodeBlocks(response)
+            val renderedResponse = getRenderedResponse(Pair(response, codeBlocks))
+            val codedInstruction = getCode(language, codeBlocks)
+            logger.debug("$sessionId - Response: $renderedResponse")
+            logger.debug("$sessionId - Code: $codedInstruction")
+            status.responseText = renderedResponse
+            status.responseCode = codedInstruction
             status.status = OperationStatus.OperationState.Implemented
             sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
-
             //language=HTML
-            messageTrail1 += """
-                |<div>
-                |<h3>Code:</h3>
-                |${renderedResponse1}
-                |</div>
-            """.trimMargin().trim()
-            return Triple(codedInstruction1, messageTrail1, renderedResponse1)
+            return Triple(codedInstruction, """<div><h3>Code:</h3>${renderedResponse}</div>""", renderedResponse)
         }
 
-        private fun fix(
+        open fun fix(
             messageTrail: String,
             describedInstruction: String,
             codedInstruction: String,
             e: Exception,
-            renderedResponse: String,
             language: String,
             status: OperationStatus,
         ): Pair<String, String> {
-            var messageTrail1 = messageTrail
-            var codedInstruction1 = codedInstruction
-            var renderedResponse1 = renderedResponse
-            send(
-                """
-                |$messageTrail1
-                |<div>
-                |<h3>New Code:</h3>
-                |$spinner
-                |</div>
-                |""".trimMargin().trim()
-            )
-            val respondWithCode =
-                brain.fixCommand(describedInstruction, codedInstruction1, e, OutputInterceptor.getThreadOutput())
-            renderedResponse1 = getRenderedResponse(respondWithCode)
-            codedInstruction1 = getCode(language, respondWithCode.second)
-            logger.debug("$sessionId - Response: $renderedResponse1")
-            logger.debug("$sessionId - Code: $codedInstruction1")
-            status.responseText = renderedResponse1
-            status.resultOutput = OutputInterceptor.getThreadOutput()
-            status.responseCode = codedInstruction1
-            status.status = OperationStatus.OperationState.Implemented
-            sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
             //language=HTML
-            messageTrail1 += """
-                |<div>
-                |<h3>New Code:</h3>
-                |$renderedResponse1
-                |</div>
-            """.trimMargin().trim()
-            return Pair(codedInstruction1, messageTrail1)
+            send("""$messageTrail<div><h3>New Code:</h3>$spinner</div>""")
+            val respondWithCode =
+                brain.fixCommand(describedInstruction, codedInstruction, e, status.resultOutput)
+            val renderedResponse = getRenderedResponse(respondWithCode)
+            val newCode = getCode(language, respondWithCode.second)
+            logger.debug("$sessionId - Response: $renderedResponse")
+            logger.debug("$sessionId - Code: $newCode")
+            status.responseText = renderedResponse
+            status.responseCode = newCode
+            //language=HTML
+            return Pair(newCode, """<div><h3>New Code:</h3>$renderedResponse</div>""")
         }
 
-        private fun execute(
+        open fun execute(
             messageTrail: String,
             status: OperationStatus,
             codedInstruction: String,
         ): String {
-            var messageTrail1 = messageTrail
-            send(
-                """
-                    |$messageTrail1
-                    |<div>
-                    |$spinner
-                    |</div>
-                """.trimMargin().trim()
-            )
-            status.status = OperationStatus.OperationState.Running
-            sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
-            logger.debug("$sessionId - Running $codedInstruction")
+            //language=HTML
+            logger.info("$sessionId - Running $codedInstruction")
             OutputInterceptor.clearThreadOutput()
             val result = heart.run(codedInstruction)
-            logger.debug("$sessionId - Result: $result")
-            val output = OutputInterceptor.getThreadOutput()
+            logger.info("$sessionId - Result: $result")
             status.resultValue = result.toString()
-            status.resultOutput = output
-            status.status = OperationStatus.OperationState.Complete
-            sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
+            status.resultOutput = OutputInterceptor.getThreadOutput()
             //language=HTML
-            messageTrail1 += """
-                |<div>
-                |<h3>Output:</h3>
-                |<pre>
-                |$output
-                |</pre>
-                |
-                |<h3>Returns:</h3>
-                |<pre>
-                |${result}
-                |</pre>
-                |</div>
-                """.trimMargin().trim()
-            send(messageTrail1)
-            return messageTrail1
+            return """<div><h3>Output:</h3><pre>${OutputInterceptor.getThreadOutput()}</pre><h3>Returns:</h3><pre>${result}</pre></div>"""
         }
-
-
     }
 
     open fun toString(e: Throwable): String {

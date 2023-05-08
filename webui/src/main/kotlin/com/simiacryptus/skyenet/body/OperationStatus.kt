@@ -17,7 +17,7 @@ class OperationStatus(
     @JsonIgnore val thread: Thread? = null,
 ) {
     enum class OperationState {
-        Pending, Implemented, Running, Complete, Error
+        Pending, Implemented, Running, Complete, Cancelled, Error
     }
 
     fun onMessage(code: String) {
