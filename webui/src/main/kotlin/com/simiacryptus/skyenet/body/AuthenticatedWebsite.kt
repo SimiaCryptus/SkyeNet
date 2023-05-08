@@ -1,4 +1,5 @@
 package com.simiacryptus.skyenet.body
+
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
@@ -51,28 +52,58 @@ abstract class AuthenticatedWebsite {
         }
     }
 
-    open fun configure(webAppContext: WebAppContext) {
-        val googleLoginServletHolder = ServletHolder("googleLogin", GoogleLoginServlet())
-        webAppContext.addServlet(googleLoginServletHolder, "/googleLogin")
-        val oauth2CallbackServletHolder = ServletHolder("oauth2callback", OAuth2CallbackServlet())
-        webAppContext.addServlet(oauth2CallbackServletHolder, "/oauth2callback")
-        webAppContext.addFilter(FilterHolder(SessionIdFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
+    /**
+     * Configures the given `WebAppContext` to handle authentication via Google OAuth2.
+     * Adds the `GoogleLoginServlet` to handle the login process at `/googleLogin`.
+     * Adds the `OAuth2CallbackServlet` to handle the callback from Google at `/oauth2callback`.
+     * Adds a `SessionIdFilter` to the context to ensure that session IDs are properly handled.
+     *
+     * @param context the `WebAppContext` to configure
+     */
+    open fun configure(context: WebAppContext) {
+        // Create a ServletHolder for the GoogleLoginServlet and add it to the context
+        val googleServletHolder = ServletHolder("googleLogin", GoogleLoginServlet())
+        context.addServlet(googleServletHolder, "/googleLogin")
+        // Create a ServletHolder for the OAuth2CallbackServlet and add it to the context
+        val callbackServletHolder = ServletHolder("oauth2callback", OAuth2CallbackServlet())
+        context.addServlet(callbackServletHolder, "/oauth2callback")
+        // Add a SessionIdFilter to the context that intercepts every request
+        context.addFilter(FilterHolder(SessionIdFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
     }
 
     inner class SessionIdFilter : Filter {
+
         override fun init(filterConfig: FilterConfig?) {}
+
+        /**
+         * Overrides the doFilter method to intercept incoming requests and responses,
+         * check if the request is for the "/googleLogin" or "/oauth2callback" URLs,
+         * and redirects to the "/googleLogin" page if the user session is not active.
+         *
+         * @param request The ServletRequest object that represents the client request
+         * @param response The ServletResponse object that represents the client response
+         * @param chain The FilterChain object that represents the filter chain
+         * @throws IOException if an I/O error occurs
+         * @throws ServletException if a servlet-specific error occurs
+         */
         override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
+            // Check if the request is an HTTP request and the response is an HTTP response
             if (request is HttpServletRequest && response is HttpServletResponse) {
+                // Get the path of the request URI
                 val path = request.requestURI
+                // Check if the path does not match /googleLogin or /oauth2callback
                 if (setOf("/googleLogin", "/oauth2callback").none { path.startsWith(it) }) {
+                    // Get the sessionId cookie from the request
                     val sessionIdCookie = request.cookies?.firstOrNull { it.name == "sessionId" }
+                    // Check if the sessionId is null or is not contained in the users map
                     if (sessionIdCookie == null || !users.containsKey(sessionIdCookie.value)) {
+                        // Redirect to the /googleLogin endpoint
                         response.sendRedirect("/googleLogin")
                         return
                     }
                 }
             }
-
+            // Call the doFilter method of the next filter in the chain
             chain.doFilter(request, response)
         }
 
@@ -87,7 +118,8 @@ abstract class AuthenticatedWebsite {
             if (code != null) {
                 val tokenResponse = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute()
                 val credential = flow.createAndStoreCredential(tokenResponse, null)
-                val oauth2 = Oauth2.Builder(httpTransport, jsonFactory, credential).setApplicationName(applicationName).build()
+                val oauth2 =
+                    Oauth2.Builder(httpTransport, jsonFactory, credential).setApplicationName(applicationName).build()
                 val userInfo: Userinfo = oauth2.userinfo().get().execute()
                 val sessionID = UUID.randomUUID().toString()
                 users[sessionID] = userInfo

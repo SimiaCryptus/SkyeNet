@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.7.21"
+    id("org.jetbrains.kotlin.jvm") version "1.8.21"
     `maven-publish`
     id("signing")
 }
@@ -26,11 +26,10 @@ kotlin {
     jvmToolchain(11)
 }
 
-val kotlin_version = "1.7.21"
+val kotlin_version = "1.8.21"
 dependencies {
 
-//    implementation("com.simiacryptus:JoePenai:1.0.8")
-    implementation("com.simiacryptus:joe-penai:1.0.7")
+    implementation("com.simiacryptus:joe-penai:1.0.9")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
 

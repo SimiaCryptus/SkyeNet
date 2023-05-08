@@ -21,7 +21,7 @@ class LoggingInterceptor(
             }
             return withIntercept(
                 stringBuffer = stringBuffer,
-                loggers = *loggers.toTypedArray(),
+                loggers = loggers.toTypedArray(),
                 fn = fn
             )
         }
@@ -62,7 +62,7 @@ class LoggingInterceptor(
 
     override fun append(event: ILoggingEvent) {
         stringBuffer.append(event.formattedMessage)
-        event.throwableProxy?.let { throwableProxy ->
+        event.throwableProxy?.let {
             stringBuffer.append(System.lineSeparator())
             stringBuffer.append(ch.qos.logback.classic.pattern.ThrowableProxyConverter().convert(event))
         }

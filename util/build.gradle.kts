@@ -10,7 +10,7 @@ plugins {
     `java-library`
     `maven-publish`
     id("signing")
-    id("org.jetbrains.kotlin.jvm") version "1.7.21"
+    id("org.jetbrains.kotlin.jvm") version "1.8.21"
 }
 
 repositories {
@@ -27,13 +27,11 @@ kotlin {
 //    jvmToolchain(17)
 }
 
-val kotlin_version = "1.7.21"
+val kotlin_version = "1.8.21"
 val jetty_version = "11.0.15"
-val scala_version = "2.13.8"
 dependencies {
 
-//    implementation("com.simiacryptus:JoePenai:1.0.8")
-    implementation("com.simiacryptus:joe-penai:1.0.7")
+    implementation("com.simiacryptus:joe-penai:1.0.9")
 
     implementation(project(":core"))
     implementation(project(":webui"))

@@ -2,7 +2,6 @@ package com.simiacryptus.skyenet.body
 
 import org.eclipse.jetty.util.URIUtil
 import org.eclipse.jetty.util.resource.Resource
-import org.eclipse.jetty.util.thread.AutoLock
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
@@ -102,8 +101,8 @@ class ClasspathResource(
         return url.toExternalForm().hashCode()
     }
 
-    override fun equals(o: Any?): Boolean {
-        return o is ClasspathResource && url.toExternalForm() == o.url.toExternalForm()
+    override fun equals(other: Any?): Boolean {
+        return other is ClasspathResource && url.toExternalForm() == other.url.toExternalForm()
     }
 
     @Throws(MalformedURLException::class)
