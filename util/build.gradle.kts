@@ -31,7 +31,7 @@ val kotlin_version = "1.8.21"
 val jetty_version = "11.0.15"
 dependencies {
 
-    implementation("com.simiacryptus:joe-penai:1.0.9")
+    implementation("com.simiacryptus:joe-penai:1.0.10")
 
     implementation(project(":core"))
     implementation(project(":webui"))
@@ -44,8 +44,8 @@ dependencies {
 
     implementation("org.eclipse.jetty:jetty-server:$jetty_version")
     implementation("org.slf4j:slf4j-api:2.0.5")
-    implementation("ch.qos.logback:logback-classic:1.2.9")
-    implementation("ch.qos.logback:logback-core:1.2.9")
+    implementation("ch.qos.logback:logback-classic:1.4.7")
+    implementation("ch.qos.logback:logback-core:1.4.7")
     implementation("commons-io:commons-io:2.11.0")
 
     testImplementation(kotlin("script-runtime"))

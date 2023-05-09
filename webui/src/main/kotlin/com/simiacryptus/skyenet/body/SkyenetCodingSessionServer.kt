@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.body
 
-import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.Brain.Companion.extractCodeBlocks
 import com.simiacryptus.skyenet.Heart
@@ -18,123 +17,60 @@ import org.eclipse.jetty.webapp.WebAppContext
 import java.io.File
 import java.io.InputStream
 
-abstract class SkyenetSessionServer(
-    val applicationName: String,
+abstract class SkyenetCodingSessionServer(
+    override val applicationName: String,
     val yamlDescriber: YamlDescriber = YamlDescriber(),
-    val oauthConfig: String? = null,
+    override val oauthConfig: String? = null,
     val autoRun: Boolean = false,
     resourceBase: String = "simpleSession",
-    private val maxRetries: Int = 5,
-    private var maxHistoryCharacters: Int = 4000,
-    val baseURL: String = "http://localhost:8080",
+    val maxRetries: Int = 5,
+    var maxHistoryCharacters: Int = 4000,
+    override val baseURL: String = "http://localhost:8080",
     val model: String = "gpt-3.5-turbo",
     var useHistory: Boolean = true,
-) : WebSocketServer(resourceBase) {
+) : SkyenetSessionServerBase(
+    applicationName = applicationName,
+    oauthConfig = oauthConfig,
+    resourceBase = resourceBase,
+    baseURL = baseURL,
+) {
 
     abstract fun hands(): java.util.Map<String, Object>
     abstract fun heart(hands: java.util.Map<String, Object>): Heart
-
-    protected open val apiKey: String = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
-
-    open val api = OpenAIClient(apiKey)
-
-    open val spinner =
-        """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
-
-    open val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
 
     override fun configure(context: WebAppContext) {
         super.configure(context)
 
         if (null != oauthConfig) (object : AuthenticatedWebsite() {
             override val redirectUri = "$baseURL/oauth2callback"
-            override val applicationName: String = this@SkyenetSessionServer.applicationName
+            override val applicationName: String = this@SkyenetCodingSessionServer.applicationName
             override fun getKey(): InputStream? {
                 return FileUtils.openInputStream(File(oauthConfig))
             }
         }).configure(context)
 
-        context.addServlet(
-            ServletHolder(
-                "yamlDescriptor",
-                object : HttpServlet() {
-                    override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-                        resp.contentType = "text/plain"
-                        resp.status = HttpServletResponse.SC_OK
-                        val apiDescription = Brain.apiDescription(hands(), yamlDescriber)
-                        resp.writer.write(apiDescription)
-                    }
-                }),
-            "/yamlDescriptor"
-        )
-
-        context.addServlet(
-            ServletHolder(
-                "appInfo",
-                object : HttpServlet() {
-                    override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-                        resp.contentType = "text/json"
-                        resp.status = HttpServletResponse.SC_OK
-                        resp.writer.write(
-                            SessionDataStorage.objectMapper.writeValueAsString(
-                                mapOf(
-                                    "applicationName" to applicationName,
-                                    "baseURL" to baseURL,
-                                    "model" to model,
-                                    "useHistory" to useHistory,
-                                    "maxHistoryCharacters" to maxHistoryCharacters,
-                                    "maxRetries" to maxRetries,
-                                    "autoRun" to autoRun,
-                                    "apiKey" to apiKey
-                                )
-                            )
-                        )
-                    }
-                }),
-            "/appInfo"
-        )
-
-        context.addServlet(
-            ServletHolder(
-                "sessionList",
-                object : HttpServlet() {
-                    override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-                        resp.contentType = "text/html"
-                        resp.status = HttpServletResponse.SC_OK
-                        val links = sessionDataStorage.listSessions().joinToString("<br/>") {
-                            """<a href="javascript:void(0)" onclick="window.location.href='/#$it';window.location.reload();">
-                            |${sessionDataStorage.getSessionName(it)}
-                            |</a><br/>""".trimMargin()
-                        }
-                        resp.writer.write(
-                            """
-                            |<html>
-                            |<head>
-                            |<title>Sessions</title>
-                            |</head>
-                            |<body>
-                            |$links
-                            |</body>
-                            |</html>
-                            """.trimMargin()
-                        )
-                    }
-                }),
-            "/sessions"
-        )
+        context.addServlet(yamlDescriptor, "/yamlDescriptor")
     }
+
+    protected open val yamlDescriptor = ServletHolder(
+        "yamlDescriptor",
+        object : HttpServlet() {
+            override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+                resp.contentType = "text/plain"
+                resp.status = HttpServletResponse.SC_OK
+                val apiDescription = Brain.apiDescription(hands(), yamlDescriber)
+                resp.writer.write(apiDescription)
+            }
+        })
 
     override fun newSession(sessionId: String): SessionState {
         return SkyenetSession(sessionId)
     }
 
     open inner class SkyenetSession(sessionId: String) :
-        SessionStateByID(sessionId, sessionDataStorage.loadMessages(sessionId)) {
+        SkyenetSessionBase(sessionId) {
         val hands = hands()
         val heart = heart(hands)
-        val history: MutableMap<String, OperationStatus> by lazy {
-            sessionDataStorage.loadOperations(sessionId)
-        }
         open val brain by lazy {
             object : Brain(
                 api = api,
@@ -157,30 +93,7 @@ abstract class SkyenetSessionServer(
             }
         }
 
-        override fun onWebSocketText(socket: MessageWebSocket, describedInstruction: String) {
-            logger.debug("$sessionId - Received message: $describedInstruction")
-            try {
-                val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
-                if (opCmdPattern.matches(describedInstruction)) {
-                    val id = describedInstruction.substring(1, describedInstruction.indexOf(","))
-                    val code = describedInstruction.substring(id.length + 2)
-                    history[id]?.onMessage(code)
-                    sessionDataStorage.updateOperationStatus(sessionId, id, history[id]!!)
-                } else {
-                    Thread {
-                        try {
-                            run(describedInstruction)
-                        } catch (e: Exception) {
-                            logger.warn("$sessionId - Error processing message: $describedInstruction", e)
-                        }
-                    }.start()
-                }
-            } catch (e: Exception) {
-                logger.warn("$sessionId - Error processing message: $describedInstruction", e)
-            }
-        }
-
-        open fun run(
+        override fun run(
             describedInstruction: String,
         ) {
             OutputInterceptor.setupInterceptor()
@@ -346,14 +259,8 @@ abstract class SkyenetSessionServer(
         }
     }
 
-    open fun toString(e: Throwable): String {
-        val sw = java.io.StringWriter()
-        e.printStackTrace(java.io.PrintWriter(sw))
-        return sw.toString()
-    }
-
     companion object {
-        val logger = org.slf4j.LoggerFactory.getLogger(SkyenetSessionServer::class.java)
+        val logger = org.slf4j.LoggerFactory.getLogger(SkyenetCodingSessionServer::class.java)
     }
 
 }

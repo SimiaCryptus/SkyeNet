@@ -1,0 +1,249 @@
+package com.simiacryptus.skyenet.body
+
+import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.util.YamlDescriber
+import jakarta.servlet.http.HttpServlet
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import org.apache.commons.io.FileUtils
+import org.eclipse.jetty.servlet.ServletHolder
+import org.eclipse.jetty.webapp.WebAppContext
+import java.io.File
+import java.io.InputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+
+abstract class SkyenetSessionServerBase(
+    open val applicationName: String,
+    open val oauthConfig: String? = null,
+    resourceBase: String = "simpleSession",
+    open val baseURL: String = "http://localhost:8080",
+) : WebSocketServer(resourceBase) {
+
+    protected open val apiKey: String = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
+
+    open val api = OpenAIClient(apiKey)
+
+    open val spinner =
+        """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
+
+    open val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
+
+    override fun configure(context: WebAppContext) {
+        super.configure(context)
+
+        if (null != oauthConfig) (object : AuthenticatedWebsite() {
+            override val redirectUri = "$baseURL/oauth2callback"
+            override val applicationName: String = this@SkyenetSessionServerBase.applicationName
+            override fun getKey(): InputStream? {
+                return FileUtils.openInputStream(File(oauthConfig))
+            }
+        }).configure(context)
+
+        context.addServlet(appInfo, "/appInfo")
+        context.addServlet(fileIndex, "/fileIndex/*")
+        context.addServlet(fileZip, "/fileZip")
+        context.addServlet(sessionList, "/sessions")
+    }
+
+    protected open val fileZip = ServletHolder(
+        "fileZip",
+        object : HttpServlet() {
+            override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+                val sessionID = req.getParameter("session")
+                val path = req.parameterMap.get("path")?.find { it.isNotBlank() } ?: "/"
+                val sessionDir = sessionDataStorage.getSessionDir(sessionID)
+                val file = File(sessionDir, path)
+                val zipFile = File.createTempFile("skynet", ".zip")
+                try {
+                    zipFile.deleteOnExit()
+                    zipFile.outputStream().use { outputStream ->
+                        val zip = ZipOutputStream(outputStream)
+                        write(file, file, zip)
+                        zip.close()
+                    }
+                    resp.contentType = "application/zip"
+                    resp.status = HttpServletResponse.SC_OK
+                    resp.outputStream.write(zipFile.readBytes())
+                } finally {
+                    zipFile.delete()
+                }
+            }
+
+            private fun write(basePath: File, file: File, zip: ZipOutputStream) {
+                if (file.isFile) {
+                    val path = basePath.toURI().relativize(file.toURI()).path
+                    zip.putNextEntry(ZipEntry(path))
+                    zip.write(file.readBytes())
+                    zip.closeEntry()
+                } else {
+                    file.listFiles()?.forEach {
+                        write(basePath, it, zip)
+                    }
+                }
+            }
+        })
+
+    protected open val fileIndex = ServletHolder(
+        "fileIndex",
+        object : HttpServlet() {
+            override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+                val path = req.pathInfo ?: "/"
+                val pathSegments = path.split("/").filter { it.isNotBlank() }
+                pathSegments.forEach {
+                    if (it == "..") throw IllegalArgumentException("Invalid path")
+                }
+                val sessionID = pathSegments.first()
+                val sessionDir = sessionDataStorage.getSessionDir(sessionID)
+                val filePath = pathSegments.drop(1).joinToString("/")
+                val file = File(sessionDir, filePath)
+                if (file.isFile) {
+                    resp.contentType = if (file.name.endsWith(".html")) {
+                        "text/html"
+                    } else if (file.name.endsWith(".json")) {
+                        "application/json"
+                    } else if (file.name.endsWith(".js")) {
+                        "application/json"
+                    } else if (file.name.endsWith(".png")) {
+                        "image/png"
+                    } else if (file.name.endsWith(".jpg")) {
+                        "image/jpeg"
+                    } else if (file.name.endsWith(".jpeg")) {
+                        "image/jpeg"
+                    } else if (file.name.endsWith(".gif")) {
+                        "image/gif"
+                    } else if (file.name.endsWith(".svg")) {
+                        "image/svg+xml"
+                    } else if (file.name.endsWith(".css")) {
+                        "text/css"
+                    } else {
+                        "text/plain"
+                    }
+                    resp.status = HttpServletResponse.SC_OK
+                    resp.writer.write(file.readText())
+                } else {
+                    resp.contentType = "text/html"
+                    resp.status = HttpServletResponse.SC_OK
+                    val files = file.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
+                        """<a href="/fileIndex/$sessionID${it.path.substring(sessionDir.path.length)}">${it.name}</a>"""
+                    } ?: ""
+                    val folders = file.listFiles()?.filter { !it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
+                        """<a href="/fileIndex/$sessionID${it.path.substring(sessionDir.path.length)}">${it.name}</a>"""
+                    } ?: ""
+                    resp.writer.write(
+                        """
+                        |<html>
+                        |<head>
+                        |<title>Files</title>
+                        |</head>
+                        |<body>
+                        |<h1>Archive</h1>
+                        |<a href="/fileZip?session=$sessionID&path=$path">ZIP</a>
+                        |<h1>Folders</h1>
+                        |$folders
+                        |<h1>Files</h1>
+                        |$files
+                        |</body>
+                        |</html>
+                        """.trimMargin()
+                    )
+                }
+            }
+        })
+
+    protected open val sessionList = ServletHolder(
+        "sessionList",
+        object : HttpServlet() {
+            override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+                resp.contentType = "text/html"
+                resp.status = HttpServletResponse.SC_OK
+                val links = sessionDataStorage.listSessions().joinToString("<br/>") {
+                    """<a href="javascript:void(0)" onclick="window.location.href='/#$it';window.location.reload();">
+                                |${sessionDataStorage.getSessionName(it)}
+                                |</a><br/>""".trimMargin()
+                }
+                resp.writer.write(
+                    """
+                                |<html>
+                                |<head>
+                                |<title>Sessions</title>
+                                |</head>
+                                |<body>
+                                |$links
+                                |</body>
+                                |</html>
+                                """.trimMargin()
+                )
+            }
+        })
+
+
+    protected open val appInfo = ServletHolder(
+        "appInfo",
+        object : HttpServlet() {
+            override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+                resp.contentType = "text/json"
+                resp.status = HttpServletResponse.SC_OK
+                resp.writer.write(
+                    JsonUtil.objectMapper().writeValueAsString(
+                        mapOf(
+                            "applicationName" to applicationName,
+                            "baseURL" to baseURL,
+                        )
+                    )
+                )
+            }
+        })
+
+    open fun toString(e: Throwable): String {
+        val sw = java.io.StringWriter()
+        e.printStackTrace(java.io.PrintWriter(sw))
+        return sw.toString()
+    }
+
+    companion object {
+        val logger = org.slf4j.LoggerFactory.getLogger(SkyenetSessionServerBase::class.java)
+    }
+    abstract inner class SkyenetSessionBase(sessionId: String) :
+        SessionStateByID(sessionId, sessionDataStorage.loadMessages(sessionId)) {
+        val history: MutableMap<String, OperationStatus> by lazy {
+            sessionDataStorage.loadOperations(sessionId)
+        }
+
+        override fun onWebSocketText(socket: MessageWebSocket, describedInstruction: String) {
+            SkyenetCodingSessionServer.logger.debug("$sessionId - Received message: $describedInstruction")
+            try {
+                val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
+                if (opCmdPattern.matches(describedInstruction)) {
+                    val id = describedInstruction.substring(1, describedInstruction.indexOf(","))
+                    val code = describedInstruction.substring(id.length + 2)
+                    history[id]?.onMessage(code)
+                    sessionDataStorage.updateOperationStatus(sessionId, id, history[id]!!)
+                } else {
+                    Thread {
+                        try {
+                            run(describedInstruction)
+                        } catch (e: Exception) {
+                            SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $describedInstruction", e)
+                        }
+                    }.start()
+                }
+            } catch (e: Exception) {
+                SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $describedInstruction", e)
+            }
+        }
+
+        abstract fun run(
+            describedInstruction: String,
+        )
+
+        override fun setMessage(key: String, value: String) {
+            sessionDataStorage.updateMessage(sessionId, key, value)
+            super.setMessage(key, value)
+        }
+
+    }
+
+}
+

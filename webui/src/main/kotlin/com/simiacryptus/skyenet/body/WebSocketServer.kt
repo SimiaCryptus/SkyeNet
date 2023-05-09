@@ -99,7 +99,7 @@ abstract class WebSocketServer(val resourceBase: String) {
 
         override fun onWebSocketConnect(session: Session) {
             super.onWebSocketConnect(session)
-            logger.debug("$sessionId - Socket connected: $session")
+            logger.info("$sessionId - Socket connected: $session")
             sessionState.addSocket(this)
             sessionState.getReplay().forEach {
                 try {
@@ -123,7 +123,7 @@ abstract class WebSocketServer(val resourceBase: String) {
 
         override fun onWebSocketError(cause: Throwable) {
             super.onWebSocketError(cause)
-            logger.debug("$sessionId - WebSocket error: $cause")
+            logger.info("$sessionId - WebSocket error: $cause")
         }
     }
 
@@ -131,11 +131,16 @@ abstract class WebSocketServer(val resourceBase: String) {
         override fun configure(factory: JettyWebSocketServletFactory) {
             factory.setCreator { req, resp ->
                 val sessionId = req.parameterMap["sessionId"]?.firstOrNull()
-                if (null == sessionId) {
-                    logger.debug("No session ID provided")
-                    return@setCreator null
+                return@setCreator if (null == sessionId) {
+                    logger.warn("No session ID provided")
+                    null
+                } else {
+                    logger.info("Creating socket for $sessionId")
+                    MessageWebSocket(sessionId, stateCache.getOrPut(sessionId) {
+                        logger.info("Creating session for $sessionId")
+                        newSession(sessionId)
+                    })
                 }
-                MessageWebSocket(sessionId, stateCache.getOrPut(sessionId) { newSession(sessionId) })
             }
         }
     }

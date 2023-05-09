@@ -37,8 +37,6 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
     implementation("org.slf4j:slf4j-api:2.0.5")
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.9")
-    runtimeOnly("ch.qos.logback:logback-core:1.2.9")
     implementation("commons-io:commons-io:2.11.0")
 
     testImplementation(kotlin("script-runtime"))

@@ -29,13 +29,11 @@ kotlin {
 val kotlin_version = "1.8.21"
 dependencies {
 
-    implementation("com.simiacryptus:joe-penai:1.0.9")
+    implementation("com.simiacryptus:joe-penai:1.0.10")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
 
     implementation("org.slf4j:slf4j-api:2.0.5")
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.9")
-    runtimeOnly("ch.qos.logback:logback-core:1.2.9")
 
     testImplementation(kotlin("script-runtime"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")

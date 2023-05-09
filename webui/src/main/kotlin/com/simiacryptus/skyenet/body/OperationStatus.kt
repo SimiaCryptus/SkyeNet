@@ -1,19 +1,21 @@
 package com.simiacryptus.skyenet.body
 
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.simiacryptus.openai.ChatMessage
 
 
-class OperationStatus(
-    val created: Long = System.currentTimeMillis(),
-    val language: String = "",
-    val operationID: String = "",
-    val instruction: String = "",
-    var status: OperationState = OperationState.Pending,
-    var responseText: String = "",
-    var responseCode: String = "",
-    var resultValue: String = "",
-    var resultOutput: String = "",
+class OperationStatus @JsonCreator constructor(
+    @JsonProperty("created") val created: Long = System.currentTimeMillis(),
+    @JsonProperty("language") val language: String = "",
+    @JsonProperty("operationID") val operationID: String = "",
+    @JsonProperty("instruction") val instruction: String = "",
+    @JsonProperty("status") var status: OperationState = OperationState.Pending,
+    @JsonProperty("responseText") var responseText: String = "",
+    @JsonProperty("responseCode") var responseCode: String = "",
+    @JsonProperty("resultValue") var resultValue: String = "",
+    @JsonProperty("resultOutput") var resultOutput: String = "",
     @JsonIgnore val thread: Thread? = null,
 ) {
     enum class OperationState {
@@ -23,13 +25,13 @@ class OperationStatus(
     fun onMessage(code: String) {
         if (code.lowercase() == "run") {
             runSemaphore.release()
-            SkyenetSessionServer.logger.debug("$operationID - Running")
+            SkyenetCodingSessionServer.logger.debug("$operationID - Running")
         } else if (code.lowercase() == "stop") {
             cancelFlag.set(true)
             thread?.interrupt()
-            SkyenetSessionServer.logger.debug("$operationID - Stopping")
+            SkyenetCodingSessionServer.logger.debug("$operationID - Stopping")
         } else {
-            SkyenetSessionServer.logger.warn("$operationID - Unknown command: $code")
+            SkyenetCodingSessionServer.logger.warn("$operationID - Unknown command: $code")
         }
     }
 
