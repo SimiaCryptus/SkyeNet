@@ -21,7 +21,7 @@ import java.net.URI
 import java.util.*
 import java.util.concurrent.Executors
 
-object ProjectSpecificationInterviewDemo {
+object SoftwareProjectGenerator {
 
     @Description("A fully specified software project")
     data class ProjectSpecification(
@@ -71,19 +71,19 @@ object ProjectSpecificationInterviewDemo {
         val description: String? = null,
         @Description("The programming language used for the file")
         val language: String? = null,
-        @Description("Functions or classes defined in the file; implementation requirements")
+        @Description("Functions and symbols defined in the file; implementation requirements")
         val features: List<String>? = null,
-        @Description("A list of file paths that this file depends on")
+        @Description("A list of file paths that this file depends on; these files must be implemented first and will be passed to the implementation function")
         val imports: List<String>? = null,
     )
 
     data class FileImplementation(
         @Description("Project-relative path to the file")
         val name: String? = null,
+        @Description("A list of all symbols (function signatures, classes, constants, etc) defined in the file that are available to other files")
+        val exports: List<String>? = null,
         @Description("Fully-implemented file contents")
         val code: String? = null,
-        @Description("Symbols, functions, or classes defined in the file")
-        val exports: List<String>? = null,
     )
 
     val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
@@ -179,7 +179,7 @@ object ProjectSpecificationInterviewDemo {
     private fun newID() = (0..5).map { ('a'..'z').random() }.joinToString("")
 
     val api = OpenAIClient(File(File(System.getProperty("user.home")), "openai.key").readText().trim())
-    val log = org.slf4j.LoggerFactory.getLogger(ProjectSpecificationInterviewDemo::class.java)!!
+    val log = org.slf4j.LoggerFactory.getLogger(SoftwareProjectGenerator::class.java)!!
     var sessionDataStorage: SessionDataStorage? = null
     const val port = 8081
     const val baseURL = "http://localhost:$port"

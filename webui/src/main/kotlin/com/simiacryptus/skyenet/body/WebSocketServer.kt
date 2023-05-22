@@ -35,7 +35,7 @@ abstract class WebSocketServer(val resourceBase: String) {
 
         override fun onWebSocketConnect(session: Session) {
             super.onWebSocketConnect(session)
-            logger.info("$sessionId - Socket connected: $session")
+            logger.debug("$sessionId - Socket connected: $session")
             sessionState.addSocket(this)
             sessionState.getReplay().forEach {
                 try {
@@ -72,9 +72,9 @@ abstract class WebSocketServer(val resourceBase: String) {
                     logger.warn("No session ID provided")
                     null
                 } else {
-                    logger.info("Creating socket for $sessionId")
+                    logger.debug("Creating socket for $sessionId")
                     MessageWebSocket(sessionId, stateCache.getOrPut(sessionId) {
-                        logger.info("Creating session for $sessionId")
+                        logger.debug("Creating session for $sessionId")
                         newSession(sessionId)
                     })
                 }
