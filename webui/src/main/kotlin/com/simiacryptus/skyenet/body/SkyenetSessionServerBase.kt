@@ -2,7 +2,6 @@ package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.util.JsonUtil
-import com.simiacryptus.util.YamlDescriber
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -19,6 +18,8 @@ abstract class SkyenetSessionServerBase(
     open val oauthConfig: String? = null,
     resourceBase: String = "simpleSession",
     open val baseURL: String = "http://localhost:8080",
+    val temperature: Double = 0.1,
+    val model : String = "gpt-3.5-turbo",
 ) : WebSocketServer(resourceBase) {
 
     protected open val apiKey: String = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
@@ -33,12 +34,8 @@ abstract class SkyenetSessionServerBase(
     override fun configure(context: WebAppContext) {
         super.configure(context)
 
-        if (null != oauthConfig) (object : AuthenticatedWebsite() {
-            override val redirectUri = "$baseURL/oauth2callback"
-            override val applicationName: String = this@SkyenetSessionServerBase.applicationName
-            override fun getKey(): InputStream? {
-                return FileUtils.openInputStream(File(oauthConfig))
-            }
+        if (null != oauthConfig) (AuthenticatedWebsite("$baseURL/oauth2callback", this@SkyenetSessionServerBase.applicationName) {
+            FileUtils.openInputStream(File(oauthConfig))
         }).configure(context)
 
         context.addServlet(appInfo, "/appInfo")
@@ -196,53 +193,8 @@ abstract class SkyenetSessionServerBase(
             }
         })
 
-    open fun toString(e: Throwable): String {
-        val sw = java.io.StringWriter()
-        e.printStackTrace(java.io.PrintWriter(sw))
-        return sw.toString()
-    }
-
     companion object {
         val logger = org.slf4j.LoggerFactory.getLogger(SkyenetSessionServerBase::class.java)
-    }
-    abstract inner class SkyenetSessionBase(sessionId: String) :
-        SessionStateByID(sessionId, sessionDataStorage.loadMessages(sessionId)) {
-        val history: MutableMap<String, OperationStatus> by lazy {
-            sessionDataStorage.loadOperations(sessionId)
-        }
-
-        override fun onWebSocketText(socket: MessageWebSocket, describedInstruction: String) {
-            SkyenetCodingSessionServer.logger.debug("$sessionId - Received message: $describedInstruction")
-            try {
-                val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
-                if (opCmdPattern.matches(describedInstruction)) {
-                    val id = describedInstruction.substring(1, describedInstruction.indexOf(","))
-                    val code = describedInstruction.substring(id.length + 2)
-                    history[id]?.onMessage(code)
-                    sessionDataStorage.updateOperationStatus(sessionId, id, history[id]!!)
-                } else {
-                    Thread {
-                        try {
-                            run(describedInstruction)
-                        } catch (e: Exception) {
-                            SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $describedInstruction", e)
-                        }
-                    }.start()
-                }
-            } catch (e: Exception) {
-                SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $describedInstruction", e)
-            }
-        }
-
-        abstract fun run(
-            describedInstruction: String,
-        )
-
-        override fun setMessage(key: String, value: String) {
-            sessionDataStorage.updateMessage(sessionId, key, value)
-            super.setMessage(key, value)
-        }
-
     }
 
 }

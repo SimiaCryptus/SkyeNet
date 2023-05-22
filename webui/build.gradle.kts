@@ -59,6 +59,7 @@ dependencies {
 
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("commons-io:commons-io:2.11.0")
+    testImplementation("org.slf4j:slf4j-simple:2.0.5")
 
     testImplementation(kotlin("script-runtime"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")

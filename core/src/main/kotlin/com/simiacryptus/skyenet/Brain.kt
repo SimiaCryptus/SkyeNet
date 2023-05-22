@@ -4,6 +4,7 @@ import com.simiacryptus.openai.ChatMessage
 import com.simiacryptus.openai.ChatRequest
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.util.JsonUtil.toJson
+import com.simiacryptus.util.TypeDescriber
 import com.simiacryptus.util.YamlDescriber
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -17,7 +18,7 @@ open class Brain(
     var verbose: Boolean = false,
     var maxTokens: Int = 8192,
     var temperature: Double = 0.3,
-    var yamlDescriber: YamlDescriber = YamlDescriber(),
+    var yamlDescriber: TypeDescriber = YamlDescriber(),
     val language: String = "Kotlin",
     private val moderated: Boolean = true,
     val apiDescription: String = apiDescription(hands, yamlDescriber),
@@ -157,7 +158,7 @@ open class Brain(
                 return (interfaces.toList() + supers).distinct()
             }
 
-        fun apiDescription(hands: java.util.Map<String, Object>, yamlDescriber: YamlDescriber): String {
+        fun apiDescription(hands: java.util.Map<String, Object>, yamlDescriber: TypeDescriber): String {
             val types = ArrayList<Class<*>>()
 
             val apiobjs = hands.entrySet().map { (name, utilityObj) ->
@@ -173,7 +174,7 @@ open class Brain(
                 """
                     |$name:
                     |  operations:
-                    |    ${joinYamlList(methods.map { yamlDescriber.toYaml(it) }).indent().indent()}
+                    |    ${joinYamlList(methods.map { yamlDescriber.describe(it) }).indent().indent()}
                     |""".trimMargin().trim()
             }.toTypedArray()
             val typeDescriptions = types
@@ -184,7 +185,7 @@ open class Brain(
                 .distinct().map {
                     """
                 |${it.simpleName}:
-                |  ${yamlDescriber.toYaml(it).indent()}
+                |  ${yamlDescriber.describe(it).indent()}
                 """.trimMargin().trim()
                 }.toTypedArray()
             return """

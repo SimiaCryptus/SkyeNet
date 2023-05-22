@@ -16,7 +16,6 @@ open class SessionDataStorage(
     open fun updateOperationStatus(sessionId: String, operationId: String, value: OperationStatus) {
         val operationDir = getOperationDir(sessionId)
         val operationFile = File(operationDir, "$operationId.json")
-
         JsonUtil.objectMapper().writeValue(operationFile, value)
     }
 

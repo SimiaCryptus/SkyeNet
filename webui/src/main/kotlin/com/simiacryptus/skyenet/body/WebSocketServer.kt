@@ -26,75 +26,11 @@ abstract class WebSocketServer(val resourceBase: String) {
         }
     }
 
-    abstract class SessionState(val sessionId: String) {
-        private val sockets: MutableList<MessageWebSocket> = mutableListOf()
-        protected fun publish(
-            out: String,
-        ) {
-            val socketsSnapshot = sockets.toTypedArray()
-            socketsSnapshot.forEach {
-                try {
-                    it.remote.sendString(out)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-
-        fun removeSocket(socket: MessageWebSocket) {
-            sockets.remove(socket)
-        }
-
-        fun addSocket(socket: MessageWebSocket) {
-            sockets.add(socket)
-        }
-
-        private val sentMessages: MutableList<String> = mutableListOf()
-
-        open fun send(out: String) {
-            sentMessages.add(out)
-            publish(out)
-        }
-
-        open fun getReplay(): List<String> {
-            return sentMessages
-        }
-
-        abstract fun onWebSocketText(socket: MessageWebSocket, message: String)
-
-    }
-
-    abstract class SessionStateByID(
-        sessionId: String,
-        val sentMessages: LinkedHashMap<String, String> = LinkedHashMap<String, String>(),
-    ) : SessionState(sessionId) {
-
-
-        override fun send(out: String) {
-            try {
-                logger.debug("$sessionId - $out")
-                val split = out.split(',', ignoreCase = false, limit = 2)
-                setMessage(split[0], split[1])
-                publish(out)
-            } catch (e: Exception) {
-                logger.debug("$sessionId - $out", e)
-            }
-        }
-
-        protected open fun setMessage(key: String, value: String) {
-            sentMessages.put(key, value)
-        }
-
-        override fun getReplay(): List<String> {
-            return sentMessages.entries.map { "${it.key},${it.value}" }
-        }
-    }
-
-    val stateCache: MutableMap<String, SessionState> = mutableMapOf()
+    val stateCache: MutableMap<String, SessionInterface> = mutableMapOf()
 
     inner class MessageWebSocket(
         val sessionId: String,
-        val sessionState: SessionState,
+        val sessionState: SessionInterface,
     ) : WebSocketAdapter() {
 
         override fun onWebSocketConnect(session: Session) {
@@ -125,6 +61,7 @@ abstract class WebSocketServer(val resourceBase: String) {
             super.onWebSocketError(cause)
             logger.info("$sessionId - WebSocket error: $cause")
         }
+
     }
 
     inner class WebSocketHandler : JettyWebSocketServlet() {
@@ -145,7 +82,7 @@ abstract class WebSocketServer(val resourceBase: String) {
         }
     }
 
-    abstract fun newSession(sessionId: String): SessionState
+    abstract fun newSession(sessionId: String): SessionInterface
 
     fun start(port: Int = 8080): Server {
         val server = Server(port)

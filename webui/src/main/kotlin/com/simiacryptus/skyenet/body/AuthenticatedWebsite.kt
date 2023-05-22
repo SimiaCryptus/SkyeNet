@@ -18,11 +18,12 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.util.*
 
-abstract class AuthenticatedWebsite {
+open class AuthenticatedWebsite(
+    val redirectUri: String,
+    val applicationName: String,
+    private val key: ()->InputStream?
+) {
 
-    abstract val redirectUri: String
-    abstract val applicationName: String
-    abstract fun getKey(): InputStream?
     open fun newUserSession(userInfo: Userinfo, sessionId: String) {
         logger.info("User $userInfo logged in with session $sessionId")
     }
@@ -31,7 +32,7 @@ abstract class AuthenticatedWebsite {
     private val jsonFactory = GsonFactory.getDefaultInstance()
     private val clientSecrets: GoogleClientSecrets = GoogleClientSecrets.load(
         jsonFactory,
-        InputStreamReader(getKey())
+        InputStreamReader(key())
     )
 
     private val flow = GoogleAuthorizationCodeFlow.Builder(

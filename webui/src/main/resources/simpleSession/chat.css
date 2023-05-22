@@ -192,6 +192,26 @@ pre {
 .play-button:active {
     transform: scale(0.9);
 }
+
+
+.regen-button {
+    font-size: 48px;
+    font-weight: bold;
+    color: chartreuse;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.regen-button:focus {
+    outline: none;
+}
+
+.regen-button:active {
+    transform: scale(0.9);
+}
+
 .message-container {
     position: relative; /* Add this line to set the position property of the parent div */
 }
