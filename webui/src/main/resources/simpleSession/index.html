@@ -10,15 +10,13 @@
 </head>
 <body>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-core.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-yaml.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-clike.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-groovy.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/prism.min.js"></script>
 
 <div id="toolbar">
     <a href="/" id="new-session">New Session</a>
     <a href="#" id="history">History</a>
     <a href="#" id="api">API</a>
+    <a href="#" id="files">Files</a>
 </div>
 
 <div id="modal" class="modal">
@@ -108,6 +106,7 @@
 
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
         Prism.highlightAll();
+        updateMessageDivs();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -125,6 +124,9 @@
             if (target.classList.contains('play-button')) {
                 const messageId = target.getAttribute('data-id');
                 send('!' + messageId + ',run');
+            } else if (target.classList.contains('regen-button')) {
+                const messageId = target.getAttribute('data-id');
+                send('!' + messageId + ',regen');
             } else if (target.classList.contains('cancel-button')) {
                 const messageId = target.getAttribute('data-id');
                 send('!' + messageId + ',stop');
@@ -149,6 +151,56 @@
                 console.error('There was a problem with the fetch operation:', error);
             });
     });
+
+    document.getElementById("files").addEventListener("click", function (event) {
+        event.preventDefault(); // Prevent the default behavior of the anchor tag
+        const sessionId = getSessionId();
+        const url = "/fileIndex/" + sessionId + "/";
+        window.open(url, "_blank"); // Open the URL in a new tab
+    });
+
+    function updateMessageDivs() {
+        console.log("Updating message divs");
+        // Get all message containers
+        //var messageContainers = document.querySelectorAll('.message-container');
+        // // Loop through each message container
+        // messageContainers.forEach(function (container) {
+        //     console.log("Updating message container: " + container);
+        //     // Get the first child which is a div (header) and the remaining children (content)
+        //     var header = container.children[0];
+        //     while (header.tagName !== 'DIV') {
+        //         header = header.nextElementSibling;
+        //     }
+        //     var content = Array.from(container.children);
+        //     // Remove the header from the content array (it isn't nessessary the first element)
+        //     content.splice(content.indexOf(header), 1);
+        //
+        //
+        //     // Add click event listener to the header
+        //     header.addEventListener('click', function () {
+        //         console.log("Header clicked: " + header);
+        //         // Toggle the collapsible-content class on each content element
+        //         content.forEach(function (elem) {
+        //             console.log("Toggling collapsible-content class on element: " + elem);
+        //             elem.classList.toggle('collapsible-content');
+        //         });
+        //     });
+        //
+        //     // Initialize content as collapsible
+        //     content.forEach(function (elem) {
+        //         console.log("Adding collapsible-content class to element: " + elem);
+        //         elem.classList.add('collapsible-content');
+        //     });
+        //
+        //     // Expand the content initially
+        //     header.click();
+        // });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        updateMessageDivs();
+    });
+
 </script>
 
 <div id="disconnected-overlay">

@@ -27,12 +27,12 @@ object SessionServerUtil {
     fun getCode(language: String, textSegments: List<Pair<String, String>>) =
         textSegments.joinToString("\n") {
             if (it.first.lowercase() == "code" || it.first.lowercase() == language.lowercase()) {
-                SkyenetSessionServer.logger.debug("Selected: $language: ${it.second}")
+                SkyenetCodingSessionServer.logger.debug("Selected: $language: ${it.second}")
                 """
                     |${it.second}
                     |""".trimMargin().trim()
             } else {
-                SkyenetSessionServer.logger.debug("Not Selected: ${it.first}: ${it.second}")
+                SkyenetCodingSessionServer.logger.debug("Not Selected: ${it.first}: ${it.second}")
                 ""
             }
         }

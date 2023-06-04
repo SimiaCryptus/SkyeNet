@@ -30,14 +30,15 @@ public class OutputInterceptor {
 
     public static void initThreadOutputStream() {
         setOutputStream(new ByteArrayOutputStream());
-    };
+    }
+
     public static void resetThreadOutputStream() {
         setOutputStream(centralStream);
-    };
+    }
 
     public static void setOutputStream(ByteArrayOutputStream stream) {
         threadLocalBuffer.set(stream);
-    };
+    }
 
     public static ByteArrayOutputStream getOutputStream() {
         return threadLocalBuffer.get();

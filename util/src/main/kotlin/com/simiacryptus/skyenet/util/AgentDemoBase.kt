@@ -2,9 +2,8 @@ package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.Brain
-import com.simiacryptus.skyenet.Brain.Companion.extractCodeBlocks
 import com.simiacryptus.skyenet.Heart
-import com.simiacryptus.skyenet.body.SkyenetSessionServer
+import com.simiacryptus.skyenet.body.SkyenetCodingSessionServer
 import java.awt.Desktop
 import java.io.File
 import java.net.URI
@@ -33,9 +32,10 @@ abstract class AgentDemoBase {
     fun launchWebAgent() {
         val port = 8080
         val agentDemoBase = this
-        val server = object : SkyenetSessionServer(
+        val server = object : SkyenetCodingSessionServer(
             applicationName = "AgentDemo",
             oauthConfig = File(File(System.getProperty("user.home")),"client_secret_google_oauth.json").absolutePath,
+            apiKey = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
         ) {
             override fun hands(): java.util.Map<String, Object> = agentDemoBase.hands()
             override fun heart(hands: java.util.Map<String, Object>): Heart = agentDemoBase.heart(hands)

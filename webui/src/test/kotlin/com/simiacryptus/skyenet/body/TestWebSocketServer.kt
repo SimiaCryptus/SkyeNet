@@ -8,12 +8,10 @@ object TestWebSocketServer {
     fun main(args: Array<String>) {
         val port = 8080
         val server = (object : WebSocketServer("simple") {
-            override fun newSession(sessionId: String): SessionState {
-                return object : SessionState(sessionId) {
-                    override fun onWebSocketText(socket: MessageWebSocket, message: String) {
-                        logger.info("$sessionId - Received message: $message")
-                        send("Server: $message")
-                    }
+            override fun newSession(sessionId: String) = object : SessionBase(sessionId) {
+                override fun onWebSocketText(socket: MessageWebSocket, message: String) {
+                    logger.info("$sessionId - Received message: $message")
+                    send("Server: $message")
                 }
             }
         }).start(port)

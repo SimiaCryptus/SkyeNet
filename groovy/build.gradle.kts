@@ -30,20 +30,17 @@ val kotlin_version = "1.8.21"
 dependencies {
     implementation(project(":core"))
 
-    implementation("org.apache.groovy:groovy-all:4.0.11")
+    implementation(group = "org.apache.groovy", name = "groovy-all", version = "4.0.11")
 
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = kotlin_version)
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.6.4")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version = kotlin_version)
 
-    implementation("org.slf4j:slf4j-api:2.0.5")
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.9")
-    runtimeOnly("ch.qos.logback:logback-core:1.2.9")
-    implementation("commons-io:commons-io:2.11.0")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
+    implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
 
-    testImplementation(kotlin("script-runtime"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
 
 }
 
@@ -73,7 +70,6 @@ tasks {
         )
     }
 }
-
 
 
 val javadocJar by tasks.registering(Jar::class) {
