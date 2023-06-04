@@ -35,6 +35,7 @@ dependencies {
     implementation("com.simiacryptus:joe-penai:1.0.10")
 
     implementation(project(":core"))
+    testImplementation(project(":groovy"))
 
     implementation("org.eclipse.jetty:jetty-server:$jetty_version")
     implementation("org.eclipse.jetty:jetty-servlet:$jetty_version")

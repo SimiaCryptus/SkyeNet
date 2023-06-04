@@ -16,18 +16,22 @@ open class SkyenetInterviewer<T : Any>(
     val dataClass: Class<T>,
     val visiblePrompt: String,
     val describer: TypeDescriber = YamlDescriber(),
-    override val oauthConfig: String? = null,
+    oauthConfig: String? = null,
     val continueSession: (String, T) -> SessionInterface,
     val validate: (T) -> List<String>,
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
     baseURL = baseURL,
+    oauthConfig = oauthConfig,
 ) {
 
     override fun configure(context: WebAppContext) {
         super.configure(context)
 
-        if (null != oauthConfig) AuthenticatedWebsite("$baseURL/oauth2callback", this@SkyenetInterviewer.applicationName) {
+        if (null != oauthConfig) AuthenticatedWebsite(
+            "$baseURL/oauth2callback",
+            this@SkyenetInterviewer.applicationName
+        ) {
             FileUtils.openInputStream(File(oauthConfig))
         }.configure(context)
 

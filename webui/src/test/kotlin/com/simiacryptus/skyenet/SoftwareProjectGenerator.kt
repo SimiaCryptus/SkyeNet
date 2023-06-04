@@ -86,24 +86,17 @@ object SoftwareProjectGenerator {
         val code: String? = null,
     )
 
-    val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
 
-    fun postInterview(sessionID: String, specification: ProjectSpecification, sessionDataStorage: SessionDataStorage) =
+    fun implementProject(sessionID: String, specification: ProjectSpecification, sessionDataStorage: SessionDataStorage) =
         object : PersistentSessionBase(UUID.randomUUID().toString(), sessionDataStorage) {
 
-            val generator = ChatProxy(SoftwareGenerator::class.java, api).create()
             val operationID = newID()
-            val fileIds = HashMap<String, String>()
             var projectDesign: ProjectDesign? = null
+            val fileIds = HashMap<String, String>()
+            val futures = HashMap<String, ListenableFuture<FileImplementation>>()
 
             init {
-                Thread {
-                    send("""$operationID,<div>Designing Project... ${interviewer.spinner}</div>""")
-                    projectDesign = generator.generateProject(specification)
-                    send("""$operationID,<div><pre>${JsonUtil.toJson(projectDesign!!)}</pre></div>""")
-                    projectDesign!!.files?.forEach(::showProgress)
-                    projectDesign!!.files?.forEach(::implementFile)
-                }.start()
+                designProject()
             }
 
             fun showProgress(file: FileSpecification) {
@@ -115,8 +108,6 @@ object SoftwareProjectGenerator {
                     |</div>""".trimMargin()
                 )
             }
-
-            val futures = HashMap<String, ListenableFuture<FileImplementation>>()
 
             fun implementFile(file: FileSpecification): ListenableFuture<FileImplementation> {
                 val id: String = fileIds.computeIfAbsent(file.name!!) { newID() }
@@ -150,12 +141,23 @@ object SoftwareProjectGenerator {
                         },
                         pool
                     )
-
                 }
             }
 
             override fun onCmd(id: String, code: String) {
-                if (code == "regen") {
+                if(id == operationID) {
+                    if(code == "run") {
+                        Thread {
+                            send("""$operationID,<div>
+                            |<pre>${JsonUtil.toJson(projectDesign!!)}</pre>
+                            |</div>""".trimMargin())
+                            projectDesign!!.files?.forEach(::showProgress)
+                            projectDesign!!.files?.forEach(::implementFile)
+                        }.start()
+                    } else if(code == "regen") {
+                        designProject()
+                    }
+                } else if (code == "regen") {
                     val fileName = fileIds.toList().find { it.second == id }?.first
                     if (null == fileName) log.warn("No file found for id $id")
                     else {
@@ -168,6 +170,18 @@ object SoftwareProjectGenerator {
                         }
                     }
                 }
+            }
+
+            private fun designProject() {
+                Thread {
+                    send("""$operationID,<div>Designing Project... ${interviewer.spinner}</div>""")
+                    projectDesign = generator.generateProject(specification)
+                    send("""$operationID,<div>
+                        |<pre>${JsonUtil.toJson(projectDesign!!)}</pre>
+                        |<button class="play-button" data-id="$operationID">▶</button>
+                        |<button class="regen-button" data-id="$operationID">♲</button>
+                        |</div>""".trimMargin())
+                }.start()
             }
 
             override fun run(describedInstruction: String) {
@@ -195,9 +209,11 @@ object SoftwareProjectGenerator {
         baseURL = baseURL,
         dataClass = ProjectSpecification::class.java,
         visiblePrompt = visiblePrompt,
-        continueSession = { sessionID, data -> postInterview(sessionID, data, sessionDataStorage!!) },
+        continueSession = { sessionID, data -> implementProject(sessionID, data, sessionDataStorage!!) },
         validate = ProjectSpecification::validate
     )
+    val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
+    val generator = ChatProxy(SoftwareGenerator::class.java, api).create()
 
     @JvmStatic
     fun main(args: Array<String>) {

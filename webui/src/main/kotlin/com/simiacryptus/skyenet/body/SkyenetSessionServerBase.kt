@@ -14,10 +14,10 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 abstract class SkyenetSessionServerBase(
-    open val applicationName: String,
-    open val oauthConfig: String? = null,
+    val applicationName: String,
+    val oauthConfig: String? = null,
     resourceBase: String = "simpleSession",
-    open val baseURL: String = "http://localhost:8080",
+    val baseURL: String = "http://localhost:8080",
     val temperature: Double = 0.1,
     val model : String = "gpt-3.5-turbo",
 ) : WebSocketServer(resourceBase) {

@@ -32,13 +32,14 @@ val scala_version = "2.13.8"
 dependencies {
 
     implementation(project(":core"))
-
     implementation("org.scala-lang:scala-library:$scala_version")
     implementation("org.scala-lang:scala-compiler:$scala_version")
     implementation("org.scala-lang:scala-reflect:$scala_version")
 
     implementation("org.slf4j:slf4j-api:2.0.5")
 
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+    testImplementation("org.scala-lang.modules:scala-java8-compat_2.13:0.9.1")
 }
 
 tasks {

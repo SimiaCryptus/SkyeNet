@@ -9,14 +9,18 @@ abstract class PersistentSessionBase(
 ) : SessionBase(sessionId) {
 
 
+    companion object {
+        val logger = org.slf4j.LoggerFactory.getLogger(WebSocketServer::class.java)
+    }
+
     override fun send(out: String) {
         try {
-            WebSocketServer.logger.debug("$sessionId - $out")
+            logger.debug("$sessionId - $out")
             val split = out.split(',', ignoreCase = false, limit = 2)
             setMessage(split[0], split[1])
             publish(out)
         } catch (e: Exception) {
-            WebSocketServer.logger.debug("$sessionId - $out", e)
+            logger.debug("$sessionId - $out", e)
         }
     }
 

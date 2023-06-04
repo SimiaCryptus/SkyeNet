@@ -35,9 +35,17 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation(kotlin("stdlib-jdk8"))
 
-    // Used in KotlinInterpreter
     implementation("org.jetbrains.kotlin:kotlin-script-util:$kotlin_version")
     implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version")
+    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:$kotlin_version")
+    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-impl-embeddable:$kotlin_version")
+    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-impl:$kotlin_version")
+
+//    implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlin_version")
+//    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlin_version")
+//    implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies:$kotlin_version")
+//    implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven:$kotlin_version")
+
 
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("commons-io:commons-io:2.11.0")

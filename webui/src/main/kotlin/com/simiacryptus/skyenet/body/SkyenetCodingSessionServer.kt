@@ -14,17 +14,18 @@ import java.io.File
 import java.io.InputStream
 
 abstract class SkyenetCodingSessionServer(
-    override val applicationName: String,
+    applicationName: String,
     val yamlDescriber: TypeDescriber = YamlDescriber(),
-    override val oauthConfig: String? = null,
+    oauthConfig: String? = null,
     val autoRun: Boolean = false,
     resourceBase: String = "simpleSession",
     val maxRetries: Int = 5,
     var maxHistoryCharacters: Int = 4000,
-    override val baseURL: String = "http://localhost:8080",
+    baseURL: String = "http://localhost:8080",
     temperature: Double = 0.1,
     model: String = "gpt-3.5-turbo",
     var useHistory: Boolean = true,
+    val shortExceptions: Boolean = true,
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
@@ -33,7 +34,6 @@ abstract class SkyenetCodingSessionServer(
     model = model,
     temperature = temperature,
 ) {
-    open protected val shortExceptions = true
 
     abstract fun hands(): java.util.Map<String, Object>
     abstract fun heart(hands: java.util.Map<String, Object>): Heart

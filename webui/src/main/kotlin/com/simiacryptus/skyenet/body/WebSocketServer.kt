@@ -35,7 +35,7 @@ abstract class WebSocketServer(val resourceBase: String) {
 
         override fun onWebSocketConnect(session: Session) {
             super.onWebSocketConnect(session)
-            logger.debug("$sessionId - Socket connected: $session")
+//            logger.debug("$sessionId - Socket connected: $session")
             sessionState.addSocket(this)
             sessionState.getReplay().forEach {
                 try {
@@ -53,13 +53,13 @@ abstract class WebSocketServer(val resourceBase: String) {
 
         override fun onWebSocketClose(statusCode: Int, reason: String?) {
             super.onWebSocketClose(statusCode, reason)
-            logger.debug("$sessionId - Socket closed: [$statusCode] $reason")
+//            logger.debug("$sessionId - Socket closed: [$statusCode] $reason")
             sessionState.removeSocket(this)
         }
 
         override fun onWebSocketError(cause: Throwable) {
             super.onWebSocketError(cause)
-            logger.info("$sessionId - WebSocket error: $cause")
+//            logger.debug("$sessionId - WebSocket error: $cause")
         }
 
     }
@@ -69,12 +69,12 @@ abstract class WebSocketServer(val resourceBase: String) {
             factory.setCreator { req, resp ->
                 val sessionId = req.parameterMap["sessionId"]?.firstOrNull()
                 return@setCreator if (null == sessionId) {
-                    logger.warn("No session ID provided")
+//                    logger.warn("No session ID provided")
                     null
                 } else {
-                    logger.debug("Creating socket for $sessionId")
+//                    logger.debug("Creating socket for $sessionId")
                     MessageWebSocket(sessionId, stateCache.getOrPut(sessionId) {
-                        logger.debug("Creating session for $sessionId")
+//                        logger.debug("Creating session for $sessionId")
                         newSession(sessionId)
                     })
                 }
@@ -93,7 +93,6 @@ abstract class WebSocketServer(val resourceBase: String) {
 
     open fun configure(server: Server) {
         val webAppContext = WebAppContext()
-//        webAppContext.baseResource = ClasspathResource(javaClass.classLoader.getResource(resourceBase))
         webAppContext.baseResource = baseResource
         webAppContext.contextPath = "/"
         webAppContext.welcomeFiles = arrayOf("index.html")
