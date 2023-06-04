@@ -29,15 +29,15 @@ kotlin {
 val kotlin_version = "1.8.21"
 dependencies {
 
-    implementation("com.simiacryptus:joe-penai:1.0.10")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.10")
 
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = "$kotlin_version")
 
-    implementation("org.slf4j:slf4j-api:2.0.5")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
 
     testImplementation(kotlin("script-runtime"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
 }
 
 tasks {

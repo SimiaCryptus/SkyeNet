@@ -35,6 +35,7 @@ abstract class AgentDemoBase {
         val server = object : SkyenetCodingSessionServer(
             applicationName = "AgentDemo",
             oauthConfig = File(File(System.getProperty("user.home")),"client_secret_google_oauth.json").absolutePath,
+            apiKey = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
         ) {
             override fun hands(): java.util.Map<String, Object> = agentDemoBase.hands()
             override fun heart(hands: java.util.Map<String, Object>): Heart = agentDemoBase.heart(hands)

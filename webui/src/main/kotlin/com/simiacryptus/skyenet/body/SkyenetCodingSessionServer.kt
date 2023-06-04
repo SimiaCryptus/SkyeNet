@@ -11,7 +11,6 @@ import org.apache.commons.io.FileUtils
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
 import java.io.File
-import java.io.InputStream
 
 abstract class SkyenetCodingSessionServer(
     applicationName: String,
@@ -23,15 +22,15 @@ abstract class SkyenetCodingSessionServer(
     var maxHistoryCharacters: Int = 4000,
     baseURL: String = "http://localhost:8080",
     temperature: Double = 0.1,
-    model: String = "gpt-3.5-turbo",
+    val model: String = "gpt-3.5-turbo",
     var useHistory: Boolean = true,
     val shortExceptions: Boolean = true,
+    override val apiKey: String
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     resourceBase = resourceBase,
     baseURL = baseURL,
-    model = model,
     temperature = temperature,
 ) {
 

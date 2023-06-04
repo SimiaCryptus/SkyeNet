@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.heart;
+package com.simiacryptus.skyenet.heart
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach

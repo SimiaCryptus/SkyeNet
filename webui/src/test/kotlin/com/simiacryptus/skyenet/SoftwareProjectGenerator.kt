@@ -184,7 +184,7 @@ object SoftwareProjectGenerator {
                 }.start()
             }
 
-            override fun run(describedInstruction: String) {
+            override fun run(userMessage: String) {
                 TODO("Not yet implemented")
             }
 
@@ -210,7 +210,8 @@ object SoftwareProjectGenerator {
         dataClass = ProjectSpecification::class.java,
         visiblePrompt = visiblePrompt,
         continueSession = { sessionID, data -> implementProject(sessionID, data, sessionDataStorage!!) },
-        validate = ProjectSpecification::validate
+        validate = ProjectSpecification::validate,
+        apiKey = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
     )
     val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
     val generator = ChatProxy(SoftwareGenerator::class.java, api).create()

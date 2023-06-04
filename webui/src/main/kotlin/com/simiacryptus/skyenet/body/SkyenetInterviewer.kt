@@ -19,6 +19,7 @@ open class SkyenetInterviewer<T : Any>(
     oauthConfig: String? = null,
     val continueSession: (String, T) -> SessionInterface,
     val validate: (T) -> List<String>,
+    override val apiKey: String
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
     baseURL = baseURL,
@@ -52,7 +53,7 @@ open class SkyenetInterviewer<T : Any>(
     override fun newSession(sessionId: String): SessionInterface {
         val handler = MutableSessionHandler(null)
         val interviewSession: InterviewSession<T> = object : InterviewSession<T>(
-            parent = this,
+            parent = this@SkyenetInterviewer,
             sessionId = sessionId, // This may need to be a new session id
             dataClass = dataClass,
             describer = this@SkyenetInterviewer.describer,
@@ -60,7 +61,7 @@ open class SkyenetInterviewer<T : Any>(
             isFinished = this@SkyenetInterviewer.validate
         ) {
             override fun onFinished(data: T) {
-                handler.setDelegate(continueSession(sessionId, data));
+                handler.setDelegate(continueSession(sessionId, data))
             }
 
             override fun onUpdate(data: T) {

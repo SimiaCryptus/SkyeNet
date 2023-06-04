@@ -6,6 +6,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.util.JsonUtil.toJson
 import com.simiacryptus.util.TypeDescriber
 import com.simiacryptus.util.YamlDescriber
+import org.intellij.lang.annotations.Language
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.util.concurrent.atomic.AtomicInteger
@@ -51,6 +52,7 @@ open class Brain(
         return response
     }
 
+    @Language("TEXT")
     open fun getChatMessages(apiDescription: String): List<ChatMessage> = listOf(
         ChatMessage(
             ChatMessage.Role.system, """

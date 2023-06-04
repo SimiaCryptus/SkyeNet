@@ -13,7 +13,7 @@ abstract class PersistentSessionBase(
         val logger = org.slf4j.LoggerFactory.getLogger(WebSocketServer::class.java)
     }
 
-    override fun send(out: String) {
+    public override fun send(out: String) {
         try {
             logger.debug("$sessionId - $out")
             val split = out.split(',', ignoreCase = false, limit = 2)
@@ -34,19 +34,19 @@ abstract class PersistentSessionBase(
     }
 
 
-    override fun onWebSocketText(socket: WebSocketServer.MessageWebSocket, describedInstruction: String) {
-        SkyenetCodingSessionServer.logger.debug("$sessionId - Received message: $describedInstruction")
+    override fun onWebSocketText(socket: WebSocketServer.MessageWebSocket, message: String) {
+        SkyenetCodingSessionServer.logger.debug("$sessionId - Received message: $message")
         try {
             val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
-            if (opCmdPattern.matches(describedInstruction)) {
-                val id = describedInstruction.substring(1, describedInstruction.indexOf(","))
-                val code = describedInstruction.substring(id.length + 2)
+            if (opCmdPattern.matches(message)) {
+                val id = message.substring(1, message.indexOf(","))
+                val code = message.substring(id.length + 2)
                 onCmd(id, code)
             } else {
-                onRun(describedInstruction)
+                onRun(message)
             }
         } catch (e: Exception) {
-            SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $describedInstruction", e)
+            SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $message", e)
         }
     }
 
@@ -67,7 +67,7 @@ abstract class PersistentSessionBase(
     }
 
     protected abstract fun run(
-        describedInstruction: String,
+        userMessage: String,
     )
 
 

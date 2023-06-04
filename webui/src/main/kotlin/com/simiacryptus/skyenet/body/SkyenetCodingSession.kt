@@ -43,33 +43,33 @@ open class SkyenetCodingSession(
     }
 
     override fun run(
-        describedInstruction: String,
+        userMessage: String,
     ) {
         OutputInterceptor.setupInterceptor()
-        SkyenetCodingSessionServer.logger.debug("${sessionId} - Processing message: $describedInstruction")
+        SkyenetCodingSessionServer.logger.debug("${sessionId} - Processing message: $userMessage")
         val operationID = (0..5).map { ('a'..'z').random() }.joinToString("")
         val status = OperationStatus(
             operationID = operationID,
-            instruction = describedInstruction,
+            instruction = userMessage,
             thread = Thread.currentThread(),
         )
         history[operationID] = status
         parent.sessionDataStorage.updateOperationStatus(sessionId, operationID, status)
         var retries = parent.maxRetries
-        var codedInstruction = ""
+        var codedInstruction: String
         var messageTrail = """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
         val language = heart.getLanguage()
-        if (describedInstruction.startsWith("!!!")) {
-            codedInstruction = describedInstruction.substringAfter("!!!")
+        if (userMessage.startsWith("!!!")) {
+            codedInstruction = userMessage.substringAfter("!!!")
             retries = 0
             //language=HTML
             messageTrail += """<div><h3>Code:</h3><pre><code class="language-$language">$codedInstruction</code></pre></div>"""
         } else {
             //language=HTML
-            messageTrail += """<div><h3>Command:</h3><pre>$describedInstruction</pre></div>"""
+            messageTrail += """<div><h3>Command:</h3><pre>$userMessage</pre></div>"""
             //language=HTML
             val triple =
-                implement(messageTrail, describedInstruction, language, status)
+                implement(messageTrail, userMessage, language, status)
             codedInstruction = triple.first
             messageTrail += triple.second
         }
@@ -118,7 +118,7 @@ open class SkyenetCodingSession(
                         //language=HTML
                         val pair = fix(
                             messageTrail,
-                            describedInstruction,
+                            userMessage,
                             codedInstruction,
                             e,
                             language,

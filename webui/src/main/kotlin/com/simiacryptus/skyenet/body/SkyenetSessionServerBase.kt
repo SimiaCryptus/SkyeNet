@@ -9,7 +9,6 @@ import org.apache.commons.io.FileUtils
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
 import java.io.File
-import java.io.InputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -19,10 +18,9 @@ abstract class SkyenetSessionServerBase(
     resourceBase: String = "simpleSession",
     val baseURL: String = "http://localhost:8080",
     val temperature: Double = 0.1,
-    val model : String = "gpt-3.5-turbo",
 ) : WebSocketServer(resourceBase) {
 
-    protected open val apiKey: String = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
+    protected abstract val apiKey: String
 
     open val api = OpenAIClient(apiKey)
 

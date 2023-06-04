@@ -52,7 +52,7 @@ object ShortStoryGenerator {
         val content: String? = null,
     )
 
-    fun implementStory(sessionID: String, specification: StorySpecification, sessionDataStorage: SessionDataStorage) =
+    fun implementStory(specification: StorySpecification, sessionDataStorage: SessionDataStorage) =
         object : PersistentSessionBase(UUID.randomUUID().toString(), sessionDataStorage) {
 
             val operationID = newID()
@@ -87,7 +87,7 @@ object ShortStoryGenerator {
                 }.start()
             }
 
-            override fun run(describedInstruction: String) {
+            override fun run(userMessage: String) {
                 TODO("Not yet implemented")
             }
 
@@ -112,8 +112,9 @@ object ShortStoryGenerator {
         baseURL = baseURL,
         dataClass = StorySpecification::class.java,
         visiblePrompt = visiblePrompt,
-        continueSession = { sessionID, data -> implementStory(sessionID, data, sessionDataStorage!!) },
-        validate = StorySpecification::validate
+        continueSession = { _, data -> implementStory(data, sessionDataStorage!!) },
+        validate = StorySpecification::validate,
+        apiKey = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
     )
     val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
     val generator = ChatProxy(StoryGenerator::class.java, api).create()

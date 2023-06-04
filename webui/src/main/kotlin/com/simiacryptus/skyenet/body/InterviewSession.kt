@@ -8,6 +8,7 @@ import com.simiacryptus.util.YamlDescriber
 
 open class InterviewSession<T : Any>(
     private val parent: SkyenetSessionServerBase,
+    val model: String = "gpt-3.5-turbo",
     sessionId: String,
     val dataClass: Class<T>,
     describer: TypeDescriber = YamlDescriber(),
@@ -52,9 +53,7 @@ open class InterviewSession<T : Any>(
 
     @Synchronized
     override fun run(userMessage: String) {
-        val operationID = (0..5).map { ('a'..'z').random() }.joinToString("")
-        var messageTrail = """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
-        messageTrail += """<div>$userMessage</div>"""
+        var messageTrail = Companion.initialText(userMessage)
         send("""$messageTrail<div>${parent.spinner}</div>""")
         messages += ChatMessage(ChatMessage.Role.user, userMessage)
         val response = parent.api.chat(chatRequest).response.orElse(null)?.toString() ?: "???"
@@ -91,11 +90,20 @@ open class InterviewSession<T : Any>(
     val chatRequest: ChatRequest
         get() {
             val chatRequest = ChatRequest()
-            chatRequest.model = parent.model
+            chatRequest.model = model
             chatRequest.max_tokens = 8192
             chatRequest.temperature = parent.temperature
             chatRequest.messages = messages.toTypedArray()
             return chatRequest
         }
+
+    companion object {
+        fun initialText(userMessage: String): String {
+            val operationID = (0..5).map { ('a'..'z').random() }.joinToString("")
+            var messageTrail = """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
+            messageTrail += """<div>$userMessage</div>"""
+            return messageTrail
+        }
+    }
 
 }

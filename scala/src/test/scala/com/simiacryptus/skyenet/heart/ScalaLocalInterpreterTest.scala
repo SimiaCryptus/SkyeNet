@@ -13,19 +13,19 @@ class ScalaLocalInterpreterTest {
   private val dummyTypeTags: util.Map[String, Type] = new util.HashMap[String, Type]()
 
   @Test
-  def testConstructor() {
+  def testConstructor(): Unit = {
     val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
     Assertions.assertNotNull(interpreter, "ScalaLocalInterpreter object should not be null.")
   }
 
   @Test
-  def testGetLanguage() {
+  def testGetLanguage(): Unit = {
     val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
     Assertions.assertEquals("Scala", interpreter.getLanguage, "ScalaLocalInterpreter should return 'Scala' as the language.")
   }
 
   @Test
-  def testValidate() {
+  def testValidate(): Unit = {
     val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
     val code = "val x = 10"
     Assertions.assertNull(interpreter.validate(code), "ScalaLocalInterpreter should validate correct Scala code without returning an Exception.")
@@ -33,21 +33,21 @@ class ScalaLocalInterpreterTest {
 
   @Test
   @Disabled
-  def testValidateWithIncorrectCode() {
+  def testValidateWithIncorrectCode(): Unit = {
     val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
     val code = "val x = "
     Assertions.assertNotNull(interpreter.validate(code), "ScalaLocalInterpreter should return an Exception when trying to validate incorrect Scala code.")
   }
 
   @Test
-  def testRun() {
+  def testRun(): Unit = {
     val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
     val code = "val x = 10"
     Assertions.assertEquals((), interpreter.run(code), "ScalaLocalInterpreter should run the code without throwing an Exception.")
   }
 
   @Test
-  def testRunWithIncorrectCode() {
+  def testRunWithIncorrectCode(): Unit = {
     val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
     val code = "val x = "
     Assertions.assertThrows(classOf[RuntimeException], new Executable {

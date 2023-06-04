@@ -1,17 +1,12 @@
 package com.simiacryptus.skyenet.heart
 
 import com.simiacryptus.skyenet.Heart
-import org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineBase
 import org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmLocalScriptEngineFactory
 import java.lang.ref.WeakReference
-import java.util.UUID
-import org.jetbrains.kotlin.scripting.definitions.ScriptDefinition
+import java.util.*
 import javax.script.Bindings
 import javax.script.CompiledScript
 import javax.script.ScriptContext
-import kotlin.script.experimental.host.ScriptingHostConfiguration
-import kotlin.script.experimental.jvm.jdkHome
-import kotlin.script.experimental.jvm.jvm
 
 open class KotlinLocalInterpreter(
     val defs: java.util.Map<String, Object> = java.util.HashMap<String, Object>() as java.util.Map<String, Object>
@@ -22,7 +17,7 @@ open class KotlinLocalInterpreter(
     init {
         val factory = KotlinJsr223JvmLocalScriptEngineFactory()
         engine = factory.scriptEngine as org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmLocalScriptEngine
-        val bindings: Bindings? = engine.getBindings(javax.script.ScriptContext.GLOBAL_SCOPE)
+        val bindings: Bindings? = engine.getBindings(ScriptContext.GLOBAL_SCOPE)
         defs.entrySet().forEach { (key, value) ->
             engine.put(key, value)
             bindings?.put(key, value)

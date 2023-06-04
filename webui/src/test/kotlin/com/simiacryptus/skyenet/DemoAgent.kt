@@ -8,6 +8,7 @@ import com.simiacryptus.skyenet.body.SkyenetCodingSessionServer
 import com.simiacryptus.util.AbbrevWhitelistYamlDescriber
 
 import java.awt.Desktop
+import java.io.File
 import java.net.URI
 
 object DemoAgent {
@@ -28,6 +29,7 @@ object DemoAgent {
             ),
             baseURL = baseURL,
             model = "gpt-4-0314",
+            apiKey = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
         ) {
             override fun hands() = mapOf(
                 "tools" to Tools() as Object,
