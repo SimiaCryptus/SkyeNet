@@ -29,9 +29,9 @@ kotlin {
 val kotlin_version = "1.8.21"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.10")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.11")
 
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = "$kotlin_version")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = kotlin_version)
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
 
