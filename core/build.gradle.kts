@@ -38,6 +38,9 @@ dependencies {
     testImplementation(kotlin("script-runtime"))
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
+
+    compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
+    compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
 }
 
 tasks {

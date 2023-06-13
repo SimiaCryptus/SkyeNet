@@ -1,61 +1,13 @@
-package com.simiacryptus.skyenet.heart
+package com.test
 
-import org.junit.jupiter.api.function.Executable
-import org.junit.jupiter.api.{Assertions, Disabled, Test}
+import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter
+import com.simiacryptus.skyenet.{Heart, HeartTestBase}
 
 import java.util
-import scala.reflect.runtime.universe._
 
-class ScalaLocalInterpreterTest {
 
-  private val dummyTypeTag: Type = typeOf[String]
-  private val dummyMap: util.Map[String, Any] = new util.HashMap[String, Any]()
-  private val dummyTypeTags: util.Map[String, Type] = new util.HashMap[String, Type]()
-
-  @Test
-  def testConstructor(): Unit = {
-    val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
-    Assertions.assertNotNull(interpreter, "ScalaLocalInterpreter object should not be null.")
+class ScalaLocalInterpreterTest extends HeartTestBase {
+  override def newInterpreter(map: util.Map[String, AnyRef]): Heart = {
+    new ScalaLocalInterpreter(map)
   }
-
-  @Test
-  def testGetLanguage(): Unit = {
-    val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
-    Assertions.assertEquals("Scala", interpreter.getLanguage, "ScalaLocalInterpreter should return 'Scala' as the language.")
-  }
-
-  @Test
-  def testValidate(): Unit = {
-    val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
-    val code = "val x = 10"
-    Assertions.assertNull(interpreter.validate(code), "ScalaLocalInterpreter should validate correct Scala code without returning an Exception.")
-  }
-
-  @Test
-  @Disabled
-  def testValidateWithIncorrectCode(): Unit = {
-    val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
-    val code = "val x = "
-    Assertions.assertNotNull(interpreter.validate(code), "ScalaLocalInterpreter should return an Exception when trying to validate incorrect Scala code.")
-  }
-
-  @Test
-  def testRun(): Unit = {
-    val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
-    val code = "val x = 10"
-    Assertions.assertEquals((), interpreter.run(code), "ScalaLocalInterpreter should run the code without throwing an Exception.")
-  }
-
-  @Test
-  def testRunWithIncorrectCode(): Unit = {
-    val interpreter = new ScalaLocalInterpreter(dummyMap, dummyTypeTags)
-    val code = "val x = "
-    Assertions.assertThrows(classOf[RuntimeException], new Executable {
-      override def execute(): Unit = {
-        interpreter.run(code)
-      }
-    }, "ScalaLocalInterpreter should throw a RuntimeException when running incorrect Scala code.")
-  }
-
-  // Add other tests here...
 }

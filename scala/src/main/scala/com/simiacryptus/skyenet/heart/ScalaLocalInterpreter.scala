@@ -14,12 +14,17 @@ import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 import scala.tools.nsc.interpreter.{IMain, Results}
 import scala.util.Try
 
-class ScalaLocalInterpreter(defs: Map[String, Any] = Map.empty, typeTags: Map[String, Type] = Map.empty) extends Heart {
-  def this(defs: java.util.Map[String, Any], typeTags: java.util.Map[String, Type]) = this(defs.asScala.toMap, typeTags.asScala.toMap)
+object ScalaLocalInterpreter {
+  private val log = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  def this(hands: (String, Object, universe.Type)*) = {
-    this(hands.map(x => x._1 -> x._2).toMap, hands.map(x => (x._1, x._3)).toMap)
+  def getTypeTag(value: Any): Type = {
+    val mirror = runtimeMirror(value.getClass.getClassLoader)
+    mirror.reflect(value).symbol.toType
   }
+}
+
+class ScalaLocalInterpreter(defs: Map[String, Any] = Map.empty, typeTags: Map[String, Type] = Map.empty) extends Heart {
+  def this(defs: java.util.Map[String, Object]) = this(defs.asInstanceOf[java.util.Map[String, Any]].asScala.toMap, defs.asScala.map(x => (x._1, ScalaLocalInterpreter.getTypeTag(x))).toMap)
 
   private def getClasspathFromManifest(jarPath: String): String = {
     val jarFile = new java.util.jar.JarFile(jarPath)
@@ -136,15 +141,5 @@ class ScalaLocalInterpreter(defs: Map[String, Any] = Map.empty, typeTags: Map[St
   override def wrapCode(code: String): String = code
 
   override def wrapExecution[T](fn: Supplier[T]): T = fn.get()
-
-
-
-}
-
-object ScalaLocalInterpreter {
-
-  val log = org.slf4j.LoggerFactory.getLogger(ScalaLocalInterpreter.getClass)
-
-  def getTypeTagTuple[T](name: String, value: T)(implicit tt: TypeTag[T]) = (name, value, tt.tpe)
 
 }
