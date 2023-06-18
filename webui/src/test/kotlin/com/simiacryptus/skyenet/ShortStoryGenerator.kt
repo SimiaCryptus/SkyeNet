@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.google.common.util.concurrent.MoreExecutors
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
-import com.simiacryptus.openai.proxy.Description
+import com.simiacryptus.util.describe.Description
 import com.simiacryptus.skyenet.body.PersistentSessionBase
 import com.simiacryptus.skyenet.body.SessionDataStorage
 import com.simiacryptus.skyenet.body.SkyenetInterviewer
@@ -95,7 +95,7 @@ object ShortStoryGenerator {
 
     private fun newID() = (0..5).map { ('a'..'z').random() }.joinToString("")
 
-    val api = OpenAIClient(File(File(System.getProperty("user.home")), "openai.key").readText().trim())
+    val api = OpenAIClient(OpenAIClient.keyTxt)
     val log = org.slf4j.LoggerFactory.getLogger(ShortStoryGenerator::class.java)!!
     var sessionDataStorage: SessionDataStorage? = null
     const val port = 8081
@@ -114,7 +114,7 @@ object ShortStoryGenerator {
         visiblePrompt = visiblePrompt,
         continueSession = { _, data -> implementStory(data, sessionDataStorage!!) },
         validate = StorySpecification::validate,
-        apiKey = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
+        apiKey = OpenAIClient.keyTxt
     )
     val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
     val generator = ChatProxy(StoryGenerator::class.java, api).create()

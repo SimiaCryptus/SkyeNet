@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.8.21"
+    id("org.jetbrains.kotlin.jvm") version "1.7.22"
     `maven-publish`
     id("signing")
 }
@@ -26,18 +26,23 @@ kotlin {
     jvmToolchain(11)
 }
 
-val kotlin_version = "1.8.21"
+val kotlin_version = "1.7.22"
+val junit_version = "5.9.2"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.10")
-
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = "$kotlin_version")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.11")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
 
+
+    compileOnlyApi(kotlin("stdlib"))
+    testImplementation(kotlin("stdlib"))
     testImplementation(kotlin("script-runtime"))
-    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
-    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
+
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = junit_version)
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
+    compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-api", version = junit_version)
+    compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
 }
 
 tasks {

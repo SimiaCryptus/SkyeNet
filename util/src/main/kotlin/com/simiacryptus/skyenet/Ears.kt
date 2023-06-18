@@ -2,9 +2,9 @@ package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
-import com.simiacryptus.util.AudioRecorder
-import com.simiacryptus.util.LookbackLoudnessWindowBuffer
-import com.simiacryptus.util.TranscriptionProcessor
+import com.simiacryptus.util.audio.AudioRecorder
+import com.simiacryptus.util.audio.LookbackLoudnessWindowBuffer
+import com.simiacryptus.util.audio.TranscriptionProcessor
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque

@@ -1,11 +1,11 @@
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.openai.ChatMessage
-import com.simiacryptus.openai.ChatRequest
+import com.simiacryptus.openai.OpenAIClient.ChatMessage
+import com.simiacryptus.openai.OpenAIClient.ChatRequest
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.util.JsonUtil.toJson
-import com.simiacryptus.util.TypeDescriber
-import com.simiacryptus.util.YamlDescriber
+import com.simiacryptus.util.describe.TypeDescriber
+import com.simiacryptus.util.describe.YamlDescriber
 import org.intellij.lang.annotations.Language
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -15,9 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger
 open class Brain(
     val api: OpenAIClient,
     val hands: java.util.Map<String, Object> = java.util.HashMap<String, Object>() as java.util.Map<String, Object>,
-    var model: String = "gpt-3.5-turbo", // "gpt-4-0314"
+    var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     var verbose: Boolean = false,
-    var maxTokens: Int = 8192,
     var temperature: Double = 0.3,
     var yamlDescriber: TypeDescriber = YamlDescriber(),
     val language: String = "Kotlin",
@@ -122,17 +121,19 @@ open class Brain(
                 )).toTypedArray<ChatMessage>()
         totalApiDescriptionLength.addAndGet(apiDescription.length)
         val response = run(request)
-        return Pair(response, extractCodeBlocks(response))
+        val codeBlocks = extractCodeBlocks(response)
+        return Pair(response, codeBlocks)
     }
 
     private fun run(request: ChatRequest): String {
-        request.model = model
-        request.max_tokens = maxTokens
+        request.model = model.modelName
+        request.max_tokens = model.maxTokens
         request.temperature = temperature
         val json = toJson(request)
         if (moderated) api.moderate(json)
         totalInputLength.addAndGet(json.length)
-        var response = api.chat(request).response.get().toString()
+        val chatResponse = api.chat(request)
+        var response = chatResponse.choices?.first()?.message?.content.orEmpty()
         if (verbose) log.info(response)
         totalOutputLength.addAndGet(response.length)
         response = response.trim()

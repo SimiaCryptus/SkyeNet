@@ -1,53 +1,28 @@
 package com.simiacryptus.skyenet.heart
 
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
-import javax.script.ScriptException
+import com.simiacryptus.skyenet.HeartTestBase
+import java.util.zip.ZipFile
 
-class KotlinLocalInterpreterTest {
-    private lateinit var interpreter: KotlinLocalInterpreter
+class KotlinLocalInterpreterTest : HeartTestBase() {
 
-    @BeforeEach
-    fun setUp() {
-        interpreter = KotlinLocalInterpreter()
-    }
+//    init {
+//        val classpath = getClasspath()
+//        println("Classpath: \n" + classpath.joinToString("\n") { "\t" + it })
+//        searchClasspath("Serializable", classpath)
+//    }
 
-    @Test
-    @Disabled
-    fun testRun_validCode() {
-        val result = interpreter.run("val x = 5\nx * 2")
-        assertEquals(10, result)
-    }
+    override fun newInterpreter(map: java.util.Map<String, Object>) = KotlinLocalInterpreter(map)
 
-    @Test
-    fun testRun_invalidCode() {
-        assertThrows(ScriptException::class.java) {
-            interpreter.run("val x = 5\ny * 2")
+    companion object {
+        fun getClasspath() =
+            System.getProperty("java.class.path").split(System.getProperty("path.separator")).toList().sorted()
+
+        fun searchClasspath(name: String, classpath: List<String> = getClasspath()) {
+            val jars = classpath.filter { it.endsWith(".jar") }.map { ZipFile(it) }
+            jars.filter { !it.entries().toList().filter { it.name.contains(name) }.isEmpty() }.forEach {
+                println("Found $name: ${it.name}")
+                it.entries().toList().filter { it.name.contains(name) }.forEach(::println)
+            }
         }
-    }
-
-    @Test
-    fun testGetLanguage() {
-        assertEquals("Kotlin", interpreter.getLanguage())
-    }
-
-    @Test
-    @Disabled
-    fun testValidate_validCode() {
-        assertNull(interpreter.validate("val x = 5\nx * 2"))
-    }
-
-    @Test
-    fun testValidate_invalidCode() {
-        assertNotNull(interpreter.validate("val x = 5\ny * 2"))
-    }
-
-    @Test
-    fun testTypeOf() {
-        val obj = this
-        val typeName = interpreter.typeOf(obj as Object)
-        assertEquals(obj.javaClass.name.replace("$", "."), typeName)
     }
 }

@@ -1,7 +1,8 @@
 package com.simiacryptus.skyenet.body
 
-import com.simiacryptus.util.TypeDescriber
-import com.simiacryptus.util.YamlDescriber
+import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.util.describe.TypeDescriber
+import com.simiacryptus.util.describe.YamlDescriber
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -19,12 +20,14 @@ open class SkyenetInterviewer<T : Any>(
     oauthConfig: String? = null,
     val continueSession: (String, T) -> SessionInterface,
     val validate: (T) -> List<String>,
-    override val apiKey: String
+    val apiKey: String
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
     baseURL = baseURL,
     oauthConfig = oauthConfig,
 ) {
+
+    override val api: OpenAIClient = OpenAIClient(apiKey)
 
     override fun configure(context: WebAppContext) {
         super.configure(context)

@@ -1,14 +1,15 @@
 package com.simiacryptus.skyenet.body
 
-import com.simiacryptus.openai.ChatMessage
-import com.simiacryptus.openai.ChatRequest
+import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.OpenAIClient.ChatMessage
+import com.simiacryptus.openai.OpenAIClient.ChatRequest
 import com.simiacryptus.util.JsonUtil
-import com.simiacryptus.util.TypeDescriber
-import com.simiacryptus.util.YamlDescriber
+import com.simiacryptus.util.describe.TypeDescriber
+import com.simiacryptus.util.describe.YamlDescriber
 
 open class InterviewSession<T : Any>(
     private val parent: SkyenetSessionServerBase,
-    val model: String = "gpt-3.5-turbo",
+    val model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     sessionId: String,
     val dataClass: Class<T>,
     describer: TypeDescriber = YamlDescriber(),
@@ -56,12 +57,12 @@ open class InterviewSession<T : Any>(
         var messageTrail = Companion.initialText(userMessage)
         send("""$messageTrail<div>${parent.spinner}</div>""")
         messages += ChatMessage(ChatMessage.Role.user, userMessage)
-        val response = parent.api.chat(chatRequest).response.orElse(null)?.toString() ?: "???"
+        val response = parent.api.chat(chatRequest).choices?.first()?.message?.content.orEmpty()
         messages += ChatMessage(ChatMessage.Role.assistant, response)
         messageTrail += """<div><pre>$response</pre></div>"""
         send(messageTrail)
 
-        // If response contains a JSON (```json``` block), parse the data structure and check if it's finished
+        // If the response contains a JSON (```json``` block), parse the data structure and check if it's finished
         val jsonRegex = Regex("""(?s)```json\s*(?<json>.*?)\s*```""")
         val jsonMatch = jsonRegex.find(response)
         if (jsonMatch != null) {
@@ -90,8 +91,8 @@ open class InterviewSession<T : Any>(
     val chatRequest: ChatRequest
         get() {
             val chatRequest = ChatRequest()
-            chatRequest.model = model
-            chatRequest.max_tokens = 8192
+            chatRequest.model = model.modelName
+            chatRequest.max_tokens = model.maxTokens
             chatRequest.temperature = parent.temperature
             chatRequest.messages = messages.toTypedArray()
             return chatRequest

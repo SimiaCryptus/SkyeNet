@@ -20,9 +20,7 @@ abstract class SkyenetSessionServerBase(
     val temperature: Double = 0.1,
 ) : WebSocketServer(resourceBase) {
 
-    protected abstract val apiKey: String
-
-    open val api = OpenAIClient(apiKey)
+    abstract val api: OpenAIClient
 
     open val spinner =
         """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""

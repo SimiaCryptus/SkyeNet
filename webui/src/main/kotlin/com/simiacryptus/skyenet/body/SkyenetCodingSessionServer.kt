@@ -1,9 +1,10 @@
 package com.simiacryptus.skyenet.body
 
+import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.Heart
-import com.simiacryptus.util.TypeDescriber
-import com.simiacryptus.util.YamlDescriber
+import com.simiacryptus.util.describe.TypeDescriber
+import com.simiacryptus.util.describe.YamlDescriber
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,7 +15,7 @@ import java.io.File
 
 abstract class SkyenetCodingSessionServer(
     applicationName: String,
-    val yamlDescriber: TypeDescriber = YamlDescriber(),
+    val typeDescriber: TypeDescriber = YamlDescriber(),
     oauthConfig: String? = null,
     val autoRun: Boolean = false,
     resourceBase: String = "simpleSession",
@@ -22,10 +23,10 @@ abstract class SkyenetCodingSessionServer(
     var maxHistoryCharacters: Int = 4000,
     baseURL: String = "http://localhost:8080",
     temperature: Double = 0.1,
-    val model: String = "gpt-3.5-turbo",
+    val model: OpenAIClient.Model = OpenAIClient.Models.GPT4,
     var useHistory: Boolean = true,
     val shortExceptions: Boolean = true,
-    override val apiKey: String
+    val apiKey: String
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
@@ -33,6 +34,8 @@ abstract class SkyenetCodingSessionServer(
     baseURL = baseURL,
     temperature = temperature,
 ) {
+
+    override val api: OpenAIClient = OpenAIClient(apiKey)
 
     abstract fun hands(): java.util.Map<String, Object>
     abstract fun heart(hands: java.util.Map<String, Object>): Heart
@@ -53,7 +56,7 @@ abstract class SkyenetCodingSessionServer(
             override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
                 resp.contentType = "text/plain"
                 resp.status = HttpServletResponse.SC_OK
-                val apiDescription = Brain.apiDescription(hands(), yamlDescriber)
+                val apiDescription = Brain.apiDescription(hands(), typeDescriber)
                 resp.writer.write(apiDescription)
             }
         })

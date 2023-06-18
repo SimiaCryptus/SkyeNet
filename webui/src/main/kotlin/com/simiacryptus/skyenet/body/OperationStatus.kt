@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.body
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.simiacryptus.openai.ChatMessage
+import com.simiacryptus.openai.OpenAIClient.ChatMessage
 
 
 class OperationStatus @JsonCreator constructor(

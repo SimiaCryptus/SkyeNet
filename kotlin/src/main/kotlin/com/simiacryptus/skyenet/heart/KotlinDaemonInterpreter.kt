@@ -8,13 +8,13 @@ import org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmDaemonLocalEvalScriptEn
 import javax.script.ScriptEngine
 
 open class KotlinDaemonInterpreter(
-    defs: Map<String, Any> = mapOf(),
+    defs: java.util.Map<String, Object> = mapOf<String, Object>() as java.util.Map<String, Object>,
 ) : Heart {
 
     private val engine by lazy {
         System.setProperty("kotlin.script.classpath", System.getProperty("java.class.path"))
         val engine: ScriptEngine = KotlinJsr223JvmDaemonLocalEvalScriptEngineFactory().scriptEngine
-        defs.forEach { (key, value) ->
+        defs.entrySet().forEach { (key, value) ->
             engine.put(key, value)
         }
         engine as KotlinJsr223JvmScriptEngineBase

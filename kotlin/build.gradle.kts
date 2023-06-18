@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.8.21"
+    id("org.jetbrains.kotlin.jvm") version "1.7.22"
     `maven-publish`
     id("signing")
 }
@@ -26,33 +26,23 @@ kotlin {
     jvmToolchain(11)
 }
 
-val kotlin_version = "1.8.21"
 dependencies {
 
     implementation(project(":core"))
 
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
+    //implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("stdlib"))
+    implementation(kotlin("script-util"))
+    implementation(kotlin("script-runtime"))
+    implementation(kotlin("compiler-embeddable"))
+    implementation(kotlin("scripting-compiler-embeddable"))
 
-    implementation("org.jetbrains.kotlin:kotlin-script-util:$kotlin_version")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:$kotlin_version")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-impl-embeddable:$kotlin_version")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-impl:$kotlin_version")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
+    implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
 
-//    implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlin_version")
-//    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlin_version")
-//    implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies:$kotlin_version")
-//    implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven:$kotlin_version")
-
-
-    implementation("org.slf4j:slf4j-api:2.0.5")
-    implementation("commons-io:commons-io:2.11.0")
-
-    testImplementation(kotlin("script-runtime"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
 
 }
 

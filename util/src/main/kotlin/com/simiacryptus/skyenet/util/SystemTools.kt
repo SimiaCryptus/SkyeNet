@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.openai.HttpClientManager
-import com.simiacryptus.openai.proxy.Description
+import com.simiacryptus.util.describe.Description
 import com.simiacryptus.skyenet.Mouth
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
