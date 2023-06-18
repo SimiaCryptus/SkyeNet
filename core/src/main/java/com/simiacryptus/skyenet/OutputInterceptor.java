@@ -24,7 +24,8 @@ public class OutputInterceptor {
     private static final ThreadLocal<ByteArrayOutputStream> threadLocalBuffer = new ThreadLocal<ByteArrayOutputStream>() {
         @Override
         protected ByteArrayOutputStream initialValue() {
-            return centralStream;
+            return new ByteArrayOutputStream();
+            //return centralStream;
         }
     };
 

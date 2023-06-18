@@ -24,13 +24,13 @@ public class OutputInterceptorThreadedTest {
             System.err.println("Thread: " + threadName + " error");
 
             String expectedOutput = "Thread: " + threadName + " output\nThread: " + threadName + " error\n";
-            String threadOutput = OutputInterceptor.getThreadOutput();
-            if (threadOutput.equals(expectedOutput)) {
+            String threadOutput = OutputInterceptor.getThreadOutput().replace("\r", "");
+            if (threadOutput.trim().equals(expectedOutput.trim())) {
                 successCounter.incrementAndGet();
             } else {
                 synchronized (lock) {
-                    System.out.println("Expected: " + expectedOutput);
-                    System.out.println("Actual: " + threadOutput);
+                    System.out.println("Expected:\n  " + expectedOutput.replaceAll("\n", "\n  "));
+                    System.out.println("Actual:\n  " + threadOutput.replaceAll("\n", "\n  "));
                 }
             }
         };
