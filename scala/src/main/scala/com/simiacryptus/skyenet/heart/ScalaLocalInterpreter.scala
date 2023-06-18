@@ -125,17 +125,20 @@ class ScalaLocalInterpreter(defs: Map[String, Any] = Map.empty, typeTags: Map[St
           val errorString = "Error: " + customReporter.errors.toString
           throw new RuntimeException(errorString)
         case Results.Incomplete =>
-          val errorString = "Incomplete: "+ customReporter.errors.toString
+          val errorString = "Incomplete: " + customReporter.errors.toString
           throw new RuntimeException(errorString)
       }
     })
   }
 
   override def validate(code: String): Exception = {
-    Try(engine.compileString(code)).toEither match {
-      case Right(_) => null
-      case Left(e) => e.asInstanceOf[Exception]
-    }
+    engine.compileString(code)
+    null
+    //    val trial = Try(engine.compileString(code))
+    //    trial.toEither match {
+    //      case Right(_) => null
+    //      case Left(e) => throw e.asInstanceOf[Exception]
+    //    }
   }
 
   override def wrapCode(code: String): String = code

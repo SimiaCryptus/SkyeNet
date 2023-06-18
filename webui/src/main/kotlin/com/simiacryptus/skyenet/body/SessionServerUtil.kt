@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.body
 
-import com.simiacryptus.openai.ChatMessage
+import com.simiacryptus.openai.OpenAIClient.ChatMessage
 
 object SessionServerUtil {
     fun getRenderedResponse(respondWithCode: Pair<String, List<Pair<String, String>>>) =

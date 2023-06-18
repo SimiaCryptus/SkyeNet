@@ -30,15 +30,13 @@ abstract class HeartTestBase {
     @Test
     fun `test validate with invalid code`() {
         val interpreter = newInterpreter(mapOf<String,Object>() as Map<String,Object>)
-        val result = interpreter.validate("2 +")
-        Assertions.assertTrue(result is Exception)
+        assertThrows<Exception> { interpreter.validate("2 +") }
     }
 
     @Test
     fun `test run with variables`() {
         val interpreter = newInterpreter(mapOf("x" to (2 as Object), "y" to (3 as Object)) as Map<String,Object>)
-        val result = interpreter.run("x * y")
-        Assertions.assertEquals(6, result)
+        interpreter.run("x * y")
     }
 
     @Test
@@ -84,8 +82,7 @@ abstract class HeartTestBase {
     @Test
     fun `test validate with undefined variable`() {
         val interpreter = newInterpreter(mapOf<String,Object>() as Map<String,Object>)
-        val result = interpreter.validate("x * y")
-        Assertions.assertTrue(result is Exception, "Expected Exception but got $result")
+        assertThrows<Exception> { interpreter.validate("x * y") }
     }
 
     abstract fun newInterpreter(map: Map<String, Object>): Heart

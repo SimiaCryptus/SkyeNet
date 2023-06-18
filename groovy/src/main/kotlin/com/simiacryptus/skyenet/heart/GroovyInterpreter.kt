@@ -36,12 +36,8 @@ open class GroovyInterpreter(defs: java.util.Map<String, Object>) : Heart {
     }
 
     override fun validate(code: String): Exception? {
-        return try {
-            shell.parse(wrapCode(code))
-            null
-        } catch (e: CompilationFailedException) {
-            e
-        }
+        shell.parse(wrapCode(code))
+        return null
     }
 }
 

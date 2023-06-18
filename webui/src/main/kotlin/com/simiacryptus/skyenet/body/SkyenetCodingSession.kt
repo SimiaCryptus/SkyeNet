@@ -25,7 +25,7 @@ open class SkyenetCodingSession(
             api = parent.api,
             hands = hands,
             language = heart.getLanguage(),
-            yamlDescriber = parent.yamlDescriber,
+            yamlDescriber = parent.typeDescriber,
             model = parent.model
         ) {
             override fun getChatMessages(apiDescription: String) =

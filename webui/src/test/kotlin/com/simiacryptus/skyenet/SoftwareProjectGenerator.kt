@@ -10,7 +10,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
-import com.simiacryptus.openai.proxy.Description
+import com.simiacryptus.util.describe.Description
 import com.simiacryptus.skyenet.body.PersistentSessionBase
 import com.simiacryptus.skyenet.body.SessionDataStorage
 import com.simiacryptus.skyenet.body.SkyenetInterviewer
@@ -192,7 +192,7 @@ object SoftwareProjectGenerator {
 
     private fun newID() = (0..5).map { ('a'..'z').random() }.joinToString("")
 
-    val api = OpenAIClient(File(File(System.getProperty("user.home")), "openai.key").readText().trim())
+    val api = OpenAIClient(OpenAIClient.keyTxt)
     val log = org.slf4j.LoggerFactory.getLogger(SoftwareProjectGenerator::class.java)!!
     var sessionDataStorage: SessionDataStorage? = null
     const val port = 8081
@@ -211,7 +211,7 @@ object SoftwareProjectGenerator {
         visiblePrompt = visiblePrompt,
         continueSession = { sessionID, data -> implementProject(sessionID, data, sessionDataStorage!!) },
         validate = ProjectSpecification::validate,
-        apiKey = File(File(System.getProperty("user.home")), "openai.key").readText().trim()
+        apiKey = OpenAIClient.keyTxt
     )
     val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
     val generator = ChatProxy(SoftwareGenerator::class.java, api).create()

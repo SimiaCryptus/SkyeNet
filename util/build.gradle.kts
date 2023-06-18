@@ -10,7 +10,7 @@ plugins {
     `java-library`
     `maven-publish`
     id("signing")
-    id("org.jetbrains.kotlin.jvm") version "1.8.21"
+    id("org.jetbrains.kotlin.jvm") version "1.7.22"
 }
 
 repositories {
@@ -27,7 +27,7 @@ kotlin {
 //    jvmToolchain(17)
 }
 
-val kotlin_version = "1.8.21"
+val kotlin_version = "1.7.22"
 val jetty_version = "11.0.15"
 dependencies {
 
@@ -37,7 +37,7 @@ dependencies {
     implementation(project(":webui"))
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
     implementation(kotlin("stdlib-jdk8"))
 
     implementation("com.google.cloud:google-cloud-texttospeech:2.0.0")
