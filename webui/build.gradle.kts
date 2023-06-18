@@ -32,7 +32,7 @@ val jetty_version = "11.0.15"
 val jackson_version = "2.15.0"
 dependencies {
 
-    implementation("com.simiacryptus:joe-penai:1.0.10")
+    implementation("com.simiacryptus:joe-penai:1.0.11")
 
     implementation(project(":core"))
     testImplementation(project(":groovy"))

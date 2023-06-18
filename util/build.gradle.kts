@@ -31,7 +31,7 @@ val kotlin_version = "1.7.22"
 val jetty_version = "11.0.15"
 dependencies {
 
-    implementation("com.simiacryptus:joe-penai:1.0.10")
+    implementation("com.simiacryptus:joe-penai:1.0.11")
 
     implementation(project(":core"))
     implementation(project(":webui"))
