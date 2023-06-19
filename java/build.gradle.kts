@@ -31,16 +31,16 @@ dependencies {
 
     implementation(project(":core"))
 
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("org.slf4j:slf4j-api:2.0.5")
-    implementation("commons-io:commons-io:2.11.0")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = kotlin_version)
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
+    implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
 
-    testImplementation(kotlin("script-runtime"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
+    testImplementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime", version = kotlin_version)
 
 }
 

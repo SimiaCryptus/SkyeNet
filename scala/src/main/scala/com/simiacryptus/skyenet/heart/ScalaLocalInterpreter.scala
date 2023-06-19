@@ -24,7 +24,7 @@ object ScalaLocalInterpreter {
 }
 
 class ScalaLocalInterpreter(defs: Map[String, Any] = Map.empty, typeTags: Map[String, Type] = Map.empty) extends Heart {
-  def this(defs: java.util.Map[String, Object]) = this(defs.asInstanceOf[java.util.Map[String, Any]].asScala.toMap, defs.asScala.map(x => (x._1, ScalaLocalInterpreter.getTypeTag(x))).toMap)
+  def this(defs: java.util.Map[String, Object]) = this(defs.asInstanceOf[java.util.Map[String, Any]].asScala.toMap, defs.asScala.map(x => (x._1, ScalaLocalInterpreter.getTypeTag(x._2))).toMap)
 
   private def getClasspathFromManifest(jarPath: String): String = {
     val jarFile = new java.util.jar.JarFile(jarPath)
@@ -91,7 +91,7 @@ class ScalaLocalInterpreter(defs: Map[String, Any] = Map.empty, typeTags: Map[St
     val main = new IMain(settings, customReporter)
     defs.foreach { case (key, value) =>
       val valueType = typeTags(key).toString
-      log.debug(s"Def Binding $key: $value : $valueType")
+      log.info(s"Def Binding $key: $value : $valueType")
       main.bind(key, valueType, value)
     }
     main
@@ -132,13 +132,16 @@ class ScalaLocalInterpreter(defs: Map[String, Any] = Map.empty, typeTags: Map[St
   }
 
   override def validate(code: String): Exception = {
-    engine.compileString(code)
+    customReporter.reset()
+    customReporter.errors.clear()
+    if(!engine.compileString(
+      s"""trait __tempValidation__ {
+         |  ${defs.keys.map(key => s"def $key : ${typeTags(key).toString};").mkString("\n  ")}
+         |  { $code }
+         |}""".stripMargin)) {
+      throw new RuntimeException(customReporter.errors.toString)
+    }
     null
-    //    val trial = Try(engine.compileString(code))
-    //    trial.toEither match {
-    //      case Right(_) => null
-    //      case Left(e) => throw e.asInstanceOf[Exception]
-    //    }
   }
 
   override def wrapCode(code: String): String = code

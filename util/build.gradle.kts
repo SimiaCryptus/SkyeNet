@@ -31,26 +31,27 @@ val kotlin_version = "1.7.22"
 val jetty_version = "11.0.15"
 dependencies {
 
-    implementation("com.simiacryptus:joe-penai:1.0.11")
+
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.12")
 
     implementation(project(":core"))
     implementation(project(":webui"))
 
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("com.google.cloud:google-cloud-texttospeech:2.0.0")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = kotlin_version)
+    implementation(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.0.0")
 
-    implementation("org.eclipse.jetty:jetty-server:$jetty_version")
-    implementation("org.slf4j:slf4j-api:2.0.5")
-    implementation("ch.qos.logback:logback-classic:1.4.7")
-    implementation("ch.qos.logback:logback-core:1.4.7")
-    implementation("commons-io:commons-io:2.11.0")
+    implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
+    implementation(group = "ch.qos.logback", name = "logback-classic", version = "1.4.7")
+    implementation(group = "ch.qos.logback", name = "logback-core", version = "1.4.7")
+    implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
 
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
     testImplementation(kotlin("script-runtime"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 
 }
 

@@ -163,6 +163,14 @@ open class SkyenetCodingSession(
         SkyenetCodingSessionServer.logger.debug("$sessionId - Code: $codedInstruction")
         status.responseText = renderedResponse
         status.responseCode = codedInstruction
+
+        val buffer = StringBuffer()
+
+        buffer.append("""<div><h3>Code:</h3>""")
+        buffer.append("""${renderedResponse}</div>""")
+
+
+
         status.status = OperationStatus.OperationState.Implemented
         parent.sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
         //language=HTML

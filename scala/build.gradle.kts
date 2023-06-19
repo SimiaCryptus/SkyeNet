@@ -32,14 +32,15 @@ val scala_version = "2.13.8"
 dependencies {
 
     implementation(project(":core"))
-    implementation("org.scala-lang:scala-library:$scala_version")
-    implementation("org.scala-lang:scala-compiler:$scala_version")
-    implementation("org.scala-lang:scala-reflect:$scala_version")
+    implementation(group = "org.scala-lang", name = "scala-library", version = scala_version)
+    implementation(group = "org.scala-lang", name = "scala-compiler", version = scala_version)
+    implementation(group = "org.scala-lang", name = "scala-reflect", version = scala_version)
 
-    implementation("org.slf4j:slf4j-api:2.0.5")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
+    testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "2.0.5")
 
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
-    testImplementation("org.scala-lang.modules:scala-java8-compat_2.13:0.9.1")
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter", version = "5.8.1")
+    testImplementation(group = "org.scala-lang.modules", name = "scala-java8-compat_2.13", version = "0.9.1")
 }
 
 tasks {
@@ -57,7 +58,6 @@ tasks {
         )
     }
 }
-
 
 
 val javadocJar by tasks.registering(Jar::class) {
