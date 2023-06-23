@@ -7,12 +7,10 @@ import java.nio.file.Paths
 import java.util.function.Supplier
 import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.reflect.internal.util.Position
-import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe._
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 import scala.tools.nsc.interpreter.{IMain, Results}
-import scala.util.Try
 
 object ScalaLocalInterpreter {
   private val log = org.slf4j.LoggerFactory.getLogger(getClass)
@@ -21,10 +19,12 @@ object ScalaLocalInterpreter {
     val mirror = runtimeMirror(value.getClass.getClassLoader)
     mirror.reflect(value).symbol.toType
   }
+
 }
 
-class ScalaLocalInterpreter(defs: Map[String, Any] = Map.empty, typeTags: Map[String, Type] = Map.empty) extends Heart {
-  def this(defs: java.util.Map[String, Object]) = this(defs.asInstanceOf[java.util.Map[String, Any]].asScala.toMap, defs.asScala.map(x => (x._1, ScalaLocalInterpreter.getTypeTag(x._2))).toMap)
+class ScalaLocalInterpreter(javaDefs: java.util.Map[String, Object]) extends Heart {
+  val defs: Map[String, Any] = javaDefs.asInstanceOf[java.util.Map[String, Any]].asScala.toMap
+  val typeTags: Map[String, Type] = javaDefs.asScala.map(x => (x._1, ScalaLocalInterpreter.getTypeTag(x._2))).toMap
 
   private def getClasspathFromManifest(jarPath: String): String = {
     val jarFile = new java.util.jar.JarFile(jarPath)

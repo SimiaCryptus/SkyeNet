@@ -32,11 +32,12 @@ val jetty_version = "11.0.15"
 val jackson_version = "2.15.0"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.11")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.12")
 
     implementation(project(":core"))
     testImplementation(project(":groovy"))
     testImplementation(project(":kotlin"))
+    testImplementation(project(":scala"))
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
@@ -49,7 +50,6 @@ dependencies {
 
     implementation(kotlin("stdlib"))
 
-    // Jackson
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-core", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
