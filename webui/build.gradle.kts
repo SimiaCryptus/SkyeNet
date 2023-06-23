@@ -32,41 +32,40 @@ val jetty_version = "11.0.15"
 val jackson_version = "2.15.0"
 dependencies {
 
-    implementation("com.simiacryptus:joe-penai:1.0.11")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.12")
 
     implementation(project(":core"))
     testImplementation(project(":groovy"))
     testImplementation(project(":kotlin"))
+    testImplementation(project(":scala"))
 
-    implementation("org.eclipse.jetty:jetty-server:$jetty_version")
-    implementation("org.eclipse.jetty:jetty-servlet:$jetty_version")
-    implementation("org.eclipse.jetty:jetty-annotations:$jetty_version")
-    implementation("org.eclipse.jetty.websocket:websocket-jetty-server:$jetty_version")
-    implementation("org.eclipse.jetty.websocket:websocket-jetty-client:$jetty_version")
-    implementation("org.eclipse.jetty.websocket:websocket-servlet:$jetty_version")
+    implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
+    implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
+    implementation(group = "org.eclipse.jetty", name = "jetty-annotations", version = jetty_version)
+    implementation(group = "org.eclipse.jetty.websocket", name = "websocket-jetty-server", version = jetty_version)
+    implementation(group = "org.eclipse.jetty.websocket", name = "websocket-jetty-client", version = jetty_version)
+    implementation(group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version = jetty_version)
 
-    // Jackson
-    implementation("com.fasterxml.jackson.core:jackson-core:$jackson_version")
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jackson_version")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:$jackson_version")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jackson_version")
-
-    implementation("com.google.api-client:google-api-client:1.35.2")
-    implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
-    implementation("com.google.apis:google-api-services-oauth2:v2-rev157-1.25.0")
-
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
-    implementation(kotlin("stdlib-jdk8"))
 
-    implementation("org.slf4j:slf4j-api:2.0.5")
-    implementation("commons-io:commons-io:2.11.0")
-    testImplementation("org.slf4j:slf4j-simple:2.0.5")
+    implementation(kotlin("stdlib"))
+
+    implementation(group = "com.fasterxml.jackson.core", name = "jackson-core", version = jackson_version)
+    implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jackson_version)
+    implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
+    implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
+
+    implementation(group = "com.google.api-client", name = "google-api-client", version = "1.35.2")
+    implementation(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
+    implementation(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
+    implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
+
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
+    testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "2.0.5")
 
     testImplementation(kotlin("script-runtime"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
-
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
 }
 
 

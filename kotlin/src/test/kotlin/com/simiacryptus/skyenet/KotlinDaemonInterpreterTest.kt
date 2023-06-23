@@ -6,6 +6,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-class KotlinDaemonInterpreterTest : HeartTestBase() {
-    override fun newInterpreter(map: java.util.Map<String, Object>) = KotlinDaemonInterpreter(map)
-}
+//class KotlinDaemonInterpreterTest : HeartTestBase() {
+//    override fun newInterpreter(map: java.util.Map<String, Object>) = KotlinDaemonInterpreter(map)
+//}

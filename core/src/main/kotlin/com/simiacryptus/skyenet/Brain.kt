@@ -69,7 +69,7 @@ open class Brain(
     open fun fixCommand(
         prompt: String,
         previousCode: String,
-        error: Exception,
+        error: Throwable,
         output: String
     ): Pair<String, List<Pair<String, String>>> {
         if (verbose) log.info(prompt)

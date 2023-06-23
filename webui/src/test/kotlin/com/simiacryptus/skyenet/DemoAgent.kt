@@ -7,6 +7,7 @@ import com.simiacryptus.skyenet.heart.GroovyInterpreter
 import com.simiacryptus.skyenet.body.SessionServerUtil.asJava
 import com.simiacryptus.skyenet.body.SkyenetCodingSessionServer
 import com.simiacryptus.skyenet.heart.KotlinLocalInterpreter
+import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter
 import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
 
 import java.awt.Desktop
@@ -39,7 +40,9 @@ object DemoAgent {
             ).asJava
 
 //            override fun heart(hands: java.util.Map<String, Object>): Heart = GroovyInterpreter(hands)
-            override fun heart(hands: java.util.Map<String, Object>): Heart = KotlinLocalInterpreter(hands)
+//            override fun heart(hands: java.util.Map<String, Object>): Heart = KotlinLocalInterpreter(hands)
+            override fun heart(hands: java.util.Map<String, Object>): Heart = ScalaLocalInterpreter::class.java.getConstructor(java.util.Map::class.java).newInstance(hands)
+
         }.start(port)
         Desktop.getDesktop().browse(URI(baseURL))
         server.join()

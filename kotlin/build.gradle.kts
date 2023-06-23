@@ -31,7 +31,7 @@ dependencies {
     implementation(project(":core"))
 
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
-    //implementation(kotlin("stdlib-jdk8"))
+
     implementation(kotlin("stdlib"))
     implementation(kotlin("script-util"))
     implementation(kotlin("script-runtime"))

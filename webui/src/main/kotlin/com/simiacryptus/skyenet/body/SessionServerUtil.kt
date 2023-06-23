@@ -3,8 +3,8 @@ package com.simiacryptus.skyenet.body
 import com.simiacryptus.openai.OpenAIClient.ChatMessage
 
 object SessionServerUtil {
-    fun getRenderedResponse(respondWithCode: Pair<String, List<Pair<String, String>>>) =
-        respondWithCode.second.joinToString("\n") {
+    fun getRenderedResponse(respondWithCode: List<Pair<String, String>>) =
+        respondWithCode.joinToString("\n") {
             var language = it.first
             if (language == "code") language = "groovy"
             if (language == "text") {

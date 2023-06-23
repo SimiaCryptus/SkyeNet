@@ -154,19 +154,40 @@ open class SkyenetCodingSession(
         status: OperationStatus,
     ): Triple<String, String, String> {
         //language=HTML
-        send("""$messageTrail<div><h3>Code:</h3>${parent.spinner}</div>""")
+        val buffer = StringBuffer()
+        buffer.append("""<div><h3>Code:</h3>""")
+        send("""$messageTrail$buffer${parent.spinner}</div>""")
         val response = brain.implement(describedInstruction)
         val codeBlocks = Brain.extractCodeBlocks(response)
-        val renderedResponse = SessionServerUtil.getRenderedResponse(Pair(response, codeBlocks))
-        val codedInstruction = SessionServerUtil.getCode(language, codeBlocks)
+        var renderedResponse = SessionServerUtil.getRenderedResponse(codeBlocks)
+        var codedInstruction = SessionServerUtil.getCode(language, codeBlocks)
         SkyenetCodingSessionServer.logger.debug("$sessionId - Response: $renderedResponse")
         SkyenetCodingSessionServer.logger.debug("$sessionId - Code: $codedInstruction")
         status.responseText = renderedResponse
         status.responseCode = codedInstruction
+        buffer.append("""<div>${renderedResponse}</div>""")
+
+        for (int in 0..3) {
+            try {
+                heart.validate(codedInstruction)
+                buffer.append("""</div>""")
+                break;
+            } catch (ex: Throwable) {
+                buffer.append("""<pre><code class="language-$language">${codedInstruction}</code></pre><pre>${ex.message}</pre>""")
+                send("""$messageTrail$buffer${parent.spinner}</div>""")
+                val respondWithCode =
+                    brain.fixCommand(describedInstruction, codedInstruction, ex, status.resultOutput)
+                renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode.second)
+                codedInstruction = SessionServerUtil.getCode(language, respondWithCode.second)
+                buffer.append("""<div>${renderedResponse}</div>""")
+                SkyenetCodingSessionServer.logger.debug("$sessionId - Response: $renderedResponse")
+                SkyenetCodingSessionServer.logger.debug("$sessionId - Code: $codedInstruction")
+            }
+        }
         status.status = OperationStatus.OperationState.Implemented
         parent.sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
         //language=HTML
-        return Triple(codedInstruction, """<div><h3>Code:</h3>${renderedResponse}</div>""", renderedResponse)
+        return Triple(codedInstruction, buffer.toString(), renderedResponse)
     }
 
     open fun fix(
@@ -181,7 +202,7 @@ open class SkyenetCodingSession(
         send("""$messageTrail<div><h3>New Code:</h3>${parent.spinner}</div>""")
         val respondWithCode =
             brain.fixCommand(describedInstruction, codedInstruction, e, status.resultOutput)
-        val renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode)
+        val renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode.second)
         val newCode = SessionServerUtil.getCode(language, respondWithCode.second)
         SkyenetCodingSessionServer.logger.debug("$sessionId - Response: $renderedResponse")
         SkyenetCodingSessionServer.logger.debug("$sessionId - Code: $newCode")

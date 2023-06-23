@@ -11,7 +11,6 @@ import com.simiacryptus.skyenet.body.SessionDataStorage
 import com.simiacryptus.skyenet.body.SkyenetInterviewer
 import com.simiacryptus.util.JsonUtil
 import java.awt.Desktop
-import java.io.File
 import java.net.URI
 import java.util.*
 import java.util.concurrent.Executors
