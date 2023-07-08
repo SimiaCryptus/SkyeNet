@@ -57,7 +57,7 @@ open class InterviewSession<T : Any>(
         var messageTrail = Companion.initialText(userMessage)
         send("""$messageTrail<div>${parent.spinner}</div>""")
         messages += ChatMessage(ChatMessage.Role.user, userMessage)
-        val response = parent.api.chat(chatRequest).choices?.first()?.message?.content.orEmpty()
+        val response = parent.api.chat(chatRequest, model).choices?.first()?.message?.content.orEmpty()
         messages += ChatMessage(ChatMessage.Role.assistant, response)
         messageTrail += """<div><pre>$response</pre></div>"""
         send(messageTrail)
