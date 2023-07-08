@@ -30,7 +30,7 @@ val kotlin_version = "1.7.22"
 val junit_version = "5.9.2"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.12")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.13")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
 
