@@ -32,7 +32,7 @@ val jetty_version = "11.0.15"
 val jackson_version = "2.15.0"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.13")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.14")
 
     implementation(project(":core"))
     testImplementation(project(":groovy"))
@@ -45,6 +45,8 @@ dependencies {
     implementation(group = "org.eclipse.jetty.websocket", name = "websocket-jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty.websocket", name = "websocket-jetty-client", version = jetty_version)
     implementation(group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version = jetty_version)
+
+    implementation(group = "com.vladsch.flexmark", name = "flexmark-all", version = "0.64.8")
 
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
 
