@@ -31,7 +31,15 @@
     flex-shrink: 0;
 }
 
+.reply-form {
+    width: 100%;
+}
+
 .chat-input {
+    resize: vertical;
+}
+
+.reply-input {
     resize: vertical;
 }
 

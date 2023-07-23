@@ -1,6 +1,8 @@
 package com.simiacryptus.skyenet.body
 
+import com.google.common.util.concurrent.MoreExecutors
 import java.util.LinkedHashMap
+import java.util.concurrent.Executors
 
 abstract class PersistentSessionBase(
     sessionId: String,
@@ -34,26 +36,30 @@ abstract class PersistentSessionBase(
     }
 
 
+    open val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
+
     override fun onWebSocketText(socket: WebSocketServer.MessageWebSocket, message: String) {
-        SkyenetCodingSessionServer.logger.debug("$sessionId - Received message: $message")
-        try {
-            val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
-            if (opCmdPattern.matches(message)) {
-                val id = message.substring(1, message.indexOf(","))
-                val code = message.substring(id.length + 2)
-                onCmd(id, code)
-            } else {
-                onRun(message)
+        pool.submit {
+            SkyenetCodingSessionServer.logger.debug("$sessionId - Received message: $message")
+            try {
+                val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
+                if (opCmdPattern.matches(message)) {
+                    val id = message.substring(1, message.indexOf(","))
+                    val code = message.substring(id.length + 2)
+                    onCmd(id, code)
+                } else {
+                    onRun(message)
+                }
+            } catch (e: Exception) {
+                SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $message", e)
             }
-        } catch (e: Exception) {
-            SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $message", e)
         }
     }
 
     protected open fun onRun(describedInstruction: String) {
         Thread {
             try {
-                run(describedInstruction)
+                 run(describedInstruction)
             } catch (e: Exception) {
                 SkyenetCodingSessionServer.logger.warn(
                     "$sessionId - Error processing message: $describedInstruction",
