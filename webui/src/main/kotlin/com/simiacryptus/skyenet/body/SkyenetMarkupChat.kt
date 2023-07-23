@@ -1,9 +1,12 @@
 package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.openai.OpenAIClient
+import com.vladsch.flexmark.util.data.MutableDataSet
 import org.apache.commons.io.FileUtils
 import org.eclipse.jetty.webapp.WebAppContext
+import java.awt.Desktop
 import java.io.File
+import java.net.URI
 
 open class SkyenetMarkupChat(
     applicationName: String,
@@ -17,6 +20,7 @@ open class SkyenetMarkupChat(
                 |I understand that the user might want to have a casual conversation. 
                 |So, I'll respond in a friendly and engaging manner.
                 |I will also ask questions to keep the conversation going.
+                |If I mention any topics that can be cross-referenced on Wikipedia, I'll provide a link.
                 |Once we have finished our conversation, I'll say goodbye.
                 |
                 |${visiblePrompt}
@@ -54,15 +58,36 @@ open class SkyenetMarkupChat(
             hiddenPrompt = hiddenPrompt,
             systemPrompt = systemPrompt,
         ) {
-            override fun renderResponse(raw: String): String {
-                val rendered = super.renderResponse(raw)
-                return postRender(raw, rendered)
-            }
+            override fun renderResponse(raw: String) = postRender(raw, super.renderResponse(raw))
+
+            override fun flexmarkOptions() = editFlexmarkOptions(super.flexmarkOptions())
         }
         handler.setDelegate(basicChatSession)
         return handler
     }
 
     open fun postRender(raw: String, rendered: String) = rendered
+    open fun editFlexmarkOptions(options: MutableDataSet = MutableDataSet()) = options
+
+    companion object {
+
+        val api = OpenAIClient(OpenAIClient.keyTxt)
+        val log = org.slf4j.LoggerFactory.getLogger(SkyenetMarkupChat::class.java)!!
+        var sessionDataStorage: SessionDataStorage? = null
+        const val port = 8081
+        const val baseURL = "http://localhost:$port"
+        var skyenet = SkyenetMarkupChat(
+            applicationName = "Chat Demo",
+            baseURL = baseURL
+        )
+
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val httpServer = skyenet.start(port)
+            sessionDataStorage = skyenet.sessionDataStorage
+            Desktop.getDesktop().browse(URI(baseURL))
+            httpServer.join()
+        }
+    }
 
 }

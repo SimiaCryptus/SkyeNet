@@ -130,6 +130,13 @@
             } else if (target.classList.contains('cancel-button')) {
                 const messageId = target.getAttribute('data-id');
                 send('!' + messageId + ',stop');
+            } else if (target.classList.contains('href-link')) {
+                const messageId = target.getAttribute('data-id');
+                send('!' + messageId + ',link');
+            } else if (target.classList.contains('text-submit-button')) {
+                const messageId = target.getAttribute('data-id');
+                const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
+                send('!' + messageId + ',userTxt,' + text);
             }
         });
     });

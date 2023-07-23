@@ -212,7 +212,7 @@ object SoftwareProjectGenerator {
         validate = ProjectSpecification::validate,
         apiKey = OpenAIClient.keyTxt
     )
-    val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
+
     val generator = ChatProxy(SoftwareGenerator::class.java, api).create()
 
     @JvmStatic

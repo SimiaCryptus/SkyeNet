@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.body
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.Heart
+import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.util.describe.TypeDescriber
 import com.simiacryptus.util.describe.YamlDescriber
 import jakarta.servlet.http.HttpServlet
@@ -15,7 +16,7 @@ import java.io.File
 
 abstract class SkyenetCodingSessionServer(
     applicationName: String,
-    val typeDescriber: TypeDescriber = YamlDescriber(),
+    val typeDescriber: TypeDescriber = AbbrevWhitelistYamlDescriber("com.simiacryptus", "com.github.simiacryptus"),
     oauthConfig: String? = null,
     val autoRun: Boolean = false,
     resourceBase: String = "simpleSession",

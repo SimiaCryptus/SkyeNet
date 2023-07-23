@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.body.SessionDataStorage
-import com.simiacryptus.skyenet.body.SkyenetBasicChat
 import com.simiacryptus.skyenet.body.SkyenetMarkupChat
 import java.awt.Desktop
 import java.net.URI
