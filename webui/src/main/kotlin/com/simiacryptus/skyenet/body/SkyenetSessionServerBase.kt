@@ -27,17 +27,17 @@ abstract class SkyenetSessionServerBase(
 
     open val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
 
-    override fun configure(context: WebAppContext) {
-        super.configure(context)
+    override fun configure(context: WebAppContext, prefix: String) {
+        super.configure(context, prefix)
 
         if (null != oauthConfig) (AuthenticatedWebsite("$baseURL/oauth2callback", this@SkyenetSessionServerBase.applicationName) {
             FileUtils.openInputStream(File(oauthConfig))
         }).configure(context)
 
-        context.addServlet(appInfo, "/appInfo")
-        context.addServlet(fileIndex, "/fileIndex/*")
-        context.addServlet(fileZip, "/fileZip")
-        context.addServlet(sessionList, "/sessions")
+        context.addServlet(appInfo, prefix+"/appInfo")
+        context.addServlet(fileIndex, prefix+"/fileIndex/*")
+        context.addServlet(fileZip, prefix+"/fileZip")
+        context.addServlet(sessionList, prefix+"/sessions")
     }
 
     protected open val fileZip = ServletHolder(

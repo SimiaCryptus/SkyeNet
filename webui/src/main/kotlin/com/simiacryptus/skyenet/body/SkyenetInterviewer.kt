@@ -29,8 +29,8 @@ open class SkyenetInterviewer<T : Any>(
 
     override val api: OpenAIClient = OpenAIClient(apiKey)
 
-    override fun configure(context: WebAppContext) {
-        super.configure(context)
+    override fun configure(context: WebAppContext, prefix: String) {
+        super.configure(context, prefix)
 
         if (null != oauthConfig) AuthenticatedWebsite(
             "$baseURL/oauth2callback",

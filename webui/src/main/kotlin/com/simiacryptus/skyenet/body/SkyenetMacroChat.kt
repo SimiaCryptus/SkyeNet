@@ -21,16 +21,6 @@ abstract class SkyenetMacroChat(
     override val api: OpenAIClient
         get() = OpenAIClient()
 
-    override fun configure(context: WebAppContext) {
-        super.configure(context)
-        if (null != oauthConfig) AuthenticatedWebsite(
-            "$baseURL/oauth2callback",
-            this@SkyenetMacroChat.applicationName
-        ) {
-            FileUtils.openInputStream(File(oauthConfig))
-        }.configure(context)
-    }
-
     interface SessionUI {
         val spinner: String
         val playButton: String

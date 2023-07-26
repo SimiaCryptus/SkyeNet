@@ -102,13 +102,13 @@ abstract class WebSocketServer(val resourceBase: String) {
 
     open val baseResource: Resource? get() = Resource.newResource(javaClass.classLoader.getResource(resourceBase))
 
-    open fun configure(webAppContext: WebAppContext) {
-        JettyWebSocketServletContainerInitializer.configure(webAppContext, null)
+    open fun configure(webAppContext: WebAppContext, prefix: String = "") {
+        if(prefix.isEmpty()) JettyWebSocketServletContainerInitializer.configure(webAppContext, null)
         val defaultServlet = DefaultServlet()
         //defaultServlet.dirAllowed = false
-        webAppContext.addServlet(ServletHolder("default", defaultServlet), "/")
-        webAppContext.addServlet(ServletHolder("ws", WebSocketHandler()), "/ws/*")
-        webAppContext.addServlet(ServletHolder("newSession", NewSessionServlet()), "/newSession")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), prefix + "/")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/ws", WebSocketHandler()), prefix + "/ws/*")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", NewSessionServlet()), prefix + "/newSession")
     }
 
     companion object {

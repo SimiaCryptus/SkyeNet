@@ -5,7 +5,6 @@ import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.Heart
 import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.util.describe.TypeDescriber
-import com.simiacryptus.util.describe.YamlDescriber
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -41,13 +40,8 @@ abstract class SkyenetCodingSessionServer(
     abstract fun hands(): java.util.Map<String, Object>
     abstract fun heart(hands: java.util.Map<String, Object>): Heart
 
-    override fun configure(context: WebAppContext) {
-        super.configure(context)
-
-        if (null != oauthConfig) (AuthenticatedWebsite("$baseURL/oauth2callback", this@SkyenetCodingSessionServer.applicationName) {
-            FileUtils.openInputStream(File(oauthConfig))
-        }).configure(context)
-
+    override fun configure(context: WebAppContext, prefix: String) {
+        super.configure(context, prefix)
         context.addServlet(descriptorServlet, "/yamlDescriptor")
     }
 

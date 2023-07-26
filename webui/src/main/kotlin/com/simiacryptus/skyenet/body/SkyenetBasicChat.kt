@@ -1,8 +1,6 @@
 package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.util.describe.TypeDescriber
-import com.simiacryptus.util.describe.YamlDescriber
 import org.apache.commons.io.FileUtils
 import org.eclipse.jetty.webapp.WebAppContext
 import java.io.File
@@ -19,8 +17,8 @@ open class SkyenetBasicChat(
     override val api: OpenAIClient
         get() = OpenAIClient()
 
-    override fun configure(context: WebAppContext) {
-        super.configure(context)
+    override fun configure(context: WebAppContext, prefix: String) {
+        super.configure(context, prefix)
         if (null != oauthConfig) AuthenticatedWebsite(
             "$baseURL/oauth2callback",
             this@SkyenetBasicChat.applicationName

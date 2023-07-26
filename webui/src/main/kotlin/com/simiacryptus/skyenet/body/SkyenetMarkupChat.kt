@@ -39,8 +39,8 @@ open class SkyenetMarkupChat(
     override val api: OpenAIClient
         get() = OpenAIClient()
 
-    override fun configure(context: WebAppContext) {
-        super.configure(context)
+    override fun configure(context: WebAppContext, prefix: String) {
+        super.configure(context, prefix)
         if (null != oauthConfig) AuthenticatedWebsite(
             "$baseURL/oauth2callback",
             this@SkyenetMarkupChat.applicationName
