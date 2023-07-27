@@ -31,14 +31,6 @@ open class SkyenetInterviewer<T : Any>(
 
     override fun configure(context: WebAppContext, prefix: String) {
         super.configure(context, prefix)
-
-        if (null != oauthConfig) AuthenticatedWebsite(
-            "$baseURL/oauth2callback",
-            this@SkyenetInterviewer.applicationName
-        ) {
-            FileUtils.openInputStream(File(oauthConfig))
-        }.configure(context)
-
         context.addServlet(
             ServletHolder(
                 "yamlDescriptor",

@@ -96,6 +96,7 @@ abstract class WebSocketServer(val resourceBase: String) {
         webAppContext.baseResource = baseResource
         webAppContext.contextPath = "/"
         webAppContext.welcomeFiles = arrayOf("index.html")
+        JettyWebSocketServletContainerInitializer.configure(webAppContext, null)
         configure(webAppContext)
         server.handler = webAppContext
     }
@@ -103,13 +104,21 @@ abstract class WebSocketServer(val resourceBase: String) {
     open val baseResource: Resource? get() = Resource.newResource(javaClass.classLoader.getResource(resourceBase))
 
     open fun configure(webAppContext: WebAppContext, prefix: String = "") {
-        if(prefix.isEmpty()) JettyWebSocketServletContainerInitializer.configure(webAppContext, null)
-        val defaultServlet = DefaultServlet()
-        //defaultServlet.dirAllowed = false
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), prefix + "/")
-        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/ws", WebSocketHandler()), prefix + "/ws/*")
-        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", NewSessionServlet()), prefix + "/newSession")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/ws", webSocketHandler), prefix + "/ws/*")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", newSessionServlet),prefix + "/newSession")
     }
+
+    open val newSessionServlet get() = NewSessionServlet()
+
+    open val webSocketHandler get() = WebSocketHandler()
+
+    open val defaultServlet: DefaultServlet
+        get() {
+            val defaultServlet = DefaultServlet()
+            //defaultServlet.dirAllowed = false
+            return defaultServlet
+        }
 
     companion object {
         val logger = org.slf4j.LoggerFactory.getLogger(WebSocketServer::class.java)

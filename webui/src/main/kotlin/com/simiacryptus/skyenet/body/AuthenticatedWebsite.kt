@@ -91,9 +91,8 @@ open class AuthenticatedWebsite(
             // Check if the request is an HTTP request and the response is an HTTP response
             if (request is HttpServletRequest && response is HttpServletResponse) {
                 // Get the path of the request URI
-                val path = request.requestURI
                 // Check if the path does not match /googleLogin or /oauth2callback
-                if (setOf("/googleLogin", "/oauth2callback").none { path.startsWith(it) }) {
+                if (isSecure(request)) {
                     // Get the sessionId cookie from the request
                     val sessionIdCookie = request.cookies?.firstOrNull { it.name == "sessionId" }
                     // Check if the sessionId is null or is not contained in the users map
@@ -110,6 +109,9 @@ open class AuthenticatedWebsite(
 
         override fun destroy() {}
     }
+
+    open fun isSecure(request: HttpServletRequest) =
+        setOf("/googleLogin", "/oauth2callback").none { request.requestURI.startsWith(it) }
 
     val users = HashMap<String, Userinfo>()
 

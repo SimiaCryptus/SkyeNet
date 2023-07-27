@@ -17,17 +17,6 @@ open class SkyenetBasicChat(
     override val api: OpenAIClient
         get() = OpenAIClient()
 
-    override fun configure(context: WebAppContext, prefix: String) {
-        super.configure(context, prefix)
-        if (null != oauthConfig) AuthenticatedWebsite(
-            "$baseURL/oauth2callback",
-            this@SkyenetBasicChat.applicationName
-        ) {
-            FileUtils.openInputStream(File(oauthConfig))
-        }.configure(context)
-    }
-
-
     override fun newSession(sessionId: String): SessionInterface {
         val handler = MutableSessionHandler(null)
         val basicChatSession = BasicChatSession(

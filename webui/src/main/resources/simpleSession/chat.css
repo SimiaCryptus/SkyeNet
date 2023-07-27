@@ -43,6 +43,11 @@
     resize: vertical;
 }
 
+.href-link {
+    text-decoration: underline;
+    color: blue;
+}
+
 #message {
     flex-grow: 1;
     margin-right: 5px;
