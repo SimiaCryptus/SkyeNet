@@ -119,10 +119,10 @@ abstract class SkyenetSessionServerBase(
                     resp.contentType = "text/html"
                     resp.status = HttpServletResponse.SC_OK
                     val files = file.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
-                        """<a href="/fileIndex/$sessionID${it.path.substring(sessionDir.path.length)}">${it.name}</a>"""
+                        """<a href="${it.name}">${it.name}</a>"""
                     } ?: ""
                     val folders = file.listFiles()?.filter { !it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
-                        """<a href="/fileIndex/$sessionID${it.path.substring(sessionDir.path.length)}">${it.name}</a>"""
+                        """<a href="${it.name}/">${it.name}</a>"""
                     } ?: ""
                     resp.writer.write(
                         """
@@ -132,7 +132,7 @@ abstract class SkyenetSessionServerBase(
                         |</head>
                         |<body>
                         |<h1>Archive</h1>
-                        |<a href="/fileZip?session=$sessionID&path=$path">ZIP</a>
+                        |<a href="${req.contextPath}/fileZip?session=$sessionID&path=$path">ZIP</a>
                         |<h1>Folders</h1>
                         |$folders
                         |<h1>Files</h1>

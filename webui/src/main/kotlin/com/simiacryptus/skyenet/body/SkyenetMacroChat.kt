@@ -1,9 +1,6 @@
 package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.openai.OpenAIClient
-import org.apache.commons.io.FileUtils
-import org.eclipse.jetty.webapp.WebAppContext
-import java.io.File
 import java.util.concurrent.Semaphore
 import java.util.function.Consumer
 
@@ -49,7 +46,7 @@ abstract class SkyenetMacroChat(
                     playSempaphores[operationID] = Semaphore(0)
                     var responseContents = ChatSession.divInitializer(operationID)
                     try {
-                        processMessage(userMessage, object : SessionUI {
+                        processMessage(sessionId, userMessage, object : SessionUI {
                             override val spinner: String get() = """<div>${parent.spinner}</div>"""
                             override val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
                             override val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
@@ -112,6 +109,7 @@ abstract class SkyenetMacroChat(
     }
 
     abstract fun processMessage(
+        sessionId: String,
         userMessage: String,
         sessionUI: SessionUI,
         sendUpdate: (String, Boolean) -> Unit
