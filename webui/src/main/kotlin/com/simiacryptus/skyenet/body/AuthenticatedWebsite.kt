@@ -61,7 +61,7 @@ open class AuthenticatedWebsite(
      *
      * @param context the `WebAppContext` to configure
      */
-    open fun configure(context: WebAppContext) {
+    open fun configure(context: WebAppContext, addFilter: Boolean = true) {
         // Create a ServletHolder for the GoogleLoginServlet and add it to the context
         val googleServletHolder = ServletHolder("googleLogin", GoogleLoginServlet())
         context.addServlet(googleServletHolder, "/googleLogin")
@@ -69,7 +69,7 @@ open class AuthenticatedWebsite(
         val callbackServletHolder = ServletHolder("oauth2callback", OAuth2CallbackServlet())
         context.addServlet(callbackServletHolder, "/oauth2callback")
         // Add a SessionIdFilter to the context that intercepts every request
-        context.addFilter(FilterHolder(SessionIdFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
+        if(addFilter) context.addFilter(FilterHolder(SessionIdFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
     }
 
     inner class SessionIdFilter : Filter {
