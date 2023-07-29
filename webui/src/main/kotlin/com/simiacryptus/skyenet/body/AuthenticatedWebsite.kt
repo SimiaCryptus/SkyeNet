@@ -130,7 +130,7 @@ open class AuthenticatedWebsite(
                 newUserSession(userInfo, sessionID)
                 val sessionCookie = Cookie("sessionId", sessionID)
                 sessionCookie.path = "/"
-                sessionCookie.isHttpOnly = true
+                sessionCookie.isHttpOnly = false
                 resp.addCookie(sessionCookie)
                 resp.sendRedirect("/")
             } else {
