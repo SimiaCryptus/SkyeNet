@@ -29,16 +29,8 @@ open class SkyenetInterviewer<T : Any>(
 
     override val api: OpenAIClient = OpenAIClient(apiKey)
 
-    override fun configure(context: WebAppContext) {
-        super.configure(context)
-
-        if (null != oauthConfig) AuthenticatedWebsite(
-            "$baseURL/oauth2callback",
-            this@SkyenetInterviewer.applicationName
-        ) {
-            FileUtils.openInputStream(File(oauthConfig))
-        }.configure(context)
-
+    override fun configure(context: WebAppContext, prefix: String) {
+        super.configure(context, prefix)
         context.addServlet(
             ServletHolder(
                 "yamlDescriptor",

@@ -39,16 +39,6 @@ open class SkyenetMarkupChat(
     override val api: OpenAIClient
         get() = OpenAIClient()
 
-    override fun configure(context: WebAppContext) {
-        super.configure(context)
-        if (null != oauthConfig) AuthenticatedWebsite(
-            "$baseURL/oauth2callback",
-            this@SkyenetMarkupChat.applicationName
-        ) {
-            FileUtils.openInputStream(File(oauthConfig))
-        }.configure(context)
-    }
-
     override fun newSession(sessionId: String): SessionInterface {
         val handler = MutableSessionHandler(null)
         val basicChatSession = object : ChatSessionFlexmark(

@@ -1,6 +1,6 @@
 function getSessionId() {
     if (!window.location.hash) {
-        fetch('/newSession')
+        fetch('newSession')
             .then(response => {
                 if (response.ok) {
                     return response.text();
@@ -28,8 +28,15 @@ function connect(sessionId, customReceiveFunction) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
     const port = window.location.port;
+    let path = window.location.pathname;
+    let strings = path.split('/');
+    if(strings.length >= 2) {
+        path = '/' + strings[1] + '/';
+    } else {
+        path = '/';
+    }
 
-    socket = new WebSocket(`${protocol}//${host}:${port}/ws?sessionId=${sessionId}`);
+    socket = new WebSocket(`${protocol}//${host}:${port}${path}ws?sessionId=${sessionId}`);
 
     socket.addEventListener('open', (event) => {
         console.log('WebSocket connected:', event);

@@ -22,71 +22,71 @@ class SkyenetScienceBook(
         fun parseProjectSpec(spec: String): ProjectSpec
 
         data class ProjectSpec(
-            val title: String,
-            val domain: String,
-            val targetAudience: TargetAudience,
-            val materials: List<String>,
-            val equipment: List<String>,
+            val title: String = "",
+            val domain: String = "",
+            val targetAudience: TargetAudience? = null,
+            val materials: List<String> = listOf(),
+            val equipment: List<String> = listOf(),
         )
 
         data class TargetAudience(
-            val ageGroup: String
+            val ageGroup: String = "",
         )
 
         data class WritingStyle(
-            val targetAudience: TargetAudience,
+            val targetAudience: TargetAudience? = null,
             val notes: MutableMap<String,String> = mutableMapOf()
         )
 
         fun createExperiments(spec: ProjectSpec, count: Int): ExperimentList
 
         data class ExperimentList(
-            val experimentList: List<ExperimentSummary>
+            val experimentList: List<ExperimentSummary> = listOf()
         )
 
         data class ExperimentSummary(
             @Description("A very brief description of the science experiment for listing/indexing purposes")
-            val title: String,
+            val title: String = "",
             @Description("A brief description of the science experiment")
-            val description: String,
+            val description: String = "",
             @Description("A list of materials used; this should be limited to 2-5 items, usually drawn from the available project materials")
-            val materials: List<String>,
+            val materials: List<String> = listOf(),
             @Description("A list of equipment used; this should be limited to what is strictly needed, and drawn from the available project materials")
-            val equipment: List<String>,
+            val equipment: List<String> = listOf(),
         )
 
         data class ExperimentDetails(
             @Description("A very brief description of the science experiment for listing/indexing purposes")
-            val title: String,
+            val title: String = "",
             @Description("A narrative description of the relevant science background")
-            val background: String,
+            val background: String = "",
             @Description("A narrative description of the science experiment")
-            val description: String,
+            val description: String  = "",
             @Description("A map of materials used to the quantities required for the experiment")
-            val materials: Map<String, String>,
+            val materials: Map<String, String> = mapOf(),
             @Description("A map of equipment to quantity required for the experiment")
-            val equipment: Map<String, Int>,
+            val equipment: Map<String, Int> = mapOf(),
             @Description("A checklist for experiment preparation")
-            val labSetup: List<String>,
+            val labSetup: List<String> = listOf(),
             @Description("A list of steps to perform the experiment")
-            val steps: List<ExperimentStepData>,
+            val steps: List<ExperimentStepData> = listOf(),
             @Description("A map of observations to make during the experiment (with expected results)")
-            val observations: Map<String, String>,
+            val observations: Map<String, String> = mapOf(),
             @Description("A list of ideas for variations on the experiment")
-            val variations: List<ExperimentVariation>,
-            val supervisionNotes: List<String>,
+            val variations: List<ExperimentVariation> = listOf(),
+            val supervisionNotes: List<String> = listOf(),
         )
 
         data class ExperimentStepData(
-            val step: String,
-            val observations: List<String>,
+            val step: String = "",
+            val observations: List<String> = listOf(),
         )
 
         data class ExperimentVariation(
-            val title: String,
-            val details: String,
+            val title: String = "",
+            val details: String = "",
             @Description("A map of observations to make during the experiment (with expected results)")
-            val observations: Map<String, String>,
+            val observations: Map<String, String> = mapOf(),
         )
 
         fun detailExperiment(experiment: ExperimentSummary): ExperimentDetails
@@ -103,7 +103,7 @@ class SkyenetScienceBook(
         ): LabNotebook
 
         data class LabNotebook(
-            val markdown: String
+            val markdown: String = ""
         )
     }
 
@@ -114,6 +114,7 @@ class SkyenetScienceBook(
         temperature = temperature
     ).create()
     override fun processMessage(
+        sessionId: String,
         userMessage: String,
         sessionUI: SessionUI,
         sendUpdate: (String, Boolean) -> Unit
@@ -162,7 +163,7 @@ class SkyenetScienceBook(
 
     companion object {
 
-        const val port = 8081
+        const val port = 8771
         const val baseURL = "http://localhost:$port"
 
         @JvmStatic

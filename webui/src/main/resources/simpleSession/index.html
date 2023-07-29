@@ -27,8 +27,8 @@
 </div>
 
 <script>
-    document.getElementById('api').addEventListener('click', () => showModal('/yamlDescriptor'));
-    document.getElementById('history').addEventListener('click', () => showModal('/sessions'));
+    document.getElementById('api').addEventListener('click', () => showModal('yamlDescriptor'));
+    document.getElementById('history').addEventListener('click', () => showModal('sessions'));
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {
@@ -142,7 +142,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        fetch('/appInfo')
+        fetch('appInfo')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -162,7 +162,7 @@
     document.getElementById("files").addEventListener("click", function (event) {
         event.preventDefault(); // Prevent the default behavior of the anchor tag
         const sessionId = getSessionId();
-        const url = "/fileIndex/" + sessionId + "/";
+        const url = "fileIndex/" + sessionId + "/";
         window.open(url, "_blank"); // Open the URL in a new tab
     });
 
