@@ -30,7 +30,7 @@ function connect(sessionId, customReceiveFunction) {
     const port = window.location.port;
     let path = window.location.pathname;
     let strings = path.split('/');
-    if(strings.length >= 2) {
+    if(strings.length >= 2 && strings[1] !== '' && strings[1] !== 'index.html') {
         path = '/' + strings[1] + '/';
     } else {
         path = '/';
