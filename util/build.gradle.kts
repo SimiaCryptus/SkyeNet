@@ -32,7 +32,7 @@ val jetty_version = "11.0.15"
 dependencies {
 
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.17")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.18")
 
     implementation(project(":core"))
     implementation(project(":webui"))

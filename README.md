@@ -75,19 +75,19 @@ Maven:
 
 <dependency>
     <groupId>com.simiacryptus</groupId>
-    <artifactId>skyenet</artifactId>
-    <version>1.0.0</version>
+    <artifactId>skyenet-webui</artifactId>
+    <version>1.0.16</version>
 </dependency>
 ```
 
 Gradle:
 
 ```groovy
-implementation group: 'com.simiacryptus', name: 'skyenet', version: '1.0.0'
+implementation group: 'com.simiacryptus', name: 'skyenet', version: '1.0.16'
 ```
 
 ```kotlin
-implementation("com.simiacryptus:skyenet:1.0.0")
+implementation("com.simiacryptus:skyenet:1.0.16")
 ```
 
 ### 🌟 To Use
