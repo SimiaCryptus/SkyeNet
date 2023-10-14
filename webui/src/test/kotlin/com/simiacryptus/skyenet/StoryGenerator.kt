@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
 import com.simiacryptus.skyenet.body.ChatSessionFlexmark
+import com.simiacryptus.skyenet.body.PersistentSessionBase
 import com.simiacryptus.skyenet.body.SkyenetMacroChat
 import com.simiacryptus.util.describe.Description
 import java.awt.Desktop
@@ -79,6 +80,7 @@ class StoryGenerator(
     override fun processMessage(
         sessionId: String,
         userMessage: String,
+        session: PersistentSessionBase,
         sessionUI: SessionUI,
         sendUpdate: (String, Boolean) -> Unit
     ) {

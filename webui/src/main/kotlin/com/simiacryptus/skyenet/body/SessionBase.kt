@@ -32,4 +32,19 @@ abstract class SessionBase(val sessionId: String) : SessionInterface {
     override fun getReplay(): List<String> {
         return sentMessages
     }
+
+    fun newUpdate(
+        operationID: String, spinner: String
+    ): (String, Boolean) -> Unit {
+        var responseContents = ChatSession.divInitializer(operationID)
+        val sendUpdate: (String, Boolean) -> Unit = { message, showProgress ->
+            if (message.isNotBlank()) {
+                responseContents += """<div>$message</div>"""
+            }
+            val spinner = if (showProgress) """<div>$spinner</div>""" else ""
+            send("""$responseContents$spinner""")
+        }
+        send(responseContents)
+        return sendUpdate
+    }
 }
