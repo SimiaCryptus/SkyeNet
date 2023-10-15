@@ -17,6 +17,8 @@ import java.util.*
 
 abstract class WebSocketServer(val resourceBase: String) {
 
+    abstract val applicationName: String
+
     inner class NewSessionServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
             val sessionId = UUID.randomUUID().toString()

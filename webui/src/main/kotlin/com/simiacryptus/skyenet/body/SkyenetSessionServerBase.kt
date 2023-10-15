@@ -13,7 +13,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 abstract class SkyenetSessionServerBase(
-    val applicationName: String,
+    override val applicationName: String,
     val oauthConfig: String? = null,
     resourceBase: String = "simpleSession",
     val baseURL: String = "http://localhost:8080",
