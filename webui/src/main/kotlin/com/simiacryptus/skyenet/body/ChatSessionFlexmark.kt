@@ -40,7 +40,7 @@ open class ChatSessionFlexmark(
 
         fun defaultOptions(): MutableDataSet {
             val options = MutableDataSet()
-            options.set(Parser.EXTENSIONS, listOf(TablesExtension.create()));
+            options.set(Parser.EXTENSIONS, listOf(TablesExtension.create()))
             return options
         }
     }

@@ -4,6 +4,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
 import com.simiacryptus.skyenet.body.ChatSessionFlexmark
 import com.simiacryptus.skyenet.body.PersistentSessionBase
+import com.simiacryptus.skyenet.body.SessionDiv
 import com.simiacryptus.skyenet.body.SkyenetMacroChat
 import com.simiacryptus.util.JsonUtil
 import java.awt.Desktop
@@ -63,22 +64,22 @@ class SoftwareProjectGenerator(
         userMessage: String,
         session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sendUpdate: (String, Boolean) -> Unit
+        sessionDiv: SessionDiv
     ) {
         try {
-            sendUpdate("""<div>${ChatSessionFlexmark.renderMarkdown(userMessage)}</div>""", true)
+            sessionDiv.append("""<div>${ChatSessionFlexmark.renderMarkdown(userMessage)}</div>""", true)
             val projectParameters = projectAPI.parseProject(userMessage)
-            sendUpdate("""<pre>${JsonUtil.toJson(projectParameters)}</pre>""", true)
-            //sendUpdate("<hr/><div><em>${projectParameters.title}</em></div>", true)
+            sessionDiv.append("""<pre>${JsonUtil.toJson(projectParameters)}</pre>""", true)
+            //sessionDiv.apply("<hr/><div><em>${projectParameters.title}</em></div>", true)
             val fileSpecList = projectAPI.expandProject(projectParameters)
 
             fileSpecList.items.forEach { fileSpec ->
-                sendUpdate(
+                sessionDiv.append(
                     """<div>${
                         sessionUI.hrefLink {
-                            sendUpdate("<hr/><div><em>${fileSpec.filepath}</em></div>", true)
+                            sessionDiv.append("<hr/><div><em>${fileSpec.filepath}</em></div>", true)
                             val fileImpl = projectAPI.implementFile(fileSpec)
-                            sendUpdate("<pre>${fileImpl.text}</pre>", false)
+                            sessionDiv.append("<pre>${fileImpl.text}</pre>", false)
                         }
                     }${fileSpec.filepath}</a></div>""", false)
             }

@@ -43,7 +43,7 @@ abstract class SkyenetMacroChat(
             val session : PersistentSessionBase = this
             override fun run(userMessage: String) {
                 val operationID = ChatSession.randomID()
-                val sendUpdate = newUpdate(operationID, spinner)
+                val sessionDiv = newSessionDiv(operationID, spinner)
                 val thread = Thread {
                     playSempaphores[operationID] = Semaphore(0)
                     try {
@@ -69,7 +69,7 @@ abstract class SkyenetMacroChat(
                                                        </form>""".trimIndent()
                                                    }
 
-                                               }, sendUpdate)
+                                               }, sessionDiv)
                     } catch (e: Throwable) {
                         e.printStackTrace()
                     } finally {
@@ -107,32 +107,33 @@ abstract class SkyenetMacroChat(
         userMessage: String,
         session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sendUpdate: (String, Boolean) -> Unit
+        sessionDiv: SessionDiv
     )
 
     companion object {
-        fun iterate(
+
+        fun <T : Any> iterate(
             sessionUI: SessionUI,
-            parameters: Any,
-            sendUpdate: (String, Boolean) -> Unit,
-            feedbackFn: (t: String) -> Unit,
-            selectLabel: String = "Execute",
-            selectFn: (t: Unit) -> Unit
-        ) {
-            sendUpdate(
-                """
-                    <pre>${JsonUtil.toJson(parameters)}</pre>
-                    <br/>
-                    ${sessionUI.textInput(feedbackFn)}
-                    <br/>
-                    ${
-                    sessionUI.hrefLink(
-                        selectFn
-                    )
-                }$selectLabel</a>""", false
-            )
-        }
+            sessionDiv: SessionDiv,
+            parameters: T,
+            feedbackFn: (msg: T, t: String) -> Unit,
+            fns: Map<String, (t: T) -> Unit>
+        ) = sessionDiv.append(
+            """
+            <pre>${JsonUtil.toJson(parameters)}</pre>
+            <br/>
+            ${sessionUI.textInput { feedbackFn(parameters, it) }}
+            <br/>
+            ${fns.entries.joinToString("\n") { (label, fn) ->
+                sessionUI.hrefLink { fn(parameters) } + label + "</a>"
+            }}
+            """, false
+        )
     }
 
+}
+
+abstract class SessionDiv {
+    abstract fun append(htmlToAppend: String, showSpinner: Boolean) : Unit
 }
 

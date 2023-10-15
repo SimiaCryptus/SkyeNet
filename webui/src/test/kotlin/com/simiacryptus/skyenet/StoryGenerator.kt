@@ -4,6 +4,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
 import com.simiacryptus.skyenet.body.ChatSessionFlexmark
 import com.simiacryptus.skyenet.body.PersistentSessionBase
+import com.simiacryptus.skyenet.body.SessionDiv
 import com.simiacryptus.skyenet.body.SkyenetMacroChat
 import com.simiacryptus.util.describe.Description
 import java.awt.Desktop
@@ -82,18 +83,18 @@ class StoryGenerator(
         userMessage: String,
         session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sendUpdate: (String, Boolean) -> Unit
+        sessionDiv: SessionDiv
     ) {
         try {
-            sendUpdate("""<div>${ChatSessionFlexmark.renderMarkdown(userMessage)}</div>""", true)
+            sessionDiv.append("""<div>${ChatSessionFlexmark.renderMarkdown(userMessage)}</div>""", true)
             val storyParameters = storyAPI.generateStoryIdeas(userMessage)
             storyParameters.items.forEach { storyParameters ->
-                sendUpdate(
+                sessionDiv.append(
                     """<div>${
                         sessionUI.hrefLink {
-                            sendUpdate("<hr/><div><em>${storyParameters.title}</em></div>", true)
+                            sessionDiv.append("<hr/><div><em>${storyParameters.title}</em></div>", true)
                             extracted(
-                                sendUpdate = sendUpdate,
+                                sessionDiv = sessionDiv,
                                 history = listOf(),
                                 storyPage = storyAPI.getFirstStoryPage(storyParameters),
                                 sessionUI = sessionUI,
@@ -108,7 +109,7 @@ class StoryGenerator(
     }
 
     private fun extracted(
-        sendUpdate: (String, Boolean) -> Unit,
+        sessionDiv: SessionDiv,
         history: List<String>,
         storyPage: StoryAPI.StoryPage,
         sessionUI: SessionUI,
@@ -121,20 +122,20 @@ class StoryGenerator(
             summary = storyAPI.accumulateSummary(summary, history + storyPage.text)
             history = listOf()
         }
-        sendUpdate(("""
+        sessionDiv.append(("""
                 <div>${ChatSessionFlexmark.renderMarkdown(storyPage.text)}</div>                
                 <ol>
                     ${
             storyPage.choices.joinToString("\n") { choice ->
-                sendUpdate("", true)
+                sessionDiv.append("", true)
                 "<li>${
                     sessionUI.hrefLink {
-                        sendUpdate(
+                        sessionDiv.append(
                             """<div><em>${ChatSessionFlexmark.renderMarkdown(choice.text)}</em></div>""",
                             true
                         )
                         extracted(
-                            sendUpdate = sendUpdate,
+                            sessionDiv = sessionDiv,
                             history = history + (storyPage.text + "\n\n" + choice.text),
                             storyPage = storyAPI.nextStoryPage(
                                 storyParameters,

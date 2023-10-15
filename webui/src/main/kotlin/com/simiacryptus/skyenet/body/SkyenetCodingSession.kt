@@ -171,7 +171,7 @@ open class SkyenetCodingSession(
             try {
                 heart.validate(codedInstruction)
                 buffer.append("""</div>""")
-                break;
+                break
             } catch (ex: Throwable) {
                 buffer.append("""<pre><code class="language-$language">${codedInstruction}</code></pre><pre>${ex.message}</pre>""")
                 send("""$messageTrail$buffer${parent.spinner}</div>""")

@@ -24,6 +24,4 @@ open class BasicChatSession(
     |Ask questions to keep the conversation going.
     |Say goodbye when the conversation is over.
     """.trimMargin(),
-) : ChatSession(parent, model, sessionId, visiblePrompt, hiddenPrompt, systemPrompt) {
-
-}
+) : ChatSession(parent, model, sessionId, visiblePrompt, hiddenPrompt, systemPrompt)

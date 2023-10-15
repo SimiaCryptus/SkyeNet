@@ -133,7 +133,7 @@ open class Brain(
         if (moderated) api.moderate(json)
         totalInputLength.addAndGet(json.length)
         val chatResponse = api.chat(request, model)
-        var response = chatResponse.choices?.first()?.message?.content.orEmpty()
+        var response = chatResponse.choices.first()?.message?.content.orEmpty()
         if (verbose) log.info(response)
         totalOutputLength.addAndGet(response.length)
         response = response.trim()

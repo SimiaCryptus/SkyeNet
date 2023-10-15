@@ -33,18 +33,19 @@ abstract class SessionBase(val sessionId: String) : SessionInterface {
         return sentMessages
     }
 
-    fun newUpdate(
+    fun newSessionDiv(
         operationID: String, spinner: String
-    ): (String, Boolean) -> Unit {
+    ): SessionDiv {
         var responseContents = ChatSession.divInitializer(operationID)
-        val sendUpdate: (String, Boolean) -> Unit = { message, showProgress ->
-            if (message.isNotBlank()) {
-                responseContents += """<div>$message</div>"""
-            }
-            val spinner = if (showProgress) """<div>$spinner</div>""" else ""
-            send("""$responseContents$spinner""")
-        }
         send(responseContents)
-        return sendUpdate
+        return object : SessionDiv() {
+            override fun append(htmlToAppend: String, showSpinner: Boolean) {
+                if (htmlToAppend.isNotBlank()) {
+                    responseContents += """<div>$htmlToAppend</div>"""
+                }
+                val spinner1 = if (showSpinner) """<div>$spinner</div>""" else ""
+                return this@SessionBase.send("""$responseContents$spinner1""")
+            }
+        }
     }
 }

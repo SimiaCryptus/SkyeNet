@@ -4,6 +4,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
 import com.simiacryptus.skyenet.body.ChatSessionFlexmark
 import com.simiacryptus.skyenet.body.PersistentSessionBase
+import com.simiacryptus.skyenet.body.SessionDiv
 import com.simiacryptus.skyenet.body.SkyenetMacroChat
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.util.describe.Description
@@ -119,17 +120,17 @@ class SkyenetScienceBook(
         userMessage: String,
         session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sendUpdate: (String, Boolean) -> Unit
+        sessionDiv: SessionDiv
     ) {
-        sendUpdate("""<div>$userMessage</div>""", true)
+        sessionDiv.append("""<div>$userMessage</div>""", true)
         val spec = scienceAuthorAPI.parseProjectSpec(userMessage)
-        sendUpdate("""<div><pre>${JsonUtil.toJson(spec)}</pre></div>""", true)
+        sessionDiv.append("""<div><pre>${JsonUtil.toJson(spec)}</pre></div>""", true)
         val experiments = scienceAuthorAPI.createExperiments(spec, 20)
         for (experiment in experiments.experimentList.toMutableList().shuffled()) {
-            sendUpdate("""<div><pre>${JsonUtil.toJson(experiment)}</pre>${sessionUI.hrefLink {
-                sendUpdate("", true)
+            sessionDiv.append("""<div><pre>${JsonUtil.toJson(experiment)}</pre>${sessionUI.hrefLink {
+                sessionDiv.append("", true)
                 val details = scienceAuthorAPI.detailExperiment(experiment)
-                sendUpdate("""<div><pre>${JsonUtil.toJson(details)}</pre></div>""", true)
+                sessionDiv.append("""<div><pre>${JsonUtil.toJson(details)}</pre></div>""", true)
                 val fullLabNotebook = scienceAuthorAPI.getFullLabNotebook(
                     style = ScienceAuthorAPI.WritingStyle(
                         targetAudience = spec.targetAudience,
@@ -141,23 +142,23 @@ class SkyenetScienceBook(
                     ),
                     experiment = details,
                 )
-                postExperiment(sendUpdate, fullLabNotebook, sessionUI, scienceAuthorAPI)
+                postExperiment(sessionDiv, fullLabNotebook, sessionUI, scienceAuthorAPI)
             } }Expand</a></div>""", true)
         }
     }
 
     private fun postExperiment(
-        sendUpdate: (String, Boolean) -> Unit,
+        sessionDiv: SessionDiv,
         fullLabNotebook: ScienceAuthorAPI.LabNotebook,
         sessionUI: SessionUI,
         scienceAuthorAPI: ScienceAuthorAPI
     ) {
-        sendUpdate(
+        sessionDiv.append(
             """<div>${ChatSessionFlexmark.renderMarkdown(fullLabNotebook.markdown)}</div>${
                 sessionUI.textInput { userInput ->
-                    sendUpdate("", true)
+                    sessionDiv.append("", true)
                     val labNotebook = scienceAuthorAPI.modifyNotebook(fullLabNotebook.markdown, userInput)
-                    postExperiment(sendUpdate, labNotebook, sessionUI, scienceAuthorAPI)
+                    postExperiment(sessionDiv, labNotebook, sessionUI, scienceAuthorAPI)
                 }
             }""", false)
     }
