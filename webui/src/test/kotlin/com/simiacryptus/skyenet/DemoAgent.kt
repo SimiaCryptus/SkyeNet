@@ -29,7 +29,6 @@ object DemoAgent {
             applicationName = "Skyenet Agent Demo",
             //oauthConfig = File(File(System.getProperty("user.home")), "client_secret_google_oauth.json").absolutePath,
             typeDescriber = typeDescriber,
-            baseURL = baseURL,
             model = OpenAIClient.Models.GPT35Turbo,
             apiKey = apiKey
         ) {
