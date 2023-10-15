@@ -7,12 +7,10 @@ import java.util.function.Consumer
 
 abstract class SkyenetMacroChat(
     applicationName: String,
-    baseURL: String,
     oauthConfig: String? = null,
     temperature: Double = 0.1,
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
-    baseURL = baseURL,
     oauthConfig = oauthConfig,
     temperature = temperature,
 ) {

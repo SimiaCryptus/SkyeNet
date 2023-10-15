@@ -1,3 +1,6 @@
+
+let socket;
+
 function getSessionId() {
     if (!window.location.hash) {
         fetch('newSession')
@@ -16,8 +19,6 @@ function getSessionId() {
         return window.location.hash.substring(1);
     }
 }
-
-let socket;
 
 function send(message) {
     console.log('Sending message:', message);

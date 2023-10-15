@@ -2,15 +2,11 @@ package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.openai.OpenAIClient
 import com.vladsch.flexmark.util.data.MutableDataSet
-import org.apache.commons.io.FileUtils
-import org.eclipse.jetty.webapp.WebAppContext
 import java.awt.Desktop
-import java.io.File
 import java.net.URI
 
 open class SkyenetMarkupChat(
     applicationName: String,
-    baseURL: String,
     oauthConfig: String? = null,
     val visiblePrompt: String = """
                 |Hello! I am here to assist you in a casual conversation! 
@@ -33,7 +29,6 @@ open class SkyenetMarkupChat(
                 """.trimMargin()
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
-    baseURL = baseURL,
     oauthConfig = oauthConfig,
 ) {
     override val api: OpenAIClient
@@ -67,8 +62,7 @@ open class SkyenetMarkupChat(
         const val port = 8081
         const val baseURL = "http://localhost:$port"
         var skyenet = SkyenetMarkupChat(
-            applicationName = "Chat Demo",
-            baseURL = baseURL
+            applicationName = "Chat Demo"
         )
 
         @JvmStatic

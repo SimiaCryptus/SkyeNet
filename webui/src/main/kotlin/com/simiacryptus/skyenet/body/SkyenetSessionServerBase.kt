@@ -16,7 +16,6 @@ abstract class SkyenetSessionServerBase(
     override val applicationName: String,
     val oauthConfig: String? = null,
     resourceBase: String = "simpleSession",
-    val baseURL: String = "http://localhost:8080",
     val temperature: Double = 0.1,
 ) : WebSocketServer(resourceBase) {
 
@@ -27,8 +26,8 @@ abstract class SkyenetSessionServerBase(
 
     open val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
 
-    override fun configure(context: WebAppContext, prefix: String) {
-        super.configure(context, prefix)
+    override fun configure(context: WebAppContext, prefix: String, baseURL: String) {
+        super.configure(context, prefix, baseURL)
 
         if (null != oauthConfig) (AuthenticatedWebsite("$baseURL/oauth2callback", this@SkyenetSessionServerBase.applicationName) {
             FileUtils.openInputStream(File(oauthConfig))
@@ -181,8 +180,7 @@ abstract class SkyenetSessionServerBase(
                 resp.writer.write(
                     JsonUtil.objectMapper().writeValueAsString(
                         mapOf(
-                            "applicationName" to applicationName,
-                            "baseURL" to baseURL,
+                            "applicationName" to applicationName
                         )
                     )
                 )

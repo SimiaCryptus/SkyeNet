@@ -17,7 +17,6 @@ class SkyenetScienceBook(
     temperature: Double = 0.3
 ) : SkyenetMacroChat(
     applicationName = applicationName,
-    baseURL = baseURL,
     temperature = temperature
 ) {
     interface ScienceAuthorAPI {
