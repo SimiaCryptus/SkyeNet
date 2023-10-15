@@ -116,10 +116,10 @@ abstract class SkyenetMacroChat(
             parameters: T,
             feedbackFn: (msg: T, feedback: String) -> Unit,
             fns: Map<String, (obj: T) -> Unit> = mapOf(),
-            toString: (obj: T) -> String = JsonUtil::toJson
+            toString: (obj: T) -> String = { data: Any -> """<pre>${JsonUtil.toJson(data)}</pre>""" }
         ) = sessionDiv.append(
             """
-            <pre>${toString(parameters)}</pre>
+            ${toString(parameters)}
             <br/>
             ${sessionUI.textInput { feedbackFn(parameters, it) }}
             <br/>

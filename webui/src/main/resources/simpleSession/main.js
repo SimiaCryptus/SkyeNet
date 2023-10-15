@@ -18,14 +18,25 @@ async function fetchData(endpoint) {
     }
 }
 
-function receive(event) {
+let messageVersions = {};
+
+function onWebSocketText(event) {
     console.log('WebSocket message:', event);
     const messagesDiv = document.getElementById('messages');
 
-    // Find the first comma and split the received data into ID and message content
+    // Parse message e.g. "id,version,content"
     const firstCommaIndex = event.data.indexOf(',');
+    const secondCommaIndex = event.data.indexOf(',', firstCommaIndex + 1);
     const messageId = event.data.substring(0, firstCommaIndex);
-    const messageContent = event.data.substring(firstCommaIndex + 1);
+    const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
+    const messageContent = event.data.substring(secondCommaIndex + 1);
+    // If messageVersion isn't more than the version for the messageId using the version map, then ignore the message
+    if (messageVersion <= (messageVersions[messageId] || 0)) {
+        console.log("Ignoring message with id " + messageId + " and version " + messageVersion);
+        return;
+    } else {
+        messageVersions[messageId] = messageVersion;
+    }
 
     let messageDiv = document.getElementById(messageId);
 
@@ -116,9 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sessionId = getSessionId();
     if (sessionId) {
-        connect(sessionId, receive);
+        connect(sessionId, onWebSocketText);
     } else {
-        connect(undefined, receive);
+        connect(undefined, onWebSocketText);
     }
 
     document.body.addEventListener('click', (event) => {

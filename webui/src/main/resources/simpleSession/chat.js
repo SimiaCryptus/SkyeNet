@@ -44,7 +44,7 @@ function connect(sessionId, customReceiveFunction) {
         showDisconnectedOverlay(false);
     });
 
-    socket.addEventListener('message', customReceiveFunction || receive);
+    socket.addEventListener('message', customReceiveFunction || onWebSocketText);
 
     socket.addEventListener('close', (event) => {
         console.log('WebSocket closed:', event);

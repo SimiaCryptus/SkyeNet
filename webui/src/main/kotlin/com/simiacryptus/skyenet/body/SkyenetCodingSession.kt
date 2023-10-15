@@ -141,9 +141,9 @@ open class SkyenetCodingSession(
         }
     }
 
-    override fun setMessage(key: String, value: String) {
+    override fun setMessage(key: String, value: String) : Int {
         parent.sessionDataStorage.updateMessage(sessionId, key, value)
-        super.setMessage(key, value)
+        return super.setMessage(key, value)
     }
 
 
