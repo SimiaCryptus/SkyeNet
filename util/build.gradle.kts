@@ -28,29 +28,32 @@ kotlin {
 }
 
 val kotlin_version = "1.7.22"
-val jetty_version = "11.0.15"
+val jetty_version = "11.0.17"
+val logback_version = "1.2.12"
+
 dependencies {
 
-
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.18")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.19")
 
     implementation(project(":core"))
     implementation(project(":webui"))
 
-    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
     implementation(kotlin("stdlib-jdk8"))
-
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = kotlin_version)
-    implementation(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.0.0")
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
 
-    implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
-    implementation(group = "ch.qos.logback", name = "logback-classic", version = "1.4.7")
-    implementation(group = "ch.qos.logback", name = "logback-core", version = "1.4.7")
-    implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
+    compileOnly(group = "commons-io", name = "commons-io", version = "2.11.0")
+    compileOnly(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
+    compileOnly(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.28.0")
+    compileOnly(group = "com.amazonaws", name = "aws-java-sdk", version = "1.12.454")
+
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
+    compileOnly(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
+    compileOnly(group = "ch.qos.logback", name = "logback-core", version = logback_version)
 
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
+
     testImplementation(kotlin("script-runtime"))
 
 }

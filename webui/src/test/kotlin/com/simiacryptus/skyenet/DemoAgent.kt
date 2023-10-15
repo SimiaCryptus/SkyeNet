@@ -3,10 +3,8 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.heart.GroovyInterpreter
 import com.simiacryptus.skyenet.body.SessionServerUtil.asJava
 import com.simiacryptus.skyenet.body.SkyenetCodingSessionServer
-import com.simiacryptus.skyenet.heart.KotlinLocalInterpreter
 import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter
 import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
 
@@ -31,7 +29,6 @@ object DemoAgent {
             applicationName = "Skyenet Agent Demo",
             //oauthConfig = File(File(System.getProperty("user.home")), "client_secret_google_oauth.json").absolutePath,
             typeDescriber = typeDescriber,
-            baseURL = baseURL,
             model = OpenAIClient.Models.GPT35Turbo,
             apiKey = apiKey
         ) {

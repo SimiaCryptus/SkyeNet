@@ -22,7 +22,7 @@ open class KotlinLocalInterpreter(
     init {
         System.setProperty("idea.io.use.nio2","true")
         val factory = KotlinJsr223JvmLocalScriptEngineFactory()
-        engine = factory.scriptEngine as org.jetbrains.kotlin.script.jsr223.KotlinJsr223JvmLocalScriptEngine
+        engine = factory.scriptEngine as KotlinJsr223JvmLocalScriptEngine
         val bindings: Bindings? = engine.getBindings(ScriptContext.GLOBAL_SCOPE)
         defs.entrySet().forEach { (key, value) ->
             engine.put(key, value)

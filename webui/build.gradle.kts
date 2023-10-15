@@ -28,11 +28,11 @@ kotlin {
 }
 
 val kotlin_version = "1.7.22"
-val jetty_version = "11.0.15"
-val jackson_version = "2.15.0"
+val jetty_version = "11.0.17"
+val jackson_version = "2.15.2"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.18")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.19")
 
     implementation(project(":core"))
     testImplementation(project(":groovy"))
@@ -61,6 +61,7 @@ dependencies {
     implementation(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
     implementation(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
     implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
+    implementation(group = "commons-codec", name = "commons-codec", version = "1.16.0")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
     testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "2.0.5")

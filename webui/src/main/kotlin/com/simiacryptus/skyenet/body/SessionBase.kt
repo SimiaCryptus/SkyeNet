@@ -32,4 +32,20 @@ abstract class SessionBase(val sessionId: String) : SessionInterface {
     override fun getReplay(): List<String> {
         return sentMessages
     }
+
+    fun newSessionDiv(
+        operationID: String, spinner: String
+    ): SessionDiv {
+        var responseContents = ChatSession.divInitializer(operationID)
+        send(responseContents)
+        return object : SessionDiv() {
+            override fun append(htmlToAppend: String, showSpinner: Boolean) {
+                if (htmlToAppend.isNotBlank()) {
+                    responseContents += """<div>$htmlToAppend</div>"""
+                }
+                val spinner1 = if (showSpinner) """<div>$spinner</div>""" else ""
+                return this@SessionBase.send("""$responseContents$spinner1""")
+            }
+        }
+    }
 }

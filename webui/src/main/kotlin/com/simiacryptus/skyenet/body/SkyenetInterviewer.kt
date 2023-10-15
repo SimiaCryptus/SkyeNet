@@ -6,14 +6,11 @@ import com.simiacryptus.util.describe.YamlDescriber
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.apache.commons.io.FileUtils
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
-import java.io.File
 
 open class SkyenetInterviewer<T : Any>(
     applicationName: String,
-    baseURL: String,
     val dataClass: Class<T>,
     val visiblePrompt: String,
     val describer: TypeDescriber = YamlDescriber(),
@@ -23,14 +20,13 @@ open class SkyenetInterviewer<T : Any>(
     val apiKey: String
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
-    baseURL = baseURL,
     oauthConfig = oauthConfig,
 ) {
 
     override val api: OpenAIClient = OpenAIClient(apiKey)
 
-    override fun configure(context: WebAppContext, prefix: String) {
-        super.configure(context, prefix)
+    override fun configure(context: WebAppContext, prefix: String, baseUrl: String) {
+        super.configure(context, prefix, baseUrl)
         context.addServlet(
             ServletHolder(
                 "yamlDescriptor",

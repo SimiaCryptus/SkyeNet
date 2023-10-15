@@ -15,8 +15,7 @@ object FlexmarkChatTest {
     const val port = 8081
     const val baseURL = "http://localhost:$port"
     var skyenet = SkyenetMarkupChat(
-            applicationName = "Chat Demo",
-            baseURL = baseURL
+        applicationName = "Chat Demo"
     )
 
     @JvmStatic

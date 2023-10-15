@@ -1,17 +1,16 @@
 package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.util.JsonUtil
 import java.util.concurrent.Semaphore
 import java.util.function.Consumer
 
 abstract class SkyenetMacroChat(
     applicationName: String,
-    baseURL: String,
     oauthConfig: String? = null,
     temperature: Double = 0.1,
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
-    baseURL = baseURL,
     oauthConfig = oauthConfig,
     temperature = temperature,
 ) {
@@ -29,56 +28,49 @@ abstract class SkyenetMacroChat(
 
     override fun newSession(sessionId: String): SessionInterface {
         val handler = MutableSessionHandler(null)
-        val parent = this@SkyenetMacroChat
 
         val basicChatSession = object : PersistentSessionBase(
             sessionId = sessionId,
-            parent.sessionDataStorage
+            this@SkyenetMacroChat.sessionDataStorage
         ) {
             val playSempaphores = mutableMapOf<String, Semaphore>()
             val threads = mutableMapOf<String, Thread>()
             val regenTriggers = mutableMapOf<String, Consumer<Unit>>()
             val linkTriggers = mutableMapOf<String, Consumer<Unit>>()
             val txtTriggers = mutableMapOf<String, Consumer<String>>()
+            val session : PersistentSessionBase = this
             override fun run(userMessage: String) {
                 val operationID = ChatSession.randomID()
+                val sessionDiv = newSessionDiv(operationID, spinner)
                 val thread = Thread {
                     playSempaphores[operationID] = Semaphore(0)
-                    var responseContents = ChatSession.divInitializer(operationID)
                     try {
-                        processMessage(sessionId, userMessage, object : SessionUI {
-                            override val spinner: String get() = """<div>${parent.spinner}</div>"""
-                            override val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
-                            override val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
-                            override val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
+                        processMessage(sessionId, userMessage, session, object : SessionUI {
+                                                   override val spinner: String get() = """<div>${this@SkyenetMacroChat.spinner}</div>"""
+                                                   override val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
+                                                   override val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
+                                                   override val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
 
-                            override fun hrefLink(handler:Consumer<Unit>): String {
-                                val operationID = ChatSession.randomID()
-                                linkTriggers[operationID] = handler
-                                return """<a class="href-link" data-id="$operationID">"""
-                            }
+                                                   override fun hrefLink(handler:Consumer<Unit>): String {
+                                                       val operationID = ChatSession.randomID()
+                                                       linkTriggers[operationID] = handler
+                                                       return """<a class="href-link" data-id="$operationID">"""
+                                                   }
 
-                            override fun textInput(handler:Consumer<String>): String {
-                                val operationID = ChatSession.randomID()
-                                txtTriggers[operationID] = handler
-                                //language=HTML
-                                return """<form class="reply-form">
-                                    <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
-                                    <button class="text-submit-button" data-id="$operationID">Send</button>
-                                </form>""".trimIndent()
-                            }
+                                                   override fun textInput(handler:Consumer<String>): String {
+                                                       val operationID = ChatSession.randomID()
+                                                       txtTriggers[operationID] = handler
+                                                       //language=HTML
+                                                       return """<form class="reply-form">
+                                                           <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
+                                                           <button class="text-submit-button" data-id="$operationID">Send</button>
+                                                       </form>""".trimIndent()
+                                                   }
 
-                        }) { message, showProgress ->
-                            if (message.isNotBlank()) {
-                                responseContents += """<div>$message</div>"""
-                            }
-                            val spinner = if (showProgress) """<div>${parent.spinner}</div>""" else ""
-                            send("""$responseContents$spinner""")
-                        }
+                                               }, sessionDiv)
                     } catch (e: Throwable) {
                         e.printStackTrace()
                     } finally {
-                        send(responseContents)
                     }
                 }
                 threads[operationID] = thread
@@ -111,9 +103,37 @@ abstract class SkyenetMacroChat(
     abstract fun processMessage(
         sessionId: String,
         userMessage: String,
+        session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sendUpdate: (String, Boolean) -> Unit
+        sessionDiv: SessionDiv
     )
 
+    companion object {
+
+        fun <T : Any> iterate(
+            sessionUI: SessionUI,
+            sessionDiv: SessionDiv,
+            parameters: T,
+            feedbackFn: (msg: T, feedback: String) -> Unit,
+            fns: Map<String, (obj: T) -> Unit> = mapOf(),
+            toString: (obj: T) -> String = { data: Any -> """<pre>${JsonUtil.toJson(data)}</pre>""" }
+        ) = sessionDiv.append(
+            """
+            ${toString(parameters)}
+            <br/>
+            ${sessionUI.textInput { feedbackFn(parameters, it) }}
+            <br/>
+            ${fns.entries.joinToString("\n") { (label, fn) ->
+                sessionUI.hrefLink { fn(parameters) } + label + "</a>"
+            }}
+            """, false
+        )
+
+    }
+
+}
+
+abstract class SessionDiv {
+    abstract fun append(htmlToAppend: String, showSpinner: Boolean) : Unit
 }
 

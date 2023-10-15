@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.body
 
 import com.google.common.util.concurrent.MoreExecutors
-import java.util.LinkedHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
 abstract class PersistentSessionBase(
     sessionId: String,
@@ -10,6 +10,7 @@ abstract class PersistentSessionBase(
     private val messageStates: LinkedHashMap<String, String> = sessionDataStorage.loadMessages(sessionId),
 ) : SessionBase(sessionId) {
 
+    val messageVersions = HashMap<String, AtomicInteger>()
 
     companion object {
         val logger = org.slf4j.LoggerFactory.getLogger(WebSocketServer::class.java)
@@ -19,20 +20,26 @@ abstract class PersistentSessionBase(
         try {
             logger.debug("$sessionId - $out")
             val split = out.split(',', ignoreCase = false, limit = 2)
-            setMessage(split[0], split[1])
-            publish(out)
+            val newVersion = setMessage(split[0], split[1])
+            publish("${split[0]},$newVersion,${split[1]}")
         } catch (e: Exception) {
             logger.debug("$sessionId - $out", e)
         }
     }
 
-    protected open fun setMessage(key: String, value: String) {
+    protected open fun setMessage(key: String, value: String): Int {
+        if (messageStates.containsKey(key) && messageStates[key] == value) return -1
         sessionDataStorage.updateMessage(sessionId, key, value)
         messageStates.put(key, value)
+        return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
     }
 
     override fun getReplay(): List<String> {
-        return messageStates.entries.map { "${it.key},${it.value}" }
+        return messageStates.entries.map {
+            "${it.key},${
+                messageVersions.computeIfAbsent(it.key) { AtomicInteger(0) }.get()
+            },${it.value}"
+        }
     }
 
 
@@ -59,7 +66,7 @@ abstract class PersistentSessionBase(
     protected open fun onRun(describedInstruction: String) {
         Thread {
             try {
-                 run(describedInstruction)
+                run(describedInstruction)
             } catch (e: Exception) {
                 SkyenetCodingSessionServer.logger.warn(
                     "$sessionId - Error processing message: $describedInstruction",

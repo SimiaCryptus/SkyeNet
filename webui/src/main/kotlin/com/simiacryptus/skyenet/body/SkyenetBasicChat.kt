@@ -1,17 +1,12 @@
 package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.openai.OpenAIClient
-import org.apache.commons.io.FileUtils
-import org.eclipse.jetty.webapp.WebAppContext
-import java.io.File
 
 open class SkyenetBasicChat(
     applicationName: String,
-    baseURL: String,
     oauthConfig: String? = null
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
-    baseURL = baseURL,
     oauthConfig = oauthConfig,
 ) {
     override val api: OpenAIClient

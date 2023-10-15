@@ -1,3 +1,6 @@
+
+let socket;
+
 function getSessionId() {
     if (!window.location.hash) {
         fetch('newSession')
@@ -16,8 +19,6 @@ function getSessionId() {
         return window.location.hash.substring(1);
     }
 }
-
-let socket;
 
 function send(message) {
     console.log('Sending message:', message);
@@ -43,7 +44,7 @@ function connect(sessionId, customReceiveFunction) {
         showDisconnectedOverlay(false);
     });
 
-    socket.addEventListener('message', customReceiveFunction || receive);
+    socket.addEventListener('message', customReceiveFunction || onWebSocketText);
 
     socket.addEventListener('close', (event) => {
         console.log('WebSocket closed:', event);

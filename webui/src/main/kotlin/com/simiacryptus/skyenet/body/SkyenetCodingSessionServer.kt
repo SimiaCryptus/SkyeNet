@@ -8,10 +8,8 @@ import com.simiacryptus.util.describe.TypeDescriber
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.apache.commons.io.FileUtils
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
-import java.io.File
 
 abstract class SkyenetCodingSessionServer(
     applicationName: String,
@@ -21,7 +19,6 @@ abstract class SkyenetCodingSessionServer(
     resourceBase: String = "simpleSession",
     val maxRetries: Int = 5,
     var maxHistoryCharacters: Int = 4000,
-    baseURL: String = "http://localhost:8080",
     temperature: Double = 0.1,
     val model: OpenAIClient.Model = OpenAIClient.Models.GPT4,
     var useHistory: Boolean = true,
@@ -31,7 +28,6 @@ abstract class SkyenetCodingSessionServer(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     resourceBase = resourceBase,
-    baseURL = baseURL,
     temperature = temperature,
 ) {
 
@@ -40,8 +36,8 @@ abstract class SkyenetCodingSessionServer(
     abstract fun hands(): java.util.Map<String, Object>
     abstract fun heart(hands: java.util.Map<String, Object>): Heart
 
-    override fun configure(context: WebAppContext, prefix: String) {
-        super.configure(context, prefix)
+    override fun configure(context: WebAppContext, prefix: String, baseUrl: String) {
+        super.configure(context, prefix, baseUrl)
         context.addServlet(descriptorServlet, "/yamlDescriptor")
     }
 

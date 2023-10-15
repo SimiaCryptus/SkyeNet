@@ -3,6 +3,8 @@ package com.simiacryptus.skyenet
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
 import com.simiacryptus.skyenet.body.ChatSessionFlexmark
+import com.simiacryptus.skyenet.body.PersistentSessionBase
+import com.simiacryptus.skyenet.body.SessionDiv
 import com.simiacryptus.skyenet.body.SkyenetMacroChat
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.util.describe.Description
@@ -15,7 +17,6 @@ class CookbookGenerator(
     temperature: Double = 0.3
 ) : SkyenetMacroChat(
     applicationName = applicationName,
-    baseURL = baseURL,
     temperature = temperature
 ) {
     interface CookbookAuthorAPI {
@@ -116,19 +117,20 @@ class CookbookGenerator(
     override fun processMessage(
         sessionId: String,
         userMessage: String,
+        session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sendUpdate: (String, Boolean) -> Unit
+        sessionDiv: SessionDiv
     ) {
-        sendUpdate("""<div>$userMessage</div>""", true)
+        sessionDiv.append("""<div>$userMessage</div>""", true)
         val spec = cookbookAuthorAPI.parseRecipeSpec(userMessage)
-        sendUpdate("""<div><pre>${JsonUtil.toJson(spec)}</pre></div>""", true)
+        sessionDiv.append("""<div><pre>${JsonUtil.toJson(spec)}</pre></div>""", true)
         val recipes = cookbookAuthorAPI.createRecipes(spec, 20)
-        //sendUpdate("""<div><pre>${JsonUtil.toJson(recipes)}</pre></div>""", true)
+        //sessionDiv.apply("""<div><pre>${JsonUtil.toJson(recipes)}</pre></div>""", true)
         for (recipe in recipes.recipeList.toMutableList().shuffled()) {
-            sendUpdate("""<div><pre>${JsonUtil.toJson(recipe)}</pre>${sessionUI.hrefLink {
-                sendUpdate("", true)
+            sessionDiv.append("""<div><pre>${JsonUtil.toJson(recipe)}</pre>${sessionUI.hrefLink {
+                sessionDiv.append("", true)
                 val details = cookbookAuthorAPI.detailRecipe(recipe)
-                sendUpdate("""<div><pre>${JsonUtil.toJson(details)}</pre></div>""", true)
+                sessionDiv.append("""<div><pre>${JsonUtil.toJson(details)}</pre></div>""", true)
                 val fullCookbook = cookbookAuthorAPI.getFullCookbook(
                     style = CookbookAuthorAPI.WritingStyle(
                         targetAudience = spec.targetAudience,
@@ -140,23 +142,23 @@ class CookbookGenerator(
                     ),
                     recipe = details,
                 )
-                postRecipe(sendUpdate, fullCookbook, sessionUI, cookbookAuthorAPI)
+                postRecipe(sessionDiv, fullCookbook, sessionUI, cookbookAuthorAPI)
             } }Expand</a></div>""", true)
         }
     }
 
     private fun postRecipe(
-        sendUpdate: (String, Boolean) -> Unit,
+        sessionDiv: SessionDiv,
         fullCookbook: CookbookAuthorAPI.Cookbook,
         sessionUI: SessionUI,
         cookbookAuthorAPI: CookbookAuthorAPI
     ) {
-        sendUpdate(
+        sessionDiv.append(
             """<div>${ChatSessionFlexmark.renderMarkdown(fullCookbook.markdown)}</div>${
                 sessionUI.textInput { userInput ->
-                    sendUpdate("", true)
+                    sessionDiv.append("", true)
                     val cookbook = cookbookAuthorAPI.modifyCookbook(fullCookbook.markdown, userInput)
-                    postRecipe(sendUpdate, cookbook, sessionUI, cookbookAuthorAPI)
+                    postRecipe(sessionDiv, cookbook, sessionUI, cookbookAuthorAPI)
                 }
             }""", false)
     }
