@@ -46,7 +46,7 @@ open class SkyenetCodingSession(
         userMessage: String,
     ) {
         OutputInterceptor.setupInterceptor()
-        SkyenetCodingSessionServer.logger.debug("${sessionId} - Processing message: $userMessage")
+        logger.debug("${sessionId} - Processing message: $userMessage")
         val operationID = (0..5).map { ('a'..'z').random() }.joinToString("")
         val status = OperationStatus(
             operationID = operationID,
@@ -84,9 +84,9 @@ open class SkyenetCodingSession(
                     if (!parent.autoRun) {
                         //language=HTML
                         send("""$messageTrail<div><button class="play-button" data-id="$operationID">▶</button></div>""")
-                        SkyenetCodingSessionServer.logger.debug("${sessionId} - Waiting for run")
+                        logger.debug("${sessionId} - Waiting for run")
                         status.runSemaphore.acquire()
-                        SkyenetCodingSessionServer.logger.debug("${sessionId} - Run received")
+                        logger.debug("${sessionId} - Run received")
                     }
                     if (status.cancelFlag.get()) {
                         status.status = OperationStatus.OperationState.Cancelled
@@ -100,17 +100,17 @@ open class SkyenetCodingSession(
                     send(messageTrail)
                     break
                 } catch (e: Exception) {
-                    SkyenetCodingSessionServer.logger.info("${sessionId} - Error", e)
+                    logger.info("${sessionId} - Error", e)
                     //language=HTML
                     messageTrail += """<div><h3>Error:</h3><pre>${parent.toString(e)}</pre></div>"""
                     status.status = OperationStatus.OperationState.Error
-                    status.resultOutput = OutputInterceptor.getThreadOutput()
+                    status.resultOutput = OutputInterceptor.getGlobalOutput()
                     status.resultValue = parent.toString(e)
                     parent.sessionDataStorage.updateOperationStatus(sessionId, operationID, status)
                     if (retries <= 0 || status.cancelFlag.get()) {
                         //language=HTML
                         messageTrail += """<div><h3>Out of Retries!</h3></div>"""
-                        SkyenetCodingSessionServer.logger.debug("${sessionId} - Out of retries")
+                        logger.debug("${sessionId} - Out of retries")
                         this@SkyenetCodingSession.send(messageTrail)
                         break
                     } else {
@@ -134,7 +134,7 @@ open class SkyenetCodingSession(
         } catch (e: Exception) {
             //language=HTML
             messageTrail += """<div><h3>Error:</h3><pre>${e.message}</pre></div>"""
-            SkyenetCodingSessionServer.logger.warn("${sessionId} - Error: ${e.message}")
+            logger.warn("${sessionId} - Error: ${e.message}")
             this@SkyenetCodingSession.send(messageTrail)
         } finally {
             parent.sessionDataStorage.updateOperationStatus(sessionId, operationID, status)
@@ -161,8 +161,8 @@ open class SkyenetCodingSession(
         val codeBlocks = Brain.extractCodeBlocks(response)
         var renderedResponse = SessionServerUtil.getRenderedResponse(codeBlocks)
         var codedInstruction = SessionServerUtil.getCode(language, codeBlocks)
-        SkyenetCodingSessionServer.logger.debug("$sessionId - Response: $renderedResponse")
-        SkyenetCodingSessionServer.logger.debug("$sessionId - Code: $codedInstruction")
+        logger.debug("$sessionId - Response: $renderedResponse")
+        logger.debug("$sessionId - Code: $codedInstruction")
         status.responseText = renderedResponse
         status.responseCode = codedInstruction
         buffer.append("""<div>${renderedResponse}</div>""")
@@ -180,8 +180,8 @@ open class SkyenetCodingSession(
                 renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode.second)
                 codedInstruction = SessionServerUtil.getCode(language, respondWithCode.second)
                 buffer.append("""<div>${renderedResponse}</div>""")
-                SkyenetCodingSessionServer.logger.debug("$sessionId - Response: $renderedResponse")
-                SkyenetCodingSessionServer.logger.debug("$sessionId - Code: $codedInstruction")
+                logger.debug("$sessionId - Response: $renderedResponse")
+                logger.debug("$sessionId - Code: $codedInstruction")
             }
         }
         status.status = OperationStatus.OperationState.Implemented
@@ -204,8 +204,8 @@ open class SkyenetCodingSession(
             brain.fixCommand(describedInstruction, codedInstruction, e, status.resultOutput)
         val renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode.second)
         val newCode = SessionServerUtil.getCode(language, respondWithCode.second)
-        SkyenetCodingSessionServer.logger.debug("$sessionId - Response: $renderedResponse")
-        SkyenetCodingSessionServer.logger.debug("$sessionId - Code: $newCode")
+        logger.debug("$sessionId - Response: $renderedResponse")
+        logger.debug("$sessionId - Code: $newCode")
         status.responseText = renderedResponse
         status.responseCode = newCode
         //language=HTML
@@ -218,13 +218,17 @@ open class SkyenetCodingSession(
         codedInstruction: String,
     ): String {
         //language=HTML
-        SkyenetCodingSessionServer.logger.info("$sessionId - Running $codedInstruction")
-        OutputInterceptor.clearThreadOutput()
+        logger.info("$sessionId - Running $codedInstruction")
+        OutputInterceptor.clearGlobalOutput()
         val result = heart.run(codedInstruction)
-        SkyenetCodingSessionServer.logger.info("$sessionId - Result: $result")
+        logger.info("$sessionId - Result: $result")
         status.resultValue = result.toString()
-        status.resultOutput = OutputInterceptor.getThreadOutput()
+        val output = OutputInterceptor.getGlobalOutput()
+        status.resultOutput = output
         //language=HTML
-        return """<div><h3>Output:</h3><pre>${OutputInterceptor.getThreadOutput()}</pre><h3>Returns:</h3><pre>${result}</pre></div>"""
+        return """<div><h3>Output:</h3><pre>$output</pre><h3>Returns:</h3><pre>${result}</pre></div>"""
+    }
+    companion object {
+        val logger = org.slf4j.LoggerFactory.getLogger(SkyenetCodingSessionServer::class.java)
     }
 }

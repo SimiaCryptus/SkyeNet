@@ -33,10 +33,10 @@ abstract class SkyenetSessionServerBase(
             FileUtils.openInputStream(File(oauthConfig))
         }).configure(context)
 
-        context.addServlet(appInfo, prefix+"/appInfo")
-        context.addServlet(fileIndex, prefix+"/fileIndex/*")
-        context.addServlet(fileZip, prefix+"/fileZip")
-        context.addServlet(sessionList, prefix+"/sessions")
+        context.addServlet(appInfo, prefix+"appInfo")
+        context.addServlet(fileIndex, prefix+"fileIndex/*")
+        context.addServlet(fileZip, prefix+"fileZip")
+        context.addServlet(sessionList, prefix+"sessions")
     }
 
     protected open val fileZip = ServletHolder(

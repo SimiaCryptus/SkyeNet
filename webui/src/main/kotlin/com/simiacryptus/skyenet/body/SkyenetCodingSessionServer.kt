@@ -38,7 +38,7 @@ abstract class SkyenetCodingSessionServer(
 
     override fun configure(context: WebAppContext, prefix: String, baseUrl: String) {
         super.configure(context, prefix, baseUrl)
-        context.addServlet(descriptorServlet, "/yamlDescriptor")
+        context.addServlet(descriptorServlet, prefix + "yamlDescriptor")
     }
 
     protected open val descriptorServlet = ServletHolder(

@@ -47,7 +47,7 @@ abstract class PersistentSessionBase(
 
     override fun onWebSocketText(socket: WebSocketServer.MessageWebSocket, message: String) {
         pool.submit {
-            SkyenetCodingSessionServer.logger.debug("$sessionId - Received message: $message")
+            logger.debug("$sessionId - Received message: $message")
             try {
                 val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
                 if (opCmdPattern.matches(message)) {
@@ -58,7 +58,7 @@ abstract class PersistentSessionBase(
                     onRun(message)
                 }
             } catch (e: Exception) {
-                SkyenetCodingSessionServer.logger.warn("$sessionId - Error processing message: $message", e)
+                logger.warn("$sessionId - Error processing message: $message", e)
             }
         }
     }
@@ -68,7 +68,7 @@ abstract class PersistentSessionBase(
             try {
                 run(describedInstruction)
             } catch (e: Exception) {
-                SkyenetCodingSessionServer.logger.warn(
+                logger.warn(
                     "$sessionId - Error processing message: $describedInstruction",
                     e
                 )
