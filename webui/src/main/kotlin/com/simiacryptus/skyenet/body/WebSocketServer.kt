@@ -93,22 +93,22 @@ abstract class WebSocketServer(val resourceBase: String) {
         return server
     }
 
-    open fun configure(server: Server, baseUrl: String) {
+    open fun configure(server: Server, baseUrl: String, path: String = "/") {
         val webAppContext = WebAppContext()
         webAppContext.baseResource = baseResource
-        webAppContext.contextPath = "/"
+        webAppContext.contextPath = path
         webAppContext.welcomeFiles = arrayOf("index.html")
         JettyWebSocketServletContainerInitializer.configure(webAppContext, null)
-        configure(webAppContext, baseUrl = baseUrl)
+        configure(webAppContext, path, baseUrl)
         server.handler = webAppContext
     }
 
     open val baseResource: Resource? get() = Resource.newResource(javaClass.classLoader.getResource(resourceBase))
 
-    open fun configure(webAppContext: WebAppContext, prefix: String = "", baseUrl: String) {
-        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), prefix + "/")
-        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/ws", webSocketHandler), prefix + "/ws/*")
-        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", newSessionServlet),prefix + "/newSession")
+    open fun configure(webAppContext: WebAppContext, prefix: String = "/", baseUrl: String) {
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), prefix + "")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/ws", webSocketHandler), prefix + "ws/*")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", newSessionServlet),prefix + "newSession")
     }
 
     open val newSessionServlet get() = NewSessionServlet()

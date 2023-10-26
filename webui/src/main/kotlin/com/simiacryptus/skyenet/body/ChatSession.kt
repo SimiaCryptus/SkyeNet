@@ -15,7 +15,7 @@ abstract class ChatSession(
         if (visiblePrompt.isNotBlank()) send("""aaa,<div>${visiblePrompt}</div>""")
     }
 
-    val messages = listOf(
+    open val messages = listOf(
         OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.system, systemPrompt),
         OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, hiddenPrompt),
     ).toMutableList()

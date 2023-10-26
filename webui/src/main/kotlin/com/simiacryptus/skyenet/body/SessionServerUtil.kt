@@ -24,15 +24,17 @@ object SessionServerUtil {
             }
         }
 
+    val logger = org.slf4j.LoggerFactory.getLogger(SkyenetCodingSessionServer::class.java)
+
     fun getCode(language: String, textSegments: List<Pair<String, String>>) =
         textSegments.joinToString("\n") {
             if (it.first.lowercase() == "code" || it.first.lowercase() == language.lowercase()) {
-                SkyenetCodingSessionServer.logger.debug("Selected: $language: ${it.second}")
+                logger.debug("Selected: $language: ${it.second}")
                 """
                     |${it.second}
                     |""".trimMargin().trim()
             } else {
-                SkyenetCodingSessionServer.logger.debug("Not Selected: ${it.first}: ${it.second}")
+                logger.debug("Not Selected: ${it.first}: ${it.second}")
                 ""
             }
         }

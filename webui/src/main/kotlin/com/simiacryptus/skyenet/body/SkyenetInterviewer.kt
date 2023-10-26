@@ -36,7 +36,7 @@ open class SkyenetInterviewer<T : Any>(
                         resp.status = HttpServletResponse.SC_OK
                         resp.writer.write(describer.describe(dataClass))
                     }
-                }), "/yamlDescriptor"
+                }), prefix + "yamlDescriptor"
         )
     }
 

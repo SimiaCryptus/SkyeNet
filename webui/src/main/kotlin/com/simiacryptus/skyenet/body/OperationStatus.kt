@@ -22,16 +22,19 @@ class OperationStatus @JsonCreator constructor(
         Pending, Implemented, Running, Complete, Cancelled, Error
     }
 
+    companion object {
+        val logger = org.slf4j.LoggerFactory.getLogger(SkyenetCodingSessionServer::class.java)
+    }
     fun onMessage(code: String) {
         if (code.lowercase() == "run") {
             runSemaphore.release()
-            SkyenetCodingSessionServer.logger.debug("$operationID - Running")
+            logger.debug("$operationID - Running")
         } else if (code.lowercase() == "stop") {
             cancelFlag.set(true)
             thread?.interrupt()
-            SkyenetCodingSessionServer.logger.debug("$operationID - Stopping")
+            logger.debug("$operationID - Stopping")
         } else {
-            SkyenetCodingSessionServer.logger.warn("$operationID - Unknown command: $code")
+            logger.warn("$operationID - Unknown command: $code")
         }
     }
 
