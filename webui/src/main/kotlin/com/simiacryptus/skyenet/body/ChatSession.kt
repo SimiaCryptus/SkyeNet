@@ -4,11 +4,11 @@ import com.simiacryptus.openai.OpenAIClient
 
 abstract class ChatSession(
     val parent: SkyenetSessionServerBase,
-    val model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     sessionId: String,
-    val visiblePrompt: String,
-    val hiddenPrompt: String,
-    val systemPrompt: String,
+    var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
+    var visiblePrompt: String,
+    var hiddenPrompt: String,
+    var systemPrompt: String,
 ) : PersistentSessionBase(sessionId, parent.sessionDataStorage) {
 
     init {

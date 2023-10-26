@@ -45,7 +45,7 @@ open class InterviewSession<T : Any>(
     |Ask for clarification when needed.
     |At the end of each assistant chat message, print the currently-accumulated JSON of the data using ```json``` blocks.
     """.trimMargin(),
-) : ChatSession(parent, model, sessionId, visiblePrompt, hiddenPrompt, systemPrompt) {
+) : ChatSession(parent, sessionId, model, visiblePrompt, hiddenPrompt, systemPrompt) {
 
     open fun onFinished(data: T) {}
     open fun onUpdate(data: T) {}

@@ -15,8 +15,8 @@ open class ChatSessionFlexmark(
     systemPrompt: String,
 ) : ChatSession(
     parent,
-    model,
     sessionId,
+    model,
     visiblePrompt,
     hiddenPrompt,
     systemPrompt
