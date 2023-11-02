@@ -36,7 +36,7 @@ dependencies {
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version = kotlin_version)
 
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
     implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
 
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")

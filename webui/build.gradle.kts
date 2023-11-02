@@ -32,7 +32,7 @@ val jetty_version = "11.0.17"
 val jackson_version = "2.15.2"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.22")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.23")
 
     implementation(project(":core"))
     testImplementation(project(":groovy"))
@@ -63,8 +63,8 @@ dependencies {
     implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
     implementation(group = "commons-codec", name = "commons-codec", version = "1.16.0")
 
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
-    testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "2.0.5")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
+    testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "2.0.9")
 
     testImplementation(kotlin("script-runtime"))
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")

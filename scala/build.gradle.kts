@@ -36,9 +36,9 @@ dependencies {
     implementation(group = "org.scala-lang", name = "scala-library", version = scala_version)
     implementation(group = "org.scala-lang", name = "scala-compiler", version = scala_version)
     implementation(group = "org.scala-lang", name = "scala-reflect", version = scala_version)
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.5")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
 
-    testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "2.0.5")
+    testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "2.0.9")
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter", version = "5.8.1")
     testImplementation(group = "org.scala-lang.modules", name = "scala-java8-compat_2.13", version = "0.9.1")
 
