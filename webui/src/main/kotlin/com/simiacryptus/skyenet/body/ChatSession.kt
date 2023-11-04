@@ -24,7 +24,7 @@ abstract class ChatSession(
     override fun run(userMessage: String) {
         var responseContents = divInitializer()
         responseContents += """<div>$userMessage</div>"""
-        send("""$responseContents<div>${parent.spinner}</div>""")
+        send("""$responseContents<div>${SkyenetSessionServerBase.spinner}</div>""")
         val response = handleMessage(userMessage, responseContents)
         if(null != response) {
             responseContents += """<div>${renderResponse(response)}</div>"""

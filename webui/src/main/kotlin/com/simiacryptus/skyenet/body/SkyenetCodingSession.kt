@@ -92,7 +92,7 @@ open class SkyenetCodingSession(
                         status.status = OperationStatus.OperationState.Cancelled
                         break
                     }
-                    send("""$messageTrail<div>${parent.spinner}</div>""")
+                    send("""$messageTrail<div>${SkyenetSessionServerBase.spinner}</div>""")
                     status.status = OperationStatus.OperationState.Running
                     parent.sessionDataStorage.updateOperationStatus(sessionId, status.operationID, status)
                     messageTrail += execute(messageTrail, status, codedInstruction)
@@ -156,7 +156,7 @@ open class SkyenetCodingSession(
         //language=HTML
         val buffer = StringBuffer()
         buffer.append("""<div><h3>Code:</h3>""")
-        send("""$messageTrail$buffer${parent.spinner}</div>""")
+        send("""$messageTrail$buffer${SkyenetSessionServerBase.spinner}</div>""")
         val response = brain.implement(describedInstruction)
         val codeBlocks = Brain.extractCodeBlocks(response)
         var renderedResponse = SessionServerUtil.getRenderedResponse(codeBlocks)
@@ -174,7 +174,7 @@ open class SkyenetCodingSession(
                 break
             } catch (ex: Throwable) {
                 buffer.append("""<pre><code class="language-$language">${codedInstruction}</code></pre><pre>${ex.message}</pre>""")
-                send("""$messageTrail$buffer${parent.spinner}</div>""")
+                send("""$messageTrail$buffer${SkyenetSessionServerBase.spinner}</div>""")
                 val respondWithCode =
                     brain.fixCommand(describedInstruction, codedInstruction, ex, status.resultOutput)
                 renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode.second)
@@ -199,7 +199,7 @@ open class SkyenetCodingSession(
         status: OperationStatus,
     ): Pair<String, String> {
         //language=HTML
-        send("""$messageTrail<div><h3>New Code:</h3>${parent.spinner}</div>""")
+        send("""$messageTrail<div><h3>New Code:</h3>${SkyenetSessionServerBase.spinner}</div>""")
         val respondWithCode =
             brain.fixCommand(describedInstruction, codedInstruction, e, status.resultOutput)
         val renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode.second)

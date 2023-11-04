@@ -21,9 +21,6 @@ abstract class SkyenetSessionServerBase(
 
     abstract val api: OpenAIClient
 
-    open val spinner =
-        """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
-
     open val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
 
     override fun configure(context: WebAppContext, prefix: String, baseURL: String) {
@@ -189,6 +186,8 @@ abstract class SkyenetSessionServerBase(
 
     companion object {
         val logger = org.slf4j.LoggerFactory.getLogger(SkyenetSessionServerBase::class.java)
+        val spinner =
+            """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
     }
 
 }
