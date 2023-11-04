@@ -46,6 +46,14 @@ abstract class SessionBase(val sessionId: String) : SessionInterface {
                 val spinner1 = if (showSpinner) """<div>$spinner</div>""" else ""
                 return this@SessionBase.send("""$responseContents$spinner1""")
             }
+
+            override fun sessionID(): String {
+                return sessionId
+            }
+
+            override fun divID(): String {
+                return operationID
+            }
         }
     }
 }

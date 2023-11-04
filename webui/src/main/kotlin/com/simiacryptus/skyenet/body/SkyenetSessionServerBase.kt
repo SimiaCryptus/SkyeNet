@@ -110,7 +110,11 @@ abstract class SkyenetSessionServerBase(
                         "text/plain"
                     }
                     resp.status = HttpServletResponse.SC_OK
-                    resp.writer.write(file.readText())
+                    file.inputStream().use { inputStream ->
+                        resp.outputStream.use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
                 } else {
                     resp.contentType = "text/html"
                     resp.status = HttpServletResponse.SC_OK

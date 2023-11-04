@@ -135,5 +135,7 @@ abstract class SkyenetMacroChat(
 
 abstract class SessionDiv {
     abstract fun append(htmlToAppend: String, showSpinner: Boolean) : Unit
+    abstract fun sessionID(): String
+    abstract fun divID(): String
 }
 
