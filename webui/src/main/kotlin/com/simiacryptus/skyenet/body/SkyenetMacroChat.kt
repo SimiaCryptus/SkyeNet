@@ -41,12 +41,12 @@ abstract class SkyenetMacroChat(
             val session : PersistentSessionBase = this
             override fun run(userMessage: String) {
                 val operationID = ChatSession.randomID()
-                val sessionDiv = newSessionDiv(operationID, spinner)
+                val sessionDiv = newSessionDiv(operationID, SkyenetSessionServerBase.spinner)
                 val thread = Thread {
                     playSempaphores[operationID] = Semaphore(0)
                     try {
                         processMessage(sessionId, userMessage, session, object : SessionUI {
-                                                   override val spinner: String get() = """<div>${this@SkyenetMacroChat.spinner}</div>"""
+                                                   override val spinner: String get() = """<div>${SkyenetSessionServerBase.spinner}</div>"""
                                                    override val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
                                                    override val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
                                                    override val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
@@ -135,5 +135,7 @@ abstract class SkyenetMacroChat(
 
 abstract class SessionDiv {
     abstract fun append(htmlToAppend: String, showSpinner: Boolean) : Unit
+    abstract fun sessionID(): String
+    abstract fun divID(): String
 }
 
