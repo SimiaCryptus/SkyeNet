@@ -50,7 +50,6 @@ abstract class ChatSession(
         get() {
             val chatRequest = OpenAIClient.ChatRequest()
             chatRequest.model = model.modelName
-            chatRequest.max_tokens = model.maxTokens
             chatRequest.temperature = parent.temperature
             chatRequest.messages = messages.toTypedArray()
             return chatRequest

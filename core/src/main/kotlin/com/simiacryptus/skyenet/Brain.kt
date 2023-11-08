@@ -127,7 +127,6 @@ open class Brain(
 
     private fun run(request: ChatRequest): String {
         request.model = model.modelName
-        request.max_tokens = model.maxTokens
         request.temperature = temperature
         val json = toJson(request)
         if (moderated) api.moderate(json)

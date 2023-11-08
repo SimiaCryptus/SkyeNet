@@ -37,7 +37,7 @@ abstract class PersistentSessionBase(
     override fun getReplay(): List<String> {
         return messageStates.entries.map {
             "${it.key},${
-                messageVersions.computeIfAbsent(it.key) { AtomicInteger(0) }.get()
+                messageVersions.computeIfAbsent(it.key) { AtomicInteger(1) }.get()
             },${it.value}"
         }
     }

@@ -14,12 +14,12 @@ open class SkyenetBasicChat(
         get() = OpenAIClient()
 
     override fun newSession(sessionId: String): SessionInterface {
-        val handler = MutableSessionHandler(null)
         val basicChatSession = BasicChatSession(
             parent = this@SkyenetBasicChat,
             model = model,
             sessionId = sessionId
         )
+        val handler = MutableSessionHandler(null)
         handler.setDelegate(basicChatSession)
         return handler
     }

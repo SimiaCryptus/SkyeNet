@@ -49,6 +49,7 @@ open class SessionDataStorage(
 
         return messages
     }
+
     protected open fun getOperationDir(sessionId: String): File {
         val sessionDir = getSessionInstanceDir(sessionId)
         val operationDir = File(sessionDir, "operations")
@@ -70,12 +71,14 @@ open class SessionDataStorage(
     open fun listSessions(): List<String> {
         // For all sessions, return the session id
         // Filter out sessions which have no operations
-        return dataDir.listFiles()?.filter { sessionDir ->
-            val operationDir = File(sessionDir, "operations")
-            operationDir.exists() && operationDir.listFiles()?.isNotEmpty() ?: false
-        }?.map { sessionDir ->
-            sessionDir.name
-        } ?: listOf()
+        val files = dataDir.listFiles()?.flatMap { it.listFiles().toList() }?.filter { sessionDir ->
+            val operationDir = File(sessionDir, "messages")
+            if (!operationDir.exists()) false else {
+                val listFiles = operationDir.listFiles()
+                (listFiles?.size ?: 0) > 2
+            }
+        }
+        return files?.map { it.parentFile.name + "-" + it.name } ?: listOf()
     }
 
     open fun getSessionName(sessionId: String): String {

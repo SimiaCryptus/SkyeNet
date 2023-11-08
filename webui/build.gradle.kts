@@ -32,7 +32,7 @@ val jetty_version = "11.0.17"
 val jackson_version = "2.15.2"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.23")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.24")
 
     implementation(project(":core"))
     testImplementation(project(":groovy"))
