@@ -145,19 +145,18 @@ abstract class SkyenetSessionServerBase(
             }
         })
 
-    protected open val sessionList = ServletHolder(
-        "sessionList",
-        object : HttpServlet() {
-            override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-                resp.contentType = "text/html"
-                resp.status = HttpServletResponse.SC_OK
-                val links = sessionDataStorage.listSessions().joinToString("<br/>") {
-                    """<a href="javascript:void(0)" onclick="window.location.href='/#$it';window.location.reload();">
+    inner class SessionServlet : HttpServlet() {
+        override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+            resp.contentType = "text/html"
+            resp.status = HttpServletResponse.SC_OK
+            val sessions = sessionDataStorage.listSessions()
+            val links = sessions.joinToString("<br/>") {
+                """<a href="javascript:void(0)" onclick="window.location.href='#$it';window.location.reload();">
                                 |${sessionDataStorage.getSessionName(it)}
                                 |</a><br/>""".trimMargin()
-                }
-                resp.writer.write(
-                    """
+            }
+            resp.writer.write(
+                """
                                 |<html>
                                 |<head>
                                 |<title>Sessions</title>
@@ -167,26 +166,32 @@ abstract class SkyenetSessionServerBase(
                                 |</body>
                                 |</html>
                                 """.trimMargin()
-                )
-            }
-        })
+            )
+        }
+    }
+    protected open val sessionList = ServletHolder(
+        "sessionList",
+        SessionServlet()
+    )
 
 
-    protected open val appInfo = ServletHolder(
-        "appInfo",
-        object : HttpServlet() {
-            override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-                resp.contentType = "text/json"
-                resp.status = HttpServletResponse.SC_OK
-                resp.writer.write(
-                    JsonUtil.objectMapper().writeValueAsString(
-                        mapOf(
-                            "applicationName" to applicationName
-                        )
+    inner class AppInfoServlet : HttpServlet() {
+        override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+            resp.contentType = "text/json"
+            resp.status = HttpServletResponse.SC_OK
+            resp.writer.write(
+                JsonUtil.objectMapper().writeValueAsString(
+                    mapOf(
+                        "applicationName" to applicationName
                     )
                 )
-            }
-        })
+            )
+        }
+    }
+    protected open val appInfo = ServletHolder(
+        "appInfo",
+        AppInfoServlet()
+    )
 
     companion object {
         val logger = org.slf4j.LoggerFactory.getLogger(SkyenetSessionServerBase::class.java)

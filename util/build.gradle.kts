@@ -33,7 +33,7 @@ val logback_version = "1.2.12"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.23")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.24")
 
     implementation(project(":core"))
     implementation(project(":webui"))
