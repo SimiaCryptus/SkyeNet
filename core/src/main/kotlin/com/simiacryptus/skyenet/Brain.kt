@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet
 
+import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClient.ChatMessage
 import com.simiacryptus.openai.OpenAIClient.ChatRequest
-import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.util.JsonUtil.toJson
 import com.simiacryptus.util.describe.TypeDescriber
 import com.simiacryptus.util.describe.YamlDescriber
@@ -14,14 +14,14 @@ import java.util.concurrent.atomic.AtomicInteger
 @Suppress("MemberVisibilityCanBePrivate")
 open class Brain(
     val api: OpenAIClient,
-    val hands: java.util.Map<String, Object> = java.util.HashMap<String, Object>() as java.util.Map<String, Object>,
+    val symbols: java.util.Map<String, Object> = java.util.HashMap<String, Object>() as java.util.Map<String, Object>,
     var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     var verbose: Boolean = false,
     var temperature: Double = 0.3,
-    var yamlDescriber: TypeDescriber = YamlDescriber(),
+    var describer: TypeDescriber = YamlDescriber(),
     val language: String = "Kotlin",
     private val moderated: Boolean = true,
-    val apiDescription: String = apiDescription(hands, yamlDescriber),
+    val apiDescription: String = apiDescription(symbols, describer),
 ) {
     val metrics: Map<String, Any>
         get() = hashMapOf(
@@ -36,29 +36,32 @@ open class Brain(
     protected val totalApiDescriptionLength: AtomicInteger = AtomicInteger(0)
 
 
-    open fun implement(prompt: String): String {
-        if (verbose) log.info(prompt)
+    open fun implement(vararg prompt: String): String {
+        if (verbose) log.info("Prompt: \n\t" + prompt.joinToString("\n\t"))
+        return implement(*getChatMessages(*prompt).toTypedArray())
+    }
+
+    fun getChatMessages(vararg prompt: String) = getChatSystemMessages(apiDescription) +
+            prompt.map { ChatMessage(ChatMessage.Role.user, it) }
+
+    fun implement(
+        vararg messages: ChatMessage
+    ): String {
         val request = ChatRequest()
-        request.messages = (
-                getChatMessages(apiDescription) + listOf(
-                    ChatMessage(
-                        ChatMessage.Role.user,
-                        prompt
-                    )
-                )).toTypedArray<ChatMessage>()
+        request.messages = messages.toList().toTypedArray()
         totalApiDescriptionLength.addAndGet(apiDescription.length)
-        val response = run(request)
+        val response = chat(request)
         return response
     }
 
     @Language("TEXT")
-    open fun getChatMessages(apiDescription: String): List<ChatMessage> = listOf(
+    open fun getChatSystemMessages(apiDescription: String): List<ChatMessage> = listOf(
         ChatMessage(
             ChatMessage.Role.system, """
                         |You will translate natural language instructions into 
                         |an implementation using $language and the script context.
                         |Use ``` code blocks labeled with $language where appropriate.
-                        |Defined symbols include ${hands.keySet().joinToString(", ")}.
+                        |Defined symbols include ${symbols.keySet().joinToString(", ")}.
                         |The runtime context is described below:
                         |
                         |$apiDescription
@@ -67,65 +70,73 @@ open class Brain(
     )
 
     open fun fixCommand(
-        prompt: String,
         previousCode: String,
         error: Throwable,
-        output: String
+        output: String,
+        vararg prompt: String
     ): Pair<String, List<Pair<String, String>>> {
-        if (verbose) log.info(prompt)
-        val request = ChatRequest()
-        request.messages = (
-                listOf(
-                    ChatMessage(
-                        ChatMessage.Role.system, """
+        val promptMessages = listOf(
+            ChatMessage(
+                ChatMessage.Role.system, """
                             |You will translate natural language instructions into 
                             |an implementation using $language and the script context.
                             |Use ``` code blocks labeled with $language where appropriate.
-                            |Defined symbols include ${hands.keySet().joinToString(", ")}.
+                            |Defined symbols include ${symbols.keySet().joinToString(", ")}.
                             |Do not include wrapping code blocks, assume a REPL context.
                             |The runtime context is described below:
                             |
                             |$apiDescription
                             |""".trimMargin().trim()
-                    )
-                ) + listOf(
-                    ChatMessage(
-                        ChatMessage.Role.user,
-                        prompt
-                    ),
+            )
+        ) + prompt.map {
+            ChatMessage(ChatMessage.Role.user, it)
+        }
+        if (verbose) log.info("Prompt: \n\t" + prompt.joinToString("\n\t"))
+        return fixCommand(previousCode, error, output, *promptMessages.toTypedArray())
+    }
+
+    fun fixCommand(
+        previousCode: String,
+        error: Throwable,
+        output: String,
+        vararg promptMessages: ChatMessage
+    ): Pair<String, List<Pair<String, String>>> {
+        val request = ChatRequest()
+        request.messages = (
+                promptMessages.toList() + listOf(
                     ChatMessage(
                         ChatMessage.Role.assistant,
                         """
-                            |```${language.lowercase()}
-                            |${previousCode}
-                            |```
-                            |""".trimMargin().trim()
+                                |```${language.lowercase()}
+                                |${previousCode}
+                                |```
+                                |""".trimMargin().trim()
                     ),
                     ChatMessage(
                         ChatMessage.Role.system,
                         """
-                            |The previous code failed with the following error:
-                            |
-                            |```
-                            |${error.message?.trim() ?: ""}
-                            |```
-                            |
-                            |Output:
-                            |```
-                            |${output.trim()}
-                            |```
-                            |
-                            |Correct the code and try again.
-                            |""".trimMargin().trim()
+                                |The previous code failed with the following error:
+                                |
+                                |```
+                                |${error.message?.trim() ?: ""}
+                                |```
+                                |
+                                |Output:
+                                |```
+                                |${output.trim()}
+                                |```
+                                |
+                                |Correct the code and try again.
+                                |""".trimMargin().trim()
                     )
                 )).toTypedArray<ChatMessage>()
         totalApiDescriptionLength.addAndGet(apiDescription.length)
-        val response = run(request)
+        val response = chat(request)
         val codeBlocks = extractCodeBlocks(response)
         return Pair(response, codeBlocks)
     }
 
-    private fun run(request: ChatRequest): String {
+    private fun chat(request: ChatRequest): String {
         request.model = model.modelName
         request.temperature = temperature
         val json = toJson(request)

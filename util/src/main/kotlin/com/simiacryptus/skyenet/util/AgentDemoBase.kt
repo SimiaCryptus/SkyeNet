@@ -19,7 +19,7 @@ abstract class AgentDemoBase {
         val heart = heart(hands)
         val brain = Brain(
             api = OpenAIClient(OpenAIClient.keyTxt),
-            hands = hands,
+            symbols = hands,
             language = heart.getLanguage(),
         )
         brain.model = OpenAIClient.Models.GPT35Turbo

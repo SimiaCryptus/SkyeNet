@@ -23,20 +23,20 @@ open class SkyenetCodingSession(
     open val brain by lazy {
         object : Brain(
             api = parent.api,
-            hands = hands,
+            symbols = hands,
             language = heart.getLanguage(),
-            yamlDescriber = parent.typeDescriber,
+            describer = parent.typeDescriber,
             model = parent.model
         ) {
-            override fun getChatMessages(apiDescription: String) =
+            override fun getChatSystemMessages(apiDescription: String) =
                 if (parent.useHistory) {
-                    super.getChatMessages(apiDescription) + SessionServerUtil.getHistory(
+                    super.getChatSystemMessages(apiDescription) + SessionServerUtil.getHistory(
                         history.values,
                         10,
                         parent.maxHistoryCharacters
                     )
                 } else {
-                    super.getChatMessages(apiDescription)
+                    super.getChatSystemMessages(apiDescription)
                 }
 
         }
@@ -176,7 +176,7 @@ open class SkyenetCodingSession(
                 buffer.append("""<pre><code class="language-$language">${codedInstruction}</code></pre><pre>${ex.message}</pre>""")
                 send("""$messageTrail$buffer${SkyenetSessionServerBase.spinner}</div>""")
                 val respondWithCode =
-                    brain.fixCommand(describedInstruction, codedInstruction, ex, status.resultOutput)
+                    brain.fixCommand(codedInstruction, ex, status.resultOutput, describedInstruction)
                 renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode.second)
                 codedInstruction = SessionServerUtil.getCode(language, respondWithCode.second)
                 buffer.append("""<div>${renderedResponse}</div>""")
@@ -201,7 +201,7 @@ open class SkyenetCodingSession(
         //language=HTML
         send("""$messageTrail<div><h3>New Code:</h3>${SkyenetSessionServerBase.spinner}</div>""")
         val respondWithCode =
-            brain.fixCommand(describedInstruction, codedInstruction, e, status.resultOutput)
+            brain.fixCommand(codedInstruction, e, status.resultOutput, describedInstruction)
         val renderedResponse = SessionServerUtil.getRenderedResponse(respondWithCode.second)
         val newCode = SessionServerUtil.getCode(language, respondWithCode.second)
         logger.debug("$sessionId - Response: $renderedResponse")
