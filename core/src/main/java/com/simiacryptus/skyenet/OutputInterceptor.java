@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OutputInterceptor {
@@ -32,14 +33,14 @@ public class OutputInterceptor {
         setOutputStream(centralStream);
     }
 
-    private static final Map<Thread, ByteArrayOutputStream> threadLocalBuffer = new HashMap<>();
+    private static final Map<Thread, ByteArrayOutputStream> threadLocalBuffer = new WeakHashMap<>();
 
     public static void setOutputStream(ByteArrayOutputStream stream) {
         threadLocalBuffer.put(Thread.currentThread(), stream);
     }
 
     public static ByteArrayOutputStream getOutputStream() {
-        return threadLocalBuffer.get(Thread.currentThread());
+        return threadLocalBuffer.getOrDefault(Thread.currentThread(), new ByteArrayOutputStream());
     }
 
     public static String getThreadOutput() {
@@ -83,11 +84,13 @@ public class OutputInterceptor {
                     centralStream.reset();
                 }
                 centralStream.write(b, off, len);
-                ByteArrayOutputStream stream = getOutputStream();
-                if(stream.size() > 1024 * 1024) {
-                    stream.reset();
+                ByteArrayOutputStream threadStream = getOutputStream();
+                if (threadStream != null) {
+                    if (threadStream.size() > 1024 * 1024) {
+                        threadStream.reset();
+                    }
+                    threadStream.write(b, off, len);
                 }
-                stream.write(b, off, len);
             }
         });
     }

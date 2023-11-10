@@ -91,7 +91,7 @@ class OperationStatus @JsonCreator constructor(
                 )
             )
         }
-    fun truncate(text: String, length: Int = 500): String {
+    private fun truncate(text: String, length: Int = 500): String {
         return if (text.length > length) text.substring(0, length - 3) + "..." else text
     }
 

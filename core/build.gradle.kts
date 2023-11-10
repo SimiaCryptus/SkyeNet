@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.7.22"
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
     `maven-publish`
     id("signing")
 }
@@ -26,16 +26,20 @@ kotlin {
     jvmToolchain(11)
 }
 
-val kotlin_version = "1.7.22"
+val kotlin_version = "1.9.20"
 val junit_version = "5.9.2"
+val jetty_version = "11.0.17"
+val logback_version = "1.2.12"
+
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.24")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.25")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
-
+    implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
 
     compileOnlyApi(kotlin("stdlib"))
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
     testImplementation(kotlin("stdlib"))
     testImplementation(kotlin("script-runtime"))
 
@@ -43,6 +47,19 @@ dependencies {
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
     compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-api", version = junit_version)
     compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
+
+//    compileOnlyApi(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
+    compileOnlyApi(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.28.0")
+    compileOnlyApi(group = "com.amazonaws", name = "aws-java-sdk", version = "1.12.454")
+    compileOnlyApi(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
+    compileOnlyApi(group = "ch.qos.logback", name = "logback-core", version = logback_version)
+
+//    testImplementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
+    testImplementation(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.28.0")
+    testImplementation(group = "com.amazonaws", name = "aws-java-sdk", version = "1.12.454")
+    testImplementation(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
+    testImplementation(group = "ch.qos.logback", name = "logback-core", version = logback_version)
+
 }
 
 tasks {

@@ -2,6 +2,8 @@ package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.OutputInterceptor
+import com.simiacryptus.skyenet.servers.SessionServerUtil.getHistory
+import com.simiacryptus.skyenet.util.SessionServerUtil
 
 open class SkyenetCodingSession(
     sessionId: String,
@@ -30,7 +32,7 @@ open class SkyenetCodingSession(
         ) {
             override fun getChatSystemMessages(apiDescription: String) =
                 if (parent.useHistory) {
-                    super.getChatSystemMessages(apiDescription) + SessionServerUtil.getHistory(
+                    super.getChatSystemMessages(apiDescription) + getHistory(
                         history.values,
                         10,
                         parent.maxHistoryCharacters

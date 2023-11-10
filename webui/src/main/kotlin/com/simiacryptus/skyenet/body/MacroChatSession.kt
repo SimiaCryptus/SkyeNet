@@ -11,9 +11,9 @@ class MacroChatSession(
     sessionId = sessionId,
     sessionDataStorage = sessionDataStorage
 ) {
-    val playSempaphores = mutableMapOf<String, Semaphore>()
-    val threads = mutableMapOf<String, Thread>()
-    val regenTriggers = mutableMapOf<String, Consumer<Unit>>()
+    private val playSempaphores = mutableMapOf<String, Semaphore>()
+    private val threads = mutableMapOf<String, Thread>()
+    private val regenTriggers = mutableMapOf<String, Consumer<Unit>>()
     val linkTriggers = mutableMapOf<String, Consumer<Unit>>()
     val txtTriggers = mutableMapOf<String, Consumer<String>>()
     val session : PersistentSessionBase = this

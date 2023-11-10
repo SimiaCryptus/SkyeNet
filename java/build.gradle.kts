@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.7.22"
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
     `maven-publish`
     id("signing")
 }
@@ -26,12 +26,12 @@ kotlin {
     jvmToolchain(11)
 }
 
-val kotlin_version = "1.7.22"
+val kotlin_version = "1.9.20"
 dependencies {
 
     implementation(project(":core"))
 
-    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
     implementation(kotlin("stdlib-jdk8"))
 
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = kotlin_version)

@@ -41,6 +41,7 @@ abstract class SkyenetMacroChat(
 
     companion object {
 
+        @Suppress("unused")
         fun <T : Any> iterate(
             sessionUI: SessionUI,
             sessionDiv: SessionDiv,

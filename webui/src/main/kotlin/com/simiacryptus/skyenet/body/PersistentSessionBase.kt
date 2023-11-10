@@ -10,7 +10,7 @@ abstract class PersistentSessionBase(
     private val messageStates: LinkedHashMap<String, String> = sessionDataStorage.loadMessages(sessionId),
 ) : SessionBase(sessionId) {
 
-    val messageVersions = HashMap<String, AtomicInteger>()
+    private val messageVersions = HashMap<String, AtomicInteger>()
 
     companion object {
         val logger = org.slf4j.LoggerFactory.getLogger(WebSocketServer::class.java)

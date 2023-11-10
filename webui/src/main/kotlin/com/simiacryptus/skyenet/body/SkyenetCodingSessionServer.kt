@@ -22,7 +22,7 @@ abstract class SkyenetCodingSessionServer(
     temperature: Double = 0.1,
     val model: OpenAIClient.Model = OpenAIClient.Models.GPT4,
     var useHistory: Boolean = true,
-    val shortExceptions: Boolean = false,
+    private val shortExceptions: Boolean = false,
     val apiKey: String
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,

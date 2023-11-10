@@ -16,7 +16,7 @@ class ClasspathResource(
     val url: URL,
     @Transient private var useCaches: Boolean = __defaultUseCaches,
 ) : Resource() {
-    val classLoader: ClassLoader = this@ClasspathResource.javaClass.classLoader
+    private val classLoader: ClassLoader = this@ClasspathResource.javaClass.classLoader
     val path = url.path.split("jar!/").last()
 
     override fun close() {

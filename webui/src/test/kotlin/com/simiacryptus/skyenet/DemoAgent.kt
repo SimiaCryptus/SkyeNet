@@ -3,7 +3,7 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.body.SessionServerUtil.asJava
+import com.simiacryptus.skyenet.util.SessionServerUtil.asJava
 import com.simiacryptus.skyenet.body.SkyenetCodingSessionServer
 import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter
 import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
