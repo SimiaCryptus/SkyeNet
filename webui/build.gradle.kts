@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.7.22"
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
     `maven-publish`
     id("signing")
 }
@@ -27,12 +27,12 @@ kotlin {
 //    jvmToolchain(17)
 }
 
-val kotlin_version = "1.7.22"
+val kotlin_version = "1.9.20"
 val jetty_version = "11.0.17"
 val jackson_version = "2.15.2"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.24")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.25")
 
     implementation(project(":core"))
     testImplementation(project(":groovy"))
@@ -45,10 +45,11 @@ dependencies {
     implementation(group = "org.eclipse.jetty.websocket", name = "websocket-jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty.websocket", name = "websocket-jetty-client", version = jetty_version)
     implementation(group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version = jetty_version)
+    implementation(group = "org.eclipse.jetty", name = "jetty-webapp", version = jetty_version)
 
     implementation(group = "com.vladsch.flexmark", name = "flexmark-all", version = "0.64.8")
 
-    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
 
     implementation(kotlin("stdlib"))
 

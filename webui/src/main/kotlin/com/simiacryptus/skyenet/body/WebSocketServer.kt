@@ -32,7 +32,7 @@ abstract class WebSocketServer(val resourceBase: String) {
 
     inner class MessageWebSocket(
         val sessionId: String,
-        val sessionState: SessionInterface,
+        private val sessionState: SessionInterface,
     ) : WebSocketAdapter() {
 
         override fun onWebSocketConnect(session: Session) {

@@ -6,6 +6,6 @@ include("java")
 include("scala")
 include("kotlin")
 include("webui")
-include("util")
+//include("util")
 
 //includeBuild("../joe-penai/")

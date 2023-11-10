@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.7.22"
+    id("org.jetbrains.kotlin.jvm") version "1.9.20"
     `maven-publish`
     id("signing")
 }
@@ -30,19 +30,22 @@ dependencies {
 
     implementation(project(":core"))
 
-    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.1")
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
 
     implementation(kotlin("stdlib"))
-    implementation(kotlin("script-util"))
+    implementation(kotlin("scripting-jsr223"))
     implementation(kotlin("script-runtime"))
     implementation(kotlin("compiler-embeddable"))
     implementation(kotlin("scripting-compiler-embeddable"))
 
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
     implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
 
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
+
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
+    testImplementation(group = "ch.qos.logback", name = "logback-classic", version = "1.4.11")
+    testImplementation(group = "ch.qos.logback", name = "logback-core", version = "1.4.11")
 
 }
 

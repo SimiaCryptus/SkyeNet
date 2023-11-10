@@ -4,7 +4,7 @@ interface Heart {
 
     fun getLanguage(): String
     fun run(code: String): Any?
-    fun validate(code: String): Exception?
+    fun validate(code: String): Throwable?
 
     fun wrapCode(code: String): String = code
     fun <T : Any> wrapExecution(fn: java.util.function.Supplier<T?>): T? = fn.get()

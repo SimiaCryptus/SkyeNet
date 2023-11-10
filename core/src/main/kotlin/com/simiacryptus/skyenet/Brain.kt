@@ -1,3 +1,5 @@
+@file:Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
@@ -11,38 +13,27 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.util.concurrent.atomic.AtomicInteger
 
-@Suppress("MemberVisibilityCanBePrivate")
 open class Brain(
     val api: OpenAIClient,
     val symbols: java.util.Map<String, Object> = java.util.HashMap<String, Object>() as java.util.Map<String, Object>,
-    var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
-    var verbose: Boolean = false,
-    var temperature: Double = 0.3,
-    var describer: TypeDescriber = YamlDescriber(),
+    val model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
+    private val verbose: Boolean = false,
+    val temperature: Double = 0.3,
+    val describer: TypeDescriber = YamlDescriber(),
     val language: String = "Kotlin",
     private val moderated: Boolean = true,
-    val apiDescription: String = apiDescription(symbols, describer),
+    private val apiDescription: String = apiDescription(symbols, describer),
 ) {
-    val metrics: Map<String, Any>
-        get() = hashMapOf(
-            "totalInputLength" to totalInputLength.get(),
-            "totalOutputLength" to totalOutputLength.get(),
-            "totalApiDescriptionLength" to totalApiDescriptionLength.get(),
-            "totalExamplesLength" to totalExamplesLength.get(),
-        ) + api.metrics
-    protected val totalInputLength = AtomicInteger(0)
-    protected val totalOutputLength = AtomicInteger(0)
-    protected val totalExamplesLength = AtomicInteger(0)
-    protected val totalApiDescriptionLength: AtomicInteger = AtomicInteger(0)
-
+    private val totalInputLength = AtomicInteger(0)
+    private val totalOutputLength = AtomicInteger(0)
+    private val totalApiDescriptionLength: AtomicInteger = AtomicInteger(0)
 
     open fun implement(vararg prompt: String): String {
         if (verbose) log.info("Prompt: \n\t" + prompt.joinToString("\n\t"))
-        return implement(*getChatMessages(*prompt).toTypedArray())
+        return implement(*(getChatSystemMessages(apiDescription) +
+                prompt.map { ChatMessage(ChatMessage.Role.user, it) }).toTypedArray()
+        )
     }
-
-    fun getChatMessages(vararg prompt: String) = getChatSystemMessages(apiDescription) +
-            prompt.map { ChatMessage(ChatMessage.Role.user, it) }
 
     fun implement(
         vararg messages: ChatMessage
@@ -143,7 +134,7 @@ open class Brain(
         if (moderated) api.moderate(json)
         totalInputLength.addAndGet(json.length)
         val chatResponse = api.chat(request, model)
-        var response = chatResponse.choices.first()?.message?.content.orEmpty()
+        var response = chatResponse.choices.first().message?.content.orEmpty()
         if (verbose) log.info(response)
         totalOutputLength.addAndGet(response.length)
         response = response.trim()
@@ -163,7 +154,7 @@ open class Brain(
             return superMethod?.superMethod() ?: superMethod
         }
 
-        val <T> Class<T>.superclasses: List<Class<*>>
+        private val <T> Class<T>.superclasses: List<Class<*>>
             get() {
                 val superclass = superclass
                 val supers = if (superclass == null) listOf()
@@ -210,12 +201,6 @@ open class Brain(
             """.trimMargin()
         }
 
-        /***
-         * The input stream is parsed based on ```language\n...\n``` blocks.
-         * A list of tuples is returned, where the first element is the language and the second is the code block
-         * For intermediate non-code blocks, the language is "text"
-         * For unlabeled code blocks, the language is "code"
-         */
         fun extractCodeBlocks(response: String): List<Pair<String, String>> {
             val codeBlockRegex = Regex("(?s)```(.*?)\\n(.*?)```")
             val languageRegex = Regex("([a-zA-Z0-9-_]+)")
@@ -249,16 +234,6 @@ open class Brain(
             return result
         }
 
-        fun extractCodeBlock(response: String): String {
-            var response1 = response
-            if (response1.contains("```")) {
-                val startIndex = response1.indexOf('\n', response1.indexOf("```"))
-                val endIndex = response1.lastIndexOf("```")
-                val trim = response1.substring(startIndex, endIndex).trim()
-                response1 = trim
-            }
-            return response1
-        }
     }
 
 }

@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
 
+@Suppress("unused")
 open class SkyenetInterviewer<T : Any>(
     applicationName: String,
     val dataClass: Class<T>,
@@ -17,7 +18,7 @@ open class SkyenetInterviewer<T : Any>(
     oauthConfig: String? = null,
     val continueSession: (String, T) -> SessionInterface,
     val validate: (T) -> List<String>,
-    val apiKey: String
+    private val apiKey: String
 ) : SkyenetSessionServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,

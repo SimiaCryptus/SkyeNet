@@ -60,7 +60,7 @@ open class SkyenetMarkupChat(
         val log = org.slf4j.LoggerFactory.getLogger(SkyenetMarkupChat::class.java)!!
         var sessionDataStorage: SessionDataStorage? = null
         const val port = 8081
-        const val baseURL = "http://localhost:$port"
+        private const val baseURL = "http://localhost:$port"
         var skyenet = SkyenetMarkupChat(
             applicationName = "Chat Demo"
         )

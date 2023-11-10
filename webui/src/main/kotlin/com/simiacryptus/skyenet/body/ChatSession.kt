@@ -6,9 +6,9 @@ abstract class ChatSession(
     val parent: SkyenetSessionServerBase,
     sessionId: String,
     var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
-    var visiblePrompt: String,
-    var hiddenPrompt: String,
-    var systemPrompt: String,
+    private var visiblePrompt: String,
+    private var hiddenPrompt: String,
+    private var systemPrompt: String,
 ) : PersistentSessionBase(sessionId, parent.sessionDataStorage) {
 
     init {
