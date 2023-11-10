@@ -94,9 +94,17 @@ class CodingActor(
     override fun answer(vararg messages: OpenAIClient.ChatMessage): CodeResult {
         return CodeResultImpl(*messages)
     }
+    fun answerWithPrefix(codePrefix: String, vararg messages: OpenAIClient.ChatMessage): CodeResult {
+        val prevList = messages.toList()
+        val newList = prevList.dropLast(1) + listOf(
+            OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, codePrefix)
+        ) + prevList.last()
+        return CodeResultImpl(*newList.toTypedArray())
+    }
 
     private inner class CodeResultImpl(
-        vararg messages: OpenAIClient.ChatMessage
+        vararg messages: OpenAIClient.ChatMessage,
+        codePrefix: String = "",
     ) : CodeResult {
         var _status = CodeResult.Status.Coding
         override fun getStatus(): CodeResult.Status {
@@ -112,7 +120,7 @@ class CodingActor(
                     describer = describer,
                     model = model,
                     temperature = temperature,
-                ), *messages
+                ), *messages, codePrefix = codePrefix
             )
             if (_status != CodeResult.Status.Success) {
                 codedInstruction = implement(
@@ -123,7 +131,7 @@ class CodingActor(
                         describer = describer,
                         model = fallbackModel,
                         temperature = temperature,
-                    ), *messages
+                    ), *messages, codePrefix = codePrefix
                 )
             }
             if (_status != CodeResult.Status.Success) {
@@ -135,7 +143,8 @@ class CodingActor(
 
         private fun implement(
             brain: Brain,
-            vararg messages: OpenAIClient.ChatMessage
+            vararg messages: OpenAIClient.ChatMessage,
+            codePrefix: String = "",
         ): String {
             val response = brain.implement(*messages)
             val codeBlocks = Brain.extractCodeBlocks(response)
@@ -147,7 +156,7 @@ class CodingActor(
                 log.info("Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
                 for (fixAttempt in 0..fixIterations) {
                     try {
-                        val validate = interpreter.validate(codedInstruction)
+                        val validate = interpreter.validate((codePrefix + "\n" + codedInstruction).trim())
                         if (validate != null) throw validate
                         log.info("Validation succeeded")
                         _status = CodeResult.Status.Success
