@@ -1,10 +1,7 @@
 package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.skyenet.actors.SimpleActor
-import com.simiacryptus.skyenet.body.ChatSessionFlexmark
-import com.simiacryptus.skyenet.body.PersistentSessionBase
-import com.simiacryptus.skyenet.body.SessionDiv
-import com.simiacryptus.skyenet.body.SkyenetMacroChat
+import com.simiacryptus.skyenet.body.*
 import org.slf4j.LoggerFactory
 
 open class SimpleActorTestApp(
@@ -25,9 +22,9 @@ open class SimpleActorTestApp(
         sessionUI: SessionUI,
         sessionDiv: SessionDiv
     ) {
-        sessionDiv.append("""<div>${ChatSessionFlexmark.renderMarkdown(userMessage)}</div>""", true)
+        sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
         val moderatorResponse = actor.answer(userMessage)
-        sessionDiv.append("""<div>${ChatSessionFlexmark.renderMarkdown(moderatorResponse)}</div>""", false)
+        sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)
     }
 
     companion object {

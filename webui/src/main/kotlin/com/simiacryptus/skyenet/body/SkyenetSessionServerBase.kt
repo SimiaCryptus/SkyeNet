@@ -150,10 +150,11 @@ abstract class SkyenetSessionServerBase(
             resp.contentType = "text/html"
             resp.status = HttpServletResponse.SC_OK
             val sessions = sessionDataStorage.listSessions()
-            val links = sessions.joinToString("<br/>") {
-                """<a href="javascript:void(0)" onclick="window.location.href='#$it';window.location.reload();">
-                                |${sessionDataStorage.getSessionName(it)}
-                                |</a><br/>""".trimMargin()
+            val links = sessions.joinToString("<br/>") { session ->
+                val sessionName = sessionDataStorage.getSessionName(session)
+                """<a href="javascript:void(0)" onclick="window.location.href='#$session';window.location.reload();">
+                |$sessionName
+                |</a><br/>""".trimMargin()
             }
             resp.writer.write(
                 """

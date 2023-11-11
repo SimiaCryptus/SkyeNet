@@ -2,6 +2,8 @@ package com.simiacryptus.skyenet.body
 
 import com.simiacryptus.util.JsonUtil
 import java.io.File
+import java.util.*
+import kotlin.collections.LinkedHashMap
 
 open class SessionDataStorage(
     val dataDir: File = File("sessionData")
@@ -51,7 +53,7 @@ open class SessionDataStorage(
     }
 
     protected open fun getOperationDir(sessionId: String): File {
-        val sessionDir = getSessionInstanceDir(sessionId)
+        val sessionDir = getInstanceDir(sessionId)
         val operationDir = File(sessionDir, "operations")
         if (!operationDir.exists()) {
             operationDir.mkdirs()
@@ -60,7 +62,7 @@ open class SessionDataStorage(
     }
 
     protected open fun getMessageDir(sessionId: String): File {
-        val sessionDir = getSessionInstanceDir(sessionId)
+        val sessionDir = getInstanceDir(sessionId)
         val messageDir = File(sessionDir, "messages")
         if (!messageDir.exists()) {
             messageDir.mkdirs()
@@ -82,7 +84,7 @@ open class SessionDataStorage(
     }
 
     open fun getSessionName(sessionId: String): String {
-        val sessionDir = getSessionInstanceDir(sessionId)
+        val sessionDir = getInstanceDir(sessionId)
         // Find the earliest operation and return the operation instruction
         val operationDir = File(sessionDir, "operations")
         val operationFiles = operationDir.listFiles()?.filter { file ->
@@ -99,30 +101,30 @@ open class SessionDataStorage(
         }
     }
 
-    protected open fun getSessionInstanceDir(sessionId: String): File {
-        val sessionDir = File(getSessionGroupDir(sessionId), getSessionInstanceId(sessionId))
+    protected open fun getInstanceDir(sessionId: String): File {
+        val sessionDir = File(getDateDir(sessionId), getInstanceId(sessionId))
         if (!sessionDir.exists()) {
             sessionDir.mkdirs()
         }
         return sessionDir
     }
 
-    open fun getSessionDir(sessionId: String) = getSessionGroupDir(sessionId)
+    open fun getSessionDir(sessionId: String) = getInstanceDir(sessionId)
 
-    protected open fun getSessionGroupDir(sessionId: String): File {
-        val sessionGroupDir = File(dataDir, getSessionGroupId(sessionId))
+    protected open fun getDateDir(sessionId: String): File {
+        val sessionGroupDir = File(dataDir, getDate(sessionId))
         if (!sessionGroupDir.exists()) {
             sessionGroupDir.mkdirs()
         }
         return sessionGroupDir
     }
 
-    protected open fun getSessionGroupId(sessionId: String): String {
+    protected open fun getDate(sessionId: String): String {
         return sessionId.split("-").firstOrNull() ?: sessionId
     }
 
-    protected open fun getSessionInstanceId(sessionId: String): String {
-        return stripPrefix(stripPrefix(sessionId, getSessionGroupId(sessionId)), "-")
+    protected open fun getInstanceId(sessionId: String): String {
+        return stripPrefix(stripPrefix(sessionId, getDate(sessionId)), "-")
     }
 
 
@@ -134,6 +136,12 @@ open class SessionDataStorage(
             } else {
                 text.toString()
             }
+        }
+
+        fun newID(): String {
+            val uuid = UUID.randomUUID().toString().split("-").first()
+            val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
+            return "$yyyyMMdd-$uuid"
         }
     }
 }

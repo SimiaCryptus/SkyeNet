@@ -40,27 +40,7 @@ abstract class SkyenetMacroChat(
     )
 
     companion object {
-
-        @Suppress("unused")
-        fun <T : Any> iterate(
-            sessionUI: SessionUI,
-            sessionDiv: SessionDiv,
-            parameters: T,
-            feedbackFn: (msg: T, feedback: String) -> Unit,
-            fns: Map<String, (obj: T) -> Unit> = mapOf(),
-            toString: (obj: T) -> String = { data: Any -> """<pre>${JsonUtil.toJson(data)}</pre>""" }
-        ) = sessionDiv.append(
-            """
-            ${toString(parameters)}
-            <br/>
-            ${sessionUI.textInput { feedbackFn(parameters, it) }}
-            <br/>
-            ${fns.entries.joinToString("\n") { (label, fn) ->
-                sessionUI.hrefLink { fn(parameters) } + label + "</a>"
-            }}
-            """, false
-        )
-
+        val log = org.slf4j.LoggerFactory.getLogger(SkyenetMacroChat::class.java)
     }
 
 }

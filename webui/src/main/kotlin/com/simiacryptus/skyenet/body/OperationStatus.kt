@@ -23,7 +23,7 @@ class OperationStatus @JsonCreator constructor(
     }
 
     companion object {
-        val logger = org.slf4j.LoggerFactory.getLogger(SkyenetCodingSessionServer::class.java)
+        val logger = org.slf4j.LoggerFactory.getLogger(OperationStatus::class.java)
     }
     fun onMessage(code: String) {
         if (code.lowercase() == "run") {

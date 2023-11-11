@@ -1,4 +1,4 @@
-@file:Suppress("MemberVisibilityCanBePrivate", "unused")
+@file:Suppress("unused")
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
@@ -11,10 +11,10 @@ object BasicChatTest {
 
     val api = OpenAIClient(OpenAIClient.keyTxt)
     val log = org.slf4j.LoggerFactory.getLogger(BasicChatTest::class.java)!!
-    var sessionDataStorage: SessionDataStorage? = null
-    const val port = 8081
-    const val baseURL = "http://localhost:$port"
-    var skyenet = SkyenetBasicChat(
+    private var sessionDataStorage: SessionDataStorage? = null
+    private const val port = 8081
+    private const val baseURL = "http://localhost:$port"
+    private var skyenet = SkyenetBasicChat(
         applicationName = "Chat Demo"
     )
 

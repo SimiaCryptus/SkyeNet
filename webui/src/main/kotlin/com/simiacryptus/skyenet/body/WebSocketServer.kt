@@ -1,8 +1,5 @@
 package com.simiacryptus.skyenet.body
 
-import jakarta.servlet.http.HttpServlet
-import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletHolder
@@ -13,20 +10,10 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer
-import java.util.*
 
 abstract class WebSocketServer(val resourceBase: String) {
 
     abstract val applicationName: String
-
-    inner class NewSessionServlet : HttpServlet() {
-        override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-            val sessionId = UUID.randomUUID().toString()
-            resp.contentType = "text/plain"
-            resp.status = HttpServletResponse.SC_OK
-            resp.writer.write(sessionId)
-        }
-    }
 
     val stateCache: MutableMap<String, SessionInterface> = mutableMapOf()
 
