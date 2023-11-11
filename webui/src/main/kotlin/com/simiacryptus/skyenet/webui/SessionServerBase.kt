@@ -12,12 +12,31 @@ import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-abstract class SkyenetSessionServerBase(
+abstract class SessionServerBase(
     override val applicationName: String,
     val oauthConfig: String? = null,
     resourceBase: String = "simpleSession",
     val temperature: Double = 0.1,
 ) : WebSocketServer(resourceBase) {
+
+    open val settingsClass: Class<*> get() = Map::class.java
+
+    open fun <T: Any> initSettings(sessionId: String) : T? = null
+
+    fun <T: Any> getSettings(sessionId: String): T? {
+        @Suppress("UNCHECKED_CAST")
+        var settings: T? = sessionDataStorage.getSettings(sessionId, settingsClass as Class<T>)
+        if (null == settings) {
+            settings = initSettings<T>(sessionId)
+            if (null != settings) {
+                sessionDataStorage.updateSettings(sessionId, settings)
+            }
+        }
+        return settings
+    }
+    fun <T : Any> updateSettings(sessionId: String, settings: T) {
+        sessionDataStorage.updateSettings(sessionId, settings)
+    }
 
     abstract val api: OpenAIClient
 
@@ -26,14 +45,15 @@ abstract class SkyenetSessionServerBase(
     override fun configure(context: WebAppContext, prefix: String, baseURL: String) {
         super.configure(context, prefix, baseURL)
 
-        if (null != oauthConfig) (AuthenticatedWebsite("$baseURL/oauth2callback", this@SkyenetSessionServerBase.applicationName) {
+        if (null != oauthConfig) (AuthenticatedWebsite("$baseURL/oauth2callback", this@SessionServerBase.applicationName) {
             FileUtils.openInputStream(File(oauthConfig))
         }).configure(context)
 
         context.addServlet(appInfo, prefix+"appInfo")
         context.addServlet(fileIndex, prefix+"fileIndex/*")
         context.addServlet(fileZip, prefix+"fileZip")
-        context.addServlet(sessionList, prefix+"sessions")
+        context.addServlet(sessionsServlet, prefix+"sessions")
+        context.addServlet(settingsServlet, prefix+"settings")
     }
 
     protected open val fileZip = ServletHolder(
@@ -170,11 +190,12 @@ abstract class SkyenetSessionServerBase(
             )
         }
     }
-    protected open val sessionList = ServletHolder(
+    protected open val sessionsServlet = ServletHolder(
         "sessionList",
         SessionServlet()
     )
 
+    protected open val settingsServlet = ServletHolder("settings", SettingsServlet(this))
 
     inner class AppInfoServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
@@ -195,7 +216,7 @@ abstract class SkyenetSessionServerBase(
     )
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(SkyenetSessionServerBase::class.java)
+        val log = org.slf4j.LoggerFactory.getLogger(SessionServerBase::class.java)
         val spinner =
             """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
     }

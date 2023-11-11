@@ -1,3 +1,5 @@
+@file:Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+
 package com.simiacryptus.skyenet.heart.test
 
 import com.simiacryptus.skyenet.util.HeartTestBase

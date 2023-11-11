@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.webui
 import com.simiacryptus.openai.OpenAIClient
 
 open class BasicChatSession(
-    parent: SkyenetSessionServerBase,
+    parent: SessionServerBase,
     model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     sessionId: String,
     visiblePrompt: String = """

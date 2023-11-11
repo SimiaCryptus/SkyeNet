@@ -4,7 +4,7 @@ import java.util.concurrent.Semaphore
 import java.util.function.Consumer
 
 class MacroChatSession(
-    val parent : SkyenetMacroChat,
+    val parent : MacroChat,
     sessionId: String,
     sessionDataStorage: SessionDataStorage = parent.sessionDataStorage
 ) : PersistentSessionBase(
@@ -19,13 +19,13 @@ class MacroChatSession(
     val session : PersistentSessionBase = this
     override fun run(userMessage: String) {
         val operationID = ChatSession.randomID()
-        val sessionDiv = newSessionDiv(operationID, SkyenetSessionServerBase.spinner)
+        val sessionDiv = newSessionDiv(operationID, SessionServerBase.spinner)
         val thread = Thread {
             playSempaphores[operationID] = Semaphore(0)
             try {
                 parent.processMessage(sessionId, userMessage, session, object :
-                    SkyenetMacroChat.SessionUI {
-                    override val spinner: String get() = """<div>${SkyenetSessionServerBase.spinner}</div>"""
+                    MacroChat.SessionUI {
+                    override val spinner: String get() = """<div>${SessionServerBase.spinner}</div>"""
                     override val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
                     override val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
                     override val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""

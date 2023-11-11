@@ -3,11 +3,11 @@ package com.simiacryptus.skyenet.webui
 import com.simiacryptus.openai.OpenAIClient
 import java.util.function.Consumer
 
-abstract class SkyenetMacroChat(
+abstract class MacroChat(
     applicationName: String,
     oauthConfig: String? = null,
     temperature: Double = 0.1,
-) : SkyenetSessionServerBase(
+) : SessionServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
@@ -39,7 +39,7 @@ abstract class SkyenetMacroChat(
     )
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(SkyenetMacroChat::class.java)
+        val log = org.slf4j.LoggerFactory.getLogger(MacroChat::class.java)
     }
 
 }

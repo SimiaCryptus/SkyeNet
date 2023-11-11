@@ -1,3 +1,5 @@
+@file:Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+
 package com.simiacryptus.skyenet.heart
 
 import com.simiacryptus.skyenet.util.HeartTestBase
@@ -7,7 +9,7 @@ import java.util.Map
 
 class KotlinInterpreterTest : HeartTestBase() {
 
-    override fun newInterpreter(map: java.util.Map<String, Object>) = KotlinInterpreter(map)
+    override fun newInterpreter(map: Map<String, Object>) = KotlinInterpreter(map)
 
     @Test
     override fun `test run with variables`() {

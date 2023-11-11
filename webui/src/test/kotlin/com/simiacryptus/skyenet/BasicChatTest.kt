@@ -2,7 +2,7 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.webui.SkyenetBasicChat
+import com.simiacryptus.skyenet.webui.BasicChat
 import org.eclipse.jetty.server.Server
 import java.awt.Desktop
 import java.net.URI
@@ -13,7 +13,7 @@ object BasicChatTest {
     val log = org.slf4j.LoggerFactory.getLogger(BasicChatTest::class.java)!!
     private const val port = 8081
     private const val baseURL = "http://localhost:$port"
-    private var skyenet = SkyenetBasicChat(
+    private var skyenet = BasicChat(
         applicationName = "Chat Demo"
     )
 

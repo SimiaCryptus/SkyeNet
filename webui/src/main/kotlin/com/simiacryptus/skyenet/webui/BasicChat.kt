@@ -2,11 +2,11 @@ package com.simiacryptus.skyenet.webui
 
 import com.simiacryptus.openai.OpenAIClient
 
-open class SkyenetBasicChat(
+open class BasicChat(
     applicationName: String,
     oauthConfig: String? = null,
     val model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
-) : SkyenetSessionServerBase(
+) : SessionServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
 ) {
@@ -15,7 +15,7 @@ open class SkyenetBasicChat(
 
     override fun newSession(sessionId: String): SessionInterface {
         val basicChatSession = BasicChatSession(
-            parent = this@SkyenetBasicChat,
+            parent = this@BasicChat,
             model = model,
             sessionId = sessionId
         )

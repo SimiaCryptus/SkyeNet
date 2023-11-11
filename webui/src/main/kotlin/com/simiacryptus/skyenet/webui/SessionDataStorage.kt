@@ -107,6 +107,21 @@ open class SessionDataStorage(
         return stripPrefix(stripPrefix(sessionId, getDate(sessionId)), "-")
     }
 
+    fun <T> getSettings(sessionId: String, clazz: Class<T>): T? {
+        val settingsFile = File(getSessionDir(sessionId), "settings.json")
+        return if (!settingsFile.exists()) null else {
+            JsonUtil.objectMapper().readValue(settingsFile, clazz) as T
+        }
+    }
+
+    @Suppress("unused")
+    fun <T : Any> updateSettings(sessionId: String, settings: T): T {
+        val settingsFile = File(getSessionDir(sessionId), "settings.json")
+        settingsFile.parentFile.mkdirs()
+        JsonUtil.objectMapper().writeValue(settingsFile, settings)
+        return settings
+    }
+
 
     companion object {
         fun stripPrefix(text: String, prefix: String): String {

@@ -8,7 +8,7 @@ open class ReadOnlyApp(
     applicationName: String,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : SkyenetSessionServerBase(
+) : SessionServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,

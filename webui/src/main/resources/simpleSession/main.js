@@ -9,6 +9,11 @@ function closeModal() {
 
 async function fetchData(endpoint) {
     try {
+        // Add session id to the endpoint as a path parameter
+        const sessionId = getSessionId();
+        if (sessionId) {
+            endpoint = endpoint + "?sessionId=" + sessionId;
+        }
         const response = await fetch(endpoint);
         const text = await response.text();
         document.getElementById('modal-content').innerHTML = "<div>" + text + "</div>";
@@ -52,54 +57,12 @@ function onWebSocketText(event) {
 
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
     Prism.highlightAll();
-    updateMessageDivs();
 }
-
-function updateMessageDivs()
-{
-    /*
-    console.log("Updating message divs");
-    Get all message containers
-    var messageContainers = document.querySelectorAll('.message-container');
-    // Loop through each message container
-    messageContainers.forEach(function (container) {
-        console.log("Updating message container: " + container);
-        // Get the first child which is a div (header) and the remaining children (content)
-        var header = container.children[0];
-        while (header.tagName !== 'DIV') {
-            header = header.nextElementSibling;
-        }
-        var content = Array.from(container.children);
-        // Remove the header from the content array (it isn't nessessary the first element)
-        content.splice(content.indexOf(header), 1);
-
-
-        // Add click event listener to the header
-        header.addEventListener('click', function () {
-            console.log("Header clicked: " + header);
-            // Toggle the collapsible-content class on each content element
-            content.forEach(function (elem) {
-                console.log("Toggling collapsible-content class on element: " + elem);
-                elem.classList.toggle('collapsible-content');
-            });
-        });
-
-        // Initialize content as collapsible
-        content.forEach(function (elem) {
-            console.log("Adding collapsible-content class to element: " + elem);
-            elem.classList.add('collapsible-content');
-        });
-
-        // Expand the content initially
-        header.click();
-    });
-     */
-}
-
 
 document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));
+    document.getElementById('settings').addEventListener('click', () => showModal('settings'));
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {
@@ -174,7 +137,5 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
         });
-
-    updateMessageDivs();
 });
 
