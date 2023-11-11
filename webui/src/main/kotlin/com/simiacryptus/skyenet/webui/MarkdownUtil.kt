@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.body
+package com.simiacryptus.skyenet.webui
 
 import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
@@ -13,7 +13,7 @@ object MarkdownUtil {
         return renderer.render(document)
     }
 
-    fun defaultOptions(): MutableDataSet {
+    private fun defaultOptions(): MutableDataSet {
         val options = MutableDataSet()
         options.set(Parser.EXTENSIONS, listOf(TablesExtension.create()))
         return options

@@ -3,8 +3,8 @@ package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.OutputInterceptor
-import com.simiacryptus.skyenet.body.AuthenticatedWebsite
-import com.simiacryptus.skyenet.body.WebSocketServer
+import com.simiacryptus.skyenet.webui.AuthenticatedWebsite
+import com.simiacryptus.skyenet.webui.WebSocketServer
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet

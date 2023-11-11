@@ -11,7 +11,7 @@ async function fetchData(endpoint) {
     try {
         const response = await fetch(endpoint);
         const text = await response.text();
-        document.getElementById('modal-content').innerHTML = "<pre><code class=\"language-text\">" + text + "</code></pre>";
+        document.getElementById('modal-content').innerHTML = "<div>" + text + "</div>";
         Prism.highlightAll();
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -99,7 +99,6 @@ function updateMessageDivs()
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    document.getElementById('api').addEventListener('click', () => showModal('yamlDescriptor'));
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));
     document.querySelector('.close').addEventListener('click', closeModal);
 

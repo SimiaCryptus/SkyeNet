@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.skyenet.actors.SimpleActor
-import com.simiacryptus.skyenet.body.*
+import com.simiacryptus.skyenet.webui.*
 import org.slf4j.LoggerFactory
 
 open class SimpleActorTestApp(

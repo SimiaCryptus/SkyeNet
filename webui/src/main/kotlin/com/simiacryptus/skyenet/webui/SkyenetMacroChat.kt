@@ -1,7 +1,6 @@
-package com.simiacryptus.skyenet.body
+package com.simiacryptus.skyenet.webui
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.util.JsonUtil
 import java.util.function.Consumer
 
 abstract class SkyenetMacroChat(

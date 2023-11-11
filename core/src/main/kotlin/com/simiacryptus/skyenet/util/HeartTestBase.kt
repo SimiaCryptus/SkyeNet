@@ -1,5 +1,6 @@
-package com.simiacryptus.skyenet
+package com.simiacryptus.skyenet.util
 
+import com.simiacryptus.skyenet.Heart
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

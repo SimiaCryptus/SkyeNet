@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.body.*
+import com.simiacryptus.skyenet.webui.*
 import com.simiacryptus.util.JsonUtil
 
 class EmbeddingVisualizer(

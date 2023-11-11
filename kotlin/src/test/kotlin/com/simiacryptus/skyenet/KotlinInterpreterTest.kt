@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.heart
 
-import com.simiacryptus.skyenet.HeartTestBase
+import com.simiacryptus.skyenet.util.HeartTestBase
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.util.Map

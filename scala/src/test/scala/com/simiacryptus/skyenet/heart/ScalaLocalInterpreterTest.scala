@@ -1,7 +1,8 @@
 package com.test
 
 import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter
-import com.simiacryptus.skyenet.{Heart, HeartTestBase}
+import com.simiacryptus.skyenet.Heart
+import com.simiacryptus.skyenet.util.HeartTestBase
 
 import java.util
 
