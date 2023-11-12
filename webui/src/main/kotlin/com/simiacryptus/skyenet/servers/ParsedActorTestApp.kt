@@ -1,19 +1,20 @@
 package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.skyenet.actors.ParsedActor
-import com.simiacryptus.skyenet.body.ChatSessionFlexmark.Companion.renderMarkdown
-import com.simiacryptus.skyenet.body.PersistentSessionBase
-import com.simiacryptus.skyenet.body.SessionDiv
-import com.simiacryptus.skyenet.body.SkyenetMacroChat
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
+import com.simiacryptus.skyenet.sessions.PersistentSessionBase
+import com.simiacryptus.skyenet.sessions.SessionDiv
+import com.simiacryptus.skyenet.sessions.ChatApplicationBase
+import com.simiacryptus.skyenet.sessions.MessageWebSocket
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 
 open class ParsedActorTestApp<T>(
     private val actor: ParsedActor<T>,
-    applicationName: String = "ParsedActorTest_"+actor.parserClass.simpleName,
+    applicationName: String = "ParsedActorTest_" + actor.parserClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : SkyenetMacroChat(
+) : ChatApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
@@ -22,11 +23,11 @@ open class ParsedActorTestApp<T>(
         sessionId: String,
         userMessage: String,
         session: PersistentSessionBase,
-        sessionUI: SessionUI,
-        sessionDiv: SessionDiv
+        sessionDiv: SessionDiv,
+        socket: MessageWebSocket
     ) {
         sessionDiv.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
-        val response = actor.answer(userMessage)
+        val response = actor.answer(userMessage, api = socket.api)
         sessionDiv.append("""<div>${
             renderMarkdown("""
             |${response.getText()}

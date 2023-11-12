@@ -22,14 +22,12 @@ class CodingActor(
     ),
     name: String? = interpreterClass.simpleName,
     val details: String? = null,
-    api: OpenAIClient = OpenAIClient(),
     model: OpenAIClient.Models = OpenAIClient.Models.GPT35Turbo,
     val fallbackModel: OpenAIClient.Models = OpenAIClient.Models.GPT4Turbo,
     temperature: Double = 0.1,
 ) : BaseActor<CodeResult>(
     prompt = "",
     name = name,
-    api = api,
     model = model,
     temperature = temperature,
 ) {
@@ -89,22 +87,23 @@ class CodingActor(
 
     open val interpreter by lazy { interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols) }
 
-    override fun answer(vararg questions: String): CodeResult = answer(*chatMessages(*questions))
+    override fun answer(vararg questions: String, api: OpenAIClient): CodeResult = answer(*chatMessages(*questions), api = api)
 
-    override fun answer(vararg messages: OpenAIClient.ChatMessage): CodeResult {
-        return CodeResultImpl(*messages)
+    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult {
+        return CodeResultImpl(*messages, api = api)
     }
-    fun answerWithPrefix(codePrefix: String, vararg messages: OpenAIClient.ChatMessage): CodeResult {
+    fun answerWithPrefix(codePrefix: String, vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult {
         val prevList = messages.toList()
         val newList = prevList.dropLast(1) + listOf(
             OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, codePrefix)
         ) + prevList.last()
-        return CodeResultImpl(*newList.toTypedArray())
+        return CodeResultImpl(*newList.toTypedArray(), api = api)
     }
 
     private inner class CodeResultImpl(
         vararg messages: OpenAIClient.ChatMessage,
         codePrefix: String = "",
+        api: OpenAIClient,
     ) : CodeResult {
         var _status = CodeResult.Status.Coding
         override fun getStatus(): CodeResult.Status {

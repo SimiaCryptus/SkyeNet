@@ -1,33 +1,38 @@
 package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.skyenet.actors.SimpleActor
-import com.simiacryptus.skyenet.body.ChatSessionFlexmark
-import com.simiacryptus.skyenet.body.PersistentSessionBase
-import com.simiacryptus.skyenet.body.SessionDiv
-import com.simiacryptus.skyenet.body.SkyenetMacroChat
+import com.simiacryptus.skyenet.sessions.*
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 
 open class SimpleActorTestApp(
     private val actor: SimpleActor,
-    applicationName: String = "SimpleActorTest_"+actor.javaClass.simpleName,
+    applicationName: String = "SimpleActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : SkyenetMacroChat(
+) : ChatApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
 ) {
 
+    data class Settings(
+        val actor: SimpleActor? = null,
+    )
+    override val settingsClass: Class<*> get() = Settings::class.java
+    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(sessionId: String): T? = Settings(actor=actor) as T
+
     override fun processMessage(
         sessionId: String,
         userMessage: String,
         session: PersistentSessionBase,
-        sessionUI: SessionUI,
-        sessionDiv: SessionDiv
+        sessionDiv: SessionDiv,
+        socket: MessageWebSocket
     ) {
-        sessionDiv.append("""<div>${ChatSessionFlexmark.renderMarkdown(userMessage)}</div>""", true)
-        val moderatorResponse = actor.answer(userMessage)
-        sessionDiv.append("""<div>${ChatSessionFlexmark.renderMarkdown(moderatorResponse)}</div>""", false)
+        val actor = getSettings<Settings>(sessionId)?.actor ?: actor
+        sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
+        val moderatorResponse = actor.answer(userMessage, api = socket.api)
+        sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)
     }
 
     companion object {

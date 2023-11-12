@@ -156,7 +156,7 @@ open class KotlinInterpreter(
         }
     }
 
-    val scriptEngineFactory = object : KotlinJsr223JvmScriptEngineFactoryBase() {
+    private val scriptEngineFactory = object : KotlinJsr223JvmScriptEngineFactoryBase() {
         override fun getScriptEngine(): ScriptEngine {
             return KotlinJsr223ScriptEngineImpl(
                 this,

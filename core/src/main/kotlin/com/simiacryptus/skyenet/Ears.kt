@@ -14,10 +14,10 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * The ears are the interface to the audio input for the SkyeNet system
  */
-@Suppress("MemberVisibilityCanBePrivate", "unused")
+@Suppress("unused")
 open class Ears(
     val api: OpenAIClient,
-    val secondsPerAudioPacket : Double = 0.25,
+    private val secondsPerAudioPacket : Double = 0.25,
 ) {
 
     interface CommandRecognizer {

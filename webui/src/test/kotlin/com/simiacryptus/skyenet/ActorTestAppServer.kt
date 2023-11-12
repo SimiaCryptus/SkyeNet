@@ -21,7 +21,7 @@ object ActorTestAppServer : AppServerBase(port = 8082) {
         val type: String? = null,
     )
 
-    interface JokeParser : Function<String, TestJokeDataStructure> {}
+    interface JokeParser : Function<String, TestJokeDataStructure>
 
     override val childWebApps by lazy {
         listOf(

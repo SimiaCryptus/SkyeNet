@@ -9,9 +9,14 @@ function closeModal() {
 
 async function fetchData(endpoint) {
     try {
+        // Add session id to the endpoint as a path parameter
+        const sessionId = getSessionId();
+        if (sessionId) {
+            endpoint = endpoint + "?sessionId=" + sessionId;
+        }
         const response = await fetch(endpoint);
         const text = await response.text();
-        document.getElementById('modal-content').innerHTML = "<pre><code class=\"language-text\">" + text + "</code></pre>";
+        document.getElementById('modal-content').innerHTML = "<div>" + text + "</div>";
         Prism.highlightAll();
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -52,55 +57,13 @@ function onWebSocketText(event) {
 
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
     Prism.highlightAll();
-    updateMessageDivs();
 }
-
-function updateMessageDivs()
-{
-    /*
-    console.log("Updating message divs");
-    Get all message containers
-    var messageContainers = document.querySelectorAll('.message-container');
-    // Loop through each message container
-    messageContainers.forEach(function (container) {
-        console.log("Updating message container: " + container);
-        // Get the first child which is a div (header) and the remaining children (content)
-        var header = container.children[0];
-        while (header.tagName !== 'DIV') {
-            header = header.nextElementSibling;
-        }
-        var content = Array.from(container.children);
-        // Remove the header from the content array (it isn't nessessary the first element)
-        content.splice(content.indexOf(header), 1);
-
-
-        // Add click event listener to the header
-        header.addEventListener('click', function () {
-            console.log("Header clicked: " + header);
-            // Toggle the collapsible-content class on each content element
-            content.forEach(function (elem) {
-                console.log("Toggling collapsible-content class on element: " + elem);
-                elem.classList.toggle('collapsible-content');
-            });
-        });
-
-        // Initialize content as collapsible
-        content.forEach(function (elem) {
-            console.log("Adding collapsible-content class to element: " + elem);
-            elem.classList.add('collapsible-content');
-        });
-
-        // Expand the content initially
-        header.click();
-    });
-     */
-}
-
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    document.getElementById('api').addEventListener('click', () => showModal('yamlDescriptor'));
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));
+    document.getElementById('settings').addEventListener('click', () => showModal('settings'));
+    document.getElementById('usage').addEventListener('click', () => showModal('usage'));
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {
@@ -111,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const form = document.getElementById('form');
     const messageInput = document.getElementById('message');
+    const usage = document.getElementById('usage');
 
     form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -128,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionId = getSessionId();
     if (sessionId) {
         connect(sessionId, onWebSocketText);
+        usage.href = '/usage/?sessionId=' + sessionId;
     } else {
         connect(undefined, onWebSocketText);
     }
@@ -160,6 +125,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(url, "_blank"); // Open the URL in a new tab
     });
 
+    const loginLink = document.getElementById('username');
+    if (loginLink) {
+        loginLink.href = '/googleLogin?redirect=' + encodeURIComponent(window.location.pathname);
+    }
+
     fetch('appInfo')
         .then(response => {
             if (!response.ok) {
@@ -176,6 +146,21 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('There was a problem with the fetch operation:', error);
         });
 
-    updateMessageDivs();
+    fetch('userInfo')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.name && loginLink) {
+                loginLink.innerHTML = data.name;
+                loginLink.href = "/userSettings";
+            }
+        })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
 });
 

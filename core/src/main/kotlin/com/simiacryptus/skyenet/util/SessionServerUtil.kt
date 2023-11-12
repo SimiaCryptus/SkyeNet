@@ -24,7 +24,7 @@ object SessionServerUtil {
             }
         }
 
-    val logger = org.slf4j.LoggerFactory.getLogger(SessionServerUtil::class.java)
+    val log = org.slf4j.LoggerFactory.getLogger(SessionServerUtil::class.java)
 
     fun getCode(language: String, textSegments: List<Pair<String, String>>) =
         textSegments.joinToString("\n") {

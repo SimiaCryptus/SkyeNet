@@ -10,8 +10,8 @@ interface Heart {
     fun <T : Any> wrapExecution(fn: java.util.function.Supplier<T?>): T? = fn.get()
 
     companion object {
-        @Suppress("unused")
         private class TestObject {
+            @Suppress("unused")
             fun square(x: Int): Int = x * x
         }
         private interface TestInterface {

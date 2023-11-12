@@ -15,9 +15,9 @@ import javax.sound.sampled.SourceDataLine
 /**
  * The mouth is the interface to the Google Text-to-Speech API for the SkyeNet system
  */
-@Suppress("MemberVisibilityCanBePrivate", "unused")
+@Suppress("unused")
 open class Mouth(
-    val keyfile: String
+    private val keyfile: String
 ) {
 
     open fun speak(text: String) {
