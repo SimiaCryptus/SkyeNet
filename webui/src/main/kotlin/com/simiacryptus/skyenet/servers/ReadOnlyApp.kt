@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.servers
 
-import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.sessions.*
 import org.slf4j.LoggerFactory
 
@@ -8,11 +7,11 @@ open class ReadOnlyApp(
     applicationName: String,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-    val api: OpenAIClient,
 ) : ApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
+    resourceBase = "readOnly",
 ) {
 
     companion object {
@@ -20,12 +19,7 @@ open class ReadOnlyApp(
     }
 
     override fun newSession(sessionId: String): SessionInterface {
-        return BasicChatSession(
-            parent = this@ReadOnlyApp,
-            model = OpenAIClient.Models.GPT35Turbo,
-            sessionId = sessionId,
-            api = api
-        )
+        throw UnsupportedOperationException()
     }
 
 

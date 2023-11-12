@@ -39,7 +39,7 @@ open class SessionDataStorage(
         val files = dataDir.listFiles()?.flatMap { it.listFiles()?.toList() ?: listOf()  }?.filter { sessionDir ->
             val operationDir = File(sessionDir, "messages")
             if (!operationDir.exists()) false else {
-                val listFiles = operationDir.listFiles()
+                val listFiles = operationDir.listFiles().filter { it.isFile && !it.name.startsWith("aaa") }
                 (listFiles?.size ?: 0) > 0
             }
         }

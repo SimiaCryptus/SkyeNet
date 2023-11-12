@@ -1,15 +1,16 @@
 package com.simiacryptus.skyenet.servers
 
 
+import com.google.api.services.oauth2.model.Userinfo
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.OutputInterceptor
-import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import com.simiacryptus.skyenet.servlet.AuthenticatedWebsite
 import com.simiacryptus.skyenet.servlet.UsageServlet
-import com.simiacryptus.skyenet.sessions.ApplicationBase
 import com.simiacryptus.skyenet.servlet.UserInfoServlet
 import com.simiacryptus.skyenet.servlet.UserSettingsServlet
+import com.simiacryptus.skyenet.sessions.ApplicationBase
 import com.simiacryptus.skyenet.sessions.WebSocketServer
+import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
 import jakarta.servlet.http.HttpServlet
@@ -30,6 +31,7 @@ import java.util.*
 
 abstract class AppServerBase(
     private val localName: String = "localhost",
+    private val publicName: String = "localhost",
     private val port: Int = 8081,
 ) {
     var domainName: String = ""
@@ -38,11 +40,12 @@ abstract class AppServerBase(
     data class ChildWebApp(
         val path: String,
         val server: WebSocketServer,
-        val isAuthenticated: Boolean = false
+        val isAuthenticated: Boolean = false,
+        val isPublicOnly: Boolean = false
     )
 
     private fun domainName(isServer: Boolean) =
-        if (isServer) "https://apps.simiacrypt.us" else "http://$localName:$port"
+        if (isServer) "https://$publicName" else "http://$localName:$port"
 
     val welcomeResources = Resource.newResource(javaClass.classLoader.getResource("welcome"))
     val userInfoServlet = UserInfoServlet()
@@ -103,17 +106,18 @@ abstract class AppServerBase(
 
     inner class WelcomeServlet() : HttpServlet() {
         override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
-            val requestURI = req?.requestURI ?: "/"
+            val user = AuthenticatedWebsite.getUser(req!!)
+            val requestURI = req.requestURI ?: "/"
             resp?.contentType = when (requestURI) {
                 "/" -> "text/html"
                 else -> ApplicationBase.getMimeType(requestURI)
             }
             when {
-                requestURI == "/" -> resp?.writer?.write(homepage().trimIndent())
-                requestURI == "/index.html" -> resp?.writer?.write(homepage().trimIndent())
-                requestURI.startsWith("/userInfo") -> userInfoServlet.doGet(req!!, resp!!)
-                requestURI.startsWith("/userSettings") -> userSettingsServlet.doGet(req!!, resp!!)
-                requestURI.startsWith("/usage") -> usageServlet.doGet(req!!, resp!!)
+                requestURI == "/" -> resp?.writer?.write(homepage(user).trimIndent())
+                requestURI == "/index.html" -> resp?.writer?.write(homepage(user).trimIndent())
+                requestURI.startsWith("/userInfo") -> userInfoServlet.doGet(req, resp!!)
+                requestURI.startsWith("/userSettings") -> userSettingsServlet.doGet(req, resp!!)
+                requestURI.startsWith("/usage") -> usageServlet.doGet(req, resp!!)
                 else -> try {
                     val inputStream = welcomeResources.addPath(requestURI)?.inputStream
                     inputStream?.copyTo(resp?.outputStream!!)
@@ -132,36 +136,41 @@ abstract class AppServerBase(
         }
     }
 
-    @Language("HTML")
-    private fun homepage() = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>SimiaCryptus Skyenet Apps</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-    <link href="chat.css" rel="stylesheet"/>
-    <script src="main.js"></script>
-</head>
-<body>
-
-<div id="toolbar">
-</div>
-
-<div id="namebar">
-    <a href="/googleLogin" id="username">Login</a>
-</div>
-
-<div id="applist">
-    ${
-        childWebApps.joinToString("<br/>") {
-            """<a href="${it.path}">${it.server.applicationName}</a>"""
+    private fun homepage(user: Userinfo?): String {
+        @Language("HTML")
+        val html = """<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>SimiaCryptus Skyenet Apps</title>
+        <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+        <link href="chat.css" rel="stylesheet"/>
+        <script src="main.js"></script>
+    </head>
+    <body>
+    
+    <div id="toolbar">
+    </div>
+    
+    <div id="namebar">
+        <a href="/googleLogin" id="username">Login</a>
+    </div>
+    
+    <div id="applist">
+        ${
+            childWebApps.filter {
+                !it.isAuthenticated || (user != null && !it.isPublicOnly)
+            }.joinToString("<br/>") {
+                """<a href="${it.path}">${it.server.applicationName}</a>"""
+            }
         }
+    </div>
+    
+    </body>
+    </html>
+        """
+        return html
     }
-</div>
-
-</body>
-</html>
-    """
 
     private fun start(
         port: Int,

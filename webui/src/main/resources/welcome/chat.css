@@ -19,6 +19,11 @@ pre {
     height: 100vh; /* Adjust this value based on your preferred container height */
 }
 
+#applist {
+    top: 3em;
+    left: 10px;
+    position: absolute;
+}
 
 #namebar {
     background-color: #f1f1f1;
