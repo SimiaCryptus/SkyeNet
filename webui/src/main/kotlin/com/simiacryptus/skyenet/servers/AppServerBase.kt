@@ -6,6 +6,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.skyenet.servlet.*
 import com.simiacryptus.skyenet.sessions.ApplicationBase
+import com.simiacryptus.skyenet.sessions.SessionDataStorage
 import com.simiacryptus.skyenet.sessions.WebSocketServer
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import jakarta.servlet.DispatcherType
@@ -153,15 +154,32 @@ abstract class AppServerBase(
         <a href="/googleLogin" id="username">Login</a>
     </div>
     
-    <div id="applist">
+    <table id="applist">
+    <tr>
+        <th>App</th>
+        <th>New Session</th>
+        <th>List Sessions</th>
+    </tr>
         ${
             childWebApps.filter {
                 (!it.isAuthenticated || user != null) && (!it.isPublicOnly || user == null)
-            }.joinToString("<br/>") {
-                """<a href="${it.path}">${it.server.applicationName}</a>"""
+            }.joinToString("\n") { app ->
+                """
+                    <tr>
+                        <td>
+                            ${app.server.applicationName}
+                        </td>
+                        <td>
+                            <a href="${app.path}/#${SessionDataStorage.newID()}">New</a>
+                        </td>
+                        <td>
+                            <a href="${app.path}/sessions">List</a>
+                        </td>
+                    </tr>
+                """.trimIndent()
             }
         }
-    </div>
+    </table>
     
     </body>
     </html>
@@ -187,7 +205,7 @@ abstract class AppServerBase(
     private fun newWebAppContext(path: String, server: WebSocketServer): WebAppContext {
         val webAppContext =
             newWebAppContext(path, server.baseResource ?: throw IllegalStateException("No base resource"))
-        server.configure(webAppContext, baseUrl = "$domainName/$path")
+        server.configure(webAppContext, path = path, baseUrl = "$domainName/$path")
         return webAppContext
     }
 

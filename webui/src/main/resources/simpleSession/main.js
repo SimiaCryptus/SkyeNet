@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));
     document.getElementById('settings').addEventListener('click', () => showModal('settings'));
+    document.getElementById('usage').addEventListener('click', () => showModal('usage'));
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {

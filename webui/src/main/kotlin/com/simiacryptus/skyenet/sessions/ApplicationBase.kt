@@ -40,13 +40,9 @@ abstract class ApplicationBase(
 
     final override val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
 
-    protected open val fileZip = ServletHolder("fileZip", ZipServlet(sessionDataStorage))
-    protected open val fileIndex = ServletHolder("fileIndex", FileServlet(sessionDataStorage))
-    protected open val sessionsServlet = ServletHolder("sessionList", SessionServlet(this.sessionDataStorage))
-    protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
 
-    override fun configure(webAppContext: WebAppContext, prefix: String, baseUrl: String) {
-        super.configure(webAppContext, prefix, baseUrl)
+    override fun configure(webAppContext: WebAppContext, path: String, baseUrl: String) {
+        super.configure(webAppContext, path, baseUrl)
 
         if (null != oauthConfig) (AuthenticatedWebsite(
             "$baseUrl/oauth2callback",
@@ -55,12 +51,17 @@ abstract class ApplicationBase(
             FileUtils.openInputStream(File(oauthConfig))
         }).configure(webAppContext)
 
-        webAppContext.addServlet(appInfo, prefix + "appInfo")
-        webAppContext.addServlet(userInfo, prefix + "userInfo")
-        webAppContext.addServlet(fileIndex, prefix + "fileIndex/*")
-        webAppContext.addServlet(fileZip, prefix + "fileZip")
-        webAppContext.addServlet(sessionsServlet, prefix + "sessions")
-        webAppContext.addServlet(sessionSettingsServlet, prefix + "settings")
+        val fileZip = ServletHolder("fileZip", ZipServlet(sessionDataStorage))
+        val fileIndex = ServletHolder("fileIndex", FileServlet(sessionDataStorage))
+        val sessionsServlet = ServletHolder("sessionList", SessionServlet(this.sessionDataStorage, path))
+        val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
+
+        webAppContext.addServlet(appInfo, "/appInfo")
+        webAppContext.addServlet(userInfo, "/userInfo")
+        webAppContext.addServlet(fileIndex, "/fileIndex/*")
+        webAppContext.addServlet(fileZip, "/fileZip")
+        webAppContext.addServlet(sessionsServlet, "/sessions")
+        webAppContext.addServlet(sessionSettingsServlet, "/settings")
     }
 
     inner class AppInfoServlet : HttpServlet() {
