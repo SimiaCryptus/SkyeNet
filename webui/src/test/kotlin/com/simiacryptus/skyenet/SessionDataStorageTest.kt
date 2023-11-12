@@ -26,7 +26,7 @@ class SessionDataStorageTest {
 
     @Test
     fun testUpdateAndLoadMessage() {
-        val sessionId = "session1"
+        val sessionId = SessionDataStorage.newID()
         val messageId = "message1"
         val message = "This is a test message."
 

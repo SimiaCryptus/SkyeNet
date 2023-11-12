@@ -4,10 +4,12 @@ abstract class ChatApplicationBase(
     applicationName: String,
     oauthConfig: String? = null,
     temperature: Double = 0.1,
+    resourceBase: String = "simpleSession",
 ) : ApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
+    resourceBase = resourceBase,
 ) {
 
     override fun newSession(sessionId: String): SessionInterface {

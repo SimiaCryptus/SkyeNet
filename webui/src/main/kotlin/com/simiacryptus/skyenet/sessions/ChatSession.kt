@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.sessions
 
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.skyenet.util.MarkdownUtil
 
 open class ChatSession(
     val parent: ApplicationBase,
@@ -48,7 +49,7 @@ open class ChatSession(
 
     open fun getResponse() = api.chat(newChatRequest, model).choices.first().message?.content.orEmpty()
 
-    open fun renderResponse(response: String) = """<pre>$response</pre>"""
+    open fun renderResponse(response: String) = """<div>${MarkdownUtil.renderMarkdown(response)}</div>"""
 
     open fun onResponse(response: String, responseContents: String) {}
 
