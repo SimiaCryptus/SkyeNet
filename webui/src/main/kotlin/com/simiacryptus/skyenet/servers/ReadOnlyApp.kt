@@ -19,19 +19,9 @@ open class ReadOnlyApp(
         val log = LoggerFactory.getLogger(ReadOnlyApp::class.java)
     }
 
-    override fun newSession(sessionId: String): SessionInterface = object : SessionInterface {
-        override fun removeSocket(socket: MessageWebSocket) {
-            // Do nothing
-        }
+    override fun newSession(sessionId: String): SessionInterface = ReadOnlySession(sessionId)
 
-        override fun addSocket(socket: MessageWebSocket) {
-            // Do nothing
-        }
-
-        override fun getReplay(): List<String> {
-            return SessionDataStorage(File(File(".skynet"), applicationName)).loadMessages(sessionId).values.toList()
-        }
-
+    class ReadOnlySession(sessionId: String) : SessionBase(sessionId) {
         override fun onWebSocketText(socket: MessageWebSocket, message: String) {
             // Do nothing
         }
