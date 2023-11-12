@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.sessions
 
 abstract class SessionBase(val sessionId: String) : SessionInterface {
     private val sockets: MutableSet<MessageWebSocket> = mutableSetOf()

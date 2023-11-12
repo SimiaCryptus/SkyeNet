@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.sessions
 
 class MutableSessionHandler(initialDelegate: SessionInterface?) : SessionInterface {
     private var priorDelegates: MutableList<SessionInterface> = mutableListOf()

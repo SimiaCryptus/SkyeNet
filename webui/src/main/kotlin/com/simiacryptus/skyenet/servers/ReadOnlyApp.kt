@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.webui.*
+import com.simiacryptus.skyenet.sessions.*
 import org.slf4j.LoggerFactory
 
 open class ReadOnlyApp(

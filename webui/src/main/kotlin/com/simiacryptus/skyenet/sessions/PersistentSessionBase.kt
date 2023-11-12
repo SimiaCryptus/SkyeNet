@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.sessions
 
 import com.google.common.util.concurrent.MoreExecutors
 import java.util.concurrent.Executors

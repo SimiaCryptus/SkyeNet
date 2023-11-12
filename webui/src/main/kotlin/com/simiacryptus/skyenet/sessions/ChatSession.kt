@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.sessions
 
 import com.simiacryptus.openai.OpenAIClient
 

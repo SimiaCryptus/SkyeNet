@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.skyenet.webui.ApplicationBase
+import com.simiacryptus.skyenet.sessions.ApplicationBase
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest

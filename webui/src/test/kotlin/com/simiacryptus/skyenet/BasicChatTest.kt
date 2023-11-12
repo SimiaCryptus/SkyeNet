@@ -2,7 +2,7 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.webui.BasicChat
+import com.simiacryptus.skyenet.sessions.BasicChat
 import org.eclipse.jetty.server.Server
 import java.awt.Desktop
 import java.net.URI

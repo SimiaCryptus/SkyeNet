@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.sessions
 
 import com.simiacryptus.skyenet.servlet.NewSessionServlet
 import org.eclipse.jetty.server.Server

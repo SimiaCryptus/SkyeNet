@@ -2,10 +2,10 @@ package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.skyenet.actors.CodingActor
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
-import com.simiacryptus.skyenet.webui.PersistentSessionBase
-import com.simiacryptus.skyenet.webui.SessionDiv
-import com.simiacryptus.skyenet.webui.MacroChat
-import com.simiacryptus.skyenet.webui.MessageWebSocket
+import com.simiacryptus.skyenet.sessions.PersistentSessionBase
+import com.simiacryptus.skyenet.sessions.SessionDiv
+import com.simiacryptus.skyenet.sessions.MacroChat
+import com.simiacryptus.skyenet.sessions.MessageWebSocket
 import org.slf4j.LoggerFactory
 import java.util.*
 

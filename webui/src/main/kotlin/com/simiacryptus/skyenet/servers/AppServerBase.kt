@@ -6,10 +6,10 @@ import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import com.simiacryptus.skyenet.servlet.AuthenticatedWebsite
 import com.simiacryptus.skyenet.servlet.UsageServlet
-import com.simiacryptus.skyenet.webui.ApplicationBase
+import com.simiacryptus.skyenet.sessions.ApplicationBase
 import com.simiacryptus.skyenet.servlet.UserInfoServlet
 import com.simiacryptus.skyenet.servlet.UserSettingsServlet
-import com.simiacryptus.skyenet.webui.WebSocketServer
+import com.simiacryptus.skyenet.sessions.WebSocketServer
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
 import jakarta.servlet.http.HttpServlet

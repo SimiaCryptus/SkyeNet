@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.sessions
 
 interface SessionInterface {
     fun removeSocket(socket: MessageWebSocket)

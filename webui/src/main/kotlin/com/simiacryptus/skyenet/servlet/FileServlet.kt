@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.skyenet.webui.ApplicationBase
-import com.simiacryptus.skyenet.webui.SessionDataStorage
+import com.simiacryptus.skyenet.sessions.ApplicationBase
+import com.simiacryptus.skyenet.sessions.SessionDataStorage
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
