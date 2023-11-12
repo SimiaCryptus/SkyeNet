@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const form = document.getElementById('form');
     const messageInput = document.getElementById('message');
+    const usage = document.getElementById('usage');
 
     form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -90,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionId = getSessionId();
     if (sessionId) {
         connect(sessionId, onWebSocketText);
+        usage.href = '/usage/?sessionId=' + sessionId;
     } else {
         connect(undefined, onWebSocketText);
     }

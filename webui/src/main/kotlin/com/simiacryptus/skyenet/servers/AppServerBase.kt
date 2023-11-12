@@ -5,6 +5,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import com.simiacryptus.skyenet.servlet.AuthenticatedWebsite
+import com.simiacryptus.skyenet.servlet.UsageServlet
 import com.simiacryptus.skyenet.webui.ApplicationBase
 import com.simiacryptus.skyenet.servlet.UserInfoServlet
 import com.simiacryptus.skyenet.servlet.UserSettingsServlet
@@ -46,6 +47,7 @@ abstract class AppServerBase(
     val welcomeResources = Resource.newResource(javaClass.classLoader.getResource("welcome"))
     val userInfoServlet = UserInfoServlet()
     val userSettingsServlet = UserSettingsServlet()
+    val usageServlet = UsageServlet()
 
     protected fun _main(args: Array<String>) {
         try {
@@ -65,6 +67,7 @@ abstract class AppServerBase(
                 *(arrayOf(
                     newWebAppContext("/userInfo", userInfoServlet),
                     newWebAppContext("/userSettings", userSettingsServlet),
+                    newWebAppContext("/usage", usageServlet),
                     newWebAppContext("/proxy", ProxyHttpServlet()),
                     authentication.configure(
                         newWebAppContext(
@@ -110,6 +113,7 @@ abstract class AppServerBase(
                 requestURI == "/index.html" -> resp?.writer?.write(homepage().trimIndent())
                 requestURI.startsWith("/userInfo") -> userInfoServlet.doGet(req!!, resp!!)
                 requestURI.startsWith("/userSettings") -> userSettingsServlet.doGet(req!!, resp!!)
+                requestURI.startsWith("/usage") -> usageServlet.doGet(req!!, resp!!)
                 else -> try {
                     val inputStream = welcomeResources.addPath(requestURI)?.inputStream
                     inputStream?.copyTo(resp?.outputStream!!)
