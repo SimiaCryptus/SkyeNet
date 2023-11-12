@@ -9,7 +9,7 @@ open class ReadOnlyApp(
     temperature: Double = 0.3,
     oauthConfig: String? = null,
     val api: OpenAIClient,
-) : ApplicationServerBase(
+) : ApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,

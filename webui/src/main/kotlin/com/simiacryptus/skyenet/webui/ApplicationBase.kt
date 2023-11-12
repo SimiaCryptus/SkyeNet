@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.webui
 
+import com.simiacryptus.skyenet.servlet.*
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -10,7 +11,7 @@ import org.eclipse.jetty.webapp.WebAppContext
 import org.slf4j.LoggerFactory
 import java.io.File
 
-abstract class ApplicationServerBase(
+abstract class ApplicationBase(
     final override val applicationName: String,
     val oauthConfig: String? = null,
     resourceBase: String = "simpleSession",
@@ -25,7 +26,7 @@ abstract class ApplicationServerBase(
         @Suppress("UNCHECKED_CAST")
         var settings: T? = sessionDataStorage.getSettings(sessionId, settingsClass as Class<T>)
         if (null == settings) {
-            settings = initSettings<T>(sessionId)
+            settings = initSettings(sessionId)
             if (null != settings) {
                 sessionDataStorage.updateSettings(sessionId, settings)
             }
@@ -42,24 +43,24 @@ abstract class ApplicationServerBase(
     protected open val fileZip = ServletHolder("fileZip", ZipServlet(sessionDataStorage))
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(sessionDataStorage))
     protected open val sessionsServlet = ServletHolder("sessionList", SessionServlet(this.sessionDataStorage))
-    protected open val settingsServlet = ServletHolder("settings", SettingsServlet(this))
+    protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
 
-    override fun configure(context: WebAppContext, prefix: String, baseURL: String) {
-        super.configure(context, prefix, baseURL)
+    override fun configure(webAppContext: WebAppContext, prefix: String, baseUrl: String) {
+        super.configure(webAppContext, prefix, baseUrl)
 
         if (null != oauthConfig) (AuthenticatedWebsite(
-            "$baseURL/oauth2callback",
-            this@ApplicationServerBase.applicationName
+            "$baseUrl/oauth2callback",
+            this@ApplicationBase.applicationName
         ) {
             FileUtils.openInputStream(File(oauthConfig))
-        }).configure(context)
+        }).configure(webAppContext)
 
-        context.addServlet(appInfo, prefix + "appInfo")
-        context.addServlet(userInfo, prefix + "userInfo")
-        context.addServlet(fileIndex, prefix + "fileIndex/*")
-        context.addServlet(fileZip, prefix + "fileZip")
-        context.addServlet(sessionsServlet, prefix + "sessions")
-        context.addServlet(settingsServlet, prefix + "settings")
+        webAppContext.addServlet(appInfo, prefix + "appInfo")
+        webAppContext.addServlet(userInfo, prefix + "userInfo")
+        webAppContext.addServlet(fileIndex, prefix + "fileIndex/*")
+        webAppContext.addServlet(fileZip, prefix + "fileZip")
+        webAppContext.addServlet(sessionsServlet, prefix + "sessions")
+        webAppContext.addServlet(sessionSettingsServlet, prefix + "settings")
     }
 
     inner class AppInfoServlet : HttpServlet() {
@@ -80,7 +81,7 @@ abstract class ApplicationServerBase(
     protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
 
     companion object {
-        val log = LoggerFactory.getLogger(ApplicationServerBase::class.java)
+        val log = LoggerFactory.getLogger(ApplicationBase::class.java)
         val spinner =
             """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
 

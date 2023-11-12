@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.servlet
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeRequestUrl
@@ -129,8 +129,9 @@ open class AuthenticatedWebsite(
 
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(AuthenticatedWebsite::class.java)
-        val users = HashMap<String, Userinfo>()
 
+
+        val users = java.util.HashMap<String, Userinfo>()
         fun getUser(req: HttpServletRequest): Userinfo? {
             val sessionId = req.cookies?.find { it.name == "sessionId" }?.value
             return if (null == sessionId) null else users[sessionId]

@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.webui
 
+import com.simiacryptus.skyenet.servlet.NewSessionServlet
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletHolder

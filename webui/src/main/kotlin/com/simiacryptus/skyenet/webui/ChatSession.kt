@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.webui
 import com.simiacryptus.openai.OpenAIClient
 
 abstract class ChatSession(
-    val parent: ApplicationServerBase,
+    val parent: ApplicationBase,
     sessionId: String,
     var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     private var visiblePrompt: String,
@@ -25,7 +25,7 @@ abstract class ChatSession(
     override fun run(userMessage: String, socket: MessageWebSocket) {
         var responseContents = divInitializer()
         responseContents += """<div>$userMessage</div>"""
-        send("""$responseContents<div>${ApplicationServerBase.spinner}</div>""")
+        send("""$responseContents<div>${ApplicationBase.spinner}</div>""")
         val response = handleMessage(userMessage, responseContents)
         if(null != response) {
             responseContents += """<div>${renderResponse(response)}</div>"""

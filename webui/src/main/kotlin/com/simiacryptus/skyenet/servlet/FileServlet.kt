@@ -1,5 +1,7 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.servlet
 
+import com.simiacryptus.skyenet.webui.ApplicationBase
+import com.simiacryptus.skyenet.webui.SessionDataStorage
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -18,7 +20,7 @@ class FileServlet(val sessionDataStorage: SessionDataStorage) : HttpServlet() {
         val file = File(sessionDir, filePath)
         if (file.isFile) {
             val filename = file.name
-            resp.contentType = ApplicationServerBase.getMimeType(filename)
+            resp.contentType = ApplicationBase.getMimeType(filename)
             resp.status = HttpServletResponse.SC_OK
             file.inputStream().use { inputStream ->
                 resp.outputStream.use { outputStream ->

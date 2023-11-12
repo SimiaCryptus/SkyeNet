@@ -7,7 +7,7 @@ open class BasicChat(
     oauthConfig: String? = null,
     val model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     val api: OpenAIClient,
-) : ApplicationServerBase(
+) : ApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
 ) {

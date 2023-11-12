@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui
+package com.simiacryptus.skyenet.util
 
 import org.eclipse.jetty.util.URIUtil
 import org.eclipse.jetty.util.resource.Resource

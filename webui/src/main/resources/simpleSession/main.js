@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data.name && loginLink) {
                 loginLink.innerHTML = data.name;
-                loginLink.href = "/userInfo";
+                loginLink.href = "/userSettings";
             }
         })
         .catch(error => {

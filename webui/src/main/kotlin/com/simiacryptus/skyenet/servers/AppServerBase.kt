@@ -4,9 +4,10 @@ package com.simiacryptus.skyenet.servers
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
-import com.simiacryptus.skyenet.webui.AuthenticatedWebsite
-import com.simiacryptus.skyenet.webui.ApplicationServerBase
-import com.simiacryptus.skyenet.webui.UserInfoServlet
+import com.simiacryptus.skyenet.servlet.AuthenticatedWebsite
+import com.simiacryptus.skyenet.webui.ApplicationBase
+import com.simiacryptus.skyenet.servlet.UserInfoServlet
+import com.simiacryptus.skyenet.servlet.UserSettingsServlet
 import com.simiacryptus.skyenet.webui.WebSocketServer
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
@@ -44,6 +45,7 @@ abstract class AppServerBase(
 
     val welcomeResources = Resource.newResource(javaClass.classLoader.getResource("welcome"))
     val userInfoServlet = UserInfoServlet()
+    val userSettingsServlet = UserSettingsServlet()
 
     protected fun _main(args: Array<String>) {
         try {
@@ -62,6 +64,7 @@ abstract class AppServerBase(
                 port,
                 *(arrayOf(
                     newWebAppContext("/userInfo", userInfoServlet),
+                    newWebAppContext("/userSettings", userSettingsServlet),
                     newWebAppContext("/proxy", ProxyHttpServlet()),
                     authentication.configure(
                         newWebAppContext(
@@ -100,18 +103,27 @@ abstract class AppServerBase(
             val requestURI = req?.requestURI ?: "/"
             resp?.contentType = when (requestURI) {
                 "/" -> "text/html"
-                else -> ApplicationServerBase.getMimeType(requestURI)
+                else -> ApplicationBase.getMimeType(requestURI)
             }
             when {
                 requestURI == "/" -> resp?.writer?.write(homepage().trimIndent())
                 requestURI == "/index.html" -> resp?.writer?.write(homepage().trimIndent())
                 requestURI.startsWith("/userInfo") -> userInfoServlet.doGet(req!!, resp!!)
+                requestURI.startsWith("/userSettings") -> userSettingsServlet.doGet(req!!, resp!!)
                 else -> try {
                     val inputStream = welcomeResources.addPath(requestURI)?.inputStream
                     inputStream?.copyTo(resp?.outputStream!!)
                 } catch (e: NoSuchFileException) {
                     resp?.sendError(404)
                 }
+            }
+        }
+
+        override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
+            val requestURI = req?.requestURI ?: "/"
+            when {
+                requestURI.startsWith("/userSettings") -> userSettingsServlet.doPost(req!!, resp!!)
+                else -> resp?.sendError(404)
             }
         }
     }

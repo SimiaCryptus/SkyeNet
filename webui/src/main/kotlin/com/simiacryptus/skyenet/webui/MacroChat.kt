@@ -6,7 +6,7 @@ abstract class MacroChat(
     applicationName: String,
     oauthConfig: String? = null,
     temperature: Double = 0.1,
-) : ApplicationServerBase(
+) : ApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,

@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.skyenet.actors.CodingActor
-import com.simiacryptus.skyenet.webui.MarkdownUtil.renderMarkdown
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.PersistentSessionBase
 import com.simiacryptus.skyenet.webui.SessionDiv
 import com.simiacryptus.skyenet.webui.MacroChat
