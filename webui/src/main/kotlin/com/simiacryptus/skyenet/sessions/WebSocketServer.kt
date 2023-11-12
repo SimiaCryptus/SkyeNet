@@ -23,9 +23,14 @@ abstract class WebSocketServer(val resourceBase: String) {
                 return@setCreator if (null == sessionId) {
                     null
                 } else {
-                    MessageWebSocket(sessionId, stateCache.getOrPut(sessionId) {
-                        newSession(sessionId)
-                    }, authId, sessionDataStorage)
+                    val sessionState: SessionInterface
+                    if (stateCache.containsKey(sessionId)) {
+                        sessionState = stateCache[sessionId]!!
+                    } else {
+                        sessionState = newSession(sessionId)
+                        if(null != sessionState) stateCache[sessionId] = sessionState
+                    }
+                    MessageWebSocket(sessionId, sessionState, authId, sessionDataStorage)
                 }
             }
         }

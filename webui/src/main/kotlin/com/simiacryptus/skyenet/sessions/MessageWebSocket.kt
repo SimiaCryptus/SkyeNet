@@ -40,7 +40,7 @@ class MessageWebSocket(
                 )
             ) {
                 override fun incrementTokens(model: Model?, tokens: Int) {
-                    incrementUsage(sessionId, userinfo, model!!, tokens)
+                    if(null != model) incrementUsage(sessionId, userinfo, model, tokens)
                     super.incrementTokens(model, tokens)
                 }
             }
