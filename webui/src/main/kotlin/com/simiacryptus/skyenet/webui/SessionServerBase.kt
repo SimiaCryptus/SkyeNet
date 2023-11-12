@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui
 
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.skyenet.webui.AuthenticatedWebsite.Companion.getUser
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -21,9 +22,9 @@ abstract class SessionServerBase(
 
     open val settingsClass: Class<*> get() = Map::class.java
 
-    open fun <T: Any> initSettings(sessionId: String) : T? = null
+    open fun <T : Any> initSettings(sessionId: String): T? = null
 
-    fun <T: Any> getSettings(sessionId: String): T? {
+    fun <T : Any> getSettings(sessionId: String): T? {
         @Suppress("UNCHECKED_CAST")
         var settings: T? = sessionDataStorage.getSettings(sessionId, settingsClass as Class<T>)
         if (null == settings) {
@@ -34,6 +35,7 @@ abstract class SessionServerBase(
         }
         return settings
     }
+
     fun <T : Any> updateSettings(sessionId: String, settings: T) {
         sessionDataStorage.updateSettings(sessionId, settings)
     }
@@ -45,15 +47,19 @@ abstract class SessionServerBase(
     override fun configure(context: WebAppContext, prefix: String, baseURL: String) {
         super.configure(context, prefix, baseURL)
 
-        if (null != oauthConfig) (AuthenticatedWebsite("$baseURL/oauth2callback", this@SessionServerBase.applicationName) {
+        if (null != oauthConfig) (AuthenticatedWebsite(
+            "$baseURL/oauth2callback",
+            this@SessionServerBase.applicationName
+        ) {
             FileUtils.openInputStream(File(oauthConfig))
         }).configure(context)
 
-        context.addServlet(appInfo, prefix+"appInfo")
-        context.addServlet(fileIndex, prefix+"fileIndex/*")
-        context.addServlet(fileZip, prefix+"fileZip")
-        context.addServlet(sessionsServlet, prefix+"sessions")
-        context.addServlet(settingsServlet, prefix+"settings")
+        context.addServlet(appInfo, prefix + "appInfo")
+        context.addServlet(userInfo, prefix + "userInfo")
+        context.addServlet(fileIndex, prefix + "fileIndex/*")
+        context.addServlet(fileZip, prefix + "fileZip")
+        context.addServlet(sessionsServlet, prefix + "sessions")
+        context.addServlet(settingsServlet, prefix + "settings")
     }
 
     protected open val fileZip = ServletHolder(
@@ -94,58 +100,37 @@ abstract class SessionServerBase(
             }
         })
 
-    protected open val fileIndex = ServletHolder(
-        "fileIndex",
-        object : HttpServlet() {
-            override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-                val path = req.pathInfo ?: "/"
-                val pathSegments = path.split("/").filter { it.isNotBlank() }
-                pathSegments.forEach {
-                    if (it == "..") throw IllegalArgumentException("Invalid path")
+    class FileServelet(val sessionDataStorage: SessionDataStorage) : HttpServlet() {
+        override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+            val path = req.pathInfo ?: "/"
+            val pathSegments = path.split("/").filter { it.isNotBlank() }
+            pathSegments.forEach {
+                if (it == "..") throw IllegalArgumentException("Invalid path")
+            }
+            val sessionID = pathSegments.first()
+            val sessionDir = sessionDataStorage.getSessionDir(sessionID)
+            val filePath = pathSegments.drop(1).joinToString("/")
+            val file = File(sessionDir, filePath)
+            if (file.isFile) {
+                val filename = file.name
+                resp.contentType = Companion.getMimeType(filename)
+                resp.status = HttpServletResponse.SC_OK
+                file.inputStream().use { inputStream ->
+                    resp.outputStream.use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
                 }
-                val sessionID = pathSegments.first()
-                val sessionDir = sessionDataStorage.getSessionDir(sessionID)
-                val filePath = pathSegments.drop(1).joinToString("/")
-                val file = File(sessionDir, filePath)
-                if (file.isFile) {
-                    resp.contentType = if (file.name.endsWith(".html")) {
-                        "text/html"
-                    } else if (file.name.endsWith(".json")) {
-                        "application/json"
-                    } else if (file.name.endsWith(".js")) {
-                        "application/json"
-                    } else if (file.name.endsWith(".png")) {
-                        "image/png"
-                    } else if (file.name.endsWith(".jpg")) {
-                        "image/jpeg"
-                    } else if (file.name.endsWith(".jpeg")) {
-                        "image/jpeg"
-                    } else if (file.name.endsWith(".gif")) {
-                        "image/gif"
-                    } else if (file.name.endsWith(".svg")) {
-                        "image/svg+xml"
-                    } else if (file.name.endsWith(".css")) {
-                        "text/css"
-                    } else {
-                        "text/plain"
-                    }
-                    resp.status = HttpServletResponse.SC_OK
-                    file.inputStream().use { inputStream ->
-                        resp.outputStream.use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                    }
-                } else {
-                    resp.contentType = "text/html"
-                    resp.status = HttpServletResponse.SC_OK
-                    val files = file.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
-                        """<a href="${it.name}">${it.name}</a>"""
-                    } ?: ""
-                    val folders = file.listFiles()?.filter { !it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
-                        """<a href="${it.name}/">${it.name}</a>"""
-                    } ?: ""
-                    resp.writer.write(
-                        """
+            } else {
+                resp.contentType = "text/html"
+                resp.status = HttpServletResponse.SC_OK
+                val files = file.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
+                    """<a href="${it.name}">${it.name}</a>"""
+                } ?: ""
+                val folders = file.listFiles()?.filter { !it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
+                    """<a href="${it.name}/">${it.name}</a>"""
+                } ?: ""
+                resp.writer.write(
+                    """
                         |<html>
                         |<head>
                         |<title>Files</title>
@@ -160,10 +145,12 @@ abstract class SessionServerBase(
                         |</body>
                         |</html>
                         """.trimMargin()
-                    )
-                }
+                )
             }
-        })
+        }
+    }
+
+    protected open val fileIndex = ServletHolder("fileIndex", FileServelet(sessionDataStorage))
 
     inner class SessionServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
@@ -190,6 +177,7 @@ abstract class SessionServerBase(
             )
         }
     }
+
     protected open val sessionsServlet = ServletHolder(
         "sessionList",
         SessionServlet()
@@ -210,15 +198,47 @@ abstract class SessionServerBase(
             )
         }
     }
+
+    class UserInfoServlet : HttpServlet() {
+        public override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+            resp.contentType = "text/json"
+            resp.status = HttpServletResponse.SC_OK
+            val userinfo = getUser(req)
+            if (null == userinfo) {
+                resp.writer.write("{}")
+            } else {
+                resp.writer.write(JsonUtil.objectMapper().writeValueAsString(userinfo))
+            }
+        }
+    }
+
     protected open val appInfo = ServletHolder(
         "appInfo",
         AppInfoServlet()
+    )
+    protected open val userInfo = ServletHolder(
+        "userInfo",
+        UserInfoServlet()
     )
 
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(SessionServerBase::class.java)
         val spinner =
             """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
+
+        fun getMimeType(filename: String): String =
+            when {
+                filename.endsWith(".html") -> "text/html"
+                filename.endsWith(".json") -> "application/json"
+                filename.endsWith(".js") -> "application/json"
+                filename.endsWith(".png") -> "image/png"
+                filename.endsWith(".jpg") -> "image/jpeg"
+                filename.endsWith(".jpeg") -> "image/jpeg"
+                filename.endsWith(".gif") -> "image/gif"
+                filename.endsWith(".svg") -> "image/svg+xml"
+                filename.endsWith(".css") -> "text/css"
+                else -> "text/plain"
+            }
     }
 
 }

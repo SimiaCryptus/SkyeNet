@@ -129,6 +129,7 @@
     position: fixed;
     top: 0;
     width: 100%;
+    horiz-align: left;
     z-index: 1;
 }
 
@@ -139,6 +140,27 @@
 }
 
 #toolbar a:hover {
+    background-color: #ddd;
+}
+
+
+#namebar {
+    background-color: #f1f1f1;
+    padding: 5px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    horiz-align: right;
+    z-index: 2;
+}
+
+#namebar a {
+    color: #000;
+    text-decoration: none;
+    padding: 5px;
+}
+
+#namebar a:hover {
     background-color: #ddd;
 }
 

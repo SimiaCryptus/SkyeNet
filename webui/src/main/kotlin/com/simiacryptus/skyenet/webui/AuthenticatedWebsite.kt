@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeRequestUrl
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
@@ -16,12 +17,18 @@ import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.io.UnsupportedEncodingException
+import java.net.URI
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.*
+
 
 open class AuthenticatedWebsite(
     val redirectUri: String,
     val applicationName: String,
-    private val key: ()->InputStream?
+    key: () -> InputStream?
 ) {
 
     open fun newUserSession(userInfo: Userinfo, sessionId: String) {
@@ -32,7 +39,7 @@ open class AuthenticatedWebsite(
     private val jsonFactory = GsonFactory.getDefaultInstance()
     private val clientSecrets: GoogleClientSecrets = GoogleClientSecrets.load(
         jsonFactory,
-        InputStreamReader(key())
+        InputStreamReader(key()!!)
     )
 
     private val flow = GoogleAuthorizationCodeFlow.Builder(
@@ -48,23 +55,27 @@ open class AuthenticatedWebsite(
 
     inner class GoogleLoginServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-            val authorizationUrl = flow.newAuthorizationUrl().setRedirectUri(redirectUri).build()
+            val redirect = req.getParameter("redirect") ?: ""
+            val state = URLEncoder.encode(redirect, StandardCharsets.UTF_8.toString())
+            val authorizationUrl = // don't want to specify redirectUri to give control of it to user of this class
+                GoogleAuthorizationCodeRequestUrl(
+                    /* authorizationServerEncodedUrl = */ flow.authorizationServerEncodedUrl,
+                    /* clientId = */ flow.clientId,
+                    /* redirectUri = */ redirectUri,
+                    /* scopes = */ flow.scopes
+                )
+                    .setAccessType(flow.accessType)
+                    .setApprovalPrompt(flow.approvalPrompt)
+                    .setState(state)
+                    .build()
             resp.sendRedirect(authorizationUrl)
         }
     }
 
-    /**
-     * Configures the given `WebAppContext` to handle authentication via Google OAuth2.
-     * Adds the `GoogleLoginServlet` to handle the login process at `/googleLogin`.
-     * Adds the `OAuth2CallbackServlet` to handle the callback from Google at `/oauth2callback`.
-     * Adds a `SessionIdFilter` to the context to ensure that session IDs are properly handled.
-     *
-     * @param context the `WebAppContext` to configure
-     */
     open fun configure(context: WebAppContext, addFilter: Boolean = true): WebAppContext {
         context.addServlet(ServletHolder("googleLogin", GoogleLoginServlet()), "/googleLogin")
         context.addServlet(ServletHolder("oauth2callback", OAuth2CallbackServlet()), "/oauth2callback")
-        if(addFilter) context.addFilter(FilterHolder(SessionIdFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
+        if (addFilter) context.addFilter(FilterHolder(SessionIdFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
         return context
     }
 
@@ -72,34 +83,16 @@ open class AuthenticatedWebsite(
 
         override fun init(filterConfig: FilterConfig?) {}
 
-        /**
-         * Overrides the doFilter method to intercept incoming requests and responses,
-         * check if the request is for the "/googleLogin" or "/oauth2callback" URLs,
-         * and redirects to the "/googleLogin" page if the user session is not active.
-         *
-         * @param request The ServletRequest object that represents the client request
-         * @param response The ServletResponse object that represents the client response
-         * @param chain The FilterChain object that represents the filter chain
-         * @throws IOException if an I/O error occurs
-         * @throws ServletException if a servlet-specific error occurs
-         */
         override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
-            // Check if the request is an HTTP request and the response is an HTTP response
             if (request is HttpServletRequest && response is HttpServletResponse) {
-                // Get the path of the request URI
-                // Check if the path does not match /googleLogin or /oauth2callback
                 if (isSecure(request)) {
-                    // Get the sessionId cookie from the request
                     val sessionIdCookie = request.cookies?.firstOrNull { it.name == "sessionId" }
-                    // Check if the sessionId is null or is not contained in the users map
                     if (sessionIdCookie == null || !users.containsKey(sessionIdCookie.value)) {
-                        // Redirect to the /googleLogin endpoint
                         response.sendRedirect("/googleLogin")
                         return
                     }
                 }
             }
-            // Call the doFilter method of the next filter in the chain
             chain.doFilter(request, response)
         }
 
@@ -109,7 +102,6 @@ open class AuthenticatedWebsite(
     open fun isSecure(request: HttpServletRequest) =
         setOf("/googleLogin", "/oauth2callback").none { request.requestURI.startsWith(it) }
 
-    val users = HashMap<String, Userinfo>()
 
     inner class OAuth2CallbackServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
@@ -127,7 +119,8 @@ open class AuthenticatedWebsite(
                 sessionCookie.path = "/"
                 sessionCookie.isHttpOnly = false
                 resp.addCookie(sessionCookie)
-                resp.sendRedirect("/")
+                val redirect = req.getParameter("state")?.urlDecode()
+                resp.sendRedirect(redirect ?: "/")
             } else {
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Authorization code not found")
             }
@@ -136,6 +129,21 @@ open class AuthenticatedWebsite(
 
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(AuthenticatedWebsite::class.java)
+        val users = HashMap<String, Userinfo>()
+
+        fun getUser(req: HttpServletRequest): Userinfo? {
+            val sessionId = req.cookies?.find { it.name == "sessionId" }?.value
+            return if (null == sessionId) null else users[sessionId]
+        }
+
     }
 
 }
+
+fun String.urlDecode(): String? = try {
+    URLDecoder.decode(this, StandardCharsets.UTF_8.toString())
+} catch (e: UnsupportedEncodingException) {
+    this
+}
+
+fun String.toURI(): URI = URI(this)

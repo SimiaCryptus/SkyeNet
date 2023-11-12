@@ -122,6 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(url, "_blank"); // Open the URL in a new tab
     });
 
+    const loginLink = document.getElementById('username');
+    if (loginLink) {
+        loginLink.href = '/googleLogin?redirect=' + encodeURIComponent(window.location.pathname);
+    }
+
     fetch('appInfo')
         .then(response => {
             if (!response.ok) {
@@ -132,6 +137,23 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data.applicationName) {
                 document.title = data.applicationName;
+            }
+        })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
+
+    fetch('userInfo')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.name && loginLink) {
+                loginLink.innerHTML = data.name;
+                loginLink.href = "/userInfo";
             }
         })
         .catch(error => {
