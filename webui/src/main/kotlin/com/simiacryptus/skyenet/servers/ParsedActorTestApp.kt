@@ -4,7 +4,7 @@ import com.simiacryptus.skyenet.actors.ParsedActor
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.sessions.PersistentSessionBase
 import com.simiacryptus.skyenet.sessions.SessionDiv
-import com.simiacryptus.skyenet.sessions.MacroChat
+import com.simiacryptus.skyenet.sessions.ChatApplicationBase
 import com.simiacryptus.skyenet.sessions.MessageWebSocket
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
@@ -14,7 +14,7 @@ open class ParsedActorTestApp<T>(
     applicationName: String = "ParsedActorTest_" + actor.parserClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : MacroChat(
+) : ChatApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
@@ -23,7 +23,6 @@ open class ParsedActorTestApp<T>(
         sessionId: String,
         userMessage: String,
         session: PersistentSessionBase,
-        sessionUI: SessionUI,
         sessionDiv: SessionDiv,
         socket: MessageWebSocket
     ) {

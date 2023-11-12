@@ -18,7 +18,7 @@ abstract class PersistentSessionBase(
 
     public override fun send(out: String) {
         try {
-            log.debug("$sessionId - $out")
+            log.debug("Send Msg: $sessionId - $out")
             val split = out.split(',', ignoreCase = false, limit = 2)
             val newVersion = setMessage(split[0], split[1])
             publish("${split[0]},$newVersion,${split[1]}")

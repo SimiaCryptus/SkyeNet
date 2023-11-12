@@ -10,6 +10,7 @@ open class SessionDataStorage(
 ) {
 
     open fun updateMessage(sessionId: String, messageId: String, value: String) {
+        validateSessionId(sessionId)
         val file = File(getMessageDir(sessionId), "$messageId.json")
         log.debug("Updating message for $sessionId / $messageId: ${file.absolutePath}")
         file.parentFile.mkdirs()
@@ -17,6 +18,7 @@ open class SessionDataStorage(
     }
 
     open fun loadMessages(sessionId: String): LinkedHashMap<String, String> {
+        validateSessionId(sessionId)
         val messageDir = getMessageDir(sessionId)
         val messages = LinkedHashMap<String, String>()
         log.debug("Loading messages for $sessionId: ${messageDir.absolutePath}")
@@ -29,6 +31,7 @@ open class SessionDataStorage(
     }
 
     protected open fun getMessageDir(sessionId: String): File {
+        validateSessionId(sessionId)
         val sessionDir = getInstanceDir(sessionId)
         val messageDir = File(sessionDir, "messages")
         log.debug("Message Dir for $sessionId: ${messageDir.absolutePath}")
@@ -61,6 +64,7 @@ open class SessionDataStorage(
 
     @Suppress("MemberVisibilityCanBePrivate", "Unused")
     fun getUserMessages(sessionId: String): List<String> {
+        validateSessionId(sessionId)
         val userMessages = getMessageDir(sessionId).listFiles()?.filter { file ->
             file.isFile
         }?.sortedBy { file ->
@@ -86,6 +90,7 @@ open class SessionDataStorage(
     }
 
     protected open fun getInstanceDir(sessionId: String): File {
+        validateSessionId(sessionId)
         val sessionDir = File(getDateDir(sessionId), getInstanceId(sessionId))
         log.debug("Instance Dir for $sessionId: ${sessionDir.absolutePath}")
         return sessionDir
@@ -94,28 +99,32 @@ open class SessionDataStorage(
     open fun getSessionDir(sessionId: String) = getInstanceDir(sessionId)
 
     protected open fun getDateDir(sessionId: String): File {
+        validateSessionId(sessionId)
         val sessionGroupDir = File(dataDir, getDate(sessionId))
         log.debug("Date Dir for $sessionId: ${sessionGroupDir.absolutePath}")
         return sessionGroupDir
     }
 
     protected open fun getDate(sessionId: String): String {
+        validateSessionId(sessionId)
         return sessionId.split("-").firstOrNull() ?: sessionId
     }
 
     protected open fun getInstanceId(sessionId: String): String {
+        validateSessionId(sessionId)
         return stripPrefix(stripPrefix(sessionId, getDate(sessionId)), "-")
     }
 
     fun <T> getSettings(sessionId: String, clazz: Class<T>): T? {
+        validateSessionId(sessionId)
         val settingsFile = File(getSessionDir(sessionId), "settings.json")
         return if (!settingsFile.exists()) null else {
             JsonUtil.objectMapper().readValue(settingsFile, clazz) as T
         }
     }
 
-    @Suppress("unused")
     fun <T : Any> updateSettings(sessionId: String, settings: T): T {
+        validateSessionId(sessionId)
         val settingsFile = File(getSessionDir(sessionId), "settings.json")
         settingsFile.parentFile.mkdirs()
         JsonUtil.objectMapper().writeValue(settingsFile, settings)
@@ -138,6 +147,12 @@ open class SessionDataStorage(
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
             log.debug("New ID: $yyyyMMdd-$uuid")
             return "$yyyyMMdd-$uuid"
+        }
+
+        fun validateSessionId(sessionId: String) {
+            if (!sessionId.matches("""\d{8}-\w{8}""".toRegex())) {
+                throw IllegalArgumentException("Invalid session ID: $sessionId")
+            }
         }
 
         private val log = org.slf4j.LoggerFactory.getLogger(SessionDataStorage::class.java)

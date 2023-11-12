@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.sessions
 
 import com.simiacryptus.openai.OpenAIClient
 
-abstract class ChatSession(
+open class ChatSession(
     val parent: ApplicationBase,
     sessionId: String,
     var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
@@ -13,13 +13,18 @@ abstract class ChatSession(
 ) : PersistentSessionBase(sessionId, parent.sessionDataStorage) {
 
     init {
-        if (visiblePrompt.isNotBlank()) send("""aaa,<div>${visiblePrompt}</div>""")
+        if (visiblePrompt.isNotBlank()) {
+            send("""aaa,<div>${visiblePrompt}</div>""")
+        }
     }
 
-    open val messages = listOf(
-        OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.system, systemPrompt),
-        OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, hiddenPrompt),
-    ).toMutableList()
+    protected val messages by lazy {
+        val list = listOf(
+            OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.system, systemPrompt),
+        ).toMutableList()
+        if(hiddenPrompt.isNotBlank()) list += OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, hiddenPrompt)
+        list
+    }
 
     @Synchronized
     override fun run(userMessage: String, socket: MessageWebSocket) {

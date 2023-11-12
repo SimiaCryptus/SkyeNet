@@ -4,10 +4,7 @@ package com.simiacryptus.skyenet.servers
 import com.google.api.services.oauth2.model.Userinfo
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.OutputInterceptor
-import com.simiacryptus.skyenet.servlet.AuthenticatedWebsite
-import com.simiacryptus.skyenet.servlet.UsageServlet
-import com.simiacryptus.skyenet.servlet.UserInfoServlet
-import com.simiacryptus.skyenet.servlet.UserSettingsServlet
+import com.simiacryptus.skyenet.servlet.*
 import com.simiacryptus.skyenet.sessions.ApplicationBase
 import com.simiacryptus.skyenet.sessions.WebSocketServer
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
@@ -159,7 +156,7 @@ abstract class AppServerBase(
     <div id="applist">
         ${
             childWebApps.filter {
-                !it.isAuthenticated || (user != null && !it.isPublicOnly)
+                (!it.isAuthenticated || user != null) && (!it.isPublicOnly || user == null)
             }.joinToString("<br/>") {
                 """<a href="${it.path}">${it.server.applicationName}</a>"""
             }

@@ -10,7 +10,7 @@ open class SimpleActorTestApp(
     applicationName: String = "SimpleActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : MacroChat(
+) : ChatApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
@@ -26,7 +26,6 @@ open class SimpleActorTestApp(
         sessionId: String,
         userMessage: String,
         session: PersistentSessionBase,
-        sessionUI: SessionUI,
         sessionDiv: SessionDiv,
         socket: MessageWebSocket
     ) {

@@ -1,11 +1,9 @@
 package com.simiacryptus.skyenet.servers
 
 import com.simiacryptus.skyenet.actors.CodingActor
+import com.simiacryptus.skyenet.sessions.*
+import com.simiacryptus.skyenet.util.HtmlTools
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
-import com.simiacryptus.skyenet.sessions.PersistentSessionBase
-import com.simiacryptus.skyenet.sessions.SessionDiv
-import com.simiacryptus.skyenet.sessions.MacroChat
-import com.simiacryptus.skyenet.sessions.MessageWebSocket
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -14,16 +12,16 @@ open class CodingActorTestApp(
     applicationName: String = "CodingActorTest_" + actor.interpreter.javaClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : MacroChat(
+) : ChatApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
 ) {
+
     override fun processMessage(
         sessionId: String,
         userMessage: String,
         session: PersistentSessionBase,
-        sessionUI: SessionUI,
         sessionDiv: SessionDiv,
         socket: MessageWebSocket
     ) {
@@ -34,7 +32,8 @@ open class CodingActorTestApp(
             |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
             |${response.getCode()}
             |```
-            |${sessionUI.hrefLink {
+            |${
+                sessionDiv.htmlTools.hrefLink {
                 sessionDiv.append("""<div>Running...</div>""", true)
                 val result = response.run()
                 sessionDiv.append(
@@ -49,7 +48,9 @@ open class CodingActorTestApp(
         }</div>""", false)
     }
 
+
     companion object {
+        val SessionDiv.htmlTools get() = HtmlTools(divID())
         val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
     }
 
