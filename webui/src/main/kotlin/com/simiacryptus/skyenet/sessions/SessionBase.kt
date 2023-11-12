@@ -1,6 +1,9 @@
 package com.simiacryptus.skyenet.sessions
 
-abstract class SessionBase(val sessionId: String) : SessionInterface {
+abstract class SessionBase(
+    val sessionId: String,
+    val sentMessages: MutableList<String> = mutableListOf()
+) : SessionInterface {
     private val sockets: MutableSet<MessageWebSocket> = mutableSetOf()
 
     override fun removeSocket(socket: MessageWebSocket) {
@@ -22,7 +25,6 @@ abstract class SessionBase(val sessionId: String) : SessionInterface {
             }
         }
     }
-    private val sentMessages: MutableList<String> = mutableListOf()
 
     protected open fun send(out: String) {
         sentMessages.add(out)
