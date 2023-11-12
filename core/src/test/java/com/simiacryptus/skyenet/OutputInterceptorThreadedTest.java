@@ -22,15 +22,20 @@ public class OutputInterceptorThreadedTest {
             String threadName = Thread.currentThread().getName();
             System.out.println("Thread: " + threadName + " output");
             System.err.println("Thread: " + threadName + " error");
-
-            String expectedOutput = "Thread: " + threadName + " output\nThread: " + threadName + " error\n";
-            String threadOutput = OutputInterceptor.getThreadOutput().replace("\r", "");
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            String expectedOutput = ("Thread: " + threadName + " output\nThread: " + threadName + " error\n").trim();
+            String threadOutput = OutputInterceptor.getThreadOutput().replace("\r", "").trim();
             if (threadOutput.trim().equals(expectedOutput.trim())) {
                 successCounter.incrementAndGet();
             } else {
                 synchronized (lock) {
                     System.out.println("Expected:\n  " + expectedOutput.replaceAll("\n", "\n  "));
                     System.out.println("Actual:\n  " + threadOutput.replaceAll("\n", "\n  "));
+                    System.out.flush();
                 }
             }
         };
