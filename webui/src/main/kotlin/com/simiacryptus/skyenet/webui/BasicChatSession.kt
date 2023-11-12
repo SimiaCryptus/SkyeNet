@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.webui
 import com.simiacryptus.openai.OpenAIClient
 
 open class BasicChatSession(
-    parent: SessionServerBase,
+    parent: ApplicationServerBase,
     model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     sessionId: String,
     visiblePrompt: String = """
@@ -24,4 +24,5 @@ open class BasicChatSession(
     |Ask questions to keep the conversation going.
     |Say goodbye when the conversation is over.
     """.trimMargin(),
-) : ChatSession(parent, sessionId, model, visiblePrompt, hiddenPrompt, systemPrompt)
+    api: OpenAIClient,
+) : ChatSession(parent, sessionId, model, visiblePrompt, hiddenPrompt, systemPrompt, api = api)

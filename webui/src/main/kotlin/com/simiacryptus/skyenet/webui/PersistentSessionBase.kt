@@ -53,9 +53,9 @@ abstract class PersistentSessionBase(
                 if (opCmdPattern.matches(message)) {
                     val id = message.substring(1, message.indexOf(","))
                     val code = message.substring(id.length + 2)
-                    onCmd(id, code)
+                    onCmd(id, code, socket)
                 } else {
-                    onRun(message)
+                    onRun(message, socket)
                 }
             } catch (e: Exception) {
                 log.warn("$sessionId - Error processing message: $message", e)
@@ -63,10 +63,10 @@ abstract class PersistentSessionBase(
         }
     }
 
-    protected open fun onRun(describedInstruction: String) {
+    protected open fun onRun(describedInstruction: String, socket: MessageWebSocket) {
         Thread {
             try {
-                run(describedInstruction)
+                run(describedInstruction, socket)
             } catch (e: Exception) {
                 log.warn(
                     "$sessionId - Error processing message: $describedInstruction",
@@ -76,11 +76,12 @@ abstract class PersistentSessionBase(
         }.start()
     }
 
-    protected open fun onCmd(id: String, code: String) {
+    protected open fun onCmd(id: String, code: String, socket: MessageWebSocket) {
     }
 
     protected abstract fun run(
         userMessage: String,
+        socket: MessageWebSocket,
     )
 
 

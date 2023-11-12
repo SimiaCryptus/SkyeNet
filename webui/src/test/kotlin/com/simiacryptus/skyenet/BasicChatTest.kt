@@ -14,7 +14,7 @@ object BasicChatTest {
     private const val port = 8081
     private const val baseURL = "http://localhost:$port"
     private var skyenet = BasicChat(
-        applicationName = "Chat Demo"
+        applicationName = "Chat Demo", api = api
     )
 
     @JvmStatic

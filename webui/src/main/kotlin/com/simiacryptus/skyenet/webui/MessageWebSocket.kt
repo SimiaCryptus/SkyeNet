@@ -1,12 +1,27 @@
 package com.simiacryptus.skyenet.webui
 
+import com.simiacryptus.openai.OpenAIClient
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
+import org.slf4j.event.Level
+import java.net.HttpCookie
 
 class MessageWebSocket(
     val sessionId: String,
     private val sessionState: SessionInterface,
+    val authId: String?,
+    val sessionDataStorage: SessionDataStorage,
 ) : WebSocketAdapter() {
+
+    val api: OpenAIClient get() {
+        val client = OpenAIClient(
+            logLevel = Level.DEBUG,
+            logStreams = mutableListOf(
+                sessionDataStorage.getSessionDir(sessionId).resolve("openai.log").outputStream().buffered()
+            )
+        )
+        return client
+    }
 
     override fun onWebSocketConnect(session: Session) {
         super.onWebSocketConnect(session)

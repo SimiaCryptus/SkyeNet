@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory
 
 open class SimpleActorTestApp(
     private val actor: SimpleActor,
-    applicationName: String = "SimpleActorTest_"+actor.javaClass.simpleName,
+    applicationName: String = "SimpleActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
 ) : MacroChat(
@@ -26,11 +26,12 @@ open class SimpleActorTestApp(
         userMessage: String,
         session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sessionDiv: SessionDiv
+        sessionDiv: SessionDiv,
+        socket: MessageWebSocket
     ) {
         val actor = getSettings<Settings>(sessionId)?.actor ?: actor
         sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
-        val moderatorResponse = actor.answer(userMessage, api = api)
+        val moderatorResponse = actor.answer(userMessage, api = socket.api)
         sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)
     }
 

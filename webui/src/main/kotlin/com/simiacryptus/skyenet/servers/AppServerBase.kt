@@ -5,8 +5,8 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import com.simiacryptus.skyenet.webui.AuthenticatedWebsite
-import com.simiacryptus.skyenet.webui.SessionServerBase
-import com.simiacryptus.skyenet.webui.SessionServerBase.UserInfoServlet
+import com.simiacryptus.skyenet.webui.ApplicationServerBase
+import com.simiacryptus.skyenet.webui.UserInfoServlet
 import com.simiacryptus.skyenet.webui.WebSocketServer
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
@@ -100,7 +100,7 @@ abstract class AppServerBase(
             val requestURI = req?.requestURI ?: "/"
             resp?.contentType = when (requestURI) {
                 "/" -> "text/html"
-                else -> SessionServerBase.getMimeType(requestURI)
+                else -> ApplicationServerBase.getMimeType(requestURI)
             }
             when {
                 requestURI == "/" -> resp?.writer?.write(homepage().trimIndent())

@@ -4,10 +4,9 @@ import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import java.io.File
 
 class SettingsServlet(
-    val server: SessionServerBase,
+    val server: ApplicationServerBase,
 ) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"

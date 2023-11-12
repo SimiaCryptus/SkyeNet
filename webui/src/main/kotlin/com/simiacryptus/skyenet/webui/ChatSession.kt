@@ -3,12 +3,13 @@ package com.simiacryptus.skyenet.webui
 import com.simiacryptus.openai.OpenAIClient
 
 abstract class ChatSession(
-    val parent: SessionServerBase,
+    val parent: ApplicationServerBase,
     sessionId: String,
     var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     private var visiblePrompt: String,
     private var hiddenPrompt: String,
     private var systemPrompt: String,
+    val api: OpenAIClient,
 ) : PersistentSessionBase(sessionId, parent.sessionDataStorage) {
 
     init {
@@ -21,10 +22,10 @@ abstract class ChatSession(
     ).toMutableList()
 
     @Synchronized
-    override fun run(userMessage: String) {
+    override fun run(userMessage: String, socket: MessageWebSocket) {
         var responseContents = divInitializer()
         responseContents += """<div>$userMessage</div>"""
-        send("""$responseContents<div>${SessionServerBase.spinner}</div>""")
+        send("""$responseContents<div>${ApplicationServerBase.spinner}</div>""")
         val response = handleMessage(userMessage, responseContents)
         if(null != response) {
             responseContents += """<div>${renderResponse(response)}</div>"""
@@ -40,7 +41,7 @@ abstract class ChatSession(
         return response
     }
 
-    open fun getResponse() = parent.api.chat(newChatRequest, model).choices.first().message?.content.orEmpty()
+    open fun getResponse() = api.chat(newChatRequest, model).choices.first().message?.content.orEmpty()
 
     open fun renderResponse(response: String) = """<pre>$response</pre>"""
 

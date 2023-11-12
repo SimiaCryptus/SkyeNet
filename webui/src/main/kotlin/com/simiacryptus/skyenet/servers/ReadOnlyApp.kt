@@ -8,7 +8,8 @@ open class ReadOnlyApp(
     applicationName: String,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : SessionServerBase(
+    val api: OpenAIClient,
+) : ApplicationServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
@@ -18,14 +19,12 @@ open class ReadOnlyApp(
         val log = LoggerFactory.getLogger(ReadOnlyApp::class.java)
     }
 
-    override val api: OpenAIClient
-        get() = OpenAIClient()
-
     override fun newSession(sessionId: String): SessionInterface {
         return BasicChatSession(
             parent = this@ReadOnlyApp,
             model = OpenAIClient.Models.GPT35Turbo,
-            sessionId = sessionId
+            sessionId = sessionId,
+            api = api
         )
     }
 

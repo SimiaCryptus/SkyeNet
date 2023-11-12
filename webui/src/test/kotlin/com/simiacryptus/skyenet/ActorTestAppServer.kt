@@ -24,6 +24,7 @@ object ActorTestAppServer : AppServerBase(port = 8082) {
     interface JokeParser : Function<String, TestJokeDataStructure>
 
     override val childWebApps by lazy {
+        val api = com.simiacryptus.openai.OpenAIClient()
         listOf(
             ChildWebApp("/test_simple", SimpleActorTestApp(SimpleActor("Translate the user's request into pig latin.", "PigLatin"))),
             ChildWebApp("/test_parsed_joke", ParsedActorTestApp(ParsedActor(JokeParser::class.java, "Tell me a joke"))),

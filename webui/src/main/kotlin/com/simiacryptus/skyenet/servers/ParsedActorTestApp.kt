@@ -5,12 +5,13 @@ import com.simiacryptus.skyenet.webui.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.PersistentSessionBase
 import com.simiacryptus.skyenet.webui.SessionDiv
 import com.simiacryptus.skyenet.webui.MacroChat
+import com.simiacryptus.skyenet.webui.MessageWebSocket
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 
 open class ParsedActorTestApp<T>(
     private val actor: ParsedActor<T>,
-    applicationName: String = "ParsedActorTest_"+actor.parserClass.simpleName,
+    applicationName: String = "ParsedActorTest_" + actor.parserClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
 ) : MacroChat(
@@ -23,10 +24,11 @@ open class ParsedActorTestApp<T>(
         userMessage: String,
         session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sessionDiv: SessionDiv
+        sessionDiv: SessionDiv,
+        socket: MessageWebSocket
     ) {
         sessionDiv.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
-        val response = actor.answer(userMessage, api = api)
+        val response = actor.answer(userMessage, api = socket.api)
         sessionDiv.append("""<div>${
             renderMarkdown("""
             |${response.getText()}

@@ -12,6 +12,7 @@ import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerI
 abstract class WebSocketServer(val resourceBase: String) {
 
     abstract val applicationName: String
+    abstract val sessionDataStorage: SessionDataStorage
 
     val stateCache: MutableMap<String, SessionInterface> = mutableMapOf()
 
@@ -19,12 +20,13 @@ abstract class WebSocketServer(val resourceBase: String) {
         override fun configure(factory: JettyWebSocketServletFactory) {
             factory.setCreator { req, resp ->
                 val sessionId = req.parameterMap["sessionId"]?.firstOrNull()
+                val authId = req.cookies?.find { it.name == "sessionId" }?.value
                 return@setCreator if (null == sessionId) {
                     null
                 } else {
                     MessageWebSocket(sessionId, stateCache.getOrPut(sessionId) {
                         newSession(sessionId)
-                    })
+                    }, authId, sessionDataStorage)
                 }
             }
         }
@@ -43,6 +45,9 @@ abstract class WebSocketServer(val resourceBase: String) {
     }
 
     open val baseResource: Resource? get() = Resource.newResource(javaClass.classLoader.getResource(resourceBase))
+    protected val newSessionServlet by lazy { NewSessionServlet() }
+    protected val webSocketHandler by lazy { WebSocketHandler() }
+    protected val defaultServlet by lazy { DefaultServlet() }
 
     open fun configure(webAppContext: WebAppContext, prefix: String = "/", baseUrl: String) {
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), prefix + "")
@@ -50,12 +55,6 @@ abstract class WebSocketServer(val resourceBase: String) {
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", newSessionServlet),prefix + "newSession")
     }
 
-    open val newSessionServlet get() = NewSessionServlet()
-
-    open val webSocketHandler get() = WebSocketHandler()
-
-    open val defaultServlet: DefaultServlet
-        get() = DefaultServlet()
 
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(WebSocketServer::class.java)

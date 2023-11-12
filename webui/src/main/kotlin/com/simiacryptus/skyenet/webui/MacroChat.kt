@@ -1,20 +1,16 @@
 package com.simiacryptus.skyenet.webui
 
-import com.simiacryptus.openai.OpenAIClient
 import java.util.function.Consumer
 
 abstract class MacroChat(
     applicationName: String,
     oauthConfig: String? = null,
     temperature: Double = 0.1,
-) : SessionServerBase(
+) : ApplicationServerBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
 ) {
-    override val api: OpenAIClient
-        get() = OpenAIClient()
-
     interface SessionUI {
         val spinner: String
         val playButton: String
@@ -35,7 +31,8 @@ abstract class MacroChat(
         userMessage: String,
         session: PersistentSessionBase,
         sessionUI: SessionUI,
-        sessionDiv: SessionDiv
+        sessionDiv: SessionDiv,
+        socket: MessageWebSocket
     )
 
     companion object {
