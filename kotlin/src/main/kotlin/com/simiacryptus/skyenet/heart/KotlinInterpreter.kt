@@ -1,3 +1,5 @@
+@file:Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+
 package com.simiacryptus.skyenet.heart
 
 import com.simiacryptus.skyenet.Heart
@@ -77,11 +79,6 @@ open class KotlinInterpreter(
 
         val configuration = CompilerConfiguration().apply {
             put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
-            //addKotlinSourceRoot(tempFile.absolutePath)
-//            configureJdkClasspathRoots()
-//            System.getProperty("java.class.path").split(File.pathSeparator).forEach {
-//                addJvmClasspathRoot(File(it))
-//            }
             val k2JVMCompilerArguments = K2JVMCompilerArguments()
             k2JVMCompilerArguments.fragmentSources = arrayOf(tempFile.absolutePath)
             k2JVMCompilerArguments.classpath = System.getProperty("java.class.path")
@@ -90,11 +87,9 @@ open class KotlinInterpreter(
             this.setupJvmSpecificArguments(k2JVMCompilerArguments)
             this.setupCommonArguments(k2JVMCompilerArguments)
             this.setupLanguageVersionSettings(k2JVMCompilerArguments)
-//            put(org.jetbrains.kotlin.config.JVMConfigurationKeys.COMPILE_JAVA, true)
             put(org.jetbrains.kotlin.config.CommonConfigurationKeys.MODULE_NAME, k2JVMCompilerArguments.moduleName!!)
         }
 
-        // Create the compiler environment
         val environment = KotlinCoreEnvironment.createForProduction(
             parentDisposable = {},
             configuration = configuration,
@@ -110,8 +105,8 @@ open class KotlinInterpreter(
                 if (errors.isEmpty()) null
                 else RuntimeException(
                     """
-                    |${errors.joinToString("\n") { "Error: " + it }}
-                    |${warnings.joinToString("\n") { "Warning: " + it }}
+                    |${errors.joinToString("\n") { "Error: $it" }}
+                    |${warnings.joinToString("\n") { "Warning: $it" }}
                     """.trimMargin())
             }
         } catch (e: CompilationException) {
@@ -184,7 +179,7 @@ open class KotlinInterpreter(
         defs.entrySet().forEach { (key, value) ->
             val uuid = storageMap.getOrPut(value) { UUID.randomUUID() }
             retrievalIndex.put(uuid, WeakReference(value))
-            val fqClassName = KotlinInterpreter.javaClass.name.replace("$", ".")
+            val fqClassName = KotlinInterpreter::class.java.name.replace("$", ".")
             val typeStr = typeOf(value)
             out.add("val $key : $typeStr = $fqClassName.retrievalIndex.get(java.util.UUID.fromString(\"$uuid\"))?.get()!! as $typeStr\n")
         }
@@ -192,7 +187,7 @@ open class KotlinInterpreter(
         return out.joinToString("\n")
     }
 
-    open fun typeOf(value: Object?): String {
+    open fun typeOf(value: Any?): String {
         if (value is java.lang.reflect.Proxy) {
             return value.javaClass.interfaces[0].name.replace("$", ".") + "?"
         }

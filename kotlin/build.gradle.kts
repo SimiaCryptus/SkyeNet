@@ -40,10 +40,10 @@ dependencies {
     implementation(kotlin("compiler-embeddable"))
     implementation(kotlin("scripting-compiler-embeddable"))
 
-    implementation(group = "commons-io", name = "commons-io", version = "2.11.0")
+    implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
 
-    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.9.2")
-    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.9.2")
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.10.1")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
     testImplementation(group = "ch.qos.logback", name = "logback-classic", version = "1.4.11")
