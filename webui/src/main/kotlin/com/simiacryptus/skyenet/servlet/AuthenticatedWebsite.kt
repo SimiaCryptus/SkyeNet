@@ -18,7 +18,6 @@ import org.eclipse.jetty.webapp.WebAppContext
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.UnsupportedEncodingException
-import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -33,7 +32,18 @@ open class AuthenticatedWebsite(
 
     open fun newUserSession(userInfo: Userinfo, sessionId: String) {
         log.info("User $userInfo logged in with session $sessionId")
+        users[sessionId] = userInfo
     }
+
+    open fun configure(context: WebAppContext, addFilter: Boolean = true): WebAppContext {
+        context.addServlet(ServletHolder("googleLogin", GoogleLoginServlet()), "/googleLogin")
+        context.addServlet(ServletHolder("oauth2callback", OAuth2CallbackServlet()), "/oauth2callback")
+        if (addFilter) context.addFilter(FilterHolder(SessionIdFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
+        return context
+    }
+
+    open fun isSecure(request: HttpServletRequest) =
+        setOf("/googleLogin", "/oauth2callback").none { request.requestURI.startsWith(it) }
 
     private val httpTransport = GoogleNetHttpTransport.newTrustedTransport()
     private val jsonFactory = GsonFactory.getDefaultInstance()
@@ -52,8 +62,7 @@ open class AuthenticatedWebsite(
         )
     ).build()
 
-
-    inner class GoogleLoginServlet : HttpServlet() {
+    private inner class GoogleLoginServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
             val redirect = req.getParameter("redirect") ?: ""
             val state = URLEncoder.encode(redirect, StandardCharsets.UTF_8.toString())
@@ -72,14 +81,7 @@ open class AuthenticatedWebsite(
         }
     }
 
-    open fun configure(context: WebAppContext, addFilter: Boolean = true): WebAppContext {
-        context.addServlet(ServletHolder("googleLogin", GoogleLoginServlet()), "/googleLogin")
-        context.addServlet(ServletHolder("oauth2callback", OAuth2CallbackServlet()), "/oauth2callback")
-        if (addFilter) context.addFilter(FilterHolder(SessionIdFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
-        return context
-    }
-
-    inner class SessionIdFilter : Filter {
+    private inner class SessionIdFilter : Filter {
 
         override fun init(filterConfig: FilterConfig?) {}
 
@@ -99,11 +101,7 @@ open class AuthenticatedWebsite(
         override fun destroy() {}
     }
 
-    open fun isSecure(request: HttpServletRequest) =
-        setOf("/googleLogin", "/oauth2callback").none { request.requestURI.startsWith(it) }
-
-
-    inner class OAuth2CallbackServlet : HttpServlet() {
+    private inner class OAuth2CallbackServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
             val code = req.getParameter("code")
             if (code != null) {
@@ -113,8 +111,7 @@ open class AuthenticatedWebsite(
                     Oauth2.Builder(httpTransport, jsonFactory, credential).setApplicationName(applicationName).build()
                 val userInfo: Userinfo = oauth2.userinfo().get().execute()
                 val sessionID = UUID.randomUUID().toString()
-                users[sessionID] = userInfo
-                newUserSession(userInfo, sessionID)
+               newUserSession(userInfo, sessionID)
                 val sessionCookie = Cookie("sessionId", sessionID)
                 sessionCookie.path = "/"
                 sessionCookie.isHttpOnly = false
@@ -130,13 +127,11 @@ open class AuthenticatedWebsite(
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(AuthenticatedWebsite::class.java)
 
-
-        val users = java.util.HashMap<String, Userinfo>()
+        val users = HashMap<String, Userinfo>()
         fun getUser(req: HttpServletRequest): Userinfo? {
             val sessionId = req.cookies?.find { it.name == "sessionId" }?.value
             return if (null == sessionId) null else users[sessionId]
         }
-
     }
 
 }
@@ -146,5 +141,3 @@ fun String.urlDecode(): String? = try {
 } catch (e: UnsupportedEncodingException) {
     this
 }
-
-fun String.toURI(): URI = URI(this)

@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.actors
 
 import com.simiacryptus.openai.OpenAIClient
 
-class SimpleActor(
+open class SimpleActor(
     prompt: String,
     name: String? = null,
     model: OpenAIClient.Models = OpenAIClient.Models.GPT35Turbo,

@@ -1,0 +1,135 @@
+package com.simiacryptus.skyenet.session
+
+import com.google.common.util.concurrent.MoreExecutors
+import com.simiacryptus.skyenet.chat.ChatServer
+import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.util.AuthorizationManager
+import com.simiacryptus.skyenet.util.AuthorizationManager.isAuthorized
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
+
+abstract class SessionBase(
+    val sessionId: String,
+    private val sessionDataStorage: SessionDataStorage,
+    private val messageStates: LinkedHashMap<String, String> = sessionDataStorage.loadMessages(sessionId),
+) : SessionInterface {
+    private val sockets: MutableSet<ChatSocket> = mutableSetOf()
+
+    override fun removeSocket(socket: ChatSocket) {
+        sockets.remove(socket)
+    }
+
+    override fun addSocket(socket: ChatSocket) {
+        sockets.add(socket)
+    }
+    protected fun publish(
+        out: String,
+    ) {
+        val socketsSnapshot = sockets.toTypedArray()
+        socketsSnapshot.forEach {
+            try {
+                it.remote.sendString(out)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun newSessionDiv(
+        operationID: String, spinner: String, cancelable: Boolean = false
+    ): SessionDiv {
+        var responseContents = divInitializer(operationID, cancelable)
+        send(responseContents)
+        return object : SessionDiv() {
+            override fun append(htmlToAppend: String, showSpinner: Boolean) {
+                if (htmlToAppend.isNotBlank()) {
+                    responseContents += """<div>$htmlToAppend</div>"""
+                }
+                val spinner1 = if (showSpinner) """<div>$spinner</div>""" else ""
+                return this@SessionBase.send("""$responseContents$spinner1""")
+            }
+
+            override fun sessionID(): String {
+                return this@SessionBase.sessionId
+            }
+
+            override fun divID(): String {
+                return operationID
+            }
+        }
+    }
+
+    private val messageVersions = HashMap<String, AtomicInteger>()
+
+
+    fun send(out: String) {
+        try {
+            log.debug("Send Msg: $sessionId - $out")
+            val split = out.split(',', ignoreCase = false, limit = 2)
+            val newVersion = setMessage(split[0], split[1])
+            publish("${split[0]},$newVersion,${split[1]}")
+        } catch (e: Exception) {
+            log.debug("$sessionId - $out", e)
+        }
+    }
+
+    private fun setMessage(key: String, value: String): Int {
+        if (messageStates.containsKey(key) && messageStates[key] == value) return -1
+        sessionDataStorage.updateMessage(sessionId, key, value)
+        messageStates.put(key, value)
+        return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
+    }
+
+    final override fun getReplay(): List<String> {
+        return messageStates.entries.map {
+            "${it.key},${messageVersions.computeIfAbsent(it.key) { AtomicInteger(1) }.get()},${it.value}"
+        }
+    }
+
+    open val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
+
+    final override fun onWebSocketText(socket: ChatSocket, message: String) {
+        if (isAuthorized(
+            applicationClass = this::class.java,
+            user = socket.user?.email,
+            operationType = AuthorizationManager.OperationType.Write
+        )) pool.submit {
+            log.debug("$sessionId - Received message: $message")
+            try {
+                val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
+                if (opCmdPattern.matches(message)) {
+                    val id = message.substring(1, message.indexOf(","))
+                    val code = message.substring(id.length + 2)
+                    onCmd(id, code, socket)
+                } else {
+                    onRun(message, socket)
+                }
+            } catch (e: Exception) {
+                log.warn("$sessionId - Error processing message: $message", e)
+            }
+        }
+    }
+
+    protected open fun onCmd(
+        id: String,
+        code: String,
+        socket: ChatSocket
+    ) {
+    }
+
+    protected abstract fun onRun(
+        userMessage: String,
+        socket: ChatSocket,
+    )
+
+    companion object {
+        val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
+
+        fun randomID() = (0..5).map { ('a'..'z').random() }.joinToString("")
+        fun divInitializer(operationID: String = randomID(), cancelable: Boolean): String =
+            if (!cancelable) """$operationID,""" else
+                """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
+
+    }
+
+}

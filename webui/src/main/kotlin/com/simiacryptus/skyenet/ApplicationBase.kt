@@ -1,11 +1,21 @@
-package com.simiacryptus.skyenet.sessions
+package com.simiacryptus.skyenet
 
+import com.simiacryptus.skyenet.chat.ChatServer
+import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.servlet.*
+import com.simiacryptus.skyenet.session.SessionBase
+import com.simiacryptus.skyenet.session.SessionDataStorage
+import com.simiacryptus.skyenet.session.SessionDiv
+import com.simiacryptus.skyenet.session.SessionInterface
+import com.simiacryptus.skyenet.util.AuthorizationManager
+import com.simiacryptus.skyenet.util.AuthorizationManager.isAuthorized
+import com.simiacryptus.skyenet.util.HtmlTools
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.commons.io.FileUtils
+import org.eclipse.jetty.servlet.FilterHolder
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
 import org.slf4j.LoggerFactory
@@ -16,7 +26,51 @@ abstract class ApplicationBase(
     val oauthConfig: String? = null,
     resourceBase: String = "simpleSession",
     val temperature: Double = 0.1,
-) : WebSocketServer(resourceBase) {
+) : ChatServer(resourceBase) {
+
+
+    class ApplicationSession(
+        val parent: ApplicationBase,
+        sessionId: String,
+    ) : SessionBase(
+        sessionId = sessionId,
+        sessionDataStorage = parent.sessionDataStorage
+    ) {
+        private val threads = mutableMapOf<String, Thread>()
+
+        val linkTriggers = mutableMapOf<String, java.util.function.Consumer<Unit>>()
+
+        override fun onRun(userMessage: String, socket: ChatSocket) {
+            val operationID = randomID()
+            val sessionDiv = newSessionDiv(operationID, spinner, true)
+            threads[operationID] = Thread.currentThread()
+            parent.processMessage(sessionId, userMessage, this, sessionDiv, socket)
+        }
+
+        override fun onCmd(id: String, code: String, socket: ChatSocket) {
+            if (code == "cancel") {
+                threads[id]?.interrupt()
+            }
+            if (code == "link") {
+                linkTriggers[id]?.accept(Unit)
+            }
+            super.onCmd(id, code, socket)
+        }
+
+        fun htmlTools(divID: String) = HtmlTools(this, divID)
+    }
+
+    override fun newSession(sessionId: String): SessionInterface {
+        return ApplicationSession(this, sessionId)
+    }
+
+    abstract fun processMessage(
+        sessionId: String,
+        userMessage: String,
+        session: ApplicationSession,
+        sessionDiv: SessionDiv,
+        socket: ChatSocket
+    )
 
     open val settingsClass: Class<*> get() = Map::class.java
 
@@ -38,18 +92,34 @@ abstract class ApplicationBase(
         sessionDataStorage.updateSettings(sessionId, settings)
     }
 
-    final override val sessionDataStorage = SessionDataStorage(File(File(".skynet"), applicationName))
+    final override val sessionDataStorage = SessionDataStorage(File(File(".skyenet"), applicationName))
 
 
     override fun configure(webAppContext: WebAppContext, path: String, baseUrl: String) {
         super.configure(webAppContext, path, baseUrl)
 
-        if (null != oauthConfig) (AuthenticatedWebsite(
+        if (null != oauthConfig) AuthenticatedWebsite(
             "$baseUrl/oauth2callback",
             this@ApplicationBase.applicationName
-        ) {
-            FileUtils.openInputStream(File(oauthConfig))
-        }).configure(webAppContext)
+        ) { FileUtils.openInputStream(File(oauthConfig)) }
+            .configure(webAppContext)
+
+        webAppContext.addFilter(
+            FilterHolder { request, response, chain ->
+                val user = AuthenticatedWebsite.getUser(request as HttpServletRequest)
+                val canRead = isAuthorized(
+                    applicationClass = this@ApplicationBase.javaClass,
+                    user = user?.email,
+                    operationType = AuthorizationManager.OperationType.Read
+                )
+                if (canRead) {
+                    chain?.doFilter(request, response)
+                } else {
+                    response?.writer?.write("Access Denied")
+                    (response as HttpServletResponse?)?.status = HttpServletResponse.SC_FORBIDDEN
+                }
+            }, "/*", null
+        )
 
         val fileZip = ServletHolder("fileZip", ZipServlet(sessionDataStorage))
         val fileIndex = ServletHolder("fileIndex", FileServlet(sessionDataStorage))

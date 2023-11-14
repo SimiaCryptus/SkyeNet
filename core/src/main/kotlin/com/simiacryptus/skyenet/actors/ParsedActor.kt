@@ -4,7 +4,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
 import java.util.function.Function
 
-class ParsedActor<T>(
+open class ParsedActor<T>(
     val parserClass: Class<out Function<String, T>>,
     prompt: String,
     val action: String? = null,

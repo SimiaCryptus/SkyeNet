@@ -1,6 +1,8 @@
-package com.simiacryptus.skyenet.sessions
+package com.simiacryptus.skyenet.chat
 
 import com.simiacryptus.skyenet.servlet.NewSessionServlet
+import com.simiacryptus.skyenet.session.SessionDataStorage
+import com.simiacryptus.skyenet.session.SessionInterface
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.util.resource.Resource
@@ -8,10 +10,10 @@ import org.eclipse.jetty.webapp.WebAppContext
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 
-abstract class WebSocketServer(val resourceBase: String) {
+abstract class ChatServer(val resourceBase: String) {
 
     abstract val applicationName: String
-    abstract val sessionDataStorage: SessionDataStorage
+    open val sessionDataStorage: SessionDataStorage? = null
 
     val stateCache: MutableMap<String, SessionInterface> = mutableMapOf()
 
@@ -28,9 +30,9 @@ abstract class WebSocketServer(val resourceBase: String) {
                         sessionState = stateCache[sessionId]!!
                     } else {
                         sessionState = newSession(sessionId)
-                        if(null != sessionState) stateCache[sessionId] = sessionState
+                        stateCache[sessionId] = sessionState
                     }
-                    MessageWebSocket(sessionId, sessionState, authId, sessionDataStorage)
+                    ChatSocket(sessionId, sessionState, authId, sessionDataStorage)
                 }
             }
         }
@@ -51,7 +53,7 @@ abstract class WebSocketServer(val resourceBase: String) {
 
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(WebSocketServer::class.java)
+        val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
     }
 }
 

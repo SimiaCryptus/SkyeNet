@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.actors.opt.ActorOptimization
 import com.simiacryptus.skyenet.actors.opt.Expectation
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+import kotlin.system.exitProcess
 
 object ActorOptTest {
 
@@ -56,7 +57,7 @@ object ActorOptTest {
         } catch (e: Throwable) {
             log.error("Error", e)
         } finally {
-            System.exit(0)
+            exitProcess(0)
         }
     }
 

@@ -6,6 +6,9 @@ import com.simiacryptus.openai.proxy.ChatProxy
 import com.simiacryptus.skyenet.actors.BaseActor
 import com.simiacryptus.util.describe.Description
 import org.slf4j.LoggerFactory
+import kotlin.math.ceil
+import kotlin.math.ln
+import kotlin.math.max
 import kotlin.math.pow
 
 open class ActorOptimization(
@@ -61,10 +64,10 @@ open class ActorOptimization(
     }
 
     private fun defaultPositionSize(selectionSize: Int, systemPrompts: List<String>) =
-        Math.max(Math.max(selectionSize, 5), systemPrompts.size)
+        max(max(selectionSize, 5), systemPrompts.size)
 
     private fun defaultSelectionSize(systemPrompts: List<String>) =
-        Math.max(Math.ceil(Math.log((systemPrompts.size + 1).toDouble()) / Math.log(2.0)), 3.0)
+        max(ceil(ln((systemPrompts.size + 1).toDouble()) / ln(2.0)), 3.0)
             .toInt()
 
     open fun regenerate(progenetors: List<String>, desiredCount: Int): List<String> {

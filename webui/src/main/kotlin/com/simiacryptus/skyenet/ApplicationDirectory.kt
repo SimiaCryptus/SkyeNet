@@ -1,13 +1,12 @@
-package com.simiacryptus.skyenet.servers
+package com.simiacryptus.skyenet
 
 
 import com.google.api.services.oauth2.model.Userinfo
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.skyenet.servlet.*
-import com.simiacryptus.skyenet.sessions.ApplicationBase
-import com.simiacryptus.skyenet.sessions.SessionDataStorage
-import com.simiacryptus.skyenet.sessions.WebSocketServer
+import com.simiacryptus.skyenet.session.SessionDataStorage
+import com.simiacryptus.skyenet.chat.ChatServer
+import com.simiacryptus.skyenet.util.AuthorizationManager
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
@@ -26,8 +25,9 @@ import java.awt.Desktop
 import java.net.URI
 import java.nio.file.NoSuchFileException
 import java.util.*
+import kotlin.system.exitProcess
 
-abstract class AppServerBase(
+abstract class ApplicationDirectory(
     private val localName: String = "localhost",
     private val publicName: String = "localhost",
     private val port: Int = 8081,
@@ -37,9 +37,7 @@ abstract class AppServerBase(
 
     data class ChildWebApp(
         val path: String,
-        val server: WebSocketServer,
-        val isAuthenticated: Boolean = false,
-        val isPublicOnly: Boolean = false
+        val server: ChatServer,
     )
 
     private fun domainName(isServer: Boolean) =
@@ -78,12 +76,7 @@ abstract class AppServerBase(
                         ), false
                     ),
                 ) + childWebApps.map {
-                    if (it.isAuthenticated) authentication.configure(
-                        newWebAppContext(
-                            it.path,
-                            it.server
-                        )
-                    ) else newWebAppContext(it.path, it.server)
+                    newWebAppContext(it.path, it.server)
                 })
             )
             try {
@@ -95,14 +88,14 @@ abstract class AppServerBase(
         } catch (e: Throwable) {
             e.printStackTrace()
             Thread.sleep(1000)
-            System.exit(1)
+            exitProcess(1)
         } finally {
             Thread.sleep(1000)
-            System.exit(0)
+            exitProcess(0)
         }
     }
 
-    inner class WelcomeServlet() : HttpServlet() {
+    private inner class WelcomeServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
             val user = AuthenticatedWebsite.getUser(req!!)
             val requestURI = req.requestURI ?: "/"
@@ -155,22 +148,27 @@ abstract class AppServerBase(
     </div>
     
     <table id="applist">
-    <tr>
-        <th>App</th>
-        <th>New Session</th>
-        <th>List Sessions</th>
-    </tr>
         ${
-            childWebApps.filter {
-                (!it.isAuthenticated || user != null) && (!it.isPublicOnly || user == null)
-            }.joinToString("\n") { app ->
+            childWebApps.joinToString("\n") { app ->
+                val canRun = AuthorizationManager.isAuthorized(
+                    applicationClass = app.server.javaClass,
+                    user = user?.email,
+                    operationType = AuthorizationManager.OperationType.Write
+                )
+                val canRead = AuthorizationManager.isAuthorized(
+                    applicationClass = app.server.javaClass,
+                    user = user?.email,
+                    operationType = AuthorizationManager.OperationType.Read
+                )
+                if (!canRead) return@joinToString ""
+                val newSessionLink = if(canRun) """<a href="${app.path}/#${SessionDataStorage.newID()}">New</a>""" else ""
                 """
                     <tr>
                         <td>
                             ${app.server.applicationName}
                         </td>
                         <td>
-                            <a href="${app.path}/#${SessionDataStorage.newID()}">New</a>
+                            $newSessionLink
                         </td>
                         <td>
                             <a href="${app.path}/sessions">List</a>
@@ -202,7 +200,7 @@ abstract class AppServerBase(
         return server
     }
 
-    private fun newWebAppContext(path: String, server: WebSocketServer): WebAppContext {
+    private fun newWebAppContext(path: String, server: ChatServer): WebAppContext {
         val webAppContext =
             newWebAppContext(path, server.baseResource ?: throw IllegalStateException("No base resource"))
         server.configure(webAppContext, path = path, baseUrl = "$domainName/$path")
