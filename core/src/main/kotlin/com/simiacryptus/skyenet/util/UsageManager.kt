@@ -21,7 +21,7 @@ object UsageManager {
     init {
         txLogFile.parentFile.mkdirs()
         loadFromLog(txLogFile)
-        scheduler.scheduleAtFixedRate({ saveCounters() }, 1, 1, TimeUnit.MINUTES)
+        scheduler.scheduleAtFixedRate({ saveCounters() }, 1, 1, TimeUnit.HOURS)
     }
 
     @Suppress("MemberVisibilityCanBePrivate")

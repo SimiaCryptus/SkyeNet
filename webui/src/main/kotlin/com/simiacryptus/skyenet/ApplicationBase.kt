@@ -134,20 +134,6 @@ abstract class ApplicationBase(
         webAppContext.addServlet(sessionSettingsServlet, "/settings")
     }
 
-    inner class AppInfoServlet : HttpServlet() {
-        override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-            resp.contentType = "text/json"
-            resp.status = HttpServletResponse.SC_OK
-            resp.writer.write(
-                JsonUtil.objectMapper().writeValueAsString(
-                    mapOf(
-                        "applicationName" to applicationName
-                    )
-                )
-            )
-        }
-    }
-
     protected open val appInfo = ServletHolder("appInfo", AppInfoServlet())
     protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
 

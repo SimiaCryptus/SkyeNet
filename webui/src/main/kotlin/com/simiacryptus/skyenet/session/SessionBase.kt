@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.session
 
+import com.google.api.services.oauth2.model.Userinfo
 import com.google.common.util.concurrent.MoreExecutors
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
@@ -10,8 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 abstract class SessionBase(
     val sessionId: String,
-    private val sessionDataStorage: SessionDataStorage,
-    private val messageStates: LinkedHashMap<String, String> = sessionDataStorage.loadMessages(sessionId),
+    private val sessionDataStorage: SessionDataStorage?,
+    private val messageStates: LinkedHashMap<String, String> = sessionDataStorage?.loadMessages(sessionId) ?: LinkedHashMap(),
 ) : SessionInterface {
     private val sockets: MutableSet<ChatSocket> = mutableSetOf()
 
@@ -75,7 +76,7 @@ abstract class SessionBase(
 
     private fun setMessage(key: String, value: String): Int {
         if (messageStates.containsKey(key) && messageStates[key] == value) return -1
-        sessionDataStorage.updateMessage(sessionId, key, value)
+        sessionDataStorage?.updateMessage(sessionId, key, value)
         messageStates.put(key, value)
         return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
     }
@@ -89,11 +90,7 @@ abstract class SessionBase(
     open val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
 
     final override fun onWebSocketText(socket: ChatSocket, message: String) {
-        if (isAuthorized(
-            applicationClass = this::class.java,
-            user = socket.user?.email,
-            operationType = AuthorizationManager.OperationType.Write
-        )) pool.submit {
+        if (canWrite(socket.user?.email)) pool.submit {
             log.debug("$sessionId - Received message: $message")
             try {
                 val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
@@ -109,6 +106,12 @@ abstract class SessionBase(
             }
         }
     }
+
+    open fun canWrite(user: String?) = isAuthorized(
+        applicationClass = this::class.java,
+        user = user,
+        operationType = AuthorizationManager.OperationType.Write
+    )
 
     protected open fun onCmd(
         id: String,
