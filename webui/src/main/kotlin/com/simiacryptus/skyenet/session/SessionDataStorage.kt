@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.sessions
+package com.simiacryptus.skyenet.session
 
 import com.simiacryptus.util.JsonUtil
 import java.io.File
@@ -57,7 +57,7 @@ open class SessionDataStorage(
             log.debug("Session $sessionId: ${first}")
             return first
         } else {
-            log.info("Session $sessionId: No messages")
+            log.debug("Session $sessionId: No messages")
             return sessionId
         }
     }
@@ -74,12 +74,12 @@ open class SessionDataStorage(
             val fileText = messageFile.readText()
             val split = fileText.split("<p>")
             if (split.size < 2) {
-                log.info("Session $sessionId: No messages")
+                log.debug("Session $sessionId: No messages")
                 ""
             } else {
                 val stringList = split[1].split("</p>")
                 if (stringList.isEmpty()) {
-                    log.info("Session $sessionId: No messages")
+                    log.debug("Session $sessionId: No messages")
                     ""
                 } else {
                     stringList.first()

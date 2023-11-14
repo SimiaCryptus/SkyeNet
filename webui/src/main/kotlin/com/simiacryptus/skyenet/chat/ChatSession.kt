@@ -1,17 +1,20 @@
-package com.simiacryptus.skyenet.sessions
+package com.simiacryptus.skyenet.chat
 
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.skyenet.util.MarkdownUtil
 
 open class ChatSession(
-    val parent: ApplicationBase,
+    val parent: ChatServer,
     sessionId: String,
     var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
     private var visiblePrompt: String,
     private var hiddenPrompt: String,
     private var systemPrompt: String,
     val api: OpenAIClient,
-) : PersistentSessionBase(sessionId, parent.sessionDataStorage) {
+    val temperature: Double = 0.3,
+) : SessionBase(sessionId, parent.sessionDataStorage) {
 
     init {
         if (visiblePrompt.isNotBlank()) {
@@ -28,8 +31,8 @@ open class ChatSession(
     }
 
     @Synchronized
-    override fun run(userMessage: String, socket: MessageWebSocket) {
-        var responseContents = divInitializer()
+    override fun onRun(userMessage: String, socket: ChatSocket) {
+        var responseContents = divInitializer(cancelable = false)
         responseContents += """<div>$userMessage</div>"""
         send("""$responseContents<div>${ApplicationBase.spinner}</div>""")
         val response = handleMessage(userMessage, responseContents)
@@ -57,17 +60,9 @@ open class ChatSession(
         get() {
             val chatRequest = OpenAIClient.ChatRequest()
             chatRequest.model = model.modelName
-            chatRequest.temperature = parent.temperature
+            chatRequest.temperature = temperature
             chatRequest.messages = messages.toTypedArray()
             return chatRequest
         }
-
-    companion object {
-        fun divInitializer(operationID: String = randomID()): String {
-            return """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
-        }
-
-        fun randomID() = (0..5).map { ('a'..'z').random() }.joinToString("")
-    }
 
 }

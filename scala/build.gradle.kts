@@ -29,7 +29,7 @@ java {
     }
 }
 
-val scala_version = "2.13.8"
+val scala_version = "2.13.12"
 dependencies {
 
     implementation(project(":core"))

@@ -1,7 +1,9 @@
-package com.simiacryptus.skyenet.servers
+package com.simiacryptus.skyenet.test
 
+import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.actors.SimpleActor
-import com.simiacryptus.skyenet.sessions.*
+import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.session.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 
@@ -10,7 +12,7 @@ open class SimpleActorTestApp(
     applicationName: String = "SimpleActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : ChatApplicationBase(
+) : ApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
@@ -25,9 +27,9 @@ open class SimpleActorTestApp(
     override fun processMessage(
         sessionId: String,
         userMessage: String,
-        session: PersistentSessionBase,
+        session: ApplicationSession,
         sessionDiv: SessionDiv,
-        socket: MessageWebSocket
+        socket: ChatSocket
     ) {
         val actor = getSettings<Settings>(sessionId)?.actor ?: actor
         sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)

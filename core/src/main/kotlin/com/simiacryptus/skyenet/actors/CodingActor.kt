@@ -13,7 +13,7 @@ import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 
-class CodingActor(
+open class CodingActor(
     private val interpreterClass: KClass<out Heart>,
     private val symbols: Map<String, Any> = mapOf(),
     private val describer: AbbrevWhitelistYamlDescriber = AbbrevWhitelistYamlDescriber(

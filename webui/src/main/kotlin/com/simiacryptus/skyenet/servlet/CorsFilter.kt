@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.servers
+package com.simiacryptus.skyenet.servlet
 
 import jakarta.servlet.*
 import jakarta.servlet.annotation.WebFilter

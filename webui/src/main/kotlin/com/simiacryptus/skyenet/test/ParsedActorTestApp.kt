@@ -1,11 +1,10 @@
-package com.simiacryptus.skyenet.servers
+package com.simiacryptus.skyenet.test
 
+import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.actors.ParsedActor
+import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.session.*
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
-import com.simiacryptus.skyenet.sessions.PersistentSessionBase
-import com.simiacryptus.skyenet.sessions.SessionDiv
-import com.simiacryptus.skyenet.sessions.ChatApplicationBase
-import com.simiacryptus.skyenet.sessions.MessageWebSocket
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 
@@ -14,7 +13,7 @@ open class ParsedActorTestApp<T>(
     applicationName: String = "ParsedActorTest_" + actor.parserClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : ChatApplicationBase(
+) : ApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
@@ -22,9 +21,9 @@ open class ParsedActorTestApp<T>(
     override fun processMessage(
         sessionId: String,
         userMessage: String,
-        session: PersistentSessionBase,
+        session: ApplicationSession,
         sessionDiv: SessionDiv,
-        socket: MessageWebSocket
+        socket: ChatSocket
     ) {
         sessionDiv.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
         val response = actor.answer(userMessage, api = socket.api)

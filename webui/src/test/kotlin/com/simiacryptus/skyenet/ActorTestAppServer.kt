@@ -6,14 +6,13 @@ import com.simiacryptus.skyenet.actors.SimpleActor
 import com.simiacryptus.skyenet.heart.GroovyInterpreter
 import com.simiacryptus.skyenet.heart.KotlinInterpreter
 import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter
-import com.simiacryptus.skyenet.servers.AppServerBase
-import com.simiacryptus.skyenet.servers.CodingActorTestApp
-import com.simiacryptus.skyenet.servers.ParsedActorTestApp
-import com.simiacryptus.skyenet.servers.SimpleActorTestApp
+import com.simiacryptus.skyenet.test.CodingActorTestApp
+import com.simiacryptus.skyenet.test.ParsedActorTestApp
+import com.simiacryptus.skyenet.test.SimpleActorTestApp
 import java.util.function.Function
 
 
-object ActorTestAppServer : AppServerBase(port = 8082) {
+object ActorTestAppServer : ApplicationDirectory(port = 8082) {
 
     data class TestJokeDataStructure(
         val setup: String? = null,

@@ -1,4 +1,7 @@
-package com.simiacryptus.skyenet.sessions
+package com.simiacryptus.skyenet.util
+
+import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.session.SessionInterface
 
 class MutableSessionHandler(initialDelegate: SessionInterface?) : SessionInterface {
     private var priorDelegates: MutableList<SessionInterface> = mutableListOf()
@@ -12,21 +15,21 @@ class MutableSessionHandler(initialDelegate: SessionInterface?) : SessionInterfa
         }
     }
 
-    private val sockets: MutableSet<MessageWebSocket> = mutableSetOf()
+    private val sockets: MutableSet<ChatSocket> = mutableSetOf()
 
-    override fun removeSocket(socket: MessageWebSocket) {
+    override fun removeSocket(socket: ChatSocket) {
         sockets.remove(socket)
         currentDelegate?.removeSocket(socket)
     }
 
-    override fun addSocket(socket: MessageWebSocket) {
+    override fun addSocket(socket: ChatSocket) {
         sockets.add(socket)
         currentDelegate?.addSocket(socket)
     }
     override fun getReplay(): List<String> =
         (priorDelegates.flatMap { it.getReplay() } + (currentDelegate?.getReplay() ?: listOf()))
 
-    override fun onWebSocketText(socket: MessageWebSocket, message: String) {
+    override fun onWebSocketText(socket: ChatSocket, message: String) {
         currentDelegate?.onWebSocketText(socket, message)
     }
 }

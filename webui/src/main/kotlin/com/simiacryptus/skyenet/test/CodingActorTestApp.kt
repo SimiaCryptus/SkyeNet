@@ -1,7 +1,11 @@
-package com.simiacryptus.skyenet.servers
+package com.simiacryptus.skyenet.test
 
+import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.actors.CodingActor
-import com.simiacryptus.skyenet.sessions.*
+import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.session.*
+import com.simiacryptus.skyenet.util.AuthorizationManager
+import com.simiacryptus.skyenet.util.AuthorizationManager.isAuthorized
 import com.simiacryptus.skyenet.util.HtmlTools
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
@@ -12,7 +16,7 @@ open class CodingActorTestApp(
     applicationName: String = "CodingActorTest_" + actor.interpreter.javaClass.simpleName,
     temperature: Double = 0.3,
     oauthConfig: String? = null,
-) : ChatApplicationBase(
+) : ApplicationBase(
     applicationName = applicationName,
     oauthConfig = oauthConfig,
     temperature = temperature,
@@ -21,36 +25,44 @@ open class CodingActorTestApp(
     override fun processMessage(
         sessionId: String,
         userMessage: String,
-        session: PersistentSessionBase,
+        session: ApplicationSession,
         sessionDiv: SessionDiv,
-        socket: MessageWebSocket
+        socket: ChatSocket
     ) {
         sessionDiv.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
         val response = actor.answer(userMessage, api = socket.api)
+        val canPlay = isAuthorized(
+            this::class.java,
+            socket.user?.email,
+            AuthorizationManager.OperationType.Execute
+        )
+        val playLink = if(!canPlay) "" else {
+            val htmlTools = session.htmlTools(sessionDiv.divID())
+            """${
+                htmlTools.hrefLink {
+                    sessionDiv.append("""<div>Running...</div>""", true)
+                    val result = response.run()
+                    sessionDiv.append(
+                        """
+                        |<pre>${result.resultValue}</pre>
+                        |<pre>${result.resultOutput}</pre>
+                        """.trimMargin(), false
+                    )
+                }
+            }▶</a>"""
+        }
         sessionDiv.append("""<div>${
             renderMarkdown("""
             |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
             |${response.getCode()}
             |```
-            |${
-                sessionDiv.htmlTools.hrefLink {
-                sessionDiv.append("""<div>Running...</div>""", true)
-                val result = response.run()
-                sessionDiv.append(
-                    """
-                    |<pre>${result.resultValue}</pre>
-                    |<pre>${result.resultOutput}</pre>
-                    """.trimMargin(), false
-                )
-            }}▶</a>
-            |
+            |$playLink
             """.trimMargin().trim())
         }</div>""", false)
     }
 
 
     companion object {
-        val SessionDiv.htmlTools get() = HtmlTools(divID())
         val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
     }
 
