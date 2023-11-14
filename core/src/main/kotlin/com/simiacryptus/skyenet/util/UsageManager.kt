@@ -13,7 +13,7 @@ object UsageManager {
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private val txLogFile = File(".skyenet/usage/log.csv")
-    private val txLogFileWriter by lazy { FileWriter(txLogFile, true) }
+    @Volatile private var txLogFileWriter: FileWriter
     private val usagePerSession = HashMap<String, UsageCounters>()
     private val sessionsByUser = HashMap<String, ArrayList<String>>()
     private val usersBySession = HashMap<String, ArrayList<String>>()
@@ -21,6 +21,7 @@ object UsageManager {
     init {
         txLogFile.parentFile.mkdirs()
         loadFromLog(txLogFile)
+        txLogFileWriter = FileWriter(txLogFile, true)
         scheduler.scheduleAtFixedRate({ saveCounters() }, 1, 1, TimeUnit.HOURS)
     }
 
@@ -34,6 +35,7 @@ object UsageManager {
             }
         }
     }
+
     @Suppress("MemberVisibilityCanBePrivate")
     fun writeCompactLog(file: File) {
         val writer = FileWriter(file)
@@ -48,8 +50,33 @@ object UsageManager {
     }
 
     private fun saveCounters() {
-        txLogFile.renameTo(File(txLogFile.absolutePath + "." + System.currentTimeMillis()))
-        writeCompactLog(txLogFile)
+        txLogFileWriter = FileWriter(txLogFile, true)
+        val timedFile = File(txLogFile.absolutePath + "." + System.currentTimeMillis())
+        writeCompactLog(timedFile)
+        val swapFile = File(txLogFile.absolutePath + ".old")
+        synchronized(txLogFile) {
+            try {
+                txLogFileWriter.close()
+            } catch (e: Exception) {
+                log.warn("Error closing log file", e)
+            }
+            try {
+                txLogFile.renameTo(swapFile)
+            } catch (e: Exception) {
+                log.warn("Error renaming log file", e)
+            }
+            try {
+                timedFile.renameTo(txLogFile)
+            } catch (e: Exception) {
+                log.warn("Error renaming log file", e)
+            }
+            try {
+                swapFile.renameTo(timedFile)
+            } catch (e: Exception) {
+                log.warn("Error renaming log file", e)
+            }
+            txLogFileWriter = FileWriter(txLogFile, true)
+        }
         File(".skyenet/usage/counters.json").writeText(JsonUtil.toJson(usagePerSession))
     }
 
@@ -67,9 +94,13 @@ object UsageManager {
             }
             sessions.add(sessionId)
         }
-        synchronized(txLogFileWriter) {
-            txLogFileWriter.write("$sessionId,$user,${model.modelName},$tokens\n")
-            txLogFileWriter.flush()
+        try {
+            synchronized(txLogFile) {
+                txLogFileWriter.write("$sessionId,$user,${model.modelName},$tokens\n")
+                txLogFileWriter.flush()
+            }
+        } catch (e: Exception) {
+            log.warn("Error incrementing usage", e)
         }
     }
 
