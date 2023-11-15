@@ -55,6 +55,8 @@ dependencies {
     testImplementation(group = "com.amazonaws", name = "aws-java-sdk", version = "1.12.587")
     testImplementation(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
     testImplementation(group = "ch.qos.logback", name = "logback-core", version = logback_version)
+    //mockito
+    testImplementation(group = "org.mockito", name = "mockito-core", version = "5.7.0")
 
 }
 

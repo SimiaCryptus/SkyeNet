@@ -14,7 +14,7 @@ open class ChatSession(
     private var systemPrompt: String,
     val api: OpenAIClient,
     val temperature: Double = 0.3,
-) : SessionBase(sessionId, parent.sessionDataStorage) {
+) : SessionBase(sessionId, parent.dataStorage, userId = null) {
 
     init {
         if (visiblePrompt.isNotBlank()) {

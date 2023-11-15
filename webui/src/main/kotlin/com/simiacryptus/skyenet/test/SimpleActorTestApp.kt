@@ -14,7 +14,6 @@ open class SimpleActorTestApp(
     oauthConfig: String? = null,
 ) : ApplicationBase(
     applicationName = applicationName,
-    oauthConfig = oauthConfig,
     temperature = temperature,
 ) {
 
@@ -31,7 +30,7 @@ open class SimpleActorTestApp(
         sessionDiv: SessionDiv,
         socket: ChatSocket
     ) {
-        val actor = getSettings<Settings>(sessionId)?.actor ?: actor
+        val actor = getSettings<Settings>(sessionId, session.userId)?.actor ?: actor
         sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
         val moderatorResponse = actor.answer(userMessage, api = socket.api)
         sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)

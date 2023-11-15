@@ -1,8 +1,9 @@
 package com.simiacryptus.skyenet.servlet
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.util.UsageManager.getSessionUsageSummary
-import com.simiacryptus.skyenet.util.UsageManager.getUserUsageSummary
+import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
+import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,13 +15,13 @@ class UsageServlet : HttpServlet() {
 
         val sessionId = req.getParameter("sessionId")
         if (null != sessionId) {
-            serve(resp, getSessionUsageSummary(sessionId))
+            serve(resp, ApplicationServices.usageManager.getSessionUsageSummary(sessionId))
         } else {
-            val userinfo = AuthenticatedWebsite.getUser(req)
+            val userinfo = ApplicationServices.authenticationManager.getUser(getCookie(req, COOKIE_NAME))
             if (null == userinfo) {
                 resp.status = HttpServletResponse.SC_BAD_REQUEST
             } else {
-                val usage = getUserUsageSummary(userinfo.id)
+                val usage = ApplicationServices.usageManager.getUserUsageSummary(userinfo.id)
                 serve(resp, usage)
             }
         }

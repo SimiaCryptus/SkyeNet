@@ -60,32 +60,6 @@ open class Brain(
         )
     )
 
-    open fun fixCommand(
-        previousCode: String,
-        error: Throwable,
-        output: String,
-        vararg prompt: String
-    ): Pair<String, List<Pair<String, String>>> {
-        val promptMessages = listOf(
-            ChatMessage(
-                ChatMessage.Role.system, """
-                            |You will translate natural language instructions into 
-                            |an implementation using $language and the script context.
-                            |Use ``` code blocks labeled with $language where appropriate.
-                            |Defined symbols include ${symbols.keySet().joinToString(", ")}.
-                            |Do not include wrapping code blocks, assume a REPL context.
-                            |The runtime context is described below:
-                            |
-                            |$apiDescription
-                            |""".trimMargin().trim()
-            )
-        ) + prompt.map {
-            ChatMessage(ChatMessage.Role.user, it)
-        }
-        if (verbose) log.info("Prompt: \n\t" + prompt.joinToString("\n\t"))
-        return fixCommand(previousCode, error, output, *promptMessages.toTypedArray())
-    }
-
     fun fixCommand(
         previousCode: String,
         error: Throwable,

@@ -15,7 +15,6 @@ open class ParsedActorTestApp<T>(
     oauthConfig: String? = null,
 ) : ApplicationBase(
     applicationName = applicationName,
-    oauthConfig = oauthConfig,
     temperature = temperature,
 ) {
     override fun processMessage(

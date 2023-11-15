@@ -1,18 +1,21 @@
 package com.simiacryptus.skyenet.session
 
-import com.google.api.services.oauth2.model.Userinfo
 import com.google.common.util.concurrent.MoreExecutors
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.util.AuthorizationManager
-import com.simiacryptus.skyenet.util.AuthorizationManager.isAuthorized
+import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.config.AuthorizationManager
+import com.simiacryptus.skyenet.config.DataStorage
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 abstract class SessionBase(
     val sessionId: String,
-    private val sessionDataStorage: SessionDataStorage?,
-    private val messageStates: LinkedHashMap<String, String> = sessionDataStorage?.loadMessages(sessionId) ?: LinkedHashMap(),
+    private val dataStorage: DataStorage?,
+    val userId: String? = null,
+    private val messageStates: LinkedHashMap<String, String> = dataStorage?.getMessages(
+        userId, sessionId
+    ) ?: LinkedHashMap(),
 ) : SessionInterface {
     private val sockets: MutableSet<ChatSocket> = mutableSetOf()
 
@@ -76,7 +79,7 @@ abstract class SessionBase(
 
     private fun setMessage(key: String, value: String): Int {
         if (messageStates.containsKey(key) && messageStates[key] == value) return -1
-        sessionDataStorage?.updateMessage(sessionId, key, value)
+        dataStorage?.updateMessage(userId, sessionId, key, value)
         messageStates.put(key, value)
         return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
     }
@@ -107,7 +110,7 @@ abstract class SessionBase(
         }
     }
 
-    open fun canWrite(user: String?) = isAuthorized(
+    open fun canWrite(user: String?) = ApplicationServices.authorizationManager.isAuthorized(
         applicationClass = this::class.java,
         user = user,
         operationType = AuthorizationManager.OperationType.Write

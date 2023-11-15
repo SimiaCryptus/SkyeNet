@@ -276,3 +276,15 @@ pre {
     max-height: 0;
     transition: max-height 0.2s ease-out;
 }
+
+.error {
+    color: red;
+}
+
+.verbose {
+    display: block;
+}
+
+.verbose-hidden {
+    display: none;
+}

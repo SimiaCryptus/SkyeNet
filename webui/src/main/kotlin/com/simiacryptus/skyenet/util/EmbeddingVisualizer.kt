@@ -1,15 +1,17 @@
 package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.session.*
+import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.util.JsonUtil
 
 class EmbeddingVisualizer(
     val api: OpenAIClient,
-    val sessionDataStorage: SessionDataStorage,
+    val dataStorage: DataStorage,
     val sessionID: String,
     val appPath: String,
     val host: String = "http://localhost:8081",
+    val session: SessionBase,
 ) {
 
     private fun toVectorMap(vararg words: String): Map<String, Array<Double>> {
@@ -39,8 +41,8 @@ class EmbeddingVisualizer(
         val vectorFileName = "vectors.tsv"
         val metadataFileName = "metadata.tsv"
         val configFileName = "projector-config.json"
-        sessionDataStorage.getSessionDir(sessionID).resolve(vectorFileName).writeText(vectorTsv)
-        sessionDataStorage.getSessionDir(sessionID).resolve(metadataFileName).writeText(metadataTsv)
+        dataStorage.getSessionDir(session.userId, sessionID).resolve(vectorFileName).writeText(vectorTsv)
+        dataStorage.getSessionDir(session.userId, sessionID).resolve(metadataFileName).writeText(metadataTsv)
         // projector-config.json
         val projectorConfig = JsonUtil.toJson(
             mapOf(
@@ -54,7 +56,7 @@ class EmbeddingVisualizer(
                 )
             )
         )
-        sessionDataStorage.getSessionDir(sessionID).resolve(configFileName).writeText(projectorConfig)
+        dataStorage.getSessionDir(session.userId, sessionID).resolve(configFileName).writeText(projectorConfig)
         return """
             <a href="$host/$appPath/fileIndex/$sessionID/projector-config.json">Projector Config</a>
             <a href="$host/$appPath/fileIndex/$sessionID/$vectorFileName">Vectors</a>

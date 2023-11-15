@@ -1,29 +1,23 @@
 package com.simiacryptus.skyenet
 
 
-import com.google.api.services.oauth2.model.Userinfo
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.servlet.*
-import com.simiacryptus.skyenet.session.SessionDataStorage
 import com.simiacryptus.skyenet.chat.ChatServer
-import com.simiacryptus.skyenet.util.AuthorizationManager
+import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.servlet.*
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
-import jakarta.servlet.http.HttpServlet
-import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
-import org.eclipse.jetty.server.Server
+import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.ContextHandlerCollection
 import org.eclipse.jetty.servlet.FilterHolder
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.util.resource.Resource
 import org.eclipse.jetty.webapp.WebAppContext
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer
-import org.intellij.lang.annotations.Language
+import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.net.URI
-import java.nio.file.NoSuchFileException
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -32,7 +26,10 @@ abstract class ApplicationDirectory(
     private val publicName: String = "localhost",
     private val port: Int = 8081,
 ) {
-    var domainName: String = ""
+    var domainName: String = "" // Resolved in _main
+        private set(value) {
+            field = value
+        }
     abstract val childWebApps: List<ChildWebApp>
 
     data class ChildWebApp(
@@ -43,38 +40,33 @@ abstract class ApplicationDirectory(
     private fun domainName(isServer: Boolean) =
         if (isServer) "https://$publicName" else "http://$localName:$port"
 
-    val welcomeResources = Resource.newResource(javaClass.classLoader.getResource("welcome"))
-    val userInfoServlet = UserInfoServlet()
-    val userSettingsServlet = UserSettingsServlet()
-    val usageServlet = UsageServlet()
+    open val welcomeResources = Resource.newResource(javaClass.classLoader.getResource("welcome"))
+        ?: throw IllegalStateException("No welcome resource")
+    open val userInfoServlet = UserInfoServlet()
+    open val userSettingsServlet = UserSettingsServlet()
+    open val usageServlet = UsageServlet()
+    open val proxyHttpServlet = ProxyHttpServlet()
+    open val welcomeServlet = WelcomeServlet(this)
+    open fun authenticatedWebsite(): AuthenticatedWebsite? = AuthenticatedWebsite(
+        redirectUri = "$domainName/oauth2callback",
+        applicationName = "Demo",
+        key = { decryptResource("client_secret_google_oauth.json.kms").byteInputStream() }
+    )
 
-    protected fun _main(args: Array<String>) {
+    protected open fun _main(args: Array<String>) {
         try {
-            OutputInterceptor.setupInterceptor()
-            val isServer = args.contains("--server")
-            domainName = domainName(isServer)
+            init(args.contains("--server"))
             OpenAIClient.keyTxt = decryptResource("openai.key.kms", javaClass.classLoader)
-
-            val authentication = AuthenticatedWebsite(
-                redirectUri = "$domainName/oauth2callback",
-                applicationName = "Demo",
-                key = { decryptResource("client_secret_google_oauth.json.kms").byteInputStream() }
-            )
-
+            ApplicationServices.isLocked = true
+            val welcomeContext = newWebAppContext("/", welcomeResources, welcomeServlet)
             val server = start(
                 port,
                 *(arrayOf(
                     newWebAppContext("/userInfo", userInfoServlet),
                     newWebAppContext("/userSettings", userSettingsServlet),
                     newWebAppContext("/usage", usageServlet),
-                    newWebAppContext("/proxy", ProxyHttpServlet()),
-                    authentication.configure(
-                        newWebAppContext(
-                            "/",
-                            welcomeResources,
-                            WelcomeServlet()
-                        ), false
-                    ),
+                    newWebAppContext("/proxy", proxyHttpServlet),
+                    authenticatedWebsite()?.configure(welcomeContext, false) ?: welcomeContext,
                 ) + childWebApps.map {
                     newWebAppContext(it.path, it.server)
                 })
@@ -95,97 +87,13 @@ abstract class ApplicationDirectory(
         }
     }
 
-    private inner class WelcomeServlet : HttpServlet() {
-        override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
-            val user = AuthenticatedWebsite.getUser(req!!)
-            val requestURI = req.requestURI ?: "/"
-            resp?.contentType = when (requestURI) {
-                "/" -> "text/html"
-                else -> ApplicationBase.getMimeType(requestURI)
-            }
-            when {
-                requestURI == "/" -> resp?.writer?.write(homepage(user).trimIndent())
-                requestURI == "/index.html" -> resp?.writer?.write(homepage(user).trimIndent())
-                requestURI.startsWith("/userInfo") -> userInfoServlet.doGet(req, resp!!)
-                requestURI.startsWith("/userSettings") -> userSettingsServlet.doGet(req, resp!!)
-                requestURI.startsWith("/usage") -> usageServlet.doGet(req, resp!!)
-                else -> try {
-                    val inputStream = welcomeResources.addPath(requestURI)?.inputStream
-                    inputStream?.copyTo(resp?.outputStream!!)
-                } catch (e: NoSuchFileException) {
-                    resp?.sendError(404)
-                }
-            }
-        }
-
-        override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
-            val requestURI = req?.requestURI ?: "/"
-            when {
-                requestURI.startsWith("/userSettings") -> userSettingsServlet.doPost(req!!, resp!!)
-                else -> resp?.sendError(404)
-            }
-        }
+    open fun init(isServer: Boolean): ApplicationDirectory {
+        OutputInterceptor.setupInterceptor()
+        domainName = domainName(isServer)
+        return this
     }
 
-    private fun homepage(user: Userinfo?): String {
-        @Language("HTML")
-        val html = """<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>SimiaCryptus Skyenet Apps</title>
-        <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-        <link href="chat.css" rel="stylesheet"/>
-        <script src="main.js"></script>
-    </head>
-    <body>
-    
-    <div id="toolbar">
-    </div>
-    
-    <div id="namebar">
-        <a href="/googleLogin" id="username">Login</a>
-    </div>
-    
-    <table id="applist">
-        ${
-            childWebApps.joinToString("\n") { app ->
-                val canRun = AuthorizationManager.isAuthorized(
-                    applicationClass = app.server.javaClass,
-                    user = user?.email,
-                    operationType = AuthorizationManager.OperationType.Write
-                )
-                val canRead = AuthorizationManager.isAuthorized(
-                    applicationClass = app.server.javaClass,
-                    user = user?.email,
-                    operationType = AuthorizationManager.OperationType.Read
-                )
-                if (!canRead) return@joinToString ""
-                val newSessionLink = if(canRun) """<a href="${app.path}/#${SessionDataStorage.newID()}">New</a>""" else ""
-                """
-                    <tr>
-                        <td>
-                            ${app.server.applicationName}
-                        </td>
-                        <td>
-                            $newSessionLink
-                        </td>
-                        <td>
-                            <a href="${app.path}/sessions">List</a>
-                        </td>
-                    </tr>
-                """.trimIndent()
-            }
-        }
-    </table>
-    
-    </body>
-    </html>
-        """
-        return html
-    }
-
-    private fun start(
+    protected open fun start(
         port: Int,
         vararg webAppContexts: WebAppContext
     ): Server {
@@ -195,19 +103,33 @@ abstract class ApplicationDirectory(
             it
         }.toTypedArray()
         val server = Server(port)
+        val serverConnector = ServerConnector(server, httpConnectionFactory())
+        serverConnector.port = port
+        server.connectors = arrayOf(serverConnector)
         server.handler = contexts
         server.start()
+        if (!server.isStarted) throw IllegalStateException("Server failed to start")
         return server
     }
 
-    private fun newWebAppContext(path: String, server: ChatServer): WebAppContext {
-        val webAppContext =
-            newWebAppContext(path, server.baseResource ?: throw IllegalStateException("No base resource"))
+    protected open fun httpConnectionFactory(): HttpConnectionFactory {
+        val httpConfig = HttpConfiguration()
+        httpConfig.addCustomizer(ForwardedRequestCustomizer())
+        return HttpConnectionFactory(httpConfig)
+    }
+
+    protected open fun newWebAppContext(path: String, server: ChatServer): WebAppContext {
+        val baseResource = server.baseResource ?: throw IllegalStateException("No base resource")
+        val webAppContext = newWebAppContext(path, baseResource)
         server.configure(webAppContext, path = path, baseUrl = "$domainName/$path")
         return webAppContext
     }
 
-    private fun newWebAppContext(path: String, baseResource: Resource, indexServlet: Servlet? = null): WebAppContext {
+    protected open fun newWebAppContext(
+        path: String,
+        baseResource: Resource,
+        indexServlet: Servlet? = null
+    ): WebAppContext {
         val context = WebAppContext()
         JettyWebSocketServletContainerInitializer.configure(context, null)
         context.baseResource = baseResource
@@ -220,7 +142,7 @@ abstract class ApplicationDirectory(
         return context
     }
 
-    private fun newWebAppContext(path: String, servlet: Servlet): WebAppContext {
+    protected open fun newWebAppContext(path: String, servlet: Servlet): WebAppContext {
         val context = WebAppContext()
         JettyWebSocketServletContainerInitializer.configure(context, null)
         context.contextPath = path
@@ -228,4 +150,10 @@ abstract class ApplicationDirectory(
         context.addServlet(ServletHolder("index", servlet), "/")
         return context
     }
+
+
+    companion object {
+        val log = LoggerFactory.getLogger(ApplicationDirectory::class.java)
+    }
+
 }

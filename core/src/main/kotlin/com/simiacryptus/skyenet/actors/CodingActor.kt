@@ -6,9 +6,6 @@ import com.simiacryptus.skyenet.Brain.Companion.indent
 import com.simiacryptus.skyenet.Brain.Companion.superMethod
 import com.simiacryptus.skyenet.Heart
 import com.simiacryptus.skyenet.OutputInterceptor
-import com.simiacryptus.skyenet.util.SessionServerUtil.asJava
-import com.simiacryptus.skyenet.util.SessionServerUtil.getCode
-import com.simiacryptus.skyenet.util.SessionServerUtil.getRenderedResponse
 import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
@@ -193,6 +190,54 @@ open class CodingActor(
 
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(CodingActor::class.java)
+
+        fun getRenderedResponse(respondWithCode: List<Pair<String, String>>) =
+            respondWithCode.joinToString("\n") {
+                var language = it.first
+                if (language == "code") language = "groovy"
+                if (language == "text") {
+                    //language=HTML
+                    """
+                    |<div>
+                    |${it.second}
+                    |</div>
+                    |""".trimMargin().trim()
+                } else {
+                    //language=HTML
+                    """
+                    |<pre><code class="language-$language">
+                    |${it.second}
+                    |</code></pre>
+                    |""".trimMargin().trim()
+                }
+            }
+
+        fun getCode(language: String, textSegments: List<Pair<String, String>>) =
+            textSegments.joinToString("\n") {
+                if (it.first.lowercase() == "code" || it.first.lowercase() == language.lowercase()) {
+                    """
+                    |${it.second}
+                    |""".trimMargin().trim()
+                } else {
+                    ""
+                }
+            }
+
+        operator fun <K, V> java.util.Map<K, V>.plus(mapOf: Map<K, V>): java.util.Map<K, V> {
+            val hashMap = java.util.HashMap<K, V>()
+            this.forEach(hashMap::put)
+            hashMap.putAll(mapOf)
+            return hashMap as java.util.Map<K, V>
+        }
+
+        val <K, V> Map<K, V>.asJava: java.util.Map<K, V>
+            get() {
+                return java.util.HashMap<K, V>().also { map ->
+                    this.forEach { (key, value) ->
+                        map[key] = value
+                    }
+                } as java.util.Map<K, V>
+            }
 
     }
 }

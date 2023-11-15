@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.util
+package com.simiacryptus.skyenet.config
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.util.JsonUtil
@@ -8,12 +8,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-object UsageManager {
-    val log = org.slf4j.LoggerFactory.getLogger(UsageManager::class.java)
+open class UsageManager {
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private val txLogFile = File(".skyenet/usage/log.csv")
-    @Volatile private var txLogFileWriter: FileWriter
+    @Volatile private var txLogFileWriter: FileWriter?
     private val usagePerSession = HashMap<String, UsageCounters>()
     private val sessionsByUser = HashMap<String, ArrayList<String>>()
     private val usersBySession = HashMap<String, ArrayList<String>>()
@@ -26,7 +25,7 @@ object UsageManager {
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
-    fun loadFromLog(file: File) {
+    open fun loadFromLog(file: File) {
         if (file.exists()) {
             file.readLines().forEach { line ->
                 val (sessionId, user, model, tokens) = line.split(",")
@@ -37,7 +36,7 @@ object UsageManager {
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
-    fun writeCompactLog(file: File) {
+    open fun writeCompactLog(file: File) {
         val writer = FileWriter(file)
         usagePerSession.forEach { (sessionId, usage) ->
             val user = usersBySession[sessionId]?.firstOrNull()
@@ -56,7 +55,7 @@ object UsageManager {
         val swapFile = File(txLogFile.absolutePath + ".old")
         synchronized(txLogFile) {
             try {
-                txLogFileWriter.close()
+                txLogFileWriter?.close()
             } catch (e: Exception) {
                 log.warn("Error closing log file", e)
             }
@@ -80,7 +79,7 @@ object UsageManager {
         File(".skyenet/usage/counters.json").writeText(JsonUtil.toJson(usagePerSession))
     }
 
-    fun incrementUsage(sessionId: String, user: String?, model: OpenAIClient.Model, tokens: Int) {
+    open fun incrementUsage(sessionId: String, user: String?, model: OpenAIClient.Model, tokens: Int) {
         val usage = usagePerSession.getOrPut(sessionId) {
             UsageCounters()
         }
@@ -95,16 +94,19 @@ object UsageManager {
             sessions.add(sessionId)
         }
         try {
-            synchronized(txLogFile) {
-                txLogFileWriter.write("$sessionId,$user,${model.modelName},$tokens\n")
-                txLogFileWriter.flush()
+            val txLogFileWriter = txLogFileWriter
+            if(null != txLogFileWriter) {
+                synchronized(txLogFile) {
+                    txLogFileWriter.write("$sessionId,$user,${model.modelName},$tokens\n")
+                    txLogFileWriter.flush()
+                }
             }
         } catch (e: Exception) {
             log.warn("Error incrementing usage", e)
         }
     }
 
-    fun getUserUsageSummary(user: String): Map<OpenAIClient.Model, Int> {
+    open fun getUserUsageSummary(user: String): Map<OpenAIClient.Model, Int> {
         val sessions = sessionsByUser[user]
         return sessions?.flatMap { sessionId ->
             val usage = usagePerSession[sessionId]
@@ -114,7 +116,7 @@ object UsageManager {
         }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.sum() } ?: emptyMap()
     }
 
-    fun getSessionUsageSummary(sessionId: String): Map<OpenAIClient.Model, Int> {
+    open fun getSessionUsageSummary(sessionId: String): Map<OpenAIClient.Model, Int> {
         val usage = usagePerSession[sessionId]
         return usage?.tokensPerModel?.entries?.map { (model, counter) ->
             model to counter.get()
@@ -124,4 +126,8 @@ object UsageManager {
     data class UsageCounters(
         val tokensPerModel: HashMap<OpenAIClient.Model, AtomicInteger> = HashMap(),
     )
+
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(UsageManager::class.java)
+    }
 }

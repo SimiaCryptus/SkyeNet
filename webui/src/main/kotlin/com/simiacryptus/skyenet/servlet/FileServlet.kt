@@ -1,13 +1,15 @@
 package com.simiacryptus.skyenet.servlet
 
 import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.session.SessionDataStorage
+import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.config.AuthenticationManager
+import com.simiacryptus.skyenet.config.DataStorage
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import java.io.File
 
-class FileServlet(val sessionDataStorage: SessionDataStorage) : HttpServlet() {
+class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         val path = req.pathInfo ?: "/"
         val pathSegments = path.split("/").filter { it.isNotBlank() }
@@ -15,7 +17,9 @@ class FileServlet(val sessionDataStorage: SessionDataStorage) : HttpServlet() {
             if (it == "..") throw IllegalArgumentException("Invalid path")
         }
         val sessionID = pathSegments.first()
-        val sessionDir = sessionDataStorage.getSessionDir(sessionID)
+        val sessionDir = dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(
+            req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
+        )?.id, sessionID)
         val filePath = pathSegments.drop(1).joinToString("/")
         val file = File(sessionDir, filePath)
         if (file.isFile) {
