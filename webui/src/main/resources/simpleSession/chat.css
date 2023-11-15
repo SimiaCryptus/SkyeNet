@@ -218,6 +218,7 @@ pre {
     background: transparent;
     cursor: pointer;
     transition: transform 0.1s;
+    text-decoration: none;
 }
 
 .play-button:focus {

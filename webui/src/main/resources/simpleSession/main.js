@@ -112,14 +112,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionId = getSessionId();
     if (sessionId) {
         connect(sessionId, onWebSocketText);
-        usage.href = '/usage/?sessionId=' + sessionId;
     } else {
         connect(undefined, onWebSocketText);
     }
 
     document.body.addEventListener('click', (event) => {
         const target = event.target;
-        if (target.classList.contains('play-button')) {
+        if (target.classList.contains('href-link')) {
+            const messageId = target.getAttribute('data-id');
+            send('!' + messageId + ',link');
+        } else if (target.classList.contains('play-button')) {
             const messageId = target.getAttribute('data-id');
             send('!' + messageId + ',run');
         } else if (target.classList.contains('regen-button')) {
@@ -128,9 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (target.classList.contains('cancel-button')) {
             const messageId = target.getAttribute('data-id');
             send('!' + messageId + ',stop');
-        } else if (target.classList.contains('href-link')) {
-            const messageId = target.getAttribute('data-id');
-            send('!' + messageId + ',link');
         } else if (target.classList.contains('text-submit-button')) {
             const messageId = target.getAttribute('data-id');
             const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;

@@ -37,14 +37,14 @@ open class CodingActorTestApp(
         val playLink = if(!canPlay) "" else {
             val htmlTools = session.htmlTools(sessionDiv.divID())
             """${
-                htmlTools.hrefLink {
+                htmlTools.hrefLink("href-link play-button") {
                     sessionDiv.append("""<div>Running...</div>""", true)
                     val result = response.run()
                     sessionDiv.append(
                         """
-                        |<pre>${result.resultValue}</pre>
-                        |<pre>${result.resultOutput}</pre>
-                        """.trimMargin(), false
+                                        |<pre>${result.resultValue}</pre>
+                                        |<pre>${result.resultOutput}</pre>
+                                        """.trimMargin(), false
                     )
                 }
             }▶</a>"""

@@ -19,12 +19,6 @@ pre {
     height: 100vh; /* Adjust this value based on your preferred container height */
 }
 
-#applist {
-    top: 3em;
-    left: 10px;
-    position: absolute;
-}
-
 #namebar {
     background-color: #f1f1f1;
     padding: 5px;
@@ -45,4 +39,96 @@ pre {
 
 #namebar a:hover {
     background-color: #ddd;
+}
+
+#applist {
+    width: 100%; /* Full width */
+    border-collapse: collapse; /* Collapse borders */
+    margin-top: 20px; /* Add some space above the table */
+}
+
+#applist td, #applist th {
+    border: 1px solid #ddd; /* Light grey border */
+    padding: 8px; /* Padding for content */
+    text-align: left; /* Align text to the left */
+}
+
+#applist tr:nth-child(even) {
+    background-color: #f2f2f2; /* Zebra striping for rows */
+}
+
+#applist tr:hover {
+    background-color: #ddd; /* Highlight on hover */
+}
+
+#applist th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    background-color: #4CAF50; /* Darker background for headers */
+    color: white; /* White text for headers */
+}
+
+#applist a {
+    color: #2196F3; /* Blue color for links */
+    text-decoration: none; /* No underline */
+}
+
+#applist a:hover {
+    text-decoration: underline; /* Underline on hover */
+}
+
+#applist td a {
+    margin-right: 10px; /* Space between links */
+}
+
+/* Additional styling for New Session links */
+.new-session-link {
+    background-color: #f0f332;
+    color: white; /* White text */
+    padding: 5px 10px; /* Padding */
+    border-radius: 5px; /* Rounded corners */
+    display: inline-block; /* Allows padding and margin */
+    margin-right: 0; /* No margin to the right */
+}
+
+.new-session-link:hover {
+    background-color: #eaae35; /* Darker green on hover */
+}
+
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    position: relative;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
 }

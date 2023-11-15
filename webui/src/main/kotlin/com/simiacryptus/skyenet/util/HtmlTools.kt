@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.session.SessionBase
+import java.util.function.Consumer
 
 class HtmlTools(
     val app: ApplicationBase.ApplicationSession,
@@ -13,10 +14,10 @@ class HtmlTools(
     val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
 
     private val txtTriggers = mutableMapOf<String, java.util.function.Consumer<String>>()
-    fun hrefLink(handler: java.util.function.Consumer<Unit>): String {
+    fun hrefLink(classname: String = """href-link""", handler: Consumer<Unit>): String {
         val operationID = SessionBase.randomID()
         app.linkTriggers[operationID] = handler
-        return """<a class="href-link" data-id="$operationID">"""
+        return """<a class="$classname" data-id="$operationID">"""
     }
     fun textInput(handler: java.util.function.Consumer<String>): String {
         val operationID = SessionBase.randomID()

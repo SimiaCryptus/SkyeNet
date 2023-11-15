@@ -49,11 +49,13 @@ abstract class ApplicationBase(
         override fun onCmd(id: String, code: String, socket: ChatSocket) {
             if (code == "cancel") {
                 threads[id]?.interrupt()
+            } else if (code == "link") {
+                val consumer = linkTriggers[id]
+                consumer ?: throw IllegalArgumentException("No link handler found")
+                consumer.accept(Unit)
+            } else {
+                throw IllegalArgumentException("Unknown command: $code")
             }
-            if (code == "link") {
-                linkTriggers[id]?.accept(Unit)
-            }
-            super.onCmd(id, code, socket)
         }
 
         fun htmlTools(divID: String) = HtmlTools(this, divID)
@@ -90,6 +92,7 @@ abstract class ApplicationBase(
     final override val dataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
     protected open val appInfo = ServletHolder("appInfo", AppInfoServlet())
     protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
+    protected open val usageServlet = ServletHolder("usage", UsageServlet())
     protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
     protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
@@ -117,6 +120,7 @@ abstract class ApplicationBase(
 
         webAppContext.addServlet(appInfo, "/appInfo")
         webAppContext.addServlet(userInfo, "/userInfo")
+        webAppContext.addServlet(usageServlet, "/usage")
         webAppContext.addServlet(fileIndex, "/fileIndex/*")
         webAppContext.addServlet(fileZip, "/fileZip")
         webAppContext.addServlet(sessionsServlet(path), "/sessions")
