@@ -2,9 +2,11 @@ package com.simiacryptus.skyenet.chat
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.config.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.config.DataStorage
 import com.simiacryptus.skyenet.session.SessionInterface
 import com.simiacryptus.skyenet.config.AuthorizationManager.OperationType
+import com.simiacryptus.skyenet.config.AuthorizationManager.OperationType.GlobalKey
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.slf4j.event.Level
@@ -44,7 +46,7 @@ class ChatSocket(
             val user = user
             val userApi = userApi
             if (userApi != null) return userApi
-            val canUseGlobalKey = ApplicationServices.authorizationManager.isAuthorized(null, user?.email, OperationType.GlobalKey)
+            val canUseGlobalKey = authorizationManager.isAuthorized(null, user?.email, GlobalKey)
             if (!canUseGlobalKey) throw RuntimeException("No API key")
             return object : OpenAIClient(
                 logLevel = Level.DEBUG,

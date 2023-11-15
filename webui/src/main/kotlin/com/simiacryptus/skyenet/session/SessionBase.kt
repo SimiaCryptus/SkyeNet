@@ -106,6 +106,7 @@ abstract class SessionBase(
                 }
             } catch (e: Exception) {
                 log.warn("$sessionId - Error processing message: $message", e)
+                send("""${randomID()},<div class="error">${e.message}</div>""");
             }
         }
     }
