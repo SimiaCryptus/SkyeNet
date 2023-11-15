@@ -7,6 +7,9 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.oauth2.Oauth2
 import com.google.api.services.oauth2.model.Userinfo
+import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.config.AuthenticationManager
+import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
 import jakarta.servlet.*
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServlet
@@ -24,6 +27,7 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 
 
+
 open class AuthenticatedWebsite(
     val redirectUri: String,
     val applicationName: String,
@@ -32,7 +36,12 @@ open class AuthenticatedWebsite(
 
     open fun newUserSession(userInfo: Userinfo, sessionId: String) {
         log.info("User $userInfo logged in with session $sessionId")
-        users[sessionId] = userInfo
+        ApplicationServices.authenticationManager.setUser(sessionId, AuthenticationManager.UserInfo(
+            id = userInfo.id,
+            email = userInfo.email,
+            name = userInfo.name,
+            picture = userInfo.picture
+        ))
     }
 
     open fun configure(context: WebAppContext, addFilter: Boolean = true): WebAppContext {
@@ -88,8 +97,9 @@ open class AuthenticatedWebsite(
         override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
             if (request is HttpServletRequest && response is HttpServletResponse) {
                 if (isSecure(request)) {
-                    val sessionIdCookie = request.cookies?.firstOrNull { it.name == "sessionId" }
-                    if (sessionIdCookie == null || !users.containsKey(sessionIdCookie.value)) {
+                    val sessionIdCookie = request.cookies?.firstOrNull { it.name == COOKIE_NAME }
+                    val value = sessionIdCookie?.value
+                    if (value == null || !ApplicationServices.authenticationManager.containsKey(value)) {
                         response.sendRedirect("/googleLogin")
                         return
                     }
@@ -112,7 +122,7 @@ open class AuthenticatedWebsite(
                 val userInfo: Userinfo = oauth2.userinfo().get().execute()
                 val sessionID = UUID.randomUUID().toString()
                newUserSession(userInfo, sessionID)
-                val sessionCookie = Cookie("sessionId", sessionID)
+                val sessionCookie = Cookie(COOKIE_NAME, sessionID)
                 sessionCookie.path = "/"
                 sessionCookie.isHttpOnly = false
                 resp.addCookie(sessionCookie)
@@ -127,17 +137,13 @@ open class AuthenticatedWebsite(
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(AuthenticatedWebsite::class.java)
 
-        val users = HashMap<String, Userinfo>()
-        fun getUser(req: HttpServletRequest): Userinfo? {
-            val sessionId = req.cookies?.find { it.name == "sessionId" }?.value
-            return if (null == sessionId) null else users[sessionId]
+        fun String.urlDecode(): String? = try {
+            URLDecoder.decode(this, StandardCharsets.UTF_8.toString())
+        } catch (e: UnsupportedEncodingException) {
+            this
         }
+
     }
 
 }
 
-fun String.urlDecode(): String? = try {
-    URLDecoder.decode(this, StandardCharsets.UTF_8.toString())
-} catch (e: UnsupportedEncodingException) {
-    this
-}

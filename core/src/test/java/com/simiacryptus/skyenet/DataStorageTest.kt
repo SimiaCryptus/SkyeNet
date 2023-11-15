@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.skyenet.session.SessionDataStorage
+import com.simiacryptus.skyenet.config.DataStorage
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test
 import java.io.File
 import java.nio.file.Files
 
-class SessionDataStorageTest {
+class DataStorageTest {
     private lateinit var tempDir: File
-    private lateinit var storage: SessionDataStorage
+    private lateinit var storage: DataStorage
 
     @BeforeEach
     fun setUp() {
         tempDir = Files.createTempDirectory("sessionDataTest").toFile()
-        storage = SessionDataStorage(dataDir = tempDir)
+        storage = DataStorage(dataDir = tempDir)
     }
 
     @AfterEach
@@ -26,12 +26,12 @@ class SessionDataStorageTest {
 
     @Test
     fun testUpdateAndLoadMessage() {
-        val sessionId = SessionDataStorage.newID()
+        val sessionId = DataStorage.newGlobalID()
         val messageId = "message1"
         val message = "This is a test message."
 
-        storage.updateMessage(sessionId, messageId, message)
-        val messages = storage.loadMessages(sessionId)
+        storage.updateMessage(null, sessionId, messageId, message)
+        val messages = storage.getMessages(null, sessionId)
 
         assertEquals(1, messages.size)
         assertTrue(messages.containsKey(messageId))

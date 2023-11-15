@@ -3,10 +3,9 @@ package com.simiacryptus.skyenet.test
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.actors.CodingActor
 import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.session.*
-import com.simiacryptus.skyenet.util.AuthorizationManager
-import com.simiacryptus.skyenet.util.AuthorizationManager.isAuthorized
-import com.simiacryptus.skyenet.util.HtmlTools
+import com.simiacryptus.skyenet.config.AuthorizationManager
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -18,7 +17,6 @@ open class CodingActorTestApp(
     oauthConfig: String? = null,
 ) : ApplicationBase(
     applicationName = applicationName,
-    oauthConfig = oauthConfig,
     temperature = temperature,
 ) {
 
@@ -31,7 +29,7 @@ open class CodingActorTestApp(
     ) {
         sessionDiv.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
         val response = actor.answer(userMessage, api = socket.api)
-        val canPlay = isAuthorized(
+        val canPlay = ApplicationServices.authorizationManager.isAuthorized(
             this::class.java,
             socket.user?.email,
             AuthorizationManager.OperationType.Execute

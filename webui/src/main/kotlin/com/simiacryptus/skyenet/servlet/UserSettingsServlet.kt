@@ -1,8 +1,9 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.skyenet.util.UserSettingsManager.UserSettings
-import com.simiacryptus.skyenet.util.UserSettingsManager.getUserSettings
-import com.simiacryptus.skyenet.util.UserSettingsManager.updateUserSettings
+import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
+import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
+import com.simiacryptus.skyenet.config.UserSettingsManager.UserSettings
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -12,11 +13,11 @@ class UserSettingsServlet : HttpServlet() {
     public override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
-        val userinfo = AuthenticatedWebsite.getUser(req)
+        val userinfo = ApplicationServices.authenticationManager.getUser(getCookie(req, COOKIE_NAME))
         if (null == userinfo) {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {
-            val settings = getUserSettings(userinfo.id)
+            val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo.id)
             val json = JsonUtil.toJson(settings)
             //language=HTML
             resp.writer.write(
@@ -40,12 +41,12 @@ class UserSettingsServlet : HttpServlet() {
     }
 
     public override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
-        val userinfo = AuthenticatedWebsite.getUser(req)
+        val userinfo = ApplicationServices.authenticationManager.getUser(getCookie(req, COOKIE_NAME))
         if (null == userinfo) {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {
             val settings = JsonUtil.fromJson<UserSettings>(req.getParameter("settings"), UserSettings::class.java)
-            updateUserSettings(userinfo.id, settings)
+            ApplicationServices.userSettingsManager.updateUserSettings(userinfo.id, settings)
             resp.sendRedirect("/")
         }
     }

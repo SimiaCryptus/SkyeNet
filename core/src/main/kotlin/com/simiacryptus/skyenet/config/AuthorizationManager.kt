@@ -1,8 +1,8 @@
-package com.simiacryptus.skyenet.util
+package com.simiacryptus.skyenet.config
 
 import java.util.*
 
-object AuthorizationManager {
+open class AuthorizationManager {
 
     enum class OperationType {
         Read,
@@ -12,7 +12,7 @@ object AuthorizationManager {
         GlobalKey,
     }
 
-    fun isAuthorized(
+    open fun isAuthorized(
         applicationClass: Class<*>?,
         user: String?,
         operationType: OperationType,

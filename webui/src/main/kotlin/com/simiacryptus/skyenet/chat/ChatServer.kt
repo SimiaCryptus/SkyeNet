@@ -1,7 +1,9 @@
 package com.simiacryptus.skyenet.chat
 
+import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.config.AuthenticationManager
 import com.simiacryptus.skyenet.servlet.NewSessionServlet
-import com.simiacryptus.skyenet.session.SessionDataStorage
+import com.simiacryptus.skyenet.config.DataStorage
 import com.simiacryptus.skyenet.session.SessionInterface
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
@@ -17,7 +19,7 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 abstract class ChatServer(val resourceBase: String) {
 
     abstract val applicationName: String
-    open val sessionDataStorage: SessionDataStorage? = null
+    open val dataStorage: DataStorage? = null
     val stateCache: MutableMap<String, SessionInterface> = mutableMapOf()
 
     inner class WebSocketHandler : JettyWebSocketServlet() {
@@ -33,10 +35,13 @@ abstract class ChatServer(val resourceBase: String) {
                         if (stateCache.containsKey(sessionId)) {
                             sessionState = stateCache[sessionId]!!
                         } else {
-                            sessionState = newSession(sessionId)
+                            sessionState = newSession(
+                                ApplicationServices.authenticationManager.getUser(
+                                req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
+                            )?.id, sessionId)
                             stateCache[sessionId] = sessionState
                         }
-                        ChatSocket(sessionId, sessionState, authId, sessionDataStorage)
+                        ChatSocket(sessionId, sessionState, authId, dataStorage)
                     }
                 } catch (e: Exception) {
                     log.warn("Error configuring websocket", e)
@@ -59,7 +64,7 @@ abstract class ChatServer(val resourceBase: String) {
         }
     }
 
-    abstract fun newSession(sessionId: String): SessionInterface
+    abstract fun newSession(userId: String?, sessionId: String): SessionInterface
 
     open val baseResource: Resource? get() = Resource.newResource(javaClass.classLoader.getResource(resourceBase))
     protected val newSessionServlet by lazy { NewSessionServlet() }

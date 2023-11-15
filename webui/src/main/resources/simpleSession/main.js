@@ -59,11 +59,31 @@ function onWebSocketText(event) {
     Prism.highlightAll();
 }
 
+function toggleVerbose() {
+    let verboseToggle = document.getElementById('verbose');
+    if(verboseToggle.innerText === 'Hide Verbose') {
+        const elements = document.getElementsByClassName('verbose');
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].classList.add('verbose-hidden'); // Add the 'verbose-hidden' class to hide
+        }
+        verboseToggle.innerText = 'Show Verbose';
+    } else if(verboseToggle.innerText === 'Show Verbose') {
+        const elements = document.getElementsByClassName('verbose');
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].classList.remove('verbose-hidden'); // Remove the 'verbose-hidden' class to show
+        }
+        verboseToggle.innerText = 'Hide Verbose';
+    } else {
+        console.log("Error: Unknown state for verbose button");
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));
     document.getElementById('settings').addEventListener('click', () => showModal('settings'));
     document.getElementById('usage').addEventListener('click', () => showModal('usage'));
+    document.getElementById('verbose').addEventListener('click', () => toggleVerbose());
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {
