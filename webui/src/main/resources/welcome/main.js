@@ -9,11 +9,6 @@ function closeModal() {
 
 async function fetchData(endpoint) {
     try {
-        // Add session id to the endpoint as a path parameter
-        const sessionId = getSessionId();
-        if (sessionId) {
-            endpoint = endpoint + "?sessionId=" + sessionId;
-        }
         const response = await fetch(endpoint);
         const text = await response.text();
         document.getElementById('modal-content').innerHTML = "<div>" + text + "</div>";
@@ -30,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal();
         }
     });
+    document.querySelector('.close').addEventListener('click', closeModal);
 
     const loginLink = document.getElementById('username');
     if (loginLink) {
@@ -46,7 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data.name && loginLink) {
                 loginLink.innerHTML = data.name;
-                loginLink.href = "/userSettings";
+                loginLink.href = "javascript:void(0);";
+                loginLink.addEventListener('click', () => showModal('/userSettings'));
             }
         })
         .catch(error => {

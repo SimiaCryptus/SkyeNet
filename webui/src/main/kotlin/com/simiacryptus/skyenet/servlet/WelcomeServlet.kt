@@ -54,48 +54,57 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
     protected open fun homepage(user: AuthenticationManager.UserInfo?): String {
         @Language("HTML")
         val html = """<!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <title>SimiaCryptus Skyenet Apps</title>
-                <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-                <link href="chat.css" rel="stylesheet"/>
-                <script src="main.js"></script>
-            </head>
-            <body>
-            
-            <div id="toolbar">
-            </div>
-            
-            <div id="namebar">
-                <a href="/googleLogin" id="username">Login</a>
-            </div>
-            
-            <table id="applist">
-            ${
-                parent.childWebApps.joinToString("\n") { app ->
-                    val canRun = ApplicationServices.authorizationManager.isAuthorized(
-                        applicationClass = app.server.javaClass,
-                        user = user?.email,
-                        operationType = AuthorizationManager.OperationType.Write
-                    )
-                    val canRead = ApplicationServices.authorizationManager.isAuthorized(
-                        applicationClass = app.server.javaClass,
-                        user = user?.email,
-                        operationType = AuthorizationManager.OperationType.Read
-                    )
-                    if (!canRead) return@joinToString ""
-                    val newGlobalSessionLink =
-                        if (canRun) """<a href="${app.path}/#${DataStorage.newGlobalID()}">New Shared Session</a>""" else ""
-                    val newUserSessionLink =
-                        if (canRun) """<a href="${app.path}/#${DataStorage.newUserID()}">New Private Session</a>""" else ""
-                    """
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SimiaCryptus Skyenet Apps</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+    <link href="chat.css" rel="stylesheet"/>
+    <script src="main.js"></script>
+</head>
+<body>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="modal-content"></div>
+    </div>
+</div>
+
+<div id="toolbar">
+</div>
+
+<div id="namebar">
+    <a href="/googleLogin" id="username">Login</a>
+</div>
+
+<table id="applist">
+    ${
+            parent.childWebApps.joinToString("\n") { app ->
+                val canRun = ApplicationServices.authorizationManager.isAuthorized(
+                    applicationClass = app.server.javaClass,
+                    user = user?.email,
+                    operationType = AuthorizationManager.OperationType.Write
+                )
+                val canRead = ApplicationServices.authorizationManager.isAuthorized(
+                    applicationClass = app.server.javaClass,
+                    user = user?.email,
+                    operationType = AuthorizationManager.OperationType.Read
+                )
+                if (!canRead) return@joinToString ""
+                val newGlobalSessionLink =
+                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newGlobalID()}">New Shared Session</a>""" else ""
+                val newUserSessionLink =
+                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newUserID()}">New Private Session</a>""" else ""
+                """
+                        <a
                         <tr>
                             <td>
                                 ${app.server.applicationName}
                             </td>
                             <td>
-                                <a href="${app.path}/sessions">List Sessions</a>
+                            
+                                <a  href="javascript:void(0);" onclick="showModal('${app.path}/sessions')">List Sessions</a>
                             </td>
                             <td>
                                 $newGlobalSessionLink
@@ -105,12 +114,12 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
                             </td>
                         </tr>
                     """.trimIndent()
-                }
             }
-            </table>
-            
-            </body>
-            </html>
+        }
+</table>
+
+</body>
+</html>
         """
         return html
     }

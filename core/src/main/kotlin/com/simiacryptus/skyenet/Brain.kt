@@ -182,7 +182,9 @@ open class Brain(
             val result = mutableListOf<Pair<String, String>>()
             var startIndex = 0
 
-            for (match in codeBlockRegex.findAll(response)) {
+            val matches = codeBlockRegex.findAll(response)
+            if (matches.count() == 0) return listOf(Pair("text", response))
+            for (match in matches) {
                 // Add non-code block before the current match as "text"
                 if (startIndex < match.range.first) {
                     result.add(Pair("text", response.substring(startIndex, match.range.first)))

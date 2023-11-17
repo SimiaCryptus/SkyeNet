@@ -18,7 +18,7 @@ open class ChatSession(
 
     init {
         if (visiblePrompt.isNotBlank()) {
-            send("""aaa,<div>${visiblePrompt}</div>""")
+            send("""aaa,<div class="initial-prompt">${visiblePrompt}</div>""")
         }
     }
 
@@ -33,11 +33,11 @@ open class ChatSession(
     @Synchronized
     override fun onRun(userMessage: String, socket: ChatSocket) {
         var responseContents = divInitializer(cancelable = false)
-        responseContents += """<div>$userMessage</div>"""
-        send("""$responseContents<div>${ApplicationBase.spinner}</div>""")
+        responseContents += """<div class="user-message">${renderResponse(userMessage)}</div>"""
+        send("""$responseContents<div class="chat-response">${ApplicationBase.spinner}</div>""")
         val response = handleMessage(userMessage, responseContents)
         if(null != response) {
-            responseContents += """<div>${renderResponse(response)}</div>"""
+            responseContents += """<div class="chat-response">${renderResponse(response)}</div>"""
             send(responseContents)
             onResponse(response, responseContents)
         }
