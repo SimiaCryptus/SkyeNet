@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.actors.opt
 
+import com.simiacryptus.openai.Model
+import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.actors.opt.ActorOptimization.GeneticApi.Prompt
 import com.simiacryptus.openai.proxy.ChatProxy
@@ -13,7 +15,7 @@ import kotlin.math.pow
 
 open class ActorOptimization(
     val api: OpenAIClient,
-    val model: OpenAIClient.Models = OpenAIClient.Models.GPT35Turbo,
+    val model: Model = Models.GPT35Turbo,
     private val mutationRate: Double = 0.5,
     private val mutatonTypes: Map<String, Double> = mapOf(
         "Rephrase" to 1.0,

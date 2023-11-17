@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet
 
 
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.OpenAIClientBase
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.servlet.*
@@ -56,7 +57,7 @@ abstract class ApplicationDirectory(
     protected open fun _main(args: Array<String>) {
         try {
             init(args.contains("--server"))
-            OpenAIClient.keyTxt = decryptResource("openai.key.kms", javaClass.classLoader)
+            OpenAIClientBase.keyTxt = decryptResource("openai.key.kms", javaClass.classLoader)
             ApplicationServices.isLocked = true
             val welcomeContext = newWebAppContext("/", welcomeResources, welcomeServlet)
             val server = start(

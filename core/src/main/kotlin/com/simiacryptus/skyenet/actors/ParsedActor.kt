@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.actors
 
+import com.simiacryptus.openai.Model
+import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.proxy.ChatProxy
 import java.util.function.Function
@@ -8,7 +10,7 @@ open class ParsedActor<T>(
     val parserClass: Class<out Function<String, T>>,
     prompt: String,
     val action: String? = null,
-    model: OpenAIClient.Models = OpenAIClient.Models.GPT35Turbo,
+    model: Model = Models.GPT35Turbo,
     temperature: Double = 0.3,
 ) : BaseActor<ParsedResponse<T>>(
     prompt = prompt,
@@ -20,7 +22,7 @@ open class ParsedActor<T>(
         val parser: Function<String, T> = ChatProxy(
             clazz = parserClass,
             api = api,
-            model = OpenAIClient.Models.GPT35Turbo,
+            model = Models.GPT35Turbo,
             temperature = temperature,
         ).create()
         private val _text: String by lazy { response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response") }

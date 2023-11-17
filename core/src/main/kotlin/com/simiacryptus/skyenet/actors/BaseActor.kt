@@ -1,16 +1,18 @@
 package com.simiacryptus.skyenet.actors
 
+import com.simiacryptus.openai.Model
+import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
 
 abstract class BaseActor<T>(
     open val prompt: String,
     val name: String? = null,
-    val model: OpenAIClient.Models = OpenAIClient.Models.GPT35Turbo,
+    val model: Model = Models.GPT35Turbo,
     val temperature: Double = 0.3,
 ) {
-    open fun response(vararg messages: OpenAIClient.ChatMessage, model: OpenAIClient.Models = this.model, api: OpenAIClient) = api.chat(
+    open fun response(vararg messages: OpenAIClient.ChatMessage, model: Model = this.model, api: OpenAIClient) = api.chat(
         OpenAIClient.ChatRequest(
-            messages = messages.toList().toTypedArray(),
+            messages = ArrayList(messages.toList()),
             temperature = temperature,
             model = this.model.modelName,
         ),

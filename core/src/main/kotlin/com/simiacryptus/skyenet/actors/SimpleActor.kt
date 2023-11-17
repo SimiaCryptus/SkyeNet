@@ -1,11 +1,13 @@
 package com.simiacryptus.skyenet.actors
 
+import com.simiacryptus.openai.Model
+import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
 
 open class SimpleActor(
     prompt: String,
     name: String? = null,
-    model: OpenAIClient.Models = OpenAIClient.Models.GPT35Turbo,
+    model: Model = Models.GPT35Turbo,
     temperature: Double = 0.3,
 ) : BaseActor<String>(
     prompt = prompt,
