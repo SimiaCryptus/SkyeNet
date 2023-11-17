@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.chat
 
+import com.simiacryptus.openai.Model
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.ApplicationServices.authorizationManager

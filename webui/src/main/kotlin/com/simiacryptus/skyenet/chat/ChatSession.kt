@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.chat
 
+import com.simiacryptus.openai.Model
+import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.session.SessionBase
@@ -8,7 +10,7 @@ import com.simiacryptus.skyenet.util.MarkdownUtil
 open class ChatSession(
     val parent: ChatServer,
     sessionId: String,
-    var model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
+    var model: Model = Models.GPT35Turbo,
     private var visiblePrompt: String,
     private var hiddenPrompt: String,
     private var systemPrompt: String,
@@ -57,12 +59,10 @@ open class ChatSession(
     open fun onResponse(response: String, responseContents: String) {}
 
     open val newChatRequest: OpenAIClient.ChatRequest
-        get() {
-            val chatRequest = OpenAIClient.ChatRequest()
-            chatRequest.model = model.modelName
-            chatRequest.temperature = temperature
-            chatRequest.messages = messages.toTypedArray()
-            return chatRequest
-        }
+        get() = OpenAIClient.ChatRequest(
+            messages = ArrayList(messages),
+            temperature = temperature,
+            model = model.modelName,
+        )
 
 }

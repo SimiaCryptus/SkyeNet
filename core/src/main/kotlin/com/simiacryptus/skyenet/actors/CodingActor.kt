@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.actors
 
+import com.simiacryptus.openai.Model
+import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.Brain.Companion.indent
@@ -19,8 +21,8 @@ open class CodingActor(
     ),
     name: String? = interpreterClass.simpleName,
     val details: String? = null,
-    model: OpenAIClient.Models = OpenAIClient.Models.GPT35Turbo,
-    val fallbackModel: OpenAIClient.Models = OpenAIClient.Models.GPT4Turbo,
+    model: Model = Models.GPT35Turbo,
+    val fallbackModel: Model = Models.GPT4Turbo,
     temperature: Double = 0.1,
 ) : BaseActor<CodeResult>(
     prompt = "",
@@ -126,7 +128,7 @@ open class CodingActor(
         return CodeResultImpl(*messages.toTypedArray(), codePrefix = codedInstruction, api = api)
     }
 
-    fun brain(api: OpenAIClient, model: OpenAIClient.Models) = Brain(
+    fun brain(api: OpenAIClient, model: Model) = Brain(
         api = api,
         symbols = symbols.mapValues { it as Object }.asJava,
         language = interpreter.getLanguage(),

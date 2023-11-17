@@ -2,6 +2,8 @@
 
 package com.simiacryptus.skyenet
 
+import com.simiacryptus.openai.Model
+import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClient.ChatMessage
 import com.simiacryptus.openai.OpenAIClient.ChatRequest
@@ -16,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 open class Brain(
     val api: OpenAIClient,
     val symbols: java.util.Map<String, Object> = java.util.HashMap<String, Object>() as java.util.Map<String, Object>,
-    val model: OpenAIClient.Model = OpenAIClient.Models.GPT35Turbo,
+    val model: Model = Models.GPT35Turbo,
     private val verbose: Boolean = false,
     val temperature: Double = 0.3,
     val describer: TypeDescriber = YamlDescriber(),
@@ -38,11 +40,10 @@ open class Brain(
     fun implement(
         vararg messages: ChatMessage
     ): String {
-        val request = ChatRequest()
-        request.messages = messages.toList().toTypedArray()
+        var request = ChatRequest()
+        request = request.copy(messages = ArrayList(messages.toList()))
         totalApiDescriptionLength.addAndGet(apiDescription.length)
-        val response = chat(request)
-        return response
+        return chat(request)
     }
 
     @Language("TEXT")
@@ -66,20 +67,20 @@ open class Brain(
         output: String,
         vararg promptMessages: ChatMessage
     ): Pair<String, List<Pair<String, String>>> {
-        val request = ChatRequest()
-        request.messages = (
-                promptMessages.toList() + listOf(
-                    ChatMessage(
-                        ChatMessage.Role.assistant,
-                        """
+        val request = ChatRequest(
+            messages = ArrayList(
+                    promptMessages.toList() + listOf(
+                        ChatMessage(
+                            ChatMessage.Role.assistant,
+                            """
                                 |```${language.lowercase()}
                                 |${previousCode}
                                 |```
                                 |""".trimMargin().trim()
-                    ),
-                    ChatMessage(
-                        ChatMessage.Role.system,
-                        """
+                        ),
+                        ChatMessage(
+                            ChatMessage.Role.system,
+                            """
                                 |The previous code failed with the following error:
                                 |
                                 |```
@@ -93,17 +94,17 @@ open class Brain(
                                 |
                                 |Correct the code and try again.
                                 |""".trimMargin().trim()
-                    )
-                )).toTypedArray<ChatMessage>()
+                        )
+                    ))
+        )
         totalApiDescriptionLength.addAndGet(apiDescription.length)
         val response = chat(request)
         val codeBlocks = extractCodeBlocks(response)
         return Pair(response, codeBlocks)
     }
 
-    private fun chat(request: ChatRequest): String {
-        request.model = model.modelName
-        request.temperature = temperature
+    private fun chat(_request: ChatRequest): String {
+        val request = _request.copy(model = model.modelName, temperature = temperature)
         val json = toJson(request)
         if (moderated) api.moderate(json)
         totalInputLength.addAndGet(json.length)

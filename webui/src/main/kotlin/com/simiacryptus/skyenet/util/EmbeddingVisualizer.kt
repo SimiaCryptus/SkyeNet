@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.util
 
+import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.config.DataStorage
 import com.simiacryptus.skyenet.session.SessionBase
@@ -14,11 +15,11 @@ class EmbeddingVisualizer(
     val session: SessionBase,
 ) {
 
-    private fun toVectorMap(vararg words: String): Map<String, Array<Double>> {
+    private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {
         val vectors = words.map {word ->
             word to api.createEmbedding(
                 OpenAIClient.EmbeddingRequest(
-                    model = OpenAIClient.Models.AdaEmbedding.modelName,
+                    model = Models.AdaEmbedding.modelName,
                     input = word,
                 )
             ).data.first().embedding!!
