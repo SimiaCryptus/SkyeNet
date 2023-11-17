@@ -68,7 +68,7 @@ open class DataStorage(
                         stringList.first()
                     }
                 }
-            }?.first { it.isNotEmpty() }
+            }?.firstOrNull { it.isNotEmpty() }
         return if (null != userMessage) {
             log.debug("Session $sessionId: $userMessage")
             userMessage

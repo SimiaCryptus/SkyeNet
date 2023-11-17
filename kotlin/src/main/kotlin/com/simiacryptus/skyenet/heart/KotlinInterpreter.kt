@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.codegen.CompilationException
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.LanguageVersion
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.ref.WeakReference
@@ -46,43 +47,43 @@ open class KotlinInterpreter(
 ) : Heart {
 
     override fun validate(code: String): Throwable? {
-        // Create a temporary file for the code
-        val tempFile = File.createTempFile("TempKotlin", ".kt").apply {
-            writeText(code)
-            deleteOnExit()
-        }
-
-        val errors = ArrayList<String>()
-        val warnings = ArrayList<String>()
+        val messageCollector = MessageCollectorImpl(code)
         val environment: KotlinCoreEnvironment by lazy {
             KotlinCoreEnvironment.createForProduction(
-                parentDisposable = {},
-                configuration = CompilerConfiguration().apply {
-                    put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollectorImpl(tempFile, errors, warnings))
-                    val k2JVMCompilerArguments = jvmCompilerArguments(tempFile)
-                    this.setupJvmSpecificArguments(k2JVMCompilerArguments)
-                    this.setupCommonArguments(k2JVMCompilerArguments)
-                    this.setupLanguageVersionSettings(k2JVMCompilerArguments)
+                {},
+                CompilerConfiguration().apply {
+                    val arguments = jvmCompilerArguments(code)
+                    arguments.configureAnalysisFlags(messageCollector, LanguageVersion.KOTLIN_2_1)
+                    arguments.configureLanguageFeatures(messageCollector)
                     put(
                         CommonConfigurationKeys.MODULE_NAME,
-                        k2JVMCompilerArguments.moduleName!!
+                        arguments.moduleName!!
                     )
+                    put(
+                        CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY,
+                        messageCollector
+                    )
+                    this.setupJvmSpecificArguments(arguments)
+                    this.setupCommonArguments(arguments)
+                    this.setupLanguageVersionSettings(arguments)
                 },
-                configFiles = EnvironmentConfigFiles.JVM_CONFIG_FILES
+                EnvironmentConfigFiles.JVM_CONFIG_FILES
             )
         }
 
         return try {
             val compileBunchOfSources: GenerationState? =
                 KotlinToJVMBytecodeCompiler.analyzeAndGenerate(environment)
+            //val compileBunchOfSources1 = KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment)
             if (null == compileBunchOfSources) {
                 Exception("Compilation failed")
             } else {
-                if (errors.isEmpty()) null
-                else RuntimeException(
+                if (messageCollector.errors.isEmpty()) {
+                    null
+                } else RuntimeException(
                     """
-                    |${errors.joinToString("\n") { "Error: $it" }}
-                    |${warnings.joinToString("\n") { "Warning: $it" }}
+                    |${messageCollector.errors.joinToString("\n") { "Error: $it" }}
+                    |${messageCollector.warnings.joinToString("\n") { "Warning: $it" }}
                     """.trimMargin()
                 )
             }
@@ -90,8 +91,8 @@ open class KotlinInterpreter(
             RuntimeException(
                 """
                 |${e.message}
-                |${errors.joinToString("\n") { "Error: " + it }}
-                |${warnings.joinToString("\n") { "Warning: " + it }}
+                |${messageCollector.errors.joinToString("\n") { "Error: " + it }}
+                |${messageCollector.warnings.joinToString("\n") { "Warning: " + it }}
                 """.trimMargin(), e
             )
         } catch (e: Exception) {
@@ -100,9 +101,9 @@ open class KotlinInterpreter(
     }
 
     private class MessageCollectorImpl(
-        private val tempFile: File,
-        private val errors: ArrayList<String>,
-        private val warnings: ArrayList<String>
+        val code: String,
+        val errors: ArrayList<String> = ArrayList(),
+        val warnings: ArrayList<String> = ArrayList(),
     ) : MessageCollector {
         override fun clear() {}
         override fun hasErrors() = errors.isNotEmpty()
@@ -111,37 +112,46 @@ open class KotlinInterpreter(
             message: String,
             location: CompilerMessageSourceLocation?
         ) {
-            val lineText = tempFile.readLines()[location!!.line - 1]
-            val carotText = " ".repeat(location.column - 1) + "^"
-            val msg = """
-            |$message at line ${location.line} column ${location.column}
-            |  $lineText
-            |  $carotText
-            """.trimMargin().trim()
+            val msg = errorMessage(code, location?.line ?: 1, location?.column ?: 1, message)
             log.info(msg)
             when {
                 severity.isError -> errors.add(msg)
                 severity.isWarning -> warnings.add(msg)
             }
         }
+
     }
 
-    protected open fun jvmCompilerArguments(tempFile: File): K2JVMCompilerArguments {
-        val k2JVMCompilerArguments = K2JVMCompilerArguments()
-        k2JVMCompilerArguments.fragmentSources = arrayOf(tempFile.absolutePath)
-        k2JVMCompilerArguments.classpath = System.getProperty("java.class.path")
-        k2JVMCompilerArguments.moduleName = "ModuleName"
-        k2JVMCompilerArguments.script = true
-        k2JVMCompilerArguments.validateIr = true
-        k2JVMCompilerArguments.validateBytecode = true
-        k2JVMCompilerArguments.enableDebugMode = true
-        k2JVMCompilerArguments.linkViaSignatures = true
-        k2JVMCompilerArguments.allowUnstableDependencies = false
-        k2JVMCompilerArguments.useTypeTable = true
-        k2JVMCompilerArguments.extendedCompilerChecks = true
-        k2JVMCompilerArguments.compileJava = true
-        k2JVMCompilerArguments.verbose = true
-        return k2JVMCompilerArguments
+    protected open fun jvmCompilerArguments(code: String): K2JVMCompilerArguments {
+        val arguments = K2JVMCompilerArguments()
+        //arguments.fragmentSources = arrayOf(tempFile.absolutePath)
+//        arguments.allowNoSourceFiles = false
+        arguments.expression = code
+        arguments.classpath = System.getProperty("java.class.path")
+//        arguments.compileJava = true
+//        arguments.allowAnyScriptsInSourceRoots = true
+//        arguments.allowUnstableDependencies = false
+//        arguments.checkPhaseConditions = true
+        arguments.enableDebugMode = true
+//        arguments.enableSignatureClashChecks = true
+        arguments.extendedCompilerChecks = true
+//        arguments.linkViaSignatures = true
+        arguments.reportOutputFiles = true
+        arguments.moduleName = "KotlinInterpreter"
+        arguments.noOptimize = true
+//        arguments.noReflect = true
+        arguments.script = true
+        arguments.validateIr = true
+        arguments.validateBytecode = true
+        arguments.verbose = true
+//        arguments.javaParameters = true
+        arguments.useTypeTable = true
+//        arguments.useJavac = true
+//        arguments.useFirExtendedCheckers = true
+//        arguments.destination = "kotlinBuild"
+//        File(arguments.destination).mkdirs()
+
+        return arguments
     }
 
     private val scriptDefinition: ScriptDefinition = createJvmScriptDefinitionFromTemplate<KotlinJsr223DefaultScript>()
@@ -164,9 +174,9 @@ open class KotlinInterpreter(
         updateClasspath(classPath)
     }
 
-    protected open val scriptEngineFactory by lazy { KotlinJsr223JvmScriptEngineFactory() }
+    protected open val scriptEngineFactory by lazy { KotlinScriptEngineFactory() }
 
-    inner class KotlinJsr223JvmScriptEngineFactory : KotlinJsr223JvmScriptEngineFactoryBase() {
+    inner class KotlinScriptEngineFactory : KotlinJsr223JvmScriptEngineFactoryBase() {
         override fun getScriptEngine() = KotlinJsr223ScriptEngineImpl(
             this,
             scriptDefinition.compilationConfiguration.with {
@@ -190,19 +200,33 @@ open class KotlinInterpreter(
     override fun run(code: String): Any? {
         val wrappedCode = wrapCode(code)
         log.info(
-            """Running:
-        |   ${wrappedCode.trimIndent().replace("\n", "\n\t")}
-        |""".trimMargin()
+            """
+            |Running:
+            |   ${wrappedCode.trimIndent().replace("\n", "\n\t")}
+            |""".trimMargin().trim()
         )
-
-        return scriptEngineFactory.scriptEngine.eval(wrappedCode)
+        try {
+            return scriptEngineFactory.scriptEngine.eval(wrappedCode)
+        } catch (ex: javax.script.ScriptException) {
+            var lineNumber = ex.lineNumber
+            var column = ex.columnNumber
+            if (lineNumber == -1 && column == -1) {
+                val match = Regex("\\(.*:(\\d+):(\\d+)\\)").find(ex.message ?: "")
+                if (match != null) {
+                    lineNumber = match.groupValues[1].toInt()
+                    column = match.groupValues[2].toInt()
+                }
+            }
+            throw RuntimeException(
+                errorMessage(code, lineNumber, column, ex.message ?: ""), ex
+            )
+        }
     }
 
     override fun wrapCode(code: String): String {
         val out = ArrayList<String>()
         val (imports, otherCode) = code.split("\n").partition { it.trim().startsWith("import ") }
         out.addAll(imports)
-        //out.add("import kotlin")
         defs.entrySet().forEach { (key, value) ->
             val uuid = storageMap.getOrPut(value) { UUID.randomUUID() }
             retrievalIndex.put(uuid, WeakReference(value))
@@ -226,6 +250,17 @@ open class KotlinInterpreter(
         val log = LoggerFactory.getLogger(KotlinInterpreter::class.java)
         val storageMap = WeakHashMap<Object, UUID>()
         val retrievalIndex = HashMap<UUID, WeakReference<Object>>()
+
+        fun errorMessage(
+            code: String,
+            line: Int,
+            column: Int,
+            message: String
+        ) = """
+                |$message at line ${line} column ${column}
+                |  ${code.split("\n")[line - 1]}
+                |  ${" ".repeat(column - 1) + "^"}
+                """.trimMargin().trim()
     }
 
     override fun getLanguage(): String {

@@ -96,7 +96,7 @@ abstract class ApplicationBase(
     protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
     protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
-    protected open fun sessionsServlet(path: String) = ServletHolder("sessionList", SessionServlet(this.dataStorage, path))
+    protected open fun sessionsServlet(path: String) = ServletHolder("sessionList", SessionListServlet(this.dataStorage, path))
 
     override fun configure(webAppContext: WebAppContext, path: String, baseUrl: String) {
         super.configure(webAppContext, path, baseUrl)

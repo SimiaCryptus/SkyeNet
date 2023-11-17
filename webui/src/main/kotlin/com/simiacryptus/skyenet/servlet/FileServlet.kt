@@ -12,10 +12,7 @@ import java.io.File
 class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         val path = req.pathInfo ?: "/"
-        val pathSegments = path.split("/").filter { it.isNotBlank() }
-        pathSegments.forEach {
-            if (it == "..") throw IllegalArgumentException("Invalid path")
-        }
+        val pathSegments = Companion.parsePath(path)
         val sessionID = pathSegments.first()
         val sessionDir = dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(
             req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
@@ -34,29 +31,111 @@ class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
         } else {
             resp.contentType = "text/html"
             resp.status = HttpServletResponse.SC_OK
-            val files = file.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
-                """<a href="${it.name}">${it.name}</a>"""
+            val files = file.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.joinToString("<br/>\n") {
+                """<a class="file-item" href="${it.name}">${it.name}</a>"""
             } ?: ""
-            val folders = file.listFiles()?.filter { !it.isFile }?.sortedBy { it.name }?.joinToString("<br/>") {
-                """<a href="${it.name}/">${it.name}</a>"""
+            val folders = file.listFiles()?.filter { !it.isFile }?.sortedBy { it.name }?.joinToString("<br/>\n") {
+                """<a class="folder-item" href="${it.name}/">${it.name}</a>"""
             } ?: ""
             resp.writer.write(
                 """
                     |<html>
                     |<head>
                     |<title>Files</title>
+                    |<style>
+                    |    body {
+                    |        font-family: 'Arial', sans-serif;
+                    |        background-color: #f4f4f4;
+                    |        color: #333;
+                    |        margin: 0;
+                    |        padding: 20px;
+                    |    }
+                    |
+                    |    .archive-title, .folders-title, .files-title {
+                    |        font-size: 24px;
+                    |        font-weight: bold;
+                    |        margin-top: 0;
+                    |    }
+                    |
+                    |    .zip-link {
+                    |        color: #0056b3;
+                    |        text-decoration: none;
+                    |        font-size: 16px;
+                    |        background-color: #e7f3ff;
+                    |        padding: 10px 15px;
+                    |        border-radius: 5px;
+                    |        display: inline-block;
+                    |        margin-top: 10px;
+                    |    }
+                    |
+                    |    .zip-link:hover {
+                    |        background-color: #d1e7ff;
+                    |    }
+                    |
+                    |    .folders-container, .files-container {
+                    |        background-color: white;
+                    |        border: 1px solid #ddd;
+                    |        padding: 15px;
+                    |        border-radius: 5px;
+                    |        margin-top: 20px;
+                    |    }
+                    |
+                    |    .folder-item, .file-item {
+                    |        color: #0056b3;
+                    |        text-decoration: none;
+                    |        display: block;
+                    |        margin-bottom: 10px;
+                    |        padding: 5px 0;
+                    |    }
+                    |
+                    |    .folder-item:hover, .file-item:hover {
+                    |        text-decoration: underline;
+                    |    }
+                    |
+                    |    h1 {
+                    |        border-bottom: 2px solid #ddd;
+                    |        padding-bottom: 10px;
+                    |    }
+                    |</style>
                     |</head>
                     |<body>
-                    |<h1>Archive</h1>
-                    |<a href="${req.contextPath}/fileZip?session=$sessionID&path=$path">ZIP</a>
-                    |<h1>Folders</h1>
+                    |<h1 class="archive-title">Archive</h1>
+                    |<a href="${req.contextPath}/fileZip?session=$sessionID&path=$filePath" class="zip-link">ZIP</a>
+                    |<h1 class="folders-title">Folders</h1>
+                    |<div class="folders-container">
                     |$folders
-                    |<h1>Files</h1>
+                    |</div>
+                    |<h1 class="files-title">Files</h1>
+                    |<div class="files-container">
                     |$files
+                    |</div>
                     |</body>
                     |</html>
                     """.trimMargin()
             )
+        }
+    }
+
+    companion object {
+        fun parsePath(path: String): List<String> {
+            val pathSegments = path.split("/").filter { it.isNotBlank() }
+            pathSegments.forEach {
+                when {
+                    it == ".." -> throw IllegalArgumentException("Invalid path")
+                    it.any {
+                        when {
+                            it == ':' -> true
+                            it == '/' -> true
+                            it == '~' -> true
+                            it == '\\' -> true
+                            it.code < 32 -> true
+                            it.code > 126 -> true
+                            else -> false
+                        }
+                    } -> throw IllegalArgumentException("Invalid path")
+                }
+            }
+            return pathSegments
         }
     }
 }

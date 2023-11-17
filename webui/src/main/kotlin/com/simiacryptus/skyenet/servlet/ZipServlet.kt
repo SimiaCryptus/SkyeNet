@@ -14,13 +14,14 @@ class ZipServlet(val dataStorage: DataStorage) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         val sessionID = req.getParameter("session")
         val path = req.parameterMap.get("path")?.find { it.isNotBlank() } ?: "/"
+        FileServlet.parsePath(path) // Validate path
         val sessionDir = dataStorage.getSessionDir(
             ApplicationServices.authenticationManager.getUser(
                 req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
             )?.id, sessionID
         )
         val file = File(sessionDir, path)
-        val zipFile = File.createTempFile("skynet", ".zip")
+        val zipFile = File.createTempFile("skyenet", ".zip")
         try {
             zipFile.deleteOnExit()
             zipFile.outputStream().use { outputStream ->

@@ -97,12 +97,14 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
                 val newUserSessionLink =
                     if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newUserID()}">New Private Session</a>""" else ""
                 """
+                        <a
                         <tr>
                             <td>
                                 ${app.server.applicationName}
                             </td>
                             <td>
-                                <a href="${app.path}/sessions">List Sessions</a>
+                            
+                                <a  href="javascript:void(0);" onclick="showModal('${app.path}/sessions')">List Sessions</a>
                             </td>
                             <td>
                                 $newGlobalSessionLink

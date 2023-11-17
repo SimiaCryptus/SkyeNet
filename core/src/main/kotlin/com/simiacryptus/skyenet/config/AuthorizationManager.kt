@@ -8,6 +8,7 @@ open class AuthorizationManager {
         Read,
         Write,
         Execute,
+        Delete,
         Admin,
         GlobalKey,
     }
@@ -39,12 +40,18 @@ open class AuthorizationManager {
         false
     }
 
-    private fun isUserAuthorized(permissionPath: String, user: String?): Boolean {
-        return this::class.java.getResourceAsStream(permissionPath)?.use { stream ->
+    private fun isUserAuthorized(permissionPath: String, user: String?) =
+        javaClass.getResourceAsStream(permissionPath)?.use { stream ->
             val lines = stream.bufferedReader().readLines()
-            lines.any { it.equals(user, ignoreCase = true) || it == "*" }
+            lines.any {
+                when {
+                    it.equals(user, ignoreCase = true) -> true // Exact match
+                    it == "." && user != null -> true // Any user
+                    it == "*" -> true // Any user including anonymous
+                    else -> false
+                }
+            }
         } ?: false
-    }
 
     val log = org.slf4j.LoggerFactory.getLogger(AuthorizationManager::class.java)
 
