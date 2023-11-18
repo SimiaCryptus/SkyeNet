@@ -16,9 +16,9 @@ import kotlin.reflect.KClass
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 open class CodingActor(
-    private val interpreterClass: KClass<out Heart>,
-    private val symbols: Map<String, Any> = mapOf(),
-    private val describer: TypeDescriber = AbbrevWhitelistYamlDescriber(
+    val interpreterClass: KClass<out Heart>,
+    val symbols: Map<String, Any> = mapOf(),
+    val describer: TypeDescriber = AbbrevWhitelistYamlDescriber(
         "com.simiacryptus",
         "com.github.simiacryptus"
     ),
@@ -70,27 +70,39 @@ open class CodingActor(
         if (!autoEvaluate) CodeResultImpl(*messages, api = api)
         else answerWithAutoEval(*messages, api = api).first
 
-    fun answerWithPrefix(codePrefix: String, vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult =
+    open fun answerWithPrefix(codePrefix: String, vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult =
         if (!autoEvaluate) CodeResultImpl(*injectCodePrefix(messages, codePrefix), api = api)
         else answerWithAutoEval(*injectCodePrefix(messages, codePrefix), api = api).first
 
-    fun answerWithAutoEval(
+    open fun answerWithAutoEval(
         vararg messages: String,
         api: OpenAIClient,
         codePrefix: String = ""
     ) = answerWithAutoEval(*injectCodePrefix(chatMessages(*messages), codePrefix), api = api)
 
-    fun answerWithAutoEval(
+    open fun answerWithAutoEval(
         vararg messages: OpenAIClient.ChatMessage,
         api: OpenAIClient
     ): Pair<CodeResult, ExecutionResult> {
         var result = CodeResultImpl(*messages, api = api)
+        var lastError : Throwable? = null
         for (i in 0..fixIterations) try {
             return result to result.run()
         } catch (ex: Throwable) {
+            lastError = ex
             result = fix(api, messages, result, ex)
         }
-        throw RuntimeException("Failed to fix ${messages.map { it.content }.joinToString("\n")}")
+        throw RuntimeException("""
+            |Failed to fix code. Last attempt: 
+            |```
+            |${result.getCode()}
+            |```
+            |
+            |Last Error:
+            |```
+            |${lastError?.message}
+            |```
+            |""".trimMargin().trim())
     }
 
     private fun injectCodePrefix(
@@ -114,7 +126,7 @@ open class CodingActor(
         return CodeResultImpl(*messages, codePrefix = codedInstruction, api = api)
     }
 
-    fun brain(api: OpenAIClient, model: OpenAITextModel) = Brain(
+    private fun brain(api: OpenAIClient, model: OpenAITextModel) = Brain(
         api = api,
         symbols = symbols.mapValues { it as Object }.asJava,
         language = interpreter.getLanguage(),
