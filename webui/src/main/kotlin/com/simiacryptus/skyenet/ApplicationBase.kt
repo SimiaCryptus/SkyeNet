@@ -148,7 +148,7 @@ abstract class ApplicationBase(
                 filename.endsWith(".css") -> "text/css"
                 else -> "text/plain"
             }
-        fun HttpServletRequest.getCookie(name: String = AuthenticationManager.COOKIE_NAME) = cookies?.find { it.name == name }?.value
+        fun HttpServletRequest.getCookie(name: String = COOKIE_NAME) = cookies?.find { it.name == name }?.value
 
     }
 

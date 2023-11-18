@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.servlet
 
+import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.config.ApplicationServices
@@ -29,7 +30,7 @@ class UsageServlet : HttpServlet() {
 
     private fun serve(
         resp: HttpServletResponse,
-        usage: Map<OpenAIModel, Int>
+        usage: Map<OpenAIModel, OpenAIClient.Usage>
     ) {
         resp.writer.write(
             """

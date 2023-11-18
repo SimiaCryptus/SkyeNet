@@ -27,9 +27,7 @@ abstract class ApplicationDirectory(
     val port: Int = 8081,
 ) {
     var domainName: String = "" // Resolved in _main
-        private set(value) {
-            field = value
-        }
+        private set
     abstract val childWebApps: List<ChildWebApp>
 
     data class ChildWebApp(

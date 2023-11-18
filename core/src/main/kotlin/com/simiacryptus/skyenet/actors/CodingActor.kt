@@ -130,7 +130,7 @@ open class CodingActor(
         return CodeResultImpl(*messages.toTypedArray(), codePrefix = codedInstruction, api = api)
     }
 
-    fun brain(api: OpenAIClient, model: OpenAIModel) = Brain(
+    fun brain(api: OpenAIClient, model: OpenAITextModel) = Brain(
         api = api,
         symbols = symbols.mapValues { it as Object }.asJava,
         language = interpreter.getLanguage(),

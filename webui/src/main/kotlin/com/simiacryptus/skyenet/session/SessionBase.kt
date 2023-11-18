@@ -109,11 +109,11 @@ abstract class SessionBase(
                 }
             } catch (e: Exception) {
                 log.warn("$sessionId - Error processing message: $message", e)
-                send("""${randomID()},<div class="error">${e.message}</div>""");
+                send("""${randomID()},<div class="error">${e.message}</div>""")
             }
         } else {
             log.warn("$sessionId - Unauthorized message: $message")
-            send("""${randomID()},<div class="error">Unauthorized message</div>""");
+            send("""${randomID()},<div class="error">Unauthorized message</div>""")
         }
     }
 

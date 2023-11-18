@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet.chat
 
-import com.simiacryptus.openai.models.OpenAIModel
-import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
+import com.simiacryptus.openai.models.ChatModels
+import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.skyenet.util.MarkdownUtil
@@ -11,10 +11,10 @@ import com.simiacryptus.skyenet.util.MarkdownUtil
 open class ChatSession(
     val parent: ChatServer,
     sessionId: String,
-    var model: OpenAIModel = ChatModels.GPT35Turbo,
-    private var visiblePrompt: String,
-    private var hiddenPrompt: String,
-    private var systemPrompt: String,
+    val model: OpenAITextModel = ChatModels.GPT35Turbo,
+    val visiblePrompt: String,
+    val hiddenPrompt: String,
+    val systemPrompt: String,
     val api: OpenAIClient,
     val temperature: Double = 0.3,
     applicationClass: Class<out ApplicationBase>,

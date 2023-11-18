@@ -7,6 +7,7 @@ import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClient.*
 import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
+import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.util.JsonUtil.toJson
 import com.simiacryptus.util.describe.TypeDescriber
 import com.simiacryptus.util.describe.YamlDescriber
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 open class Brain(
     val api: OpenAIClient,
     val symbols: java.util.Map<String, Object> = java.util.HashMap<String, Object>() as java.util.Map<String, Object>,
-    val model: OpenAIModel = ChatModels.GPT35Turbo,
+    val model: OpenAITextModel = ChatModels.GPT35Turbo,
     private val verbose: Boolean = false,
     val temperature: Double = 0.3,
     val describer: TypeDescriber = YamlDescriber(),
