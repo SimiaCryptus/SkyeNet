@@ -135,7 +135,7 @@ open class UsageManager {
         }
     }
 
-    open fun getUserUsageSummary(user: String) =
+    open fun getUserUsageSummary(user: String): Map<OpenAIModel, OpenAIClient.Usage> =
         sessionsByUser[user]?.flatMap { sessionId ->
             val usage = usagePerSession[sessionId]
             usage?.tokensPerModel?.entries?.map { (model, counter) ->
@@ -150,7 +150,7 @@ open class UsageManager {
             }
         } ?: emptyMap()
 
-    open fun getSessionUsageSummary(sessionId: String) =
+    open fun getSessionUsageSummary(sessionId: String): Map<OpenAIModel, OpenAIClient.Usage> =
         usagePerSession[sessionId]?.tokensPerModel?.entries?.map { (model, counter) ->
             model.model to counter.toUsage()
         }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.reduce { a, b ->
