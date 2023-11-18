@@ -13,7 +13,7 @@ class UserSettingsServlet : HttpServlet() {
     public override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
-        val userinfo = ApplicationServices.authenticationManager.getUser(getCookie(req, COOKIE_NAME))
+        val userinfo = ApplicationServices.authenticationManager.getUser(req.getCookie())
         if (null == userinfo) {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {
@@ -41,7 +41,7 @@ class UserSettingsServlet : HttpServlet() {
     }
 
     public override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
-        val userinfo = ApplicationServices.authenticationManager.getUser(getCookie(req, COOKIE_NAME))
+        val userinfo = ApplicationServices.authenticationManager.getUser(req.getCookie())
         if (null == userinfo) {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {

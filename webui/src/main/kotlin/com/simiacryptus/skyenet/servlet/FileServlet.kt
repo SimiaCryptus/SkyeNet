@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.servlet
 
 import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.AuthenticationManager
 import com.simiacryptus.skyenet.config.DataStorage
@@ -14,9 +15,7 @@ class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
         val path = req.pathInfo ?: "/"
         val pathSegments = Companion.parsePath(path)
         val sessionID = pathSegments.first()
-        val sessionDir = dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(
-            req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
-        )?.id, sessionID)
+        val sessionDir = dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(req.getCookie())?.id, sessionID)
         val filePath = pathSegments.drop(1).joinToString("/")
         val file = File(sessionDir, filePath)
         if (file.isFile) {

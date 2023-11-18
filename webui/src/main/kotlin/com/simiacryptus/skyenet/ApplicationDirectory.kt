@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet
 
 
-import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClientBase
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.config.ApplicationServices
@@ -23,14 +22,12 @@ import java.util.*
 import kotlin.system.exitProcess
 
 abstract class ApplicationDirectory(
-    private val localName: String = "localhost",
-    private val publicName: String = "localhost",
-    private val port: Int = 8081,
+    val localName: String = "localhost",
+    val publicName: String = "localhost",
+    val port: Int = 8081,
 ) {
     var domainName: String = "" // Resolved in _main
-        private set(value) {
-            field = value
-        }
+        private set
     abstract val childWebApps: List<ChildWebApp>
 
     data class ChildWebApp(

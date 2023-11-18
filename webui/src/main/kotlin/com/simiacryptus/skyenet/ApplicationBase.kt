@@ -5,6 +5,7 @@ import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.config.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.config.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.config.ApplicationServices.dataStorageFactory
+import com.simiacryptus.skyenet.config.AuthenticationManager
 import com.simiacryptus.skyenet.servlet.*
 import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
 import com.simiacryptus.skyenet.session.SessionBase
@@ -34,6 +35,7 @@ abstract class ApplicationBase(
         sessionId = sessionId,
         dataStorage = dataStorage,
         userId = userId,
+        applicationClass = this@ApplicationBase.javaClass,
     ) {
         private val threads = mutableMapOf<String, Thread>()
 
@@ -103,7 +105,7 @@ abstract class ApplicationBase(
 
         webAppContext.addFilter(
             FilterHolder { request, response, chain ->
-                val user = authenticationManager.getUser(getCookie(request as HttpServletRequest, COOKIE_NAME))
+                val user = authenticationManager.getUser((request as HttpServletRequest).getCookie())
                 val canRead = authorizationManager.isAuthorized(
                     applicationClass = this@ApplicationBase.javaClass,
                     user = user?.email,
@@ -146,8 +148,7 @@ abstract class ApplicationBase(
                 filename.endsWith(".css") -> "text/css"
                 else -> "text/plain"
             }
-
-        fun getCookie(req: HttpServletRequest, name: String) = req.cookies?.find { it.name == name }?.value
+        fun HttpServletRequest.getCookie(name: String = COOKIE_NAME) = cookies?.find { it.name == name }?.value
 
     }
 

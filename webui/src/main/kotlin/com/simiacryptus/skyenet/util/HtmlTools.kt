@@ -13,13 +13,13 @@ class HtmlTools(
     val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
     val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
 
-    private val txtTriggers = mutableMapOf<String, java.util.function.Consumer<String>>()
+    private val txtTriggers = mutableMapOf<String, Consumer<String>>()
     fun hrefLink(classname: String = """href-link""", handler: Consumer<Unit>): String {
         val operationID = SessionBase.randomID()
         app.linkTriggers[operationID] = handler
         return """<a class="$classname" data-id="$operationID">"""
     }
-    fun textInput(handler: java.util.function.Consumer<String>): String {
+    fun textInput(handler: Consumer<String>): String {
         val operationID = SessionBase.randomID()
         txtTriggers[operationID] = handler
         //language=HTML

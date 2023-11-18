@@ -14,7 +14,6 @@ open class CodingActorTestApp(
     private val actor: CodingActor,
     applicationName: String = "CodingActorTest_" + actor.interpreter.javaClass.simpleName,
     temperature: Double = 0.3,
-    oauthConfig: String? = null,
 ) : ApplicationBase(
     applicationName = applicationName,
     temperature = temperature,

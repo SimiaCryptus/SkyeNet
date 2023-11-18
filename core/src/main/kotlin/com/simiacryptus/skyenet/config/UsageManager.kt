@@ -1,8 +1,7 @@
 package com.simiacryptus.skyenet.config
 
-import com.simiacryptus.openai.Model
-import com.simiacryptus.openai.Models
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.models.*
 import com.simiacryptus.util.JsonUtil
 import java.io.File
 import java.io.FileWriter
@@ -16,8 +15,8 @@ open class UsageManager {
     private val txLogFile = File(".skyenet/usage/log.csv")
     @Volatile private var txLogFileWriter: FileWriter?
     private val usagePerSession = HashMap<String, UsageCounters>()
-    private val sessionsByUser = HashMap<String, ArrayList<String>>()
-    private val usersBySession = HashMap<String, ArrayList<String>>()
+    private val sessionsByUser = HashMap<String, HashSet<String>>()
+    private val usersBySession = HashMap<String, HashSet<String>>()
 
     init {
         txLogFile.parentFile.mkdirs()
@@ -29,10 +28,36 @@ open class UsageManager {
     @Suppress("MemberVisibilityCanBePrivate")
     open fun loadFromLog(file: File) {
         if (file.exists()) {
-            file.readLines().forEach { line ->
-                val (sessionId, user, model, tokens) = line.split(",")
-                val modelEnum = Models.values().find { model == it.modelName } ?: throw RuntimeException("Unknown model $model")
-                incrementUsage(sessionId, user, modelEnum, tokens.toInt())
+            try {
+                file.readLines().forEach { line ->
+                    val (sessionId, user, model, tokens, direction) = line.split(",")
+                    val modelEnum = listOf(
+                        ChatModels.values(),
+                        CompletionModels.values(),
+                        EditModels.values(),
+                        EmbeddingModels.values()
+                    ).flatMap { it.toList() }.find { model == it.modelName }
+                        ?: throw RuntimeException("Unknown model $model")
+                    when (direction) {
+                        "input" -> incrementUsage(
+                            sessionId,
+                            user,
+                            modelEnum,
+                            OpenAIClient.Usage(prompt_tokens = tokens.toInt())
+                        )
+
+                        "output" -> incrementUsage(
+                            sessionId,
+                            user,
+                            modelEnum,
+                            OpenAIClient.Usage(completion_tokens = tokens.toInt())
+                        )
+
+                        else -> throw RuntimeException("Unknown direction $direction")
+                    }
+                }
+            } catch (e: Exception) {
+                log.warn("Error loading log file", e)
             }
         }
     }
@@ -43,7 +68,8 @@ open class UsageManager {
         usagePerSession.forEach { (sessionId, usage) ->
             val user = usersBySession[sessionId]?.firstOrNull()
             usage.tokensPerModel.forEach { (model, counter) ->
-                writer.write("$sessionId,$user,${model.modelName},${counter.get()}\n")
+                writer.write("$sessionId,$user,${model.model.modelName},${counter.inputTokens.get()},input\n")
+                writer.write("$sessionId,$user,${model.model.modelName},${counter.outputTokens.get()},output\n")
             }
         }
         writer.flush()
@@ -81,17 +107,17 @@ open class UsageManager {
         File(".skyenet/usage/counters.json").writeText(JsonUtil.toJson(usagePerSession))
     }
 
-    open fun incrementUsage(sessionId: String, user: String?, model: Model, tokens: Int) {
+    open fun incrementUsage(sessionId: String, user: String?, model: OpenAIModel, tokens: OpenAIClient.Usage) {
         val usage = usagePerSession.getOrPut(sessionId) {
             UsageCounters()
         }
-        val tokensPerModel = usage.tokensPerModel.getOrPut(model) {
-            AtomicInteger()
+        val tokensPerModel = usage.tokensPerModel.getOrPut(UsageKey(sessionId, user, model)) {
+            UsageValues()
         }
         tokensPerModel.addAndGet(tokens)
         if (user != null) {
             val sessions = sessionsByUser.getOrPut(user) {
-                ArrayList()
+                HashSet()
             }
             sessions.add(sessionId)
         }
@@ -99,7 +125,8 @@ open class UsageManager {
             val txLogFileWriter = txLogFileWriter
             if(null != txLogFileWriter) {
                 synchronized(txLogFile) {
-                    txLogFileWriter.write("$sessionId,$user,${model.modelName},$tokens\n")
+                    txLogFileWriter.write("$sessionId,$user,${model.modelName},${tokens.prompt_tokens},input\n")
+                    txLogFileWriter.write("$sessionId,$user,${model.modelName},${tokens.completion_tokens},output\n")
                     txLogFileWriter.flush()
                 }
             }
@@ -108,25 +135,54 @@ open class UsageManager {
         }
     }
 
-    open fun getUserUsageSummary(user: String): Map<Model, Int> {
-        val sessions = sessionsByUser[user]
-        return sessions?.flatMap { sessionId ->
+    open fun getUserUsageSummary(user: String) =
+        sessionsByUser[user]?.flatMap { sessionId ->
             val usage = usagePerSession[sessionId]
             usage?.tokensPerModel?.entries?.map { (model, counter) ->
-                model to counter.get()
+                model.model to counter.toUsage()
             } ?: emptyList()
-        }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.sum() } ?: emptyMap()
-    }
+        }?.groupBy { it.first }?.mapValues {
+            it.value.map { it.second }.reduce { a, b ->
+                OpenAIClient.Usage(
+                    prompt_tokens = a.prompt_tokens + b.prompt_tokens,
+                    completion_tokens = a.completion_tokens + b.completion_tokens
+                )
+            }
+        } ?: emptyMap()
 
-    open fun getSessionUsageSummary(sessionId: String): Map<Model, Int> {
-        val usage = usagePerSession[sessionId]
-        return usage?.tokensPerModel?.entries?.map { (model, counter) ->
-            model to counter.get()
-        }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.sum() } ?: emptyMap()
+    open fun getSessionUsageSummary(sessionId: String) =
+        usagePerSession[sessionId]?.tokensPerModel?.entries?.map { (model, counter) ->
+            model.model to counter.toUsage()
+        }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.reduce { a, b ->
+            OpenAIClient.Usage(
+                prompt_tokens = a.prompt_tokens + b.prompt_tokens,
+                completion_tokens = a.completion_tokens + b.completion_tokens
+            )
+        } } ?: emptyMap()
+
+    data class UsageKey(
+        val sessionId: String,
+        val user: String?,
+        val model: OpenAIModel,
+    )
+
+    class UsageValues(
+        val inputTokens: AtomicInteger = AtomicInteger(),
+        val outputTokens: AtomicInteger = AtomicInteger(),
+    ) {
+        fun addAndGet(tokens: OpenAIClient.Usage) {
+            inputTokens.addAndGet(tokens.prompt_tokens)
+            outputTokens.addAndGet(tokens.completion_tokens)
+        }
+
+        fun toUsage() = OpenAIClient.Usage(
+            prompt_tokens = inputTokens.get(),
+            completion_tokens = outputTokens.get()
+        )
     }
 
     data class UsageCounters(
-        val tokensPerModel: HashMap<Model, AtomicInteger> = HashMap(),
+        val tokensPerModel: HashMap<UsageKey, UsageValues> = HashMap(),
     )
 
     companion object {

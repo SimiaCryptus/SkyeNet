@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.session
 
 import com.google.common.util.concurrent.MoreExecutors
+import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.config.ApplicationServices
@@ -16,6 +17,7 @@ abstract class SessionBase(
     private val messageStates: LinkedHashMap<String, String> = dataStorage?.getMessages(
         userId, sessionId
     ) ?: LinkedHashMap(),
+    val applicationClass: Class<out ApplicationBase>,
 ) : SessionInterface {
     private val sockets: MutableSet<ChatSocket> = mutableSetOf()
 
@@ -26,6 +28,7 @@ abstract class SessionBase(
     override fun addSocket(socket: ChatSocket) {
         sockets.add(socket)
     }
+
     protected fun publish(
         out: String,
     ) {
@@ -106,13 +109,16 @@ abstract class SessionBase(
                 }
             } catch (e: Exception) {
                 log.warn("$sessionId - Error processing message: $message", e)
-                send("""${randomID()},<div class="error">${e.message}</div>""");
+                send("""${randomID()},<div class="error">${e.message}</div>""")
             }
+        } else {
+            log.warn("$sessionId - Unauthorized message: $message")
+            send("""${randomID()},<div class="error">Unauthorized message</div>""")
         }
     }
 
     open fun canWrite(user: String?) = ApplicationServices.authorizationManager.isAuthorized(
-        applicationClass = this::class.java,
+        applicationClass = applicationClass,
         user = user,
         operationType = AuthorizationManager.OperationType.Write
     )

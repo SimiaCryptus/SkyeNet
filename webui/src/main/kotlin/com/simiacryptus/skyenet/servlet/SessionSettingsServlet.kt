@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.servlet
 
 import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.AuthenticationManager
 import com.simiacryptus.util.JsonUtil
@@ -17,7 +18,7 @@ class SessionSettingsServlet(
         val sessionId = req.getParameter("sessionId")
         if (null != sessionId) {
             val settings = server.getSettings<Any>(sessionId, ApplicationServices.authenticationManager.getUser(
-                req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
+                req.getCookie()
             )?.id)
             val json = if(settings != null) JsonUtil.toJson(settings) else ""
             //language=HTML
@@ -54,9 +55,9 @@ class SessionSettingsServlet(
             resp.writer.write("Session ID is required")
         } else {
             val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), server.settingsClass)
-            server.dataStorage.setJson(ApplicationServices.authenticationManager.getUser(
-                req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
-            )?.id, sessionId, settings, "settings.json")
+            server.dataStorage.setJson(
+                ApplicationServices.authenticationManager.getUser(req.getCookie())?.id,
+                sessionId, settings, "settings.json")
             resp.sendRedirect("${req.contextPath}/#$sessionId")
         }
     }

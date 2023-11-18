@@ -7,6 +7,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.oauth2.Oauth2
 import com.google.api.services.oauth2.model.Userinfo
+import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.AuthenticationManager
 import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
@@ -97,9 +98,8 @@ open class AuthenticatedWebsite(
         override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
             if (request is HttpServletRequest && response is HttpServletResponse) {
                 if (isSecure(request)) {
-                    val sessionIdCookie = request.cookies?.firstOrNull { it.name == COOKIE_NAME }
-                    val value = sessionIdCookie?.value
-                    if (value == null || !ApplicationServices.authenticationManager.containsKey(value)) {
+                    val sessionIdCookie = request.getCookie()
+                    if (sessionIdCookie == null || !ApplicationServices.authenticationManager.containsKey(sessionIdCookie)) {
                         response.sendRedirect("/googleLogin")
                         return
                     }
