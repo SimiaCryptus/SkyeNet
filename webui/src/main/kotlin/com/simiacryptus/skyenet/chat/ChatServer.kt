@@ -2,8 +2,8 @@ package com.simiacryptus.skyenet.chat
 
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.AuthenticationManager
-import com.simiacryptus.skyenet.servlet.NewSessionServlet
 import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.servlet.NewSessionServlet
 import com.simiacryptus.skyenet.session.SessionInterface
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
@@ -13,10 +13,13 @@ import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.util.resource.Resource
 import org.eclipse.jetty.webapp.WebAppContext
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 
 abstract class ChatServer(val resourceBase: String) {
+
+    fun JettyServerUpgradeRequest.getCookie(name: String) = cookies?.find { it.name == name }?.value
 
     abstract val applicationName: String
     open val dataStorage: DataStorage? = null
@@ -27,7 +30,7 @@ abstract class ChatServer(val resourceBase: String) {
             factory.setCreator { req, resp ->
                 try {
                     val sessionId = req.parameterMap["sessionId"]?.firstOrNull()
-                    val authId = req.cookies?.find { it.name == "sessionId" }?.value
+                    val authId = req.getCookie(AuthenticationManager.COOKIE_NAME)
                     return@setCreator if (null == sessionId) {
                         null
                     } else {
@@ -37,11 +40,11 @@ abstract class ChatServer(val resourceBase: String) {
                         } else {
                             sessionState = newSession(
                                 ApplicationServices.authenticationManager.getUser(
-                                req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
+                                req.getCookie(AuthenticationManager.COOKIE_NAME)
                             )?.id, sessionId)
                             stateCache[sessionId] = sessionState
                         }
-                        ChatSocket(sessionId, sessionState, authId, dataStorage)
+                        ChatSocket(sessionId, sessionState, dataStorage, ApplicationServices.authenticationManager.getUser(authId))
                     }
                 } catch (e: Exception) {
                     log.warn("Error configuring websocket", e)

@@ -27,11 +27,11 @@ kotlin {
 }
 
 val junit_version = "5.10.1"
-val logback_version = "1.2.12"
+val logback_version = "1.4.11"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.29")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.30")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")

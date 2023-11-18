@@ -12,7 +12,7 @@ class UserInfoServlet : HttpServlet() {
     public override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/json"
         resp.status = HttpServletResponse.SC_OK
-        val userinfo = ApplicationServices.authenticationManager.getUser(getCookie(req, COOKIE_NAME))
+        val userinfo = ApplicationServices.authenticationManager.getUser(req.getCookie())
         if (null == userinfo) {
             resp.writer.write("{}")
         } else {

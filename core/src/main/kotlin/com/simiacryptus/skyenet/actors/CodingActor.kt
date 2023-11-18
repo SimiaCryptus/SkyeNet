@@ -1,8 +1,10 @@
 package com.simiacryptus.skyenet.actors
 
-import com.simiacryptus.openai.Model
-import com.simiacryptus.openai.Models
+import com.simiacryptus.openai.models.OpenAIModel
+import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
+import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.Brain.Companion.indent
 import com.simiacryptus.skyenet.Brain.Companion.superMethod
@@ -21,8 +23,8 @@ open class CodingActor(
     ),
     name: String? = interpreterClass.simpleName,
     val details: String? = null,
-    model: Model = Models.GPT35Turbo,
-    val fallbackModel: Model = Models.GPT4Turbo,
+    model: OpenAITextModel = ChatModels.GPT35Turbo,
+    val fallbackModel: OpenAITextModel = ChatModels.GPT4Turbo,
     temperature: Double = 0.1,
 ) : BaseActor<CodeResult>(
     prompt = "",
@@ -96,7 +98,7 @@ open class CodingActor(
     fun answerWithPrefix(codePrefix: String, vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult {
         val prevList = messages.toList()
         val newList = prevList.dropLast(1) + listOf(
-            OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, codePrefix)
+            OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, codePrefix.toContentList())
         ) + prevList.last()
         return CodeResultImpl(*newList.toTypedArray(), api = api)
     }
@@ -108,7 +110,7 @@ open class CodingActor(
     ): Pair<CodeResult, ExecutionResult> {
         val prevList = messages.toList()
         val messagesWithPrefix = prevList.dropLast(1) + if(codePrefix.isBlank()) listOf() else listOf(
-            OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, codePrefix)
+            OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, codePrefix.toContentList())
         ) + prevList.last()
         var result = CodeResultImpl(*messagesWithPrefix.toTypedArray(), api = api)
         for (i in 0..fixIterations) try {
@@ -128,7 +130,7 @@ open class CodingActor(
         return CodeResultImpl(*messages.toTypedArray(), codePrefix = codedInstruction, api = api)
     }
 
-    fun brain(api: OpenAIClient, model: Model) = Brain(
+    fun brain(api: OpenAIClient, model: OpenAIModel) = Brain(
         api = api,
         symbols = symbols.mapValues { it as Object }.asJava,
         language = interpreter.getLanguage(),

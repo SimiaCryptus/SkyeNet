@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.servlet
 
+import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.AuthenticationManager
 import com.simiacryptus.skyenet.config.DataStorage
@@ -16,10 +17,7 @@ class ZipServlet(val dataStorage: DataStorage) : HttpServlet() {
         val path = req.parameterMap.get("path")?.find { it.isNotBlank() } ?: "/"
         FileServlet.parsePath(path) // Validate path
         val sessionDir = dataStorage.getSessionDir(
-            ApplicationServices.authenticationManager.getUser(
-                req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
-            )?.id, sessionID
-        )
+            ApplicationServices.authenticationManager.getUser(req.getCookie())?.id, sessionID)
         val file = File(sessionDir, path)
         val zipFile = File.createTempFile("skyenet", ".zip")
         try {

@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.servlet
 
 import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.ApplicationDirectory
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.AuthenticationManager
@@ -14,12 +15,7 @@ import java.nio.file.NoSuchFileException
 
 open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServlet() {
     override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
-        val user = ApplicationServices.authenticationManager.getUser(
-            ApplicationBase.getCookie(
-                req!!,
-                AuthenticationManager.COOKIE_NAME
-            )
-        )
+        val user = ApplicationServices.authenticationManager.getUser(req!!.getCookie())
         val requestURI = req.requestURI ?: "/"
         resp?.contentType = when (requestURI) {
             "/" -> "text/html"

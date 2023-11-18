@@ -1,8 +1,6 @@
 package com.simiacryptus.skyenet.config
 
-import com.simiacryptus.openai.Model
-import com.simiacryptus.openai.Models
-import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.models.*
 import com.simiacryptus.util.JsonUtil
 import java.io.File
 import java.io.FileWriter
@@ -31,7 +29,12 @@ open class UsageManager {
         if (file.exists()) {
             file.readLines().forEach { line ->
                 val (sessionId, user, model, tokens) = line.split(",")
-                val modelEnum = Models.values().find { model == it.modelName } ?: throw RuntimeException("Unknown model $model")
+                val modelEnum = listOf(
+                    ChatModels.values(),
+                    CompletionModels.values(),
+                    EditModels.values(),
+                    EmbeddingModels.values()
+                ).flatMap { it.toList() }.find { model == it.modelName } ?: throw RuntimeException("Unknown model $model")
                 incrementUsage(sessionId, user, modelEnum, tokens.toInt())
             }
         }
@@ -81,7 +84,7 @@ open class UsageManager {
         File(".skyenet/usage/counters.json").writeText(JsonUtil.toJson(usagePerSession))
     }
 
-    open fun incrementUsage(sessionId: String, user: String?, model: Model, tokens: Int) {
+    open fun incrementUsage(sessionId: String, user: String?, model: OpenAIModel, tokens: Int) {
         val usage = usagePerSession.getOrPut(sessionId) {
             UsageCounters()
         }
@@ -108,7 +111,7 @@ open class UsageManager {
         }
     }
 
-    open fun getUserUsageSummary(user: String): Map<Model, Int> {
+    open fun getUserUsageSummary(user: String): Map<OpenAIModel, Int> {
         val sessions = sessionsByUser[user]
         return sessions?.flatMap { sessionId ->
             val usage = usagePerSession[sessionId]
@@ -118,7 +121,7 @@ open class UsageManager {
         }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.sum() } ?: emptyMap()
     }
 
-    open fun getSessionUsageSummary(sessionId: String): Map<Model, Int> {
+    open fun getSessionUsageSummary(sessionId: String): Map<OpenAIModel, Int> {
         val usage = usagePerSession[sessionId]
         return usage?.tokensPerModel?.entries?.map { (model, counter) ->
             model to counter.get()
@@ -126,7 +129,7 @@ open class UsageManager {
     }
 
     data class UsageCounters(
-        val tokensPerModel: HashMap<Model, AtomicInteger> = HashMap(),
+        val tokensPerModel: HashMap<OpenAIModel, AtomicInteger> = HashMap(),
     )
 
     companion object {

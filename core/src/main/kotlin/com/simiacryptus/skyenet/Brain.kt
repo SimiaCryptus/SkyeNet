@@ -2,11 +2,11 @@
 
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.openai.Model
-import com.simiacryptus.openai.Models
+import com.simiacryptus.openai.models.OpenAIModel
+import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.OpenAIClient.ChatMessage
-import com.simiacryptus.openai.OpenAIClient.ChatRequest
+import com.simiacryptus.openai.OpenAIClient.*
+import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
 import com.simiacryptus.util.JsonUtil.toJson
 import com.simiacryptus.util.describe.TypeDescriber
 import com.simiacryptus.util.describe.YamlDescriber
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 open class Brain(
     val api: OpenAIClient,
     val symbols: java.util.Map<String, Object> = java.util.HashMap<String, Object>() as java.util.Map<String, Object>,
-    val model: Model = Models.GPT35Turbo,
+    val model: OpenAIModel = ChatModels.GPT35Turbo,
     private val verbose: Boolean = false,
     val temperature: Double = 0.3,
     val describer: TypeDescriber = YamlDescriber(),
@@ -33,7 +33,7 @@ open class Brain(
     open fun implement(vararg prompt: String): String {
         if (verbose) log.info("Prompt: \n\t" + prompt.joinToString("\n\t"))
         return implement(*(getChatSystemMessages(apiDescription) +
-                prompt.map { ChatMessage(ChatMessage.Role.user, it) }).toTypedArray()
+                prompt.map { ChatMessage(Role.user, it.toContentList()) }).toTypedArray()
         )
     }
 
@@ -49,7 +49,7 @@ open class Brain(
     @Language("TEXT")
     open fun getChatSystemMessages(apiDescription: String): List<ChatMessage> = listOf(
         ChatMessage(
-            ChatMessage.Role.system, """
+            Role.system, """
                         |You will translate natural language instructions into 
                         |an implementation using $language and the script context.
                         |Use ``` code blocks labeled with $language where appropriate.
@@ -57,7 +57,7 @@ open class Brain(
                         |The runtime context is described below:
                         |
                         |$apiDescription
-                        |""".trimMargin().trim()
+                        |""".trimMargin().trim().toContentList()
         )
     )
 
@@ -71,15 +71,15 @@ open class Brain(
             messages = ArrayList(
                     promptMessages.toList() + listOf(
                         ChatMessage(
-                            ChatMessage.Role.assistant,
+                            Role.assistant,
                             """
                                 |```${language.lowercase()}
                                 |${previousCode}
                                 |```
-                                |""".trimMargin().trim()
+                                |""".trimMargin().trim().toContentList()
                         ),
                         ChatMessage(
-                            ChatMessage.Role.system,
+                            Role.system,
                             """
                                 |The previous code failed with the following error:
                                 |
@@ -93,7 +93,7 @@ open class Brain(
                                 |```
                                 |
                                 |Correct the code and try again.
-                                |""".trimMargin().trim()
+                                |""".trimMargin().trim().toContentList()
                         )
                     ))
         )

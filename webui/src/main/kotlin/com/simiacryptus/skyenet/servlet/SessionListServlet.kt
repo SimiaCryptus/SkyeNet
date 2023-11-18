@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.servlet
 
+import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.AuthenticationManager
 import com.simiacryptus.skyenet.config.DataStorage
@@ -14,11 +15,7 @@ class SessionListServlet(
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
-        val sessions = dataStorage.listSessions(
-            ApplicationServices.authenticationManager.getUser(
-                req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
-            )?.id
-        )
+        val sessions = dataStorage.listSessions(ApplicationServices.authenticationManager.getUser(req.getCookie())?.id)
 
         resp.writer.write(
             """
@@ -54,8 +51,6 @@ class SessionListServlet(
     }
 
     private fun sessionName(req: HttpServletRequest, session: String) = dataStorage.getSessionName(
-        ApplicationServices.authenticationManager.getUser(
-            req.cookies?.find { it.name == AuthenticationManager.COOKIE_NAME }?.value
-        )?.id, session
+        ApplicationServices.authenticationManager.getUser(req.getCookie())?.id, session
     )
 }

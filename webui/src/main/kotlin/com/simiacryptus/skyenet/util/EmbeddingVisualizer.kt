@@ -1,7 +1,8 @@
 package com.simiacryptus.skyenet.util
 
-import com.simiacryptus.openai.Models
+import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.models.EmbeddingModels
 import com.simiacryptus.skyenet.config.DataStorage
 import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.util.JsonUtil
@@ -11,7 +12,7 @@ class EmbeddingVisualizer(
     val dataStorage: DataStorage,
     val sessionID: String,
     val appPath: String,
-    val host: String = "http://localhost:8081",
+    val host: String,
     val session: SessionBase,
 ) {
 
@@ -19,7 +20,7 @@ class EmbeddingVisualizer(
         val vectors = words.map {word ->
             word to api.createEmbedding(
                 OpenAIClient.EmbeddingRequest(
-                    model = Models.AdaEmbedding.modelName,
+                    model = EmbeddingModels.AdaEmbedding.modelName,
                     input = word,
                 )
             ).data.first().embedding!!

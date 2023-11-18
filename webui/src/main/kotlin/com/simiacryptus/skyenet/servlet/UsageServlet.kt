@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.openai.Model
-import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
@@ -18,7 +17,7 @@ class UsageServlet : HttpServlet() {
         if (null != sessionId) {
             serve(resp, ApplicationServices.usageManager.getSessionUsageSummary(sessionId))
         } else {
-            val userinfo = ApplicationServices.authenticationManager.getUser(getCookie(req, COOKIE_NAME))
+            val userinfo = ApplicationServices.authenticationManager.getUser(req.getCookie())
             if (null == userinfo) {
                 resp.status = HttpServletResponse.SC_BAD_REQUEST
             } else {
@@ -30,7 +29,7 @@ class UsageServlet : HttpServlet() {
 
     private fun serve(
         resp: HttpServletResponse,
-        usage: Map<Model, Int>
+        usage: Map<OpenAIModel, Int>
     ) {
         resp.writer.write(
             """

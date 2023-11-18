@@ -1,12 +1,12 @@
 package com.simiacryptus.skyenet.chat
 
-import com.simiacryptus.openai.Model
+import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.skyenet.config.ApplicationServices
 import com.simiacryptus.skyenet.config.ApplicationServices.authorizationManager
+import com.simiacryptus.skyenet.config.AuthenticationManager
 import com.simiacryptus.skyenet.config.DataStorage
 import com.simiacryptus.skyenet.session.SessionInterface
-import com.simiacryptus.skyenet.config.AuthorizationManager.OperationType
 import com.simiacryptus.skyenet.config.AuthorizationManager.OperationType.GlobalKey
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
@@ -15,11 +15,9 @@ import org.slf4j.event.Level
 class ChatSocket(
     val sessionId: String,
     private val sessionState: SessionInterface,
-    private val authId: String?,
     val dataStorage: DataStorage?,
+    val user: AuthenticationManager.UserInfo?,
 ) : WebSocketAdapter() {
-
-    val user get() = if (authId == null) null else ApplicationServices.authenticationManager.getUser(authId)
 
     private val userApi: OpenAIClient?
         get() {
@@ -33,8 +31,8 @@ class ChatSocket(
                         dataStorage?.getSessionDir(user?.id, sessionId)?.resolve("openai.log")?.outputStream()?.buffered()
                     ).filterNotNull().toMutableList(),
                 ) {
-                    override fun incrementTokens(model: Model?, tokens: Int) {
-                        ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model!!, tokens)
+                    override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
+                        ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model!!, tokens.total_tokens)
                         super.incrementTokens(model, tokens)
                     }
                 }
@@ -55,8 +53,8 @@ class ChatSocket(
                     dataStorage?.getSessionDir(user?.id, sessionId)?.resolve("openai.log")?.outputStream()?.buffered()
                 ).filterNotNull().toMutableList()
             ) {
-                override fun incrementTokens(model: Model?, tokens: Int) {
-                    if(null != model) ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model, tokens)
+                override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
+                    if(null != model) ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model, tokens.total_tokens)
                     super.incrementTokens(model, tokens)
                 }
             }

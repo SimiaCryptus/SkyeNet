@@ -1,8 +1,9 @@
 package com.simiacryptus.skyenet.chat
 
-import com.simiacryptus.openai.Model
-import com.simiacryptus.openai.Models
+import com.simiacryptus.openai.models.OpenAIModel
+import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.skyenet.util.MarkdownUtil
@@ -10,13 +11,14 @@ import com.simiacryptus.skyenet.util.MarkdownUtil
 open class ChatSession(
     val parent: ChatServer,
     sessionId: String,
-    var model: Model = Models.GPT35Turbo,
+    var model: OpenAIModel = ChatModels.GPT35Turbo,
     private var visiblePrompt: String,
     private var hiddenPrompt: String,
     private var systemPrompt: String,
     val api: OpenAIClient,
     val temperature: Double = 0.3,
-) : SessionBase(sessionId, parent.dataStorage, userId = null) {
+    applicationClass: Class<out ApplicationBase>,
+) : SessionBase(sessionId, parent.dataStorage, userId = null, applicationClass = applicationClass) {
 
     init {
         if (visiblePrompt.isNotBlank()) {
@@ -26,9 +28,9 @@ open class ChatSession(
 
     protected val messages by lazy {
         val list = listOf(
-            OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.system, systemPrompt),
+            OpenAIClient.ChatMessage(OpenAIClient.Role.system, systemPrompt.toContentList()),
         ).toMutableList()
-        if(hiddenPrompt.isNotBlank()) list += OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, hiddenPrompt)
+        if(hiddenPrompt.isNotBlank()) list += OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, hiddenPrompt.toContentList())
         list
     }
 
@@ -46,9 +48,9 @@ open class ChatSession(
     }
 
     open fun handleMessage(userMessage: String, responseContents: String): String? {
-        messages += OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.user, userMessage)
+        messages += OpenAIClient.ChatMessage(OpenAIClient.Role.user, userMessage.toContentList())
         val response = getResponse()
-        messages += OpenAIClient.ChatMessage(OpenAIClient.ChatMessage.Role.assistant, response)
+        messages += OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, response.toContentList())
         return response
     }
 
