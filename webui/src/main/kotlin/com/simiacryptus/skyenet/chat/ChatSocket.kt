@@ -32,7 +32,7 @@ class ChatSocket(
                     ).filterNotNull().toMutableList(),
                 ) {
                     override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
-                        ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model!!, tokens.total_tokens)
+                        ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model!!, tokens)
                         super.incrementTokens(model, tokens)
                     }
                 }
@@ -54,7 +54,7 @@ class ChatSocket(
                 ).filterNotNull().toMutableList()
             ) {
                 override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
-                    if(null != model) ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model, tokens.total_tokens)
+                    if(null != model) ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model, tokens)
                     super.incrementTokens(model, tokens)
                 }
             }

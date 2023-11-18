@@ -125,7 +125,8 @@ open class UsageManager {
             val txLogFileWriter = txLogFileWriter
             if(null != txLogFileWriter) {
                 synchronized(txLogFile) {
-                    txLogFileWriter.write("$sessionId,$user,${model.modelName},$tokens\n")
+                    txLogFileWriter.write("$sessionId,$user,${model.modelName},${tokens.prompt_tokens},input\n")
+                    txLogFileWriter.write("$sessionId,$user,${model.modelName},${tokens.completion_tokens},output\n")
                     txLogFileWriter.flush()
                 }
             }
