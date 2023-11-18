@@ -31,7 +31,7 @@ val logback_version = "1.4.11"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.31")
+    implementation(group = "com.simiacryptus", name = "joe-penai", version = "1.0.32")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")

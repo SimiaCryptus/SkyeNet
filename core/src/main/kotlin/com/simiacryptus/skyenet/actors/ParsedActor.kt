@@ -1,13 +1,12 @@
 package com.simiacryptus.skyenet.actors
 
-import com.simiacryptus.openai.models.OpenAIModel
-import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.openai.proxy.ChatProxy
 import java.util.function.Function
 
-open class ParsedActor<T>(
+open class ParsedActor<T:Any>(
     val parserClass: Class<out Function<String, T>>,
     prompt: String,
     val action: String? = null,

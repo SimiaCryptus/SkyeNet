@@ -247,7 +247,7 @@ open class KotlinInterpreter(
     }
 
     companion object {
-        val log = LoggerFactory.getLogger(KotlinInterpreter::class.java)
+        private val log = LoggerFactory.getLogger(KotlinInterpreter::class.java)
         val storageMap = WeakHashMap<Object, UUID>()
         val retrievalIndex = HashMap<UUID, WeakReference<Object>>()
 

@@ -136,7 +136,7 @@ abstract class SessionBase(
     )
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
+        private val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
 
         fun randomID() = (0..5).map { ('a'..'z').random() }.joinToString("")
         fun divInitializer(operationID: String = randomID(), cancelable: Boolean): String =

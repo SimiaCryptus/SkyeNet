@@ -151,7 +151,7 @@ abstract class ApplicationDirectory(
 
 
     companion object {
-        val log = LoggerFactory.getLogger(ApplicationDirectory::class.java)
+        private val log = LoggerFactory.getLogger(ApplicationDirectory::class.java)
     }
 
 }

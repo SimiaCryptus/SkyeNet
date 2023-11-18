@@ -119,7 +119,7 @@ open class Ears(
     private fun timeout(count: Long, timeUnit: TimeUnit): () -> Boolean = timeout(timeUnit.toMillis(count))
 
     companion object {
-        val log = LoggerFactory.getLogger(Ears::class.java)
+        private val log = LoggerFactory.getLogger(Ears::class.java)
     }
 
 }

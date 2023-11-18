@@ -188,7 +188,7 @@ open class ActorOptimization(
     ).create()
 
     companion object {
-        val log = LoggerFactory.getLogger(ActorOptimization::class.java)
+        private val log = LoggerFactory.getLogger(ActorOptimization::class.java)
     }
 
 }

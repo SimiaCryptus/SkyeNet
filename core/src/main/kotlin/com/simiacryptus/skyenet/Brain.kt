@@ -118,7 +118,7 @@ open class Brain(
     }
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(Brain::class.java)
+        private val log = org.slf4j.LoggerFactory.getLogger(Brain::class.java)
         fun String.indent() = this.replace("\n", "\n  ")
         fun joinYamlList(typeDescriptions: List<String>) = typeDescriptions.joinToString("\n") {
             "- " + it.indent()

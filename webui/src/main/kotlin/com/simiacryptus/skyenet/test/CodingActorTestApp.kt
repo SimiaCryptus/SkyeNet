@@ -60,7 +60,7 @@ open class CodingActorTestApp(
 
 
     companion object {
-        val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
+        private val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
     }
 
 }

@@ -52,6 +52,6 @@ class UserSettingsServlet : HttpServlet() {
     }
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(UserSettingsServlet::class.java)
+        private val log = org.slf4j.LoggerFactory.getLogger(UserSettingsServlet::class.java)
     }
 }

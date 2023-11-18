@@ -81,7 +81,7 @@ abstract class ChatServer(val resourceBase: String) {
     }
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
+        private val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
     }
 }
 

@@ -62,7 +62,7 @@ class ChatSocket(
 
     override fun onWebSocketConnect(session: Session) {
         super.onWebSocketConnect(session)
-        ChatServer.log.debug("{} - Socket connected: {}", sessionId, session.remote)
+        log.debug("{} - Socket connected: {}", sessionId, session.remote)
         sessionState.addSocket(this)
         sessionState.getReplay().forEach {
             try {
@@ -83,4 +83,7 @@ class ChatSocket(
         sessionState.removeSocket(this)
     }
 
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(ChatSocket::class.java)
+    }
 }

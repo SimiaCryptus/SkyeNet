@@ -131,7 +131,7 @@ abstract class ApplicationBase(
 
 
     companion object {
-        val log = LoggerFactory.getLogger(ApplicationBase::class.java)
+        private val log = LoggerFactory.getLogger(ApplicationBase::class.java)
         val spinner =
             """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
 

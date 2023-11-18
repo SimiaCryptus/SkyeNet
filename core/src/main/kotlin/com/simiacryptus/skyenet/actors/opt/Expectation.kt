@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 
 abstract class Expectation {
     companion object {
-        val log = LoggerFactory.getLogger(Expectation::class.java)
+        private val log = LoggerFactory.getLogger(Expectation::class.java)
     }
 
     open class VectorMatch(val example: String, private val metric: DistanceType = DistanceType.Cosine) : Expectation() {
