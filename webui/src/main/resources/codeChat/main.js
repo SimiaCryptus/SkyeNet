@@ -85,6 +85,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    let originalScrollHeight = messageInput.scrollHeight;
+    messageInput.style.height = (messageInput.scrollHeight) + 'px';
+    let postEditScrollHeight = messageInput.scrollHeight;
+    let heightAdjustment = postEditScrollHeight - originalScrollHeight;
+    messageInput.style.height = '';
+
+    messageInput.addEventListener('input', function() {
+        // Reset the height to a single row to get the scroll height for the current content
+        this.style.height = 'auto';
+        // Set the height to the scroll height, which represents the height of the content
+        this.style.height = (this.scrollHeight - heightAdjustment) + 'px';
+
+        // Get the computed style for the element
+        const computedStyle = window.getComputedStyle(this);
+        // Get the line height, check if it's 'normal', and calculate it based on the font size if needed
+        let lineHeight = computedStyle.lineHeight;
+        if (lineHeight === 'normal') {
+            // Use a typical browser default multiplier for 'normal' line-height
+            lineHeight = parseInt(computedStyle.fontSize) * 1.2;
+        } else {
+            lineHeight = parseInt(lineHeight);
+        }
+
+        const maxLines = 20;
+        if (this.scrollHeight > lineHeight * maxLines) {
+            this.style.height = (lineHeight * maxLines) + 'px';
+            this.style.overflowY = 'scroll'; // Enable vertical scrolling
+        } else {
+            this.style.overflowY = 'hidden'; // Hide the scrollbar when not needed
+        }
+    });
+
+    messageInput.focus();
+
     connect(undefined, onWebSocketText);
 
     document.body.addEventListener('click', (event) => {
