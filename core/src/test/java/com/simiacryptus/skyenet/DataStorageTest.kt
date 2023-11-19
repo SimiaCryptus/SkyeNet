@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.DataStorage
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue

@@ -2,16 +2,15 @@ package com.simiacryptus.skyenet
 
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.config.ApplicationServices.authenticationManager
-import com.simiacryptus.skyenet.config.ApplicationServices.authorizationManager
-import com.simiacryptus.skyenet.config.ApplicationServices.dataStorageFactory
-import com.simiacryptus.skyenet.config.AuthenticationManager
+import com.simiacryptus.skyenet.platform.ApplicationServices.authenticationManager
+import com.simiacryptus.skyenet.platform.ApplicationServices.authorizationManager
+import com.simiacryptus.skyenet.platform.ApplicationServices.dataStorageFactory
 import com.simiacryptus.skyenet.servlet.*
-import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
+import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.COOKIE_NAME
 import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.skyenet.session.SessionDiv
 import com.simiacryptus.skyenet.session.SessionInterface
-import com.simiacryptus.skyenet.config.AuthorizationManager
+import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.util.HtmlTools
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -131,7 +130,7 @@ abstract class ApplicationBase(
 
 
     companion object {
-        val log = LoggerFactory.getLogger(ApplicationBase::class.java)
+        private val log = LoggerFactory.getLogger(ApplicationBase::class.java)
         val spinner =
             """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
 

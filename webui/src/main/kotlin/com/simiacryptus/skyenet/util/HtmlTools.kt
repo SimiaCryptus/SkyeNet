@@ -14,18 +14,18 @@ class HtmlTools(
     val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
 
     private val txtTriggers = mutableMapOf<String, Consumer<String>>()
-    fun hrefLink(classname: String = """href-link""", handler: Consumer<Unit>): String {
+    fun hrefLink(linkText : String, classname: String = """href-link""", handler: Consumer<Unit>): String {
         val operationID = SessionBase.randomID()
         app.linkTriggers[operationID] = handler
-        return """<a class="$classname" data-id="$operationID">"""
+        return """<a class="$classname" data-id="$operationID">$linkText</a>"""
     }
     fun textInput(handler: Consumer<String>): String {
         val operationID = SessionBase.randomID()
         txtTriggers[operationID] = handler
         //language=HTML
         return """<form class="reply-form">
-                                   <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
-                                   <button class="text-submit-button" data-id="$operationID">Send</button>
-                               </form>""".trimIndent()
+                       <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
+                       <button class="text-submit-button" data-id="$operationID">Send</button>
+                   </form>""".trimIndent()
     }
 }

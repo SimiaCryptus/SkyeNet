@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet
 import com.simiacryptus.skyenet.actors.CodingActor
 import com.simiacryptus.skyenet.actors.ParsedActor
 import com.simiacryptus.skyenet.actors.SimpleActor
-import com.simiacryptus.skyenet.config.ApplicationServices
-import com.simiacryptus.skyenet.config.AuthenticationManager
-import com.simiacryptus.skyenet.config.AuthorizationManager
+import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.AuthenticationManager
+import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.heart.GroovyInterpreter
 import com.simiacryptus.skyenet.heart.KotlinInterpreter
 import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter

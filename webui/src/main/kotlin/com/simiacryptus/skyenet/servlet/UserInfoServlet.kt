@@ -1,8 +1,7 @@
 package com.simiacryptus.skyenet.servlet
 
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
-import com.simiacryptus.skyenet.config.ApplicationServices
-import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
+import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest

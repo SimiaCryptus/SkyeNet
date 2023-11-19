@@ -2,7 +2,6 @@
 
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClient.*
@@ -118,8 +117,8 @@ open class Brain(
     }
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(Brain::class.java)
-        fun String.indent() = this.replace("\n", "\n  ")
+        private val log = org.slf4j.LoggerFactory.getLogger(Brain::class.java)
+        fun String.indent(indent: String = "  ") = this.replace("\n", "\n$indent")
         fun joinYamlList(typeDescriptions: List<String>) = typeDescriptions.joinToString("\n") {
             "- " + it.indent()
         }

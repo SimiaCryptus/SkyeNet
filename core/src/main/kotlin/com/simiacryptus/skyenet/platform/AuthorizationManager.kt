@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.config
+package com.simiacryptus.skyenet.platform
 
 import java.util.*
 
@@ -53,6 +53,6 @@ open class AuthorizationManager {
             }
         } ?: false
 
-    val log = org.slf4j.LoggerFactory.getLogger(AuthorizationManager::class.java)
+    private val log = org.slf4j.LoggerFactory.getLogger(AuthorizationManager::class.java)
 
 }

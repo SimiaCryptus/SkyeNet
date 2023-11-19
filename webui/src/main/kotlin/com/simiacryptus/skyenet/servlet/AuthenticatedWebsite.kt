@@ -8,9 +8,9 @@ import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.oauth2.Oauth2
 import com.google.api.services.oauth2.model.Userinfo
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
-import com.simiacryptus.skyenet.config.ApplicationServices
-import com.simiacryptus.skyenet.config.AuthenticationManager
-import com.simiacryptus.skyenet.config.AuthenticationManager.Companion.COOKIE_NAME
+import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.AuthenticationManager
+import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.COOKIE_NAME
 import jakarta.servlet.*
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServlet

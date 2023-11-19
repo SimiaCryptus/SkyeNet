@@ -11,7 +11,6 @@ open class SimpleActorTestApp(
     private val actor: SimpleActor,
     applicationName: String = "SimpleActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
-    oauthConfig: String? = null,
 ) : ApplicationBase(
     applicationName = applicationName,
     temperature = temperature,
@@ -37,7 +36,7 @@ open class SimpleActorTestApp(
     }
 
     companion object {
-        val log = LoggerFactory.getLogger(SimpleActorTestApp::class.java)
+        private val log = LoggerFactory.getLogger(SimpleActorTestApp::class.java)
     }
 
 }

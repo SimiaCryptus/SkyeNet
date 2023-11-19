@@ -12,8 +12,8 @@ open class ChatSession(
     val parent: ChatServer,
     sessionId: String,
     val model: OpenAITextModel = ChatModels.GPT35Turbo,
-    val visiblePrompt: String,
-    val hiddenPrompt: String,
+    val userInterfacePrompt: String,
+    val initialAssistantPrompt: String = "",
     val systemPrompt: String,
     val api: OpenAIClient,
     val temperature: Double = 0.3,
@@ -21,8 +21,8 @@ open class ChatSession(
 ) : SessionBase(sessionId, parent.dataStorage, userId = null, applicationClass = applicationClass) {
 
     init {
-        if (visiblePrompt.isNotBlank()) {
-            send("""aaa,<div class="initial-prompt">${visiblePrompt}</div>""")
+        if (userInterfacePrompt.isNotBlank()) {
+            send("""aaa,<div class="initial-prompt">${MarkdownUtil.renderMarkdown(userInterfacePrompt)}</div>""")
         }
     }
 
@@ -30,7 +30,7 @@ open class ChatSession(
         val list = listOf(
             OpenAIClient.ChatMessage(OpenAIClient.Role.system, systemPrompt.toContentList()),
         ).toMutableList()
-        if(hiddenPrompt.isNotBlank()) list += OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, hiddenPrompt.toContentList())
+        if(initialAssistantPrompt.isNotBlank()) list += OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, initialAssistantPrompt.toContentList())
         list
     }
 

@@ -1,9 +1,8 @@
 package com.simiacryptus.skyenet.util
 
-import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.EmbeddingModels
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.util.JsonUtil
 

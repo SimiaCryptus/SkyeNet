@@ -4,9 +4,10 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.config.ApplicationServices
-import com.simiacryptus.skyenet.config.AuthorizationManager
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.AuthorizationManager
+import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -109,7 +110,7 @@ abstract class SessionBase(
                 }
             } catch (e: Exception) {
                 log.warn("$sessionId - Error processing message: $message", e)
-                send("""${randomID()},<div class="error">${e.message}</div>""")
+                send("""${randomID()},<div class="error">${MarkdownUtil.renderMarkdown(e.message ?: "")}</div>""")
             }
         } else {
             log.warn("$sessionId - Unauthorized message: $message")
@@ -136,7 +137,7 @@ abstract class SessionBase(
     )
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
+        private val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
 
         fun randomID() = (0..5).map { ('a'..'z').random() }.joinToString("")
         fun divInitializer(operationID: String = randomID(), cancelable: Boolean): String =

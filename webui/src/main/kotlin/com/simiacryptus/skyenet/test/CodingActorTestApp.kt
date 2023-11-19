@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.test
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.actors.CodingActor
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.session.*
-import com.simiacryptus.skyenet.config.AuthorizationManager
+import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -18,7 +18,6 @@ open class CodingActorTestApp(
     applicationName = applicationName,
     temperature = temperature,
 ) {
-
     override fun processMessage(
         sessionId: String,
         userMessage: String,
@@ -34,19 +33,16 @@ open class CodingActorTestApp(
             AuthorizationManager.OperationType.Execute
         )
         val playLink = if(!canPlay) "" else {
-            val htmlTools = session.htmlTools(sessionDiv.divID())
-            """${
-                htmlTools.hrefLink("href-link play-button") {
-                    sessionDiv.append("""<div>Running...</div>""", true)
-                    val result = response.run()
-                    sessionDiv.append(
-                        """
-                                        |<pre>${result.resultValue}</pre>
-                                        |<pre>${result.resultOutput}</pre>
-                                        """.trimMargin(), false
-                    )
-                }
-            }▶</a>"""
+            session.htmlTools(sessionDiv.divID()).hrefLink("▶", "href-link play-button") {
+                sessionDiv.append("""<div>Running...</div>""", true)
+                val result = response.run()
+                sessionDiv.append(
+                    """
+                    |<pre>${result.resultValue}</pre>
+                    |<pre>${result.resultOutput}</pre>
+                    """.trimMargin(), false
+                )
+            }
         }
         sessionDiv.append("""<div>${
             renderMarkdown("""
@@ -58,9 +54,7 @@ open class CodingActorTestApp(
         }</div>""", false)
     }
 
-
     companion object {
-        val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
+        private val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
     }
-
 }

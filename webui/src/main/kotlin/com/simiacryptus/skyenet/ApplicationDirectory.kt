@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet
 
 import com.simiacryptus.openai.OpenAIClientBase
 import com.simiacryptus.skyenet.chat.ChatServer
-import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.servlet.*
 import com.simiacryptus.skyenet.util.AwsUtil.decryptResource
 import jakarta.servlet.DispatcherType
@@ -151,7 +151,7 @@ abstract class ApplicationDirectory(
 
 
     companion object {
-        val log = LoggerFactory.getLogger(ApplicationDirectory::class.java)
+        private val log = LoggerFactory.getLogger(ApplicationDirectory::class.java)
     }
 
 }

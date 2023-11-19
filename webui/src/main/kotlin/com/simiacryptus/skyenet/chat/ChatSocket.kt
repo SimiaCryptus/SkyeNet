@@ -2,12 +2,12 @@ package com.simiacryptus.skyenet.chat
 
 import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.config.ApplicationServices
-import com.simiacryptus.skyenet.config.ApplicationServices.authorizationManager
-import com.simiacryptus.skyenet.config.AuthenticationManager
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.ApplicationServices.authorizationManager
+import com.simiacryptus.skyenet.platform.AuthenticationManager
+import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.session.SessionInterface
-import com.simiacryptus.skyenet.config.AuthorizationManager.OperationType.GlobalKey
+import com.simiacryptus.skyenet.platform.AuthorizationManager.OperationType.GlobalKey
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.slf4j.event.Level
@@ -62,7 +62,7 @@ class ChatSocket(
 
     override fun onWebSocketConnect(session: Session) {
         super.onWebSocketConnect(session)
-        ChatServer.log.debug("{} - Socket connected: {}", sessionId, session.remote)
+        log.debug("{} - Socket connected: {}", sessionId, session.remote)
         sessionState.addSocket(this)
         sessionState.getReplay().forEach {
             try {
@@ -83,4 +83,7 @@ class ChatSocket(
         sessionState.removeSocket(this)
     }
 
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(ChatSocket::class.java)
+    }
 }

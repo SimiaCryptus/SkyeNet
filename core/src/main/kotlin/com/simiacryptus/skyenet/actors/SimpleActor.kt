@@ -20,4 +20,3 @@ open class SimpleActor(
 
     override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): String = response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
 }
-

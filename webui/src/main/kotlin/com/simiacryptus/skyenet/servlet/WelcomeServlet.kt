@@ -3,10 +3,10 @@ package com.simiacryptus.skyenet.servlet
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.ApplicationDirectory
-import com.simiacryptus.skyenet.config.ApplicationServices
-import com.simiacryptus.skyenet.config.AuthenticationManager
-import com.simiacryptus.skyenet.config.AuthorizationManager
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.AuthenticationManager
+import com.simiacryptus.skyenet.platform.AuthorizationManager
+import com.simiacryptus.skyenet.platform.DataStorage
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
