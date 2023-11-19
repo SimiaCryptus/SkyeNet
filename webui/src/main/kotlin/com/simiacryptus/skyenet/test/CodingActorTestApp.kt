@@ -34,19 +34,16 @@ open class CodingActorTestApp(
             AuthorizationManager.OperationType.Execute
         )
         val playLink = if(!canPlay) "" else {
-            val htmlTools = session.htmlTools(sessionDiv.divID())
-            """${
-                htmlTools.hrefLink("href-link play-button") {
-                    sessionDiv.append("""<div>Running...</div>""", true)
-                    val result = response.run()
-                    sessionDiv.append(
-                        """
-                                        |<pre>${result.resultValue}</pre>
-                                        |<pre>${result.resultOutput}</pre>
-                                        """.trimMargin(), false
-                    )
-                }
-            }▶</a>"""
+            session.htmlTools(sessionDiv.divID()).hrefLink("▶", "href-link play-button") {
+                sessionDiv.append("""<div>Running...</div>""", true)
+                val result = response.run()
+                sessionDiv.append(
+                    """
+                    |<pre>${result.resultValue}</pre>
+                    |<pre>${result.resultOutput}</pre>
+                    """.trimMargin(), false
+                )
+            }
         }
         sessionDiv.append("""<div>${
             renderMarkdown("""

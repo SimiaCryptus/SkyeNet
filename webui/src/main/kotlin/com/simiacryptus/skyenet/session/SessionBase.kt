@@ -7,6 +7,7 @@ import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -109,7 +110,7 @@ abstract class SessionBase(
                 }
             } catch (e: Exception) {
                 log.warn("$sessionId - Error processing message: $message", e)
-                send("""${randomID()},<div class="error">${e.message}</div>""")
+                send("""${randomID()},<div class="error">${MarkdownUtil.renderMarkdown(e.message ?: "")}</div>""")
             }
         } else {
             log.warn("$sessionId - Unauthorized message: $message")

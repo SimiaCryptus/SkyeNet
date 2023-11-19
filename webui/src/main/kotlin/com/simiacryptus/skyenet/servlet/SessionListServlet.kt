@@ -37,8 +37,8 @@ class SessionListServlet(
                 </tr>
                 ${sessions.joinToString("") { session ->
                     """
-                    <tr class='session-row'>
-                        <td><a href="$prefix#$session" class='session-link'>${sessionName(req, session)}</a></td>
+                    <tr class="session-row">
+                        <td><a href="$prefix#$session" class="session-link">${sessionName(req, session)}</a></td>
                     </tr>
                     """.trimIndent()
                 }}

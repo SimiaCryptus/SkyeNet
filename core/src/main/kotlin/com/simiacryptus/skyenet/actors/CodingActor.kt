@@ -94,7 +94,7 @@ open class CodingActor(
         }
         throw RuntimeException("""
             |Failed to fix code. Last attempt: 
-            |```
+            |```${interpreter.getLanguage().lowercase()}
             |${result.getCode()}
             |```
             |
