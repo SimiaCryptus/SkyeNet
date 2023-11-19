@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.actors
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
 import com.simiacryptus.openai.models.ChatModels
@@ -149,12 +150,12 @@ open class CodingActor(
         codePrefix: String = "",
         api: OpenAIClient,
     ) : CodeResult {
-        var _status = CodeResult.Status.Coding
+        private var _status = CodeResult.Status.Coding
         override fun getStatus(): CodeResult.Status {
             return _status
         }
 
-        val impl by lazy {
+        private val impl by lazy {
             var codedInstruction = implement(
                 brain(api, model), *messages, codePrefix = codePrefix
             )
@@ -215,6 +216,7 @@ open class CodingActor(
             return null
         }
 
+        @JsonIgnore
         override fun getCode(): String {
             return impl
         }

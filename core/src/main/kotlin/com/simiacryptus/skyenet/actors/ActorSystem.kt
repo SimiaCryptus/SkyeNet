@@ -14,13 +14,18 @@ open class ActorSystem<T:Enum<*>>(
 ) {
     val sessionDir = dataStorage.getSessionDir(userId, sessionId)
     fun getActor(actor: T): BaseActor<*> {
-        val wrapper = FunctionWrapper(JsonFunctionRecorder(File(sessionDir, "${actor.name}.json")))
+        val wrapper = getWrapper(actor.name)
         return when (val baseActor = actors[actor]) {
             null -> throw RuntimeException("No actor for $actor")
-            is SimpleActor -> RecordingSimpleActor(baseActor, wrapper)
-            is ParsedActor<*> -> RecordingParsedActor(baseActor, wrapper)
-            is CodingActor -> RecordingCodingActor(baseActor, wrapper)
+            is SimpleActor -> SimpleActorInterceptor(baseActor, wrapper)
+            is ParsedActor<*> -> ParsedActorInterceptor(baseActor, wrapper)
+            is CodingActor -> CodingActorInterceptor(baseActor, wrapper)
             else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
         }
+    }
+
+    private val wrapperMap = mutableMapOf<String, FunctionWrapper>()
+    private fun getWrapper(name: String) = wrapperMap.computeIfAbsent(name) {
+        FunctionWrapper(JsonFunctionRecorder(File(sessionDir, "actors/$name")))
     }
 }

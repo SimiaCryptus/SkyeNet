@@ -6,7 +6,7 @@ import com.simiacryptus.skyenet.actors.ParsedActor
 import com.simiacryptus.skyenet.actors.ParsedResponse
 import com.simiacryptus.skyenet.util.FunctionWrapper
 
-class RecordingParsedActor<T:Any>(
+class ParsedActorInterceptor<T:Any>(
     val inner: ParsedActor<T>,
     val functionInterceptor: FunctionWrapper,
 ) : ParsedActor<T>(
@@ -16,8 +16,8 @@ class RecordingParsedActor<T:Any>(
     model = inner.model,
     temperature = inner.temperature,
 ) {
-    private inner class RecordingParsedResponseImpl(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient, val inner: ParsedResponse<T>) :
-        ParsedResponse<T>(this@RecordingParsedActor.inner.resultClass) {
+    private inner class ParsedResponseInterceptor(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient, private val inner: ParsedResponse<T>) :
+        ParsedResponse<T>(this@ParsedActorInterceptor.inner.resultClass) {
         override fun getText() = functionInterceptor.wrap { inner.getText() }
         override fun getObj(clazz: Class<T>) = functionInterceptor.intercept(clazz) { inner.getObj(clazz) } // <-- Cannot use 'T' as reified type parameter. Use a class instead.
     }
@@ -25,7 +25,7 @@ class RecordingParsedActor<T:Any>(
     override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): ParsedResponse<T> {
         return functionInterceptor.wrap(messages.toList().toTypedArray()) {
             messages: Array<OpenAIClient.ChatMessage> ->
-            RecordingParsedResponseImpl(*messages, api = api, inner = inner.answer(*messages, api = api))
+            ParsedResponseInterceptor(*messages, api = api, inner = inner.answer(*messages, api = api))
         }
     }
 

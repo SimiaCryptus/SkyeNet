@@ -5,7 +5,7 @@ import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.skyenet.actors.SimpleActor
 import com.simiacryptus.skyenet.util.FunctionWrapper
 
-class RecordingSimpleActor(
+class SimpleActorInterceptor(
     val inner: SimpleActor,
     val functionInterceptor: FunctionWrapper,
 ) : SimpleActor(
