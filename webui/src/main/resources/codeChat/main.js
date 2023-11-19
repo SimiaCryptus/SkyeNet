@@ -61,8 +61,6 @@ function onWebSocketText(event) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    document.getElementById('history').addEventListener('click', () => showModal('sessions'));
-    document.getElementById('settings').addEventListener('click', () => showModal('settings'));
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {
@@ -71,28 +69,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const messageInput = document.getElementById('message');
-    const usage = document.getElementById('usage');
+    const form = document.getElementById('main-input');
+    const messageInput = document.getElementById('chat-input');
 
-    const sessionId = getSessionId();
-    if (sessionId) {
-        connect(sessionId, onWebSocketText);
-        usage.href = '/usage/?sessionId=' + sessionId;
-    } else {
-        connect(undefined, onWebSocketText);
-    }
-
-    document.getElementById("files").addEventListener("click", function (event) {
-        event.preventDefault(); // Prevent the default behavior of the anchor tag
-        const sessionId = getSessionId();
-        const url = "fileIndex/" + sessionId + "/";
-        window.open(url, "_blank"); // Open the URL in a new tab
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        send(messageInput.value);
+        messageInput.value = '';
     });
 
-    const loginLink = document.getElementById('username');
-    if (loginLink) {
-        loginLink.href = '/googleLogin?redirect=' + encodeURIComponent(window.location.pathname);
-    }
+    messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    connect(undefined, onWebSocketText);
+
+    document.body.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target.classList.contains('play-button')) {
+            const messageId = target.getAttribute('data-id');
+            send('!' + messageId + ',run');
+        } else if (target.classList.contains('regen-button')) {
+            const messageId = target.getAttribute('data-id');
+            send('!' + messageId + ',regen');
+        } else if (target.classList.contains('cancel-button')) {
+            const messageId = target.getAttribute('data-id');
+            send('!' + messageId + ',stop');
+        } else if (target.classList.contains('href-link')) {
+            const messageId = target.getAttribute('data-id');
+            send('!' + messageId + ',link');
+        } else if (target.classList.contains('text-submit-button')) {
+            const messageId = target.getAttribute('data-id');
+            const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
+            send('!' + messageId + ',userTxt,' + text);
+        }
+    });
 
     fetch('appInfo')
         .then(response => {
@@ -110,21 +124,5 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('There was a problem with the fetch operation:', error);
         });
 
-    fetch('userInfo')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.name && loginLink) {
-                loginLink.innerHTML = data.name;
-                loginLink.href = "/userSettings";
-            }
-        })
-        .catch(error => {
-            console.error('There was a problem with the fetch operation:', error);
-        });
 });
 

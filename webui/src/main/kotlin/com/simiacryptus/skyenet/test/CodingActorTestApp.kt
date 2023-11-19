@@ -18,7 +18,6 @@ open class CodingActorTestApp(
     applicationName = applicationName,
     temperature = temperature,
 ) {
-
     override fun processMessage(
         sessionId: String,
         userMessage: String,
@@ -55,9 +54,7 @@ open class CodingActorTestApp(
         }</div>""", false)
     }
 
-
     companion object {
         private val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
     }
-
 }
