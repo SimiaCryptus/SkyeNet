@@ -6,12 +6,10 @@ import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.Brain.Companion.indent
-import com.simiacryptus.skyenet.Brain.Companion.superMethod
 import com.simiacryptus.skyenet.Heart
 import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.util.describe.TypeDescriber
-import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
@@ -58,7 +56,12 @@ open class CodingActor(
             |""".trimMargin().trim()
 
     open val apiDescription: String
-        get() = apiDescription(this.symbols, this.describer)
+        get() = this.symbols.map { (name, utilityObj) ->
+            """
+            |$name:
+            |    ${this.describer.describe(utilityObj.javaClass).indent("    ")}
+            |""".trimMargin().trim()
+        }.joinToString("\n")
 
     open val interpreter by lazy { interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols) }
 
@@ -70,7 +73,11 @@ open class CodingActor(
         if (!autoEvaluate) CodeResultImpl(*messages, api = api)
         else answerWithAutoEval(*messages, api = api).first
 
-    open fun answerWithPrefix(codePrefix: String, vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult =
+    open fun answerWithPrefix(
+        codePrefix: String,
+        vararg messages: OpenAIClient.ChatMessage,
+        api: OpenAIClient
+    ): CodeResult =
         if (!autoEvaluate) CodeResultImpl(*injectCodePrefix(messages, codePrefix), api = api)
         else answerWithAutoEval(*injectCodePrefix(messages, codePrefix), api = api).first
 
@@ -85,14 +92,15 @@ open class CodingActor(
         api: OpenAIClient
     ): Pair<CodeResult, ExecutionResult> {
         var result = CodeResultImpl(*messages, api = api)
-        var lastError : Throwable? = null
+        var lastError: Throwable? = null
         for (i in 0..fixIterations) try {
             return result to result.run()
         } catch (ex: Throwable) {
             lastError = ex
             result = fix(api, messages, result, ex)
         }
-        throw RuntimeException("""
+        throw RuntimeException(
+            """
             |Failed to fix code. Last attempt: 
             |```${interpreter.getLanguage().lowercase()}
             |${result.getCode()}
@@ -102,7 +110,8 @@ open class CodingActor(
             |```
             |${lastError?.message}
             |```
-            |""".trimMargin().trim())
+            |""".trimMargin().trim()
+        )
     }
 
     private fun injectCodePrefix(
@@ -289,47 +298,6 @@ open class CodingActor(
                     }
                 } as java.util.Map<K, V>
             }
-
-        fun apiDescription(
-            symbols: Map<String, Any>,
-            describer: TypeDescriber
-        ): String {
-            val types: ArrayList<Class<*>> = ArrayList()
-            val apiobjs = symbols.map { (name, utilityObj) ->
-                val clazz = Class.forName(utilityObj.javaClass.typeName)
-                val methods = clazz.methods
-                    .filter { Modifier.isPublic(it.modifiers) }
-                    .filter { it.declaringClass == clazz }
-                    .filter { !it.isSynthetic }
-                    .map { it.superMethod() ?: it }
-                    .filter { it.declaringClass != Object::class.java }
-                types.addAll(methods.flatMap { (listOf(it.returnType) + it.parameters.map { it.type }).filter { it != clazz } })
-                types.addAll(clazz.declaredClasses.filter { Modifier.isPublic(it.modifiers) })
-                """
-                                    |$name:
-                                    |  operations:
-                                    |    ${Brain.joinYamlList(methods.map { describer.describe(it) }).indent().indent()}
-                                    |""".trimMargin().trim()
-            }.toTypedArray<String>()
-            val typeDescriptions = types
-                .filter { !it.isPrimitive }
-                .filter { !it.isSynthetic }
-                .filter { !it.name.startsWith("java.") }
-                .filter { !setOf("void").contains(it.name) }
-                .distinct().map {
-                    """
-                                |${it.simpleName}:
-                                |  ${describer.describe(it).indent()}
-                                """.trimMargin().trim()
-                }.toTypedArray<String>()
-            return """
-                |api_objects:
-                |  ${apiobjs.joinToString("\n").indent()}
-                |components:
-                |  schemas:
-                |    ${typeDescriptions.joinToString("\n").indent().indent()}
-                |""".trimMargin().trim()
-        }
 
     }
 }
