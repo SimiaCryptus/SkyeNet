@@ -4,9 +4,9 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.config.ApplicationServices
-import com.simiacryptus.skyenet.config.AuthorizationManager
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.AuthorizationManager
+import com.simiacryptus.skyenet.platform.DataStorage
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 

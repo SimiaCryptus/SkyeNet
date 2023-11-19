@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.actors
 
 import com.simiacryptus.skyenet.actors.record.*
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.util.FunctionWrapper
 import com.simiacryptus.skyenet.util.JsonFunctionRecorder
 import java.io.File

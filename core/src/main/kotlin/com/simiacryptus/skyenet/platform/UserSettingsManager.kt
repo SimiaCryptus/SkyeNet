@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.config
+package com.simiacryptus.skyenet.platform
 
 import com.simiacryptus.util.JsonUtil
 import java.io.File

@@ -4,7 +4,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
-import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.platform.ApplicationServices
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.chat
 
-import com.simiacryptus.skyenet.config.ApplicationServices
-import com.simiacryptus.skyenet.config.AuthenticationManager
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.AuthenticationManager
+import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.servlet.NewSessionServlet
 import com.simiacryptus.skyenet.session.SessionInterface
 import com.simiacryptus.util.JsonUtil

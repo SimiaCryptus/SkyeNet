@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.config
+package com.simiacryptus.skyenet.platform
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.*

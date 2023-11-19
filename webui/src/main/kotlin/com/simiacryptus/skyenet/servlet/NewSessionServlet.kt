@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.skyenet.config.DataStorage
+import com.simiacryptus.skyenet.platform.DataStorage
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

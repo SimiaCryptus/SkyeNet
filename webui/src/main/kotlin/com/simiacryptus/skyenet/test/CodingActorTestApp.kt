@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.test
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.actors.CodingActor
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.config.ApplicationServices
+import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.session.*
-import com.simiacryptus.skyenet.config.AuthorizationManager
+import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.util.*
