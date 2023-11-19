@@ -21,7 +21,7 @@ open class ParsedActor<T:Any>(
     val resultClass: Class<T> by lazy { parserClass.getMethod("apply", String::class.java).returnType as Class<T> }
 
     private inner class ParsedResponseImpl(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient) : ParsedResponse<T>(resultClass) {
-        val parser: Function<String, T> = ChatProxy(
+        private val parser: Function<String, T> = ChatProxy(
             clazz = parserClass,
             api = api,
             model = ChatModels.GPT35Turbo,

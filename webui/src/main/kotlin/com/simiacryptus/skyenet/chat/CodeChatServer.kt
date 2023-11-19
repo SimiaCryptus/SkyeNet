@@ -29,7 +29,7 @@ class CodeChatServer(
             |# Code:
             |
             |```$language
-            |${htmlEscape(codeSelection)}
+            |$codeSelection
             |```
             |
             """.trimMargin().trim(),

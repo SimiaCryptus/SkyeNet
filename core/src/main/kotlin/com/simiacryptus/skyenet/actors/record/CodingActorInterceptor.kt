@@ -6,7 +6,7 @@ import com.simiacryptus.skyenet.actors.CodeResult
 import com.simiacryptus.skyenet.actors.CodingActor
 import com.simiacryptus.skyenet.util.FunctionWrapper
 
-class RecordingCodingActor(
+class CodingActorInterceptor(
     val inner: CodingActor,
     val functionInterceptor: FunctionWrapper,
 ) : CodingActor(
@@ -23,13 +23,13 @@ class RecordingCodingActor(
     override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult {
         return functionInterceptor.wrap(messages.toList().toTypedArray()) {
             messages: Array<OpenAIClient.ChatMessage> ->
-            RecordingCodeResultImpl(*messages, api = api, inner = inner.answer(*messages, api = api))
+            CodingResultInterceptor(*messages, api = api, inner = inner.answer(*messages, api = api))
         }
     }
 
-    private inner class RecordingCodeResultImpl(
+    private inner class CodingResultInterceptor(
         vararg messages: OpenAIClient.ChatMessage,
-        val inner: CodeResult,
+        private val inner: CodeResult,
         api: OpenAIClient,
     ) : CodeResult {
         override fun getStatus() = functionInterceptor.wrap { inner.getStatus() }

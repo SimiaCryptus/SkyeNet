@@ -26,7 +26,7 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.*
-
+import java.util.concurrent.TimeUnit
 
 
 open class AuthenticatedWebsite(
@@ -124,7 +124,10 @@ open class AuthenticatedWebsite(
                newUserSession(userInfo, sessionID)
                 val sessionCookie = Cookie(COOKIE_NAME, sessionID)
                 sessionCookie.path = "/"
-                sessionCookie.isHttpOnly = false
+                sessionCookie.isHttpOnly = true
+                sessionCookie.secure = true
+                sessionCookie.maxAge = TimeUnit.HOURS.toSeconds(1).toInt()
+                sessionCookie.comment = "Authentication Session ID"
                 resp.addCookie(sessionCookie)
                 val redirect = req.getParameter("state")?.urlDecode()
                 resp.sendRedirect(redirect ?: "/")
