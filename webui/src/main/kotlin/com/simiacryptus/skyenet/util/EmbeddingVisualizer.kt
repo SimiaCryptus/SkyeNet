@@ -13,6 +13,7 @@ class EmbeddingVisualizer(
     val appPath: String,
     val host: String,
     val session: SessionBase,
+    val userId: String,
 ) {
 
     private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {
@@ -42,8 +43,8 @@ class EmbeddingVisualizer(
         val vectorFileName = "vectors.tsv"
         val metadataFileName = "metadata.tsv"
         val configFileName = "projector-config.json"
-        dataStorage.getSessionDir(session.userId, sessionID).resolve(vectorFileName).writeText(vectorTsv)
-        dataStorage.getSessionDir(session.userId, sessionID).resolve(metadataFileName).writeText(metadataTsv)
+        dataStorage.getSessionDir(userId, sessionID).resolve(vectorFileName).writeText(vectorTsv)
+        dataStorage.getSessionDir(userId, sessionID).resolve(metadataFileName).writeText(metadataTsv)
         // projector-config.json
         val projectorConfig = JsonUtil.toJson(
             mapOf(
@@ -57,7 +58,7 @@ class EmbeddingVisualizer(
                 )
             )
         )
-        dataStorage.getSessionDir(session.userId, sessionID).resolve(configFileName).writeText(projectorConfig)
+        dataStorage.getSessionDir(userId, sessionID).resolve(configFileName).writeText(projectorConfig)
         return """
             <a href="$host/$appPath/fileIndex/$sessionID/projector-config.json">Projector Config</a>
             <a href="$host/$appPath/fileIndex/$sessionID/$vectorFileName">Vectors</a>

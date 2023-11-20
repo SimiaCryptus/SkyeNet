@@ -24,12 +24,13 @@ open class SimpleActorTestApp(
 
     override fun processMessage(
         sessionId: String,
+        userId: String?,
         userMessage: String,
         session: ApplicationSession,
         sessionDiv: SessionDiv,
         socket: ChatSocket
     ) {
-        val actor = getSettings<Settings>(sessionId, session.userId)?.actor ?: actor
+        val actor = getSettings<Settings>(sessionId, userId)?.actor ?: actor
         sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
         val moderatorResponse = actor.answer(userMessage, api = socket.api)
         sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)

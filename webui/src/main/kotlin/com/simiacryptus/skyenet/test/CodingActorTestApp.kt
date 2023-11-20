@@ -20,6 +20,7 @@ open class CodingActorTestApp(
 ) {
     override fun processMessage(
         sessionId: String,
+        userId: String?,
         userMessage: String,
         session: ApplicationSession,
         sessionDiv: SessionDiv,
@@ -33,7 +34,7 @@ open class CodingActorTestApp(
             AuthorizationManager.OperationType.Execute
         )
         val playLink = if(!canPlay) "" else {
-            session.htmlTools(sessionDiv.divID()).hrefLink("▶", "href-link play-button") {
+            session.hrefLink(sessionDiv.divID(), "▶", "href-link play-button") {
                 sessionDiv.append("""<div>Running...</div>""", true)
                 val result = response.run()
                 sessionDiv.append(

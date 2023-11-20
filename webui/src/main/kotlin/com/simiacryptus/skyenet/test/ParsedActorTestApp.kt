@@ -18,6 +18,7 @@ open class ParsedActorTestApp<T : Any>(
 ) {
     override fun processMessage(
         sessionId: String,
+        userId: String?,
         userMessage: String,
         session: ApplicationSession,
         sessionDiv: SessionDiv,

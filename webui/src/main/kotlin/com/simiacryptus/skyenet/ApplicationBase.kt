@@ -11,7 +11,6 @@ import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.skyenet.session.SessionDiv
 import com.simiacryptus.skyenet.session.SessionInterface
 import com.simiacryptus.skyenet.platform.AuthorizationManager
-import com.simiacryptus.skyenet.util.HtmlTools
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.FilterHolder
@@ -19,6 +18,7 @@ import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.function.Consumer
 
 abstract class ApplicationBase(
     final override val applicationName: String,
@@ -37,14 +37,14 @@ abstract class ApplicationBase(
         applicationClass = this@ApplicationBase.javaClass,
     ) {
         private val threads = mutableMapOf<String, Thread>()
-
-        val linkTriggers = mutableMapOf<String, java.util.function.Consumer<Unit>>()
+        private val linkTriggers = mutableMapOf<String, java.util.function.Consumer<Unit>>()
+        private val txtTriggers = mutableMapOf<String, Consumer<String>>()
 
         override fun onRun(userMessage: String, socket: ChatSocket) {
             val operationID = randomID()
             val sessionDiv = newSessionDiv(operationID, spinner, true)
             threads[operationID] = Thread.currentThread()
-            processMessage(sessionId, userMessage, this, sessionDiv, socket)
+            processMessage(sessionId, userId = userId, userMessage, this, sessionDiv, socket)
         }
 
         override fun onCmd(id: String, code: String, socket: ChatSocket) {
@@ -59,7 +59,27 @@ abstract class ApplicationBase(
             }
         }
 
-        fun htmlTools(divID: String) = HtmlTools(this, divID)
+        val spinner: String get() = """<div>${ApplicationBase.spinner}</div>"""
+//        val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
+//        val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
+//        val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
+
+        fun hrefLink(divID: String, linkText : String, classname: String = """href-link""", handler: Consumer<Unit>): String {
+            val operationID = SessionBase.randomID()
+            linkTriggers[operationID] = handler
+            return """<a class="$classname" data-id="$operationID">$linkText</a>"""
+        }
+        fun textInput(divID: String, handler: Consumer<String>): String {
+            val operationID = SessionBase.randomID()
+            txtTriggers[operationID] = handler
+            //language=HTML
+            return """<form class="reply-form">
+                       <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
+                       <button class="text-submit-button" data-id="$operationID">Send</button>
+                   </form>""".trimIndent()
+        }
+//
+//        fun htmlTools(divID: String) = HtmlTools(this, divID)
     }
 
     override fun newSession(userId: String?, sessionId: String): SessionInterface {
@@ -68,6 +88,7 @@ abstract class ApplicationBase(
 
     abstract fun processMessage(
         sessionId: String,
+        userId: String?,
         userMessage: String,
         session: ApplicationSession,
         sessionDiv: SessionDiv,

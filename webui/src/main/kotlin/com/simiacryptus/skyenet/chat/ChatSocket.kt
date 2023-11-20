@@ -13,11 +13,31 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.slf4j.event.Level
 
 class ChatSocket(
-    val sessionId: String,
+    private val sessionId: String,
     private val sessionState: SessionInterface,
-    val dataStorage: DataStorage?,
-    val user: AuthenticationManager.UserInfo?,
+    private val dataStorage: DataStorage?,
+    private val user: AuthenticationManager.UserInfo?,
 ) : WebSocketAdapter() {
+
+    val api: OpenAIClient
+        get() {
+            val user = user
+            val userApi = userApi
+            if (userApi != null) return userApi
+            val canUseGlobalKey = authorizationManager.isAuthorized(null, user?.email, GlobalKey)
+            if (!canUseGlobalKey) throw RuntimeException("No API key")
+            return object : OpenAIClient(
+                logLevel = Level.DEBUG,
+                logStreams = mutableListOf(
+                    dataStorage?.getSessionDir(user?.id, sessionId)?.resolve("openai.log")?.outputStream()?.buffered()
+                ).filterNotNull().toMutableList()
+            ) {
+                override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
+                    if(null != model) ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model, tokens)
+                    super.incrementTokens(model, tokens)
+                }
+            }
+        }
 
     private val userApi: OpenAIClient?
         get() {
@@ -39,26 +59,6 @@ class ChatSocket(
             }
         }
 
-
-    val api: OpenAIClient
-        get() {
-            val user = user
-            val userApi = userApi
-            if (userApi != null) return userApi
-            val canUseGlobalKey = authorizationManager.isAuthorized(null, user?.email, GlobalKey)
-            if (!canUseGlobalKey) throw RuntimeException("No API key")
-            return object : OpenAIClient(
-                logLevel = Level.DEBUG,
-                logStreams = mutableListOf(
-                    dataStorage?.getSessionDir(user?.id, sessionId)?.resolve("openai.log")?.outputStream()?.buffered()
-                ).filterNotNull().toMutableList()
-            ) {
-                override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
-                    if(null != model) ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model, tokens)
-                    super.incrementTokens(model, tokens)
-                }
-            }
-        }
 
     override fun onWebSocketConnect(session: Session) {
         super.onWebSocketConnect(session)

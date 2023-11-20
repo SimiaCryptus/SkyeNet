@@ -159,7 +159,7 @@ open class CodingActor(
             var codedInstruction = implement(
                 brain(api, model), *messages, codePrefix = codePrefix
             )
-            if (_status != CodeResult.Status.Success) {
+            if (_status != CodeResult.Status.Success && fallbackModel != model) {
                 codedInstruction = implement(
                     brain(api, fallbackModel), *messages, codePrefix = codePrefix
                 )

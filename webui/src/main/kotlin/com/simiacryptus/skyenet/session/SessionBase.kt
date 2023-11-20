@@ -12,15 +12,17 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 abstract class SessionBase(
-    val sessionId: String,
+    protected val sessionId: String,
     private val dataStorage: DataStorage?,
-    val userId: String? = null,
+    protected val userId: String? = null,
     private val messageStates: LinkedHashMap<String, String> = dataStorage?.getMessages(
         userId, sessionId
     ) ?: LinkedHashMap(),
-    val applicationClass: Class<out ApplicationBase>,
+    private val applicationClass: Class<out ApplicationBase>,
 ) : SessionInterface {
     private val sockets: MutableSet<ChatSocket> = mutableSetOf()
+    private val messageVersions = HashMap<String, AtomicInteger>()
+    protected open val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
 
     override fun removeSocket(socket: ChatSocket) {
         sockets.remove(socket)
@@ -67,9 +69,6 @@ abstract class SessionBase(
         }
     }
 
-    private val messageVersions = HashMap<String, AtomicInteger>()
-
-
     fun send(out: String) {
         try {
             log.debug("Send Msg: $sessionId - $out")
@@ -81,20 +80,18 @@ abstract class SessionBase(
         }
     }
 
-    private fun setMessage(key: String, value: String): Int {
-        if (messageStates.containsKey(key) && messageStates[key] == value) return -1
-        dataStorage?.updateMessage(userId, sessionId, key, value)
-        messageStates.put(key, value)
-        return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
-    }
-
     final override fun getReplay(): List<String> {
         return messageStates.entries.map {
             "${it.key},${messageVersions.computeIfAbsent(it.key) { AtomicInteger(1) }.get()},${it.value}"
         }
     }
 
-    open val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
+    private fun setMessage(key: String, value: String): Int {
+        if (messageStates.containsKey(key) && messageStates[key] == value) return -1
+        dataStorage?.updateMessage(userId, sessionId, key, value)
+        messageStates.put(key, value)
+        return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
+    }
 
     final override fun onWebSocketText(socket: ChatSocket, message: String) {
         if (canWrite(socket.user?.email)) pool.submit {
