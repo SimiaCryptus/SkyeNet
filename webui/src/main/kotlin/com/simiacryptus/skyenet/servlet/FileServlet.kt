@@ -30,10 +30,10 @@ class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
         } else {
             resp.contentType = "text/html"
             resp.status = HttpServletResponse.SC_OK
-            val files = file.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.joinToString("<br/>\n") {
+            val files = file.listFiles()?.filter { it.isFile && !it.name.startsWith(".") }?.sortedBy { it.name }?.joinToString("<br/>\n") {
                 """<a class="file-item" href="${it.name}">${it.name}</a>"""
             } ?: ""
-            val folders = file.listFiles()?.filter { !it.isFile }?.sortedBy { it.name }?.joinToString("<br/>\n") {
+            val folders = file.listFiles()?.filter { !it.isFile && !it.name.startsWith(".") }?.sortedBy { it.name }?.joinToString("<br/>\n") {
                 """<a class="folder-item" href="${it.name}/">${it.name}</a>"""
             } ?: ""
             resp.writer.write(
@@ -99,7 +99,7 @@ class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
                     |</head>
                     |<body>
                     |<h1 class="archive-title">Archive</h1>
-                    |<a href="${req.contextPath}/fileZip?session=${session.sessionId}&path=$filePath" class="zip-link">ZIP</a>
+                    |<a href="${req.contextPath}/fileZip?session=$session&path=$filePath" class="zip-link">ZIP</a>
                     |<h1 class="folders-title">Folders</h1>
                     |<div class="folders-container">
                     |$folders

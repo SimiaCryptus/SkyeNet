@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.session
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.DataStorage
@@ -26,21 +27,10 @@ abstract class ApplicationSocketManager(
         val operationID = randomID()
         val sessionDiv = newMessage(operationID, spinner, true)
         threads[operationID] = Thread.currentThread()
-        newSession(session, user = userId, userMessage, this, sessionDiv, socket)
+        newSession(session, user = userId, userMessage, this, sessionDiv, socket.api)
     }
 
-    inner class ApplicationInterface {
-        fun send(html: String) = this@ApplicationSocketManager.send(html)
-        fun hrefLink(linkText: String, classname: String = """href-link""", handler: Consumer<Unit>) =
-            this@ApplicationSocketManager.hrefLink(linkText, classname, handler)
-        fun textInput(handler: Consumer<String>): String =
-            this@ApplicationSocketManager.textInput(handler)
-
-        fun newMessage(operationID: String, spinner: String, cancelable: Boolean = false): SessionMessage =
-            this@ApplicationSocketManager.newMessage(operationID, spinner, cancelable)
-
-    }
-    val applicationInterface by lazy { ApplicationInterface() }
+    val applicationInterface by lazy { ApplicationInterface(this) }
 
     override fun onCmd(id: String, code: String, socket: ChatSocket) {
         if (code == "cancel") {
@@ -76,7 +66,7 @@ abstract class ApplicationSocketManager(
         userMessage: String,
         socketManager: ApplicationSocketManager,
         sessionMessage: SessionMessage,
-        socket: ChatSocket
+        api: OpenAIAPI
     )
 
     companion object {

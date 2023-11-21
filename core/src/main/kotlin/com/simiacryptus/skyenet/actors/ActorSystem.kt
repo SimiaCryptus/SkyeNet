@@ -28,6 +28,6 @@ open class ActorSystem<T:Enum<*>>(
 
     private val wrapperMap = mutableMapOf<String, FunctionWrapper>()
     private fun getWrapper(name: String) = wrapperMap.computeIfAbsent(name) {
-        FunctionWrapper(JsonFunctionRecorder(File(sessionDir, "actors/$name")))
+        FunctionWrapper(JsonFunctionRecorder(File(sessionDir, ".sys/actors/$name")))
     }
 }

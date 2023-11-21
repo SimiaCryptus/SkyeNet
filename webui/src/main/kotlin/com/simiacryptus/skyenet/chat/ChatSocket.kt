@@ -17,6 +17,8 @@ class ChatSocket(
     private val user: User?,
 ) : WebSocketAdapter() {
 
+    private val logfile = ".sys/openai.log"
+
     val api: OpenAIClient
         get() {
             val user = user
@@ -27,7 +29,7 @@ class ChatSocket(
             return object : OpenAIClient(
                 logLevel = Level.DEBUG,
                 logStreams = mutableListOf(
-                    dataStorage?.getSessionDir(user, session)?.resolve("openai.log")?.outputStream()?.buffered()
+                    dataStorage?.getSessionDir(user, session)?.resolve(logfile)?.outputStream()?.buffered()
                 ).filterNotNull().toMutableList()
             ) {
                 override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
@@ -46,7 +48,7 @@ class ChatSocket(
                     key = userSettings.apiKey,
                     logLevel = Level.DEBUG,
                     logStreams = mutableListOf(
-                        dataStorage?.getSessionDir(user, session)?.resolve("openai.log")?.outputStream()?.buffered()
+                        dataStorage?.getSessionDir(user, session)?.resolve(logfile)?.outputStream()?.buffered()
                     ).filterNotNull().toMutableList(),
                 ) {
                     override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {

@@ -86,9 +86,9 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
                 )
                 if (!canRead) return@joinToString ""
                 val newGlobalSessionLink =
-                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newGlobalID().sessionId}">New Shared Session</a>""" else ""
+                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newGlobalID()}">New Shared Session</a>""" else ""
                 val newUserSessionLink =
-                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newUserID().sessionId}">New Private Session</a>""" else ""
+                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newUserID()}">New Private Session</a>""" else ""
                 """
                         <a
                         <tr>
@@ -110,6 +110,10 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
             }
         }
 </table>
+
+<footer id="footer">
+    <a href="https://github.com/SimiaCryptus/SkyeNet" target="_blank">Powered by SkyeNet</a>
+</footer>
 
 </body>
 </html>

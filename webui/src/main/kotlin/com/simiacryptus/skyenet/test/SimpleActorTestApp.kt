@@ -1,9 +1,8 @@
 package com.simiacryptus.skyenet.test
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import com.simiacryptus.skyenet.actors.SimpleActor
-import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.skyenet.session.*
@@ -29,13 +28,13 @@ open class SimpleActorTestApp(
         session: Session,
         user: User?,
         userMessage: String,
-        socketManager: ApplicationSocketManager.ApplicationInterface,
+        socketManager: ApplicationInterface,
         sessionMessage: SessionMessage,
-        socket: ChatSocket
+        api: OpenAIAPI
     ) {
         val actor = getSettings<Settings>(session, user)?.actor ?: actor
         sessionMessage.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
-        val moderatorResponse = actor.answer(userMessage, api = socket.api)
+        val moderatorResponse = actor.answer(userMessage, api = api)
         sessionMessage.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)
     }
 

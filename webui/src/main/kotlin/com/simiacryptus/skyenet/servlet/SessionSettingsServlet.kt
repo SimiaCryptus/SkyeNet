@@ -31,7 +31,7 @@ class SessionSettingsServlet(
                     |</head>
                     |<body>
                     |<form action="${req.contextPath}/settings" method="post">
-                    |    <input type="hidden" name="sessionId" value="${session.sessionId}"/>
+                    |    <input type="hidden" name="sessionId" value="$session"/>
                     |    <input type="hidden" name="action" value="save"/>
                     |    <textarea name="settings" style="width: 100%; height: 100px;">$json</textarea>
                     |    <input type="submit" value="Save"/>
@@ -59,7 +59,7 @@ class SessionSettingsServlet(
                 ApplicationServices.authenticationManager.getUser(req.getCookie()),
                 session, "settings.json", settings
             )
-            resp.sendRedirect("${req.contextPath}/#${session.sessionId}")
+            resp.sendRedirect("${req.contextPath}/#$session")
         }
     }
 }

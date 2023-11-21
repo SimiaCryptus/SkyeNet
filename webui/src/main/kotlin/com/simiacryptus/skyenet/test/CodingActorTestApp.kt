@@ -1,9 +1,8 @@
 package com.simiacryptus.skyenet.test
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import com.simiacryptus.skyenet.actors.CodingActor
-import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.*
 import com.simiacryptus.skyenet.session.*
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
@@ -22,12 +21,12 @@ open class CodingActorTestApp(
         session: Session,
         user: User?,
         userMessage: String,
-        socketManager: ApplicationSocketManager.ApplicationInterface,
+        socketManager: ApplicationInterface,
         sessionMessage: SessionMessage,
-        socket: ChatSocket
+        api: OpenAIAPI
     ) {
         sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
-        val response = actor.answer(userMessage, api = socket.api)
+        val response = actor.answer(userMessage, api = api)
         val canPlay = ApplicationServices.authorizationManager.isAuthorized(
             this::class.java,
             user,

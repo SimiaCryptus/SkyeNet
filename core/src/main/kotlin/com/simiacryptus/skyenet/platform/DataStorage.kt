@@ -182,7 +182,7 @@ open class DataStorage(
             return Session("U-$yyyyMMdd-$uuid")
         }
 
-        private const val MESSAGE_DIR = "messages"
+        private val MESSAGE_DIR = ".sys" + File.separator + "messages"
 
     }
 }

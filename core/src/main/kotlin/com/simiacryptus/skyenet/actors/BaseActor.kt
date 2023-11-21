@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.actors
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.OpenAIClient
@@ -12,7 +13,8 @@ abstract class BaseActor<T>(
     val model: OpenAITextModel = ChatModels.GPT35Turbo,
     val temperature: Double = 0.3,
 ) {
-    open fun response(vararg messages: OpenAIClient.ChatMessage, model: OpenAIModel = this.model, api: OpenAIClient) = api.chat(
+    abstract fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI): T
+    open fun response(vararg messages: OpenAIClient.ChatMessage, model: OpenAIModel = this.model, api: OpenAIAPI) = (api as OpenAIClient).chat(
         OpenAIClient.ChatRequest(
             messages = ArrayList(messages.toList()),
             temperature = temperature,
@@ -20,8 +22,7 @@ abstract class BaseActor<T>(
         ),
         model = this.model
     )
-    abstract fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): T
-    open fun answer(vararg questions: String, api: OpenAIClient): T = answer(*chatMessages(*questions), api = api)
+    open fun answer(vararg questions: String, api: OpenAIAPI): T = answer(*chatMessages(*questions), api = api)
 
     open fun chatMessages(vararg questions: String) = arrayOf(
         OpenAIClient.ChatMessage(

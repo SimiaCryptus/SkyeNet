@@ -80,7 +80,9 @@ class JsonFunctionRecorder(baseDir: File) : FunctionInterceptor, Closeable {
         )
         // Get the caller method name from the stack trace (first caller not in internalClassList)
         val caller = Thread.currentThread().stackTrace
-            .firstOrNull { !internalClassList.contains(Class.forName(it.className)) }
+            .filter { !internalClassList.contains(Class.forName(it.className)) }
+            .filter { it.methodName != "intercept" }
+            .firstOrNull()
         val methodName = caller?.methodName ?: "unknown"
         val file = File(baseDirectory, "$id-$yyyyMMddHHmmss-$methodName")
         if(file.exists()) {

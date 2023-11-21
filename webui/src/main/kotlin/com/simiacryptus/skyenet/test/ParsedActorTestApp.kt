@@ -1,11 +1,11 @@
 package com.simiacryptus.skyenet.test
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import com.simiacryptus.skyenet.actors.ParsedActor
-import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
+import com.simiacryptus.skyenet.session.ApplicationInterface
 import com.simiacryptus.skyenet.session.SessionMessage
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.util.JsonUtil
@@ -23,12 +23,12 @@ open class ParsedActorTestApp<T : Any>(
         session: Session,
         user: User?,
         userMessage: String,
-        socketManager: ApplicationSocketManager.ApplicationInterface,
+        socketManager: ApplicationInterface,
         sessionMessage: SessionMessage,
-        socket: ChatSocket
+        api: OpenAIAPI
     ) {
         sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
-        val response = actor.answer(userMessage, api = socket.api)
+        val response = actor.answer(userMessage, api = api)
         sessionMessage.append(
             """<div>${
                 renderMarkdown(

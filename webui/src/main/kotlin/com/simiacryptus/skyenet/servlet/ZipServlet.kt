@@ -42,9 +42,8 @@ class ZipServlet(val dataStorage: DataStorage) : HttpServlet() {
             zip.write(file.readBytes())
             zip.closeEntry()
         } else {
-            file.listFiles()?.forEach {
-                write(basePath, it, zip)
-            }
+            file.listFiles()?.filter { !it.name.startsWith(".") }
+                ?.forEach { write(basePath, it, zip) }
         }
     }
 }
