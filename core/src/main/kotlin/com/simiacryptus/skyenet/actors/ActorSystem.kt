@@ -10,7 +10,7 @@ import java.io.File
 
 open class ActorSystem<T:Enum<*>>(
     private val actors: Map<T, BaseActor<*>>,
-    dataStorage: DataStorage,
+    val dataStorage: DataStorage,
     val userId: User?,
     val sessionId: Session
 ) {

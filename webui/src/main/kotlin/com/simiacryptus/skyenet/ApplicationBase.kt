@@ -8,7 +8,6 @@ import com.simiacryptus.skyenet.platform.ApplicationServices.authorizationManage
 import com.simiacryptus.skyenet.platform.ApplicationServices.dataStorageFactory
 import com.simiacryptus.skyenet.servlet.*
 import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.AUTH_COOKIE
-import com.simiacryptus.skyenet.session.SessionMessage
 import com.simiacryptus.skyenet.session.SocketManager
 import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.platform.DataStorage
@@ -50,14 +49,12 @@ abstract class ApplicationBase(
                 user: User?,
                 userMessage: String,
                 socketManager: ApplicationSocketManager,
-                sessionMessage: SessionMessage,
                 api: OpenAIAPI
             ) = this@ApplicationBase.newSession(
                 session = session,
                 user = user,
                 userMessage = userMessage,
-                socketManager = socketManager.applicationInterface,
-                sessionMessage = sessionMessage,
+                ui = socketManager.applicationInterface,
                 api = api
             )
         }
@@ -67,8 +64,7 @@ abstract class ApplicationBase(
         session: Session,
         user: User?,
         userMessage: String,
-        socketManager: ApplicationInterface,
-        sessionMessage: SessionMessage,
+        ui: ApplicationInterface,
         api: OpenAIAPI
     )
 

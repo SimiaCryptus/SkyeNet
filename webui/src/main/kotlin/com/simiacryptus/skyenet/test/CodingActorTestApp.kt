@@ -21,10 +21,10 @@ open class CodingActorTestApp(
         session: Session,
         user: User?,
         userMessage: String,
-        socketManager: ApplicationInterface,
-        sessionMessage: SessionMessage,
+        ui: ApplicationInterface,
         api: OpenAIAPI
     ) {
+        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), ApplicationBase.spinner, false)
         sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
         val response = actor.answer(userMessage, api = api)
         val canPlay = ApplicationServices.authorizationManager.isAuthorized(
@@ -33,7 +33,7 @@ open class CodingActorTestApp(
             AuthorizationManager.OperationType.Execute
         )
         val playLink = if(!canPlay) "" else {
-            socketManager.hrefLink("▶", "href-link play-button") {
+            ui.hrefLink("▶", "href-link play-button") {
                 sessionMessage.append("""<div>Running...</div>""", true)
                 val result = response.run()
                 sessionMessage.append(

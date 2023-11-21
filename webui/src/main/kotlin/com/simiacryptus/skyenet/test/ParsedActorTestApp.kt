@@ -6,7 +6,7 @@ import com.simiacryptus.skyenet.actors.ParsedActor
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.skyenet.session.ApplicationInterface
-import com.simiacryptus.skyenet.session.SessionMessage
+import com.simiacryptus.skyenet.session.SocketManagerBase
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
@@ -23,10 +23,10 @@ open class ParsedActorTestApp<T : Any>(
         session: Session,
         user: User?,
         userMessage: String,
-        socketManager: ApplicationInterface,
-        sessionMessage: SessionMessage,
+        ui: ApplicationInterface,
         api: OpenAIAPI
     ) {
+        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), ApplicationBase.spinner, false)
         sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
         val response = actor.answer(userMessage, api = api)
         sessionMessage.append(

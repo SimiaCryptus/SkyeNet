@@ -25,9 +25,8 @@ abstract class ApplicationSocketManager(
 
     override fun onRun(userMessage: String, socket: ChatSocket) {
         val operationID = randomID()
-        val sessionDiv = newMessage(operationID, spinner, true)
         threads[operationID] = Thread.currentThread()
-        newSession(session, user = userId, userMessage, this, sessionDiv, socket.api)
+        newSession(session, user = userId, userMessage, this, socket.api)
     }
 
     val applicationInterface by lazy { ApplicationInterface(this) }
@@ -65,7 +64,6 @@ abstract class ApplicationSocketManager(
         user: User?,
         userMessage: String,
         socketManager: ApplicationSocketManager,
-        sessionMessage: SessionMessage,
         api: OpenAIAPI
     )
 

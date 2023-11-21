@@ -28,10 +28,10 @@ open class SimpleActorTestApp(
         session: Session,
         user: User?,
         userMessage: String,
-        socketManager: ApplicationInterface,
-        sessionMessage: SessionMessage,
+        ui: ApplicationInterface,
         api: OpenAIAPI
     ) {
+        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), ApplicationBase.spinner, false)
         val actor = getSettings<Settings>(session, user)?.actor ?: actor
         sessionMessage.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
         val moderatorResponse = actor.answer(userMessage, api = api)
