@@ -1,10 +1,12 @@
 package com.simiacryptus.skyenet.platform
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class User(
-    internal val email: String,
-    internal val name: String? = null,
-    internal val id: String? = null,
-    internal val picture: String? = null,
+    @JsonProperty("email") internal val email: String,
+    @JsonProperty("name") internal val name: String? = null,
+    @JsonProperty("id") internal val id: String? = null,
+    @JsonProperty("picture") internal val picture: String? = null,
 ) {
     override fun toString() = email
 
