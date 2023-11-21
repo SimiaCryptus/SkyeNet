@@ -5,6 +5,7 @@ import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.Session
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,15 +15,15 @@ class UsageServlet : HttpServlet() {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
 
-        val sessionId = req.getParameter("sessionId")
-        if (null != sessionId) {
-            serve(resp, ApplicationServices.usageManager.getSessionUsageSummary(sessionId))
+        if (req.parameterMap.containsKey("sessionId")) {
+            val session = Session(req.getParameter("sessionId"))
+            serve(resp, ApplicationServices.usageManager.getSessionUsageSummary(session))
         } else {
             val userinfo = ApplicationServices.authenticationManager.getUser(req.getCookie())
             if (null == userinfo) {
                 resp.status = HttpServletResponse.SC_BAD_REQUEST
             } else {
-                val usage = ApplicationServices.usageManager.getUserUsageSummary(userinfo.id)
+                val usage = ApplicationServices.usageManager.getUserUsageSummary(userinfo)
                 serve(resp, usage)
             }
         }

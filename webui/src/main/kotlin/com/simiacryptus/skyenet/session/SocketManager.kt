@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.session
 
 import com.simiacryptus.skyenet.chat.ChatSocket
 
-interface SessionInterface {
+interface SocketManager {
     fun removeSocket(socket: ChatSocket)
     fun addSocket(socket: ChatSocket)
     fun getReplay(): List<String>

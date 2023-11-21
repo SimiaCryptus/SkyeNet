@@ -6,7 +6,7 @@ import com.simiacryptus.skyenet.actors.ParsedResponse
 import java.util.function.Function
 
 abstract class ParsedActorTestBase<T:Any>(
-    val parserClass: Class<out Function<String, T>>,
+    private val parserClass: Class<out Function<String, T>>,
 ) : ActorTestBase<ParsedResponse<T>>() {
 
     override fun actorFactory(prompt: String) = ParsedActor(

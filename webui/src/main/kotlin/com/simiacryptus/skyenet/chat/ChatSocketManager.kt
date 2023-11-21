@@ -5,20 +5,21 @@ import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.session.SessionBase
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.session.SocketManagerBase
 import com.simiacryptus.skyenet.util.MarkdownUtil
 
-open class ChatSession(
+open class ChatSocketManager(
     val parent: ChatServer,
-    sessionId: String,
+    session: Session,
     val model: OpenAITextModel = ChatModels.GPT35Turbo,
     val userInterfacePrompt: String,
-    val initialAssistantPrompt: String = "",
+    private val initialAssistantPrompt: String = "",
     val systemPrompt: String,
     val api: OpenAIClient,
     val temperature: Double = 0.3,
     applicationClass: Class<out ApplicationBase>,
-) : SessionBase(sessionId, parent.dataStorage, userId = null, applicationClass = applicationClass) {
+) : SocketManagerBase(session, parent.dataStorage, userId = null, applicationClass = applicationClass) {
 
     init {
         if (userInterfacePrompt.isNotBlank()) {

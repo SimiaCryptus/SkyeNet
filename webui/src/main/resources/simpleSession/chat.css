@@ -15,7 +15,7 @@ body {
     color: var(--primary-text-color);
     background-color: var(--primary-bg-color);
     margin: 0;
-    padding: 0;
+    padding: 0 0 50px;
 }
 
 #messages {
@@ -299,4 +299,22 @@ pre.verbose, pre.response-message {
     font-weight: bold;
     margin-top: 20px;
     margin-bottom: 10px;
+}
+
+#footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: right;
+    z-index: 1000;
+}
+
+#footer a {
+    color: darkgray;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+#footer a:hover {
+    text-decoration: underline;
 }

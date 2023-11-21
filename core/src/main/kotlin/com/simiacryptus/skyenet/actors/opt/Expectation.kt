@@ -11,7 +11,7 @@ abstract class Expectation {
         private val log = LoggerFactory.getLogger(Expectation::class.java)
     }
 
-    open class VectorMatch(val example: String, private val metric: DistanceType = DistanceType.Cosine) : Expectation() {
+    open class VectorMatch(private val example: String, private val metric: DistanceType = DistanceType.Cosine) : Expectation() {
         override fun matches(api: OpenAIClient, response: String): Boolean {
             return true
         }
@@ -37,7 +37,7 @@ abstract class Expectation {
     }
 
     open class ContainsMatch(
-        val pattern: Regex,
+        private val pattern: Regex,
         val critical: Boolean = true
     ) : Expectation() {
         override fun matches(api: OpenAIClient, response: String): Boolean {

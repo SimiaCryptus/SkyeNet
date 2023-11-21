@@ -1,23 +1,27 @@
 package com.simiacryptus.skyenet.util
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.EmbeddingModels
 import com.simiacryptus.skyenet.platform.DataStorage
-import com.simiacryptus.skyenet.session.SessionBase
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
+import com.simiacryptus.skyenet.session.ApplicationInterface
 import com.simiacryptus.util.JsonUtil
 
 class EmbeddingVisualizer(
-    val api: OpenAIClient,
+    val api: OpenAIAPI,
     val dataStorage: DataStorage,
-    val sessionID: String,
+    val sessionID: Session,
     val appPath: String,
     val host: String,
-    val session: SessionBase,
+    val session: ApplicationInterface,
+    val userId: User?,
 ) {
 
     private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {
         val vectors = words.map {word ->
-            word to api.createEmbedding(
+            word to (api as OpenAIClient).createEmbedding(
                 OpenAIClient.EmbeddingRequest(
                     model = EmbeddingModels.AdaEmbedding.modelName,
                     input = word,
@@ -42,8 +46,8 @@ class EmbeddingVisualizer(
         val vectorFileName = "vectors.tsv"
         val metadataFileName = "metadata.tsv"
         val configFileName = "projector-config.json"
-        dataStorage.getSessionDir(session.userId, sessionID).resolve(vectorFileName).writeText(vectorTsv)
-        dataStorage.getSessionDir(session.userId, sessionID).resolve(metadataFileName).writeText(metadataTsv)
+        dataStorage.getSessionDir(userId, sessionID).resolve(vectorFileName).writeText(vectorTsv)
+        dataStorage.getSessionDir(userId, sessionID).resolve(metadataFileName).writeText(metadataTsv)
         // projector-config.json
         val projectorConfig = JsonUtil.toJson(
             mapOf(
@@ -57,7 +61,7 @@ class EmbeddingVisualizer(
                 )
             )
         )
-        dataStorage.getSessionDir(session.userId, sessionID).resolve(configFileName).writeText(projectorConfig)
+        dataStorage.getSessionDir(userId, sessionID).resolve(configFileName).writeText(projectorConfig)
         return """
             <a href="$host/$appPath/fileIndex/$sessionID/projector-config.json">Projector Config</a>
             <a href="$host/$appPath/fileIndex/$sessionID/$vectorFileName">Vectors</a>

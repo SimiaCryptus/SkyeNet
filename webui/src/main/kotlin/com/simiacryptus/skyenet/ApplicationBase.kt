@@ -1,17 +1,21 @@
 package com.simiacryptus.skyenet
 
+import com.simiacryptus.openai.OpenAIAPI
+import com.simiacryptus.skyenet.servlet.AppInfoServlet
 import com.simiacryptus.skyenet.chat.ChatServer
-import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.platform.ApplicationServices.dataStorageFactory
 import com.simiacryptus.skyenet.servlet.*
-import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.COOKIE_NAME
-import com.simiacryptus.skyenet.session.SessionBase
-import com.simiacryptus.skyenet.session.SessionDiv
-import com.simiacryptus.skyenet.session.SessionInterface
+import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.AUTH_COOKIE
+import com.simiacryptus.skyenet.session.SessionMessage
+import com.simiacryptus.skyenet.session.SocketManager
 import com.simiacryptus.skyenet.platform.AuthorizationManager
-import com.simiacryptus.skyenet.util.HtmlTools
+import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
+import com.simiacryptus.skyenet.session.ApplicationInterface
+import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.FilterHolder
@@ -26,77 +30,64 @@ abstract class ApplicationBase(
     val temperature: Double = 0.1,
 ) : ChatServer(resourceBase) {
 
-
-    inner class ApplicationSession(
-        sessionId: String,
-        userId: String?,
-    ) : SessionBase(
-        sessionId = sessionId,
-        dataStorage = dataStorage,
-        userId = userId,
-        applicationClass = this@ApplicationBase.javaClass,
-    ) {
-        private val threads = mutableMapOf<String, Thread>()
-
-        val linkTriggers = mutableMapOf<String, java.util.function.Consumer<Unit>>()
-
-        override fun onRun(userMessage: String, socket: ChatSocket) {
-            val operationID = randomID()
-            val sessionDiv = newSessionDiv(operationID, spinner, true)
-            threads[operationID] = Thread.currentThread()
-            processMessage(sessionId, userMessage, this, sessionDiv, socket)
-        }
-
-        override fun onCmd(id: String, code: String, socket: ChatSocket) {
-            if (code == "cancel") {
-                threads[id]?.interrupt()
-            } else if (code == "link") {
-                val consumer = linkTriggers[id]
-                consumer ?: throw IllegalArgumentException("No link handler found")
-                consumer.accept(Unit)
-            } else {
-                throw IllegalArgumentException("Unknown command: $code")
-            }
-        }
-
-        fun htmlTools(divID: String) = HtmlTools(this, divID)
-    }
-
-    override fun newSession(userId: String?, sessionId: String): SessionInterface {
-        return ApplicationSession(sessionId, userId)
-    }
-
-    abstract fun processMessage(
-        sessionId: String,
-        userMessage: String,
-        session: ApplicationSession,
-        sessionDiv: SessionDiv,
-        socket: ChatSocket
-    )
-
-    open val settingsClass: Class<*> get() = Map::class.java
-
-    open fun <T : Any> initSettings(sessionId: String): T? = null
-
-    fun <T : Any> getSettings(sessionId: String, userId: String?): T? {
-        @Suppress("UNCHECKED_CAST")
-        var settings: T? = dataStorage.getJson(userId, sessionId, settingsClass as Class<T>, "settings.json")
-        if (null == settings) {
-            settings = initSettings(sessionId)
-            if (null != settings) {
-                dataStorage.setJson(userId, sessionId, settings, "settings.json")
-            }
-        }
-        return settings
-    }
-
-    final override val dataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
-    protected open val appInfo = ServletHolder("appInfo", AppInfoServlet())
+    final override val dataStorage: DataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
+    protected open val appInfo = ServletHolder("appInfo", AppInfoServlet(applicationName))
     protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
     protected open val usageServlet = ServletHolder("usage", UsageServlet())
     protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
     protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
+
+    override fun newSession(user: User?, session: Session): SocketManager {
+        return object : ApplicationSocketManager(
+            session = session,
+            userId = user,
+            dataStorage = dataStorage,
+            applicationClass = this@ApplicationBase::class.java,
+        ) {
+            override fun newSession(
+                session: Session,
+                user: User?,
+                userMessage: String,
+                socketManager: ApplicationSocketManager,
+                sessionMessage: SessionMessage,
+                api: OpenAIAPI
+            ) = this@ApplicationBase.newSession(
+                session = session,
+                user = user,
+                userMessage = userMessage,
+                socketManager = socketManager.applicationInterface,
+                sessionMessage = sessionMessage,
+                api = api
+            )
+        }
+    }
+
+    abstract fun newSession(
+        session: Session,
+        user: User?,
+        userMessage: String,
+        socketManager: ApplicationInterface,
+        sessionMessage: SessionMessage,
+        api: OpenAIAPI
+    )
+
+    open val settingsClass: Class<*> get() = Map::class.java
+
+    open fun <T : Any> initSettings(session: Session): T? = null
+
+    fun <T : Any> getSettings(session: Session, userId: User?): T? {
+        @Suppress("UNCHECKED_CAST")
+        var settings: T? = dataStorage.getJson(userId, session, "settings.json", settingsClass as Class<T>)
+        if (null == settings) {
+            settings = initSettings(session)
+            if (null != settings) {
+                dataStorage.setJson(userId, session, "settings.json", settings)
+            }
+        }
+        return settings
+    }
+
     protected open fun sessionsServlet(path: String) = ServletHolder("sessionList", SessionListServlet(this.dataStorage, path))
 
     override fun configure(webAppContext: WebAppContext, path: String, baseUrl: String) {
@@ -107,7 +98,7 @@ abstract class ApplicationBase(
                 val user = authenticationManager.getUser((request as HttpServletRequest).getCookie())
                 val canRead = authorizationManager.isAuthorized(
                     applicationClass = this@ApplicationBase.javaClass,
-                    user = user?.email,
+                    user = user,
                     operationType = AuthorizationManager.OperationType.Read
                 )
                 if (canRead) {
@@ -128,7 +119,6 @@ abstract class ApplicationBase(
         webAppContext.addServlet(sessionSettingsServlet, "/settings")
     }
 
-
     companion object {
         private val log = LoggerFactory.getLogger(ApplicationBase::class.java)
         val spinner =
@@ -147,7 +137,7 @@ abstract class ApplicationBase(
                 filename.endsWith(".css") -> "text/css"
                 else -> "text/plain"
             }
-        fun HttpServletRequest.getCookie(name: String = COOKIE_NAME) = cookies?.find { it.name == name }?.value
+        fun HttpServletRequest.getCookie(name: String = AUTH_COOKIE) = cookies?.find { it.name == name }?.value
 
     }
 

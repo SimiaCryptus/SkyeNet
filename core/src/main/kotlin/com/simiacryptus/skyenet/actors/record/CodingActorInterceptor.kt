@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.actors.record
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.skyenet.actors.CodeResult
@@ -20,10 +21,10 @@ class CodingActorInterceptor(
     temperature = inner.temperature,
     autoEvaluate = inner.autoEvaluate,
 ) {
-    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult {
+    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI): CodeResult {
         return functionInterceptor.wrap(messages.toList().toTypedArray()) {
             messages: Array<OpenAIClient.ChatMessage> ->
-            CodingResultInterceptor(*messages, api = api, inner = inner.answer(*messages, api = api))
+            CodingResultInterceptor(*messages, api = (api as OpenAIClient), inner = inner.answer(*messages, api = api))
         }
     }
 
@@ -41,7 +42,7 @@ class CodingActorInterceptor(
     override fun response(
         vararg messages: OpenAIClient.ChatMessage,
         model: OpenAIModel,
-        api: OpenAIClient
+        api: OpenAIAPI
     ) = functionInterceptor.wrap(messages.toList().toTypedArray(), model) {
         messages: Array<OpenAIClient.ChatMessage>,
         model: OpenAIModel ->
@@ -52,14 +53,14 @@ class CodingActorInterceptor(
         inner.chatMessages(*it)
     }
 
-    override fun answer(vararg questions: String, api: OpenAIClient) = functionInterceptor.wrap(questions) {
+    override fun answer(vararg questions: String, api: OpenAIAPI) = functionInterceptor.wrap(questions) {
         inner.answer(*it, api = api)
     }
 
     override fun answerWithPrefix(
         codePrefix: String,
         vararg messages: OpenAIClient.ChatMessage,
-        api: OpenAIClient
+        api: OpenAIAPI
     ) = functionInterceptor.wrap(messages.toList().toTypedArray(), codePrefix) {
         messages: Array<OpenAIClient.ChatMessage>,
         codePrefix: String ->
@@ -68,7 +69,7 @@ class CodingActorInterceptor(
 
     override fun answerWithAutoEval(
         vararg messages: String,
-        api: OpenAIClient,
+        api: OpenAIAPI,
         codePrefix: String
     ) = functionInterceptor.wrap(messages.toList().toTypedArray(), codePrefix) {
         messages: Array<String>,
@@ -78,7 +79,7 @@ class CodingActorInterceptor(
 
     override fun answerWithAutoEval(
         vararg messages: OpenAIClient.ChatMessage,
-        api: OpenAIClient
+        api: OpenAIAPI
     ) = functionInterceptor.wrap(messages.toList().toTypedArray()) {
         inner.answerWithAutoEval(*messages, api = api)
     }

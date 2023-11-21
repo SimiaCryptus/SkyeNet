@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.actors
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
@@ -20,10 +21,10 @@ open class ParsedActor<T:Any>(
 ) {
     val resultClass: Class<T> by lazy { parserClass.getMethod("apply", String::class.java).returnType as Class<T> }
 
-    private inner class ParsedResponseImpl(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient) : ParsedResponse<T>(resultClass) {
+    private inner class ParsedResponseImpl(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI) : ParsedResponse<T>(resultClass) {
         private val parser: Function<String, T> = ChatProxy(
             clazz = parserClass,
-            api = api,
+            api = (api as OpenAIClient),
             model = ChatModels.GPT35Turbo,
             temperature = temperature,
         ).create()
@@ -33,7 +34,7 @@ open class ParsedActor<T:Any>(
         override fun getObj(clazz: Class<T>): T = _obj
     }
 
-    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): ParsedResponse<T> {
+    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI): ParsedResponse<T> {
         return ParsedResponseImpl(*messages, api = api)
     }
 }

@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.actors
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
 import com.simiacryptus.openai.models.ChatModels
@@ -66,33 +67,33 @@ open class CodingActor(
 
     open val interpreter by lazy { interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols) }
 
-    override fun answer(vararg questions: String, api: OpenAIClient): CodeResult =
+    override fun answer(vararg questions: String, api: OpenAIAPI): CodeResult =
         if (!autoEvaluate) answer(*chatMessages(*questions), api = api)
         else answerWithAutoEval(*chatMessages(*questions), api = api).first
 
-    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIClient): CodeResult =
-        if (!autoEvaluate) CodeResultImpl(*messages, api = api)
+    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI): CodeResult =
+        if (!autoEvaluate) CodeResultImpl(*messages, api = (api as OpenAIClient))
         else answerWithAutoEval(*messages, api = api).first
 
     open fun answerWithPrefix(
         codePrefix: String,
         vararg messages: OpenAIClient.ChatMessage,
-        api: OpenAIClient
+        api: OpenAIAPI
     ): CodeResult =
-        if (!autoEvaluate) CodeResultImpl(*injectCodePrefix(messages, codePrefix), api = api)
+        if (!autoEvaluate) CodeResultImpl(*injectCodePrefix(messages, codePrefix), api = (api as OpenAIClient))
         else answerWithAutoEval(*injectCodePrefix(messages, codePrefix), api = api).first
 
     open fun answerWithAutoEval(
         vararg messages: String,
-        api: OpenAIClient,
+        api: OpenAIAPI,
         codePrefix: String = ""
     ) = answerWithAutoEval(*injectCodePrefix(chatMessages(*messages), codePrefix), api = api)
 
     open fun answerWithAutoEval(
         vararg messages: OpenAIClient.ChatMessage,
-        api: OpenAIClient
+        api: OpenAIAPI
     ): Pair<CodeResult, ExecutionResult> {
-        var result = CodeResultImpl(*messages, api = api)
+        var result = CodeResultImpl(*messages, api = (api as OpenAIClient))
         var lastError: Throwable? = null
         for (i in 0..fixIterations) try {
             return result to result.run()
@@ -159,7 +160,7 @@ open class CodingActor(
             var codedInstruction = implement(
                 brain(api, model), *messages, codePrefix = codePrefix
             )
-            if (_status != CodeResult.Status.Success) {
+            if (_status != CodeResult.Status.Success && fallbackModel != model) {
                 codedInstruction = implement(
                     brain(api, fallbackModel), *messages, codePrefix = codePrefix
                 )

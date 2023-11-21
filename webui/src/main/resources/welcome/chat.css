@@ -1,3 +1,23 @@
+:root {
+    --primary-bg-color: #f7f7f7;
+    --secondary-bg-color: #ffffff;
+    --primary-text-color: #333;
+    --secondary-text-color: #555;
+    --link-color: #0066cc;
+    --link-hover-color: #0044aa;
+    --border-radius: 4px;
+    --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --transition-speed: 0.3s;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--primary-text-color);
+    background-color: var(--primary-bg-color);
+    margin: 0;
+    padding: 0 0 50px;
+}
+
 #form {
     position: absolute;
     left: 0;
@@ -131,4 +151,22 @@ pre {
     color: #000;
     text-decoration: none;
     cursor: pointer;
+}
+
+#footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: right;
+    z-index: 1000;
+}
+
+#footer a {
+    color: darkgray;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+#footer a:hover {
+    text-decoration: underline;
 }

@@ -1,26 +1,25 @@
 package com.simiacryptus.skyenet.session
 
 import com.google.common.util.concurrent.MoreExecutors
-import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.platform.ApplicationServices
-import com.simiacryptus.skyenet.platform.AuthorizationManager
-import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.platform.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
-abstract class SessionBase(
-    val sessionId: String,
+abstract class SocketManagerBase(
+    protected val session: Session,
     private val dataStorage: DataStorage?,
-    val userId: String? = null,
+    protected val userId: User? = null,
     private val messageStates: LinkedHashMap<String, String> = dataStorage?.getMessages(
-        userId, sessionId
+        userId, session
     ) ?: LinkedHashMap(),
-    val applicationClass: Class<out ApplicationBase>,
-) : SessionInterface {
+    private val applicationClass: Class<*>,
+) : SocketManager {
     private val sockets: MutableSet<ChatSocket> = mutableSetOf()
+    private val messageVersions = HashMap<String, AtomicInteger>()
+    protected open val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
 
     override fun removeSocket(socket: ChatSocket) {
         sockets.remove(socket)
@@ -30,7 +29,7 @@ abstract class SessionBase(
         sockets.add(socket)
     }
 
-    protected fun publish(
+    private fun publish(
         out: String,
     ) {
         val socketsSnapshot = sockets.toTypedArray()
@@ -43,22 +42,22 @@ abstract class SessionBase(
         }
     }
 
-    fun newSessionDiv(
+    fun newMessage(
         operationID: String, spinner: String, cancelable: Boolean = false
-    ): SessionDiv {
+    ): SessionMessage {
         var responseContents = divInitializer(operationID, cancelable)
         send(responseContents)
-        return object : SessionDiv() {
+        return object : SessionMessage() {
             override fun append(htmlToAppend: String, showSpinner: Boolean) {
                 if (htmlToAppend.isNotBlank()) {
                     responseContents += """<div>$htmlToAppend</div>"""
                 }
                 val spinner1 = if (showSpinner) """<div>$spinner</div>""" else ""
-                return this@SessionBase.send("""$responseContents$spinner1""")
+                return this@SocketManagerBase.send("""$responseContents$spinner1""")
             }
 
-            override fun sessionID(): String {
-                return this@SessionBase.sessionId
+            override fun sessionID(): Session {
+                return this@SocketManagerBase.session
             }
 
             override fun divID(): String {
@@ -67,25 +66,15 @@ abstract class SessionBase(
         }
     }
 
-    private val messageVersions = HashMap<String, AtomicInteger>()
-
-
     fun send(out: String) {
         try {
-            log.debug("Send Msg: $sessionId - $out")
+            log.debug("Send Msg: $session - $out")
             val split = out.split(',', ignoreCase = false, limit = 2)
             val newVersion = setMessage(split[0], split[1])
             publish("${split[0]},$newVersion,${split[1]}")
         } catch (e: Exception) {
-            log.debug("$sessionId - $out", e)
+            log.debug("$session - $out", e)
         }
-    }
-
-    private fun setMessage(key: String, value: String): Int {
-        if (messageStates.containsKey(key) && messageStates[key] == value) return -1
-        dataStorage?.updateMessage(userId, sessionId, key, value)
-        messageStates.put(key, value)
-        return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
     }
 
     final override fun getReplay(): List<String> {
@@ -94,11 +83,16 @@ abstract class SessionBase(
         }
     }
 
-    open val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
+    private fun setMessage(key: String, value: String): Int {
+        if (messageStates.containsKey(key) && messageStates[key] == value) return -1
+        dataStorage?.updateMessage(userId, session, key, value)
+        messageStates.put(key, value)
+        return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
+    }
 
     final override fun onWebSocketText(socket: ChatSocket, message: String) {
-        if (canWrite(socket.user?.email)) pool.submit {
-            log.debug("$sessionId - Received message: $message")
+        if (canWrite(userId)) pool.submit {
+            log.debug("$session - Received message: $message")
             try {
                 val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
                 if (opCmdPattern.matches(message)) {
@@ -109,16 +103,16 @@ abstract class SessionBase(
                     onRun(message, socket)
                 }
             } catch (e: Exception) {
-                log.warn("$sessionId - Error processing message: $message", e)
+                log.warn("$session - Error processing message: $message", e)
                 send("""${randomID()},<div class="error">${MarkdownUtil.renderMarkdown(e.message ?: "")}</div>""")
             }
         } else {
-            log.warn("$sessionId - Unauthorized message: $message")
+            log.warn("$session - Unauthorized message: $message")
             send("""${randomID()},<div class="error">Unauthorized message</div>""")
         }
     }
 
-    open fun canWrite(user: String?) = ApplicationServices.authorizationManager.isAuthorized(
+    open fun canWrite(user: User?) = ApplicationServices.authorizationManager.isAuthorized(
         applicationClass = applicationClass,
         user = user,
         operationType = AuthorizationManager.OperationType.Write

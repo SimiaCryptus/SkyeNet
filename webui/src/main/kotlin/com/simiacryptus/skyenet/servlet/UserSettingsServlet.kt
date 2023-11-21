@@ -16,7 +16,7 @@ class UserSettingsServlet : HttpServlet() {
         if (null == userinfo) {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {
-            val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo.id)
+            val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
             val json = JsonUtil.toJson(settings)
             //language=HTML
             resp.writer.write(
@@ -45,7 +45,7 @@ class UserSettingsServlet : HttpServlet() {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {
             val settings = JsonUtil.fromJson<UserSettings>(req.getParameter("settings"), UserSettings::class.java)
-            ApplicationServices.userSettingsManager.updateUserSettings(userinfo.id, settings)
+            ApplicationServices.userSettingsManager.updateUserSettings(userinfo, settings)
             resp.sendRedirect("/")
         }
     }

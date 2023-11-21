@@ -1,11 +1,10 @@
 package com.simiacryptus.skyenet.test
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.actors.CodingActor
-import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.*
 import com.simiacryptus.skyenet.session.*
-import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -18,25 +17,26 @@ open class CodingActorTestApp(
     applicationName = applicationName,
     temperature = temperature,
 ) {
-    override fun processMessage(
-        sessionId: String,
+    override fun newSession(
+        session: Session,
+        user: User?,
         userMessage: String,
-        session: ApplicationSession,
-        sessionDiv: SessionDiv,
-        socket: ChatSocket
+        socketManager: ApplicationInterface,
+        sessionMessage: SessionMessage,
+        api: OpenAIAPI
     ) {
-        sessionDiv.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
-        val response = actor.answer(userMessage, api = socket.api)
+        sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
+        val response = actor.answer(userMessage, api = api)
         val canPlay = ApplicationServices.authorizationManager.isAuthorized(
             this::class.java,
-            socket.user?.email,
+            user,
             AuthorizationManager.OperationType.Execute
         )
         val playLink = if(!canPlay) "" else {
-            session.htmlTools(sessionDiv.divID()).hrefLink("▶", "href-link play-button") {
-                sessionDiv.append("""<div>Running...</div>""", true)
+            socketManager.hrefLink("▶", "href-link play-button") {
+                sessionMessage.append("""<div>Running...</div>""", true)
                 val result = response.run()
-                sessionDiv.append(
+                sessionMessage.append(
                     """
                     |<pre>${result.resultValue}</pre>
                     |<pre>${result.resultOutput}</pre>
@@ -44,7 +44,7 @@ open class CodingActorTestApp(
                 )
             }
         }
-        sessionDiv.append("""<div>${
+        sessionMessage.append("""<div>${
             renderMarkdown("""
             |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
             |${response.getCode()}

@@ -1,8 +1,10 @@
 package com.simiacryptus.skyenet.test
 
+import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.actors.SimpleActor
-import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.skyenet.session.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
@@ -20,19 +22,20 @@ open class SimpleActorTestApp(
         val actor: SimpleActor? = null,
     )
     override val settingsClass: Class<*> get() = Settings::class.java
-    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(sessionId: String): T? = Settings(actor=actor) as T
+    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(session: Session): T? = Settings(actor=actor) as T
 
-    override fun processMessage(
-        sessionId: String,
+    override fun newSession(
+        session: Session,
+        user: User?,
         userMessage: String,
-        session: ApplicationSession,
-        sessionDiv: SessionDiv,
-        socket: ChatSocket
+        socketManager: ApplicationInterface,
+        sessionMessage: SessionMessage,
+        api: OpenAIAPI
     ) {
-        val actor = getSettings<Settings>(sessionId, session.userId)?.actor ?: actor
-        sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
-        val moderatorResponse = actor.answer(userMessage, api = socket.api)
-        sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)
+        val actor = getSettings<Settings>(session, user)?.actor ?: actor
+        sessionMessage.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
+        val moderatorResponse = actor.answer(userMessage, api = api)
+        sessionMessage.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)
     }
 
     companion object {
