@@ -9,8 +9,8 @@ import com.google.api.services.oauth2.Oauth2
 import com.google.api.services.oauth2.model.Userinfo
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
-import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.COOKIE_NAME
-import com.simiacryptus.skyenet.platform.UserInfo
+import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.AUTH_COOKIE
+import com.simiacryptus.skyenet.platform.User
 import jakarta.servlet.*
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServlet
@@ -37,7 +37,7 @@ open class AuthenticatedWebsite(
 
     open fun newUserSession(userInfo: Userinfo, sessionId: String) {
         log.info("User $userInfo logged in with session $sessionId")
-        ApplicationServices.authenticationManager.setUser(sessionId, UserInfo(
+        ApplicationServices.authenticationManager.putUser(sessionId, User(
             id = userInfo.id,
             email = userInfo.email,
             name = userInfo.name,
@@ -100,7 +100,7 @@ open class AuthenticatedWebsite(
             if (request is HttpServletRequest && response is HttpServletResponse) {
                 if (isSecure(request)) {
                     val sessionIdCookie = request.getCookie()
-                    if (sessionIdCookie == null || !ApplicationServices.authenticationManager.containsKey(sessionIdCookie)) {
+                    if (sessionIdCookie == null || !ApplicationServices.authenticationManager.containsUser(sessionIdCookie)) {
                         response.sendRedirect("/googleLogin")
                         return
                     }
@@ -123,7 +123,7 @@ open class AuthenticatedWebsite(
                 val userInfo: Userinfo = oauth2.userinfo().get().execute()
                 val sessionID = UUID.randomUUID().toString()
                newUserSession(userInfo, sessionID)
-                val sessionCookie = Cookie(COOKIE_NAME, sessionID)
+                val sessionCookie = Cookie(AUTH_COOKIE, sessionID)
                 sessionCookie.path = "/"
                 sessionCookie.isHttpOnly = true
                 sessionCookie.secure = true

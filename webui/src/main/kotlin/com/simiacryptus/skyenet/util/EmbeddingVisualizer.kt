@@ -2,20 +2,20 @@ package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.EmbeddingModels
+import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import com.simiacryptus.skyenet.platform.DataStorage
-import com.simiacryptus.skyenet.platform.SessionID
-import com.simiacryptus.skyenet.platform.UserInfo
-import com.simiacryptus.skyenet.session.SessionBase
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.util.JsonUtil
 
 class EmbeddingVisualizer(
     val api: OpenAIClient,
     val dataStorage: DataStorage,
-    val sessionID: SessionID,
+    val sessionID: Session,
     val appPath: String,
     val host: String,
-    val session: SessionBase,
-    val userId: UserInfo?,
+    val session: ApplicationSocketManager.ApplicationInterface,
+    val userId: User?,
 ) {
 
     private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {

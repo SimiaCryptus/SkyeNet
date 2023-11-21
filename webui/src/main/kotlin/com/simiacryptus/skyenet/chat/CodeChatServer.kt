@@ -4,8 +4,8 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.platform.SessionID
-import com.simiacryptus.skyenet.platform.UserInfo
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.skyenet.servlet.AppInfoServlet
 import com.simiacryptus.skyenet.util.ClasspathResource
 import org.eclipse.jetty.servlet.ServletHolder
@@ -23,8 +23,8 @@ class CodeChatServer(
 ) {
     override val applicationName: String get() = "Code Chat"
 
-    override fun newSession(userId: UserInfo?, sessionId: SessionID) = object : ChatSession(
-        sessionId = sessionId,
+    override fun newSession(user: User?, session: Session) = object : ChatSocketManager(
+        session = session,
         parent = this@CodeChatServer,
         model = model,
         api = api,
@@ -49,7 +49,7 @@ class CodeChatServer(
             """.trimMargin(),
         applicationClass = ApplicationBase::class.java,
     ) {
-        override fun canWrite(user: UserInfo?): Boolean = true
+        override fun canWrite(user: User?): Boolean = true
     }
 
     override val baseResource: Resource

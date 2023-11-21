@@ -7,12 +7,14 @@ import com.simiacryptus.skyenet.platform.ApplicationServices.authenticationManag
 import com.simiacryptus.skyenet.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.platform.ApplicationServices.dataStorageFactory
 import com.simiacryptus.skyenet.servlet.*
-import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.COOKIE_NAME
-import com.simiacryptus.skyenet.session.SessionDiv
-import com.simiacryptus.skyenet.session.SessionInterface
+import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.AUTH_COOKIE
+import com.simiacryptus.skyenet.session.SessionMessage
+import com.simiacryptus.skyenet.session.SocketManager
 import com.simiacryptus.skyenet.platform.AuthorizationManager
-import com.simiacryptus.skyenet.platform.SessionID
-import com.simiacryptus.skyenet.platform.UserInfo
+import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
+import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.FilterHolder
@@ -27,7 +29,7 @@ abstract class ApplicationBase(
     val temperature: Double = 0.1,
 ) : ChatServer(resourceBase) {
 
-    final override val dataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
+    final override val dataStorage: DataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
     protected open val appInfo = ServletHolder("appInfo", AppInfoServlet(applicationName))
     protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
     protected open val usageServlet = ServletHolder("usage", UsageServlet())
@@ -35,51 +37,51 @@ abstract class ApplicationBase(
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
     protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
 
-    override fun newSession(userId: UserInfo?, sessionId: SessionID): SessionInterface {
-        return object : ApplicationSession(
-            sessionId = sessionId,
-            userId = userId,
+    override fun newSession(user: User?, session: Session): SocketManager {
+        return object : ApplicationSocketManager(
+            session = session,
+            userId = user,
             dataStorage = dataStorage,
             applicationClass = this@ApplicationBase::class.java,
         ) {
-            override fun processMessage(
-                sessionId: SessionID,
-                userId: UserInfo?,
+            override fun newSession(
+                session: Session,
+                user: User?,
                 userMessage: String,
-                session: ApplicationSession,
-                sessionDiv: SessionDiv,
+                socketManager: ApplicationSocketManager,
+                sessionMessage: SessionMessage,
                 socket: ChatSocket
-            ) = this@ApplicationBase.processMessage(
-                sessionId = sessionId,
-                userId = userId,
-                userMessage = userMessage,
+            ) = this@ApplicationBase.newSession(
                 session = session,
-                sessionDiv = sessionDiv,
+                user = user,
+                userMessage = userMessage,
+                socketManager = socketManager.applicationInterface,
+                sessionMessage = sessionMessage,
                 socket = socket
             )
         }
     }
 
-    abstract fun processMessage(
-        sessionId: SessionID,
-        userId: UserInfo?,
+    abstract fun newSession(
+        session: Session,
+        user: User?,
         userMessage: String,
-        session: ApplicationSession,
-        sessionDiv: SessionDiv,
+        socketManager: ApplicationSocketManager.ApplicationInterface,
+        sessionMessage: SessionMessage,
         socket: ChatSocket
     )
 
     open val settingsClass: Class<*> get() = Map::class.java
 
-    open fun <T : Any> initSettings(sessionId: SessionID): T? = null
+    open fun <T : Any> initSettings(session: Session): T? = null
 
-    fun <T : Any> getSettings(sessionId: SessionID, userId: UserInfo?): T? {
+    fun <T : Any> getSettings(session: Session, userId: User?): T? {
         @Suppress("UNCHECKED_CAST")
-        var settings: T? = dataStorage.getJson(userId, sessionId, settingsClass as Class<T>, "settings.json")
+        var settings: T? = dataStorage.getJson(userId, session, "settings.json", settingsClass as Class<T>)
         if (null == settings) {
-            settings = initSettings(sessionId)
+            settings = initSettings(session)
             if (null != settings) {
-                dataStorage.setJson(userId, sessionId, settings, "settings.json")
+                dataStorage.setJson(userId, session, "settings.json", settings)
             }
         }
         return settings
@@ -134,7 +136,7 @@ abstract class ApplicationBase(
                 filename.endsWith(".css") -> "text/css"
                 else -> "text/plain"
             }
-        fun HttpServletRequest.getCookie(name: String = COOKIE_NAME) = cookies?.find { it.name == name }?.value
+        fun HttpServletRequest.getCookie(name: String = AUTH_COOKIE) = cookies?.find { it.name == name }?.value
 
     }
 

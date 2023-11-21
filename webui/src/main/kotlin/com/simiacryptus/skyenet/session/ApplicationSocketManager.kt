@@ -1,20 +1,19 @@
-package com.simiacryptus.skyenet
+package com.simiacryptus.skyenet.session
 
+import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.DataStorage
-import com.simiacryptus.skyenet.platform.SessionID
-import com.simiacryptus.skyenet.platform.UserInfo
-import com.simiacryptus.skyenet.session.SessionBase
-import com.simiacryptus.skyenet.session.SessionDiv
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
 import java.util.function.Consumer
 
-abstract class ApplicationSession(
-    sessionId: SessionID,
-    userId: UserInfo?,
+abstract class ApplicationSocketManager(
+    session: Session,
+    userId: User?,
     dataStorage: DataStorage?,
     applicationClass: Class<*>,
-) : SessionBase(
-    sessionId = sessionId,
+) : SocketManagerBase(
+    session = session,
     dataStorage = dataStorage,
     userId = userId,
     applicationClass = applicationClass,
@@ -25,10 +24,23 @@ abstract class ApplicationSession(
 
     override fun onRun(userMessage: String, socket: ChatSocket) {
         val operationID = randomID()
-        val sessionDiv = newSessionDiv(operationID, spinner, true)
+        val sessionDiv = newMessage(operationID, spinner, true)
         threads[operationID] = Thread.currentThread()
-        processMessage(sessionId, userId = userId, userMessage, this, sessionDiv, socket)
+        newSession(session, user = userId, userMessage, this, sessionDiv, socket)
     }
+
+    inner class ApplicationInterface {
+        fun send(html: String) = this@ApplicationSocketManager.send(html)
+        fun hrefLink(linkText: String, classname: String = """href-link""", handler: Consumer<Unit>) =
+            this@ApplicationSocketManager.hrefLink(linkText, classname, handler)
+        fun textInput(handler: Consumer<String>): String =
+            this@ApplicationSocketManager.textInput(handler)
+
+        fun newMessage(operationID: String, spinner: String, cancelable: Boolean = false): SessionMessage =
+            this@ApplicationSocketManager.newMessage(operationID, spinner, cancelable)
+
+    }
+    val applicationInterface by lazy { ApplicationInterface() }
 
     override fun onCmd(id: String, code: String, socket: ChatSocket) {
         if (code == "cancel") {
@@ -42,16 +54,12 @@ abstract class ApplicationSession(
         }
     }
 
-    val spinner: String get() = """<div>${ApplicationBase.spinner}</div>"""
-//        val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
-//        val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
-//        val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
-
     fun hrefLink(linkText: String, classname: String = """href-link""", handler: Consumer<Unit>): String {
         val operationID = randomID()
         linkTriggers[operationID] = handler
         return """<a class="$classname" data-id="$operationID">$linkText</a>"""
     }
+
     fun textInput(handler: Consumer<String>): String {
         val operationID = randomID()
         txtTriggers[operationID] = handler
@@ -62,13 +70,19 @@ abstract class ApplicationSession(
                </form>""".trimIndent()
     }
 
-
-    abstract fun processMessage(
-        sessionId: SessionID,
-        userId: UserInfo?,
+    abstract fun newSession(
+        session: Session,
+        user: User?,
         userMessage: String,
-        session: ApplicationSession,
-        sessionDiv: SessionDiv,
+        socketManager: ApplicationSocketManager,
+        sessionMessage: SessionMessage,
         socket: ChatSocket
     )
+
+    companion object {
+        val spinner: String get() = """<div>${ApplicationBase.spinner}</div>"""
+//        val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
+//        val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
+//        val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
+    }
 }

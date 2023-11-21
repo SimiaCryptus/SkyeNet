@@ -1,13 +1,13 @@
 package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.session.SessionInterface
+import com.simiacryptus.skyenet.session.SocketManager
 
-class MutableSessionHandler(initialDelegate: SessionInterface?) : SessionInterface {
-    private var priorDelegates: MutableList<SessionInterface> = mutableListOf()
-    private var currentDelegate: SessionInterface? = initialDelegate
+class MutableSessionHandler(initialDelegate: SocketManager?) : SocketManager {
+    private var priorDelegates: MutableList<SocketManager> = mutableListOf()
+    private var currentDelegate: SocketManager? = initialDelegate
 
-    fun setDelegate(delegate: SessionInterface) {
+    fun setDelegate(delegate: SocketManager) {
         if(null != currentDelegate) priorDelegates.add(currentDelegate!!)
         currentDelegate = delegate
         for (socket in sockets) {

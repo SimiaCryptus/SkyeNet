@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.platform
 
-data class UserInfo(
+data class User(
     val email: String,
     val id: String? = null, // TODO: Remove default value
     val name: String? = null, // TODO: Remove default value

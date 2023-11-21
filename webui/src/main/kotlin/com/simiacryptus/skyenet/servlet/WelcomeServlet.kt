@@ -44,7 +44,7 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
         }
     }
 
-    protected open fun homepage(user: UserInfo?): String {
+    protected open fun homepage(user: User?): String {
         @Language("HTML")
         val html = """<!DOCTYPE html>
 <html lang="en">

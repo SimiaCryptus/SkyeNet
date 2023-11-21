@@ -1,11 +1,11 @@
 package com.simiacryptus.skyenet.test
 
 import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.ApplicationSession
+import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import com.simiacryptus.skyenet.actors.SimpleActor
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.platform.SessionID
-import com.simiacryptus.skyenet.platform.UserInfo
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.skyenet.session.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
@@ -23,20 +23,20 @@ open class SimpleActorTestApp(
         val actor: SimpleActor? = null,
     )
     override val settingsClass: Class<*> get() = Settings::class.java
-    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(sessionId: SessionID): T? = Settings(actor=actor) as T
+    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(session: Session): T? = Settings(actor=actor) as T
 
-    override fun processMessage(
-        sessionId: SessionID,
-        userId: UserInfo?,
+    override fun newSession(
+        session: Session,
+        user: User?,
         userMessage: String,
-        session: ApplicationSession,
-        sessionDiv: SessionDiv,
+        socketManager: ApplicationSocketManager.ApplicationInterface,
+        sessionMessage: SessionMessage,
         socket: ChatSocket
     ) {
-        val actor = getSettings<Settings>(sessionId, userId)?.actor ?: actor
-        sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
+        val actor = getSettings<Settings>(session, user)?.actor ?: actor
+        sessionMessage.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
         val moderatorResponse = actor.answer(userMessage, api = socket.api)
-        sessionDiv.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)
+        sessionMessage.append("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""", false)
     }
 
     companion object {

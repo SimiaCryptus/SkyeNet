@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.servlet
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.DataStorage
-import com.simiacryptus.skyenet.platform.SessionID
+import com.simiacryptus.skyenet.platform.Session
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -50,7 +50,7 @@ class SessionListServlet(
         )
     }
 
-    private fun sessionName(req: HttpServletRequest, session: SessionID) = dataStorage.getSessionName(
+    private fun sessionName(req: HttpServletRequest, session: Session) = dataStorage.getSessionName(
         ApplicationServices.authenticationManager.getUser(req.getCookie()), session
     )
 }

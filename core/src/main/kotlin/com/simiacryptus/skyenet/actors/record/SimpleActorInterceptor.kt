@@ -7,7 +7,7 @@ import com.simiacryptus.skyenet.util.FunctionWrapper
 
 class SimpleActorInterceptor(
     val inner: SimpleActor,
-    val functionInterceptor: FunctionWrapper,
+    private val functionInterceptor: FunctionWrapper,
 ) : SimpleActor(
     prompt = inner.prompt,
     name = inner.name,

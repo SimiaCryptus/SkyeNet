@@ -10,86 +10,86 @@ open class DataStorage(
 ) {
 
     open fun <T> getJson(
-        userId: UserInfo?,
-        sessionId: SessionID,
-        clazz: Class<T>,
-        filename: String
+        user: User?,
+        session: Session,
+        filename: String,
+        clazz: Class<T>
     ): T? {
-        validateSessionId(sessionId)
-        val settingsFile = File(this.getSessionDir(userId, sessionId), filename)
+        validateSessionId(session)
+        val settingsFile = File(this.getSessionDir(user, session), filename)
         return if (!settingsFile.exists()) null else {
             JsonUtil.objectMapper().readValue(settingsFile, clazz) as T
         }
     }
 
     open fun getMessages(
-        userId: UserInfo?,
-        sessionId: SessionID
+        user: User?,
+        session: Session
     ): LinkedHashMap<String, String> {
-        validateSessionId(sessionId)
-        val messageDir = File(this.getSessionDir(userId, sessionId), MESSAGE_DIR)
+        validateSessionId(session)
+        val messageDir = File(this.getSessionDir(user, session), MESSAGE_DIR)
         val messages = LinkedHashMap<String, String>()
-        log.debug("Loading messages for {}: {}", sessionId, messageDir.absolutePath)
+        log.debug("Loading messages for {}: {}", session, messageDir.absolutePath)
         messageDir.listFiles()?.sortedBy { it.lastModified() }?.forEach { file ->
             val message = JsonUtil.objectMapper().readValue(file, String::class.java)
             messages[file.nameWithoutExtension] = message
         }
-        log.debug("Loaded {} messages for {}", messages.size, sessionId)
+        log.debug("Loaded {} messages for {}", messages.size, session)
         return messages
     }
 
     open fun getSessionDir(
-        userId: UserInfo?,
-        sessionId: SessionID
+        user: User?,
+        session: Session
     ): File {
-        validateSessionId(sessionId)
-        val parts = sessionId.sessionId.split("-")
+        validateSessionId(session)
+        val parts = session.sessionId.split("-")
         return when (parts.size) {
             3 -> {
                 val root = when {
                     parts[0] == "G" -> dataDir
-                    parts[0] == "U" -> userRoot(userId)
-                    else -> throw IllegalArgumentException("Invalid session ID: $sessionId")
+                    parts[0] == "U" -> userRoot(user)
+                    else -> throw IllegalArgumentException("Invalid session ID: $session")
                 }
                 val dateDir = File(root, parts[1])
-                log.debug("Date Dir for {}: {}", sessionId, dateDir.absolutePath)
+                log.debug("Date Dir for {}: {}", session, dateDir.absolutePath)
                 val sessionDir = File(dateDir, parts[2])
-                log.debug("Instance Dir for {}: {}", sessionId, sessionDir.absolutePath)
+                log.debug("Instance Dir for {}: {}", session, sessionDir.absolutePath)
                 sessionDir
             }
 
             2 -> {
                 val dateDir = File(dataDir, parts[0])
-                log.debug("Date Dir for {}: {}", sessionId, dateDir.absolutePath)
+                log.debug("Date Dir for {}: {}", session, dateDir.absolutePath)
                 val sessionDir = File(dateDir, parts[1])
-                log.debug("Instance Dir for {}: {}", sessionId, sessionDir.absolutePath)
+                log.debug("Instance Dir for {}: {}", session, sessionDir.absolutePath)
                 sessionDir
             }
 
             else -> {
-                throw IllegalArgumentException("Invalid session ID: $sessionId")
+                throw IllegalArgumentException("Invalid session ID: $session")
             }
         }
     }
 
     open fun getSessionName(
-        userId: UserInfo?,
-        sessionId: SessionID
+        user: User?,
+        session: Session
     ): String {
-        validateSessionId(sessionId)
-        val userMessage = File(this.getSessionDir(userId, sessionId), MESSAGE_DIR).listFiles()
+        validateSessionId(session)
+        val userMessage = File(this.getSessionDir(user, session), MESSAGE_DIR).listFiles()
             ?.filter { file -> file.isFile }
             ?.sortedBy { file -> file.lastModified() }
             ?.map { messageFile ->
                 val fileText = messageFile.readText()
                 val split = fileText.split("<p>")
                 if (split.size < 2) {
-                    log.debug("Session {}: No messages", sessionId)
+                    log.debug("Session {}: No messages", session)
                     ""
                 } else {
                     val stringList = split[1].split("</p>")
                     if (stringList.isEmpty()) {
-                        log.debug("Session {}: No messages", sessionId)
+                        log.debug("Session {}: No messages", session)
                         ""
                     } else {
                         stringList.first()
@@ -97,49 +97,49 @@ open class DataStorage(
                 }
             }?.firstOrNull { it.isNotEmpty() }
         return if (null != userMessage) {
-            log.debug("Session {}: {}", sessionId, userMessage)
+            log.debug("Session {}: {}", session, userMessage)
             userMessage
         } else {
-            log.debug("Session {}: No messages", sessionId)
-            sessionId.sessionId
+            log.debug("Session {}: No messages", session)
+            session.sessionId
         }
     }
 
     open fun listSessions(
-        userId: UserInfo?
-    ): List<SessionID> {
+        user: User?
+    ): List<Session> {
         val globalSessions = listSessions(dataDir)
-        val userSessions = if (userId == null) listOf() else listSessions(userRoot(userId))
-        return globalSessions.map { SessionID("G-$it") } + userSessions.map { SessionID("U-$it") }
+        val userSessions = if (user == null) listOf() else listSessions(userRoot(user))
+        return globalSessions.map { Session("G-$it") } + userSessions.map { Session("U-$it") }
     }
 
     open fun <T : Any> setJson(
-        userId: UserInfo?,
-        sessionId: SessionID,
-        settings: T,
-        filename: String
+        user: User?,
+        session: Session,
+        filename: String,
+        settings: T
     ): T {
-        validateSessionId(sessionId)
-        val settingsFile = File(this.getSessionDir(userId, sessionId), filename)
+        validateSessionId(session)
+        val settingsFile = File(this.getSessionDir(user, session), filename)
         settingsFile.parentFile.mkdirs()
         JsonUtil.objectMapper().writeValue(settingsFile, settings)
         return settings
     }
 
     open fun updateMessage(
-        userId: UserInfo?,
-        sessionId: SessionID,
+        user: User?,
+        session: Session,
         messageId: String,
         value: String
     ) {
-        validateSessionId(sessionId)
-        val file = File(File(this.getSessionDir(userId, sessionId), MESSAGE_DIR), "$messageId.json")
-        log.debug("Updating message for {} / {}: {}", sessionId, messageId, file.absolutePath)
+        validateSessionId(session)
+        val file = File(File(this.getSessionDir(user, session), MESSAGE_DIR), "$messageId.json")
+        log.debug("Updating message for {} / {}: {}", session, messageId, file.absolutePath)
         file.parentFile.mkdirs()
         JsonUtil.objectMapper().writeValue(file, value)
     }
 
-    private fun listSessions(dir: File): List<SessionID> {
+    private fun listSessions(dir: File): List<String> {
         val files = dir.listFiles()?.flatMap { it.listFiles()?.toList() ?: listOf() }?.filter { sessionDir ->
             val operationDir = File(sessionDir, MESSAGE_DIR)
             if (!operationDir.exists()) false else {
@@ -148,12 +148,12 @@ open class DataStorage(
             }
         }
         log.debug("Sessions: {}", files?.map { it.parentFile.name + "-" + it.name })
-        return files?.map { SessionID(it.parentFile.name + "-" + it.name) } ?: listOf()
+        return files?.map { it.parentFile.name + "-" + it.name } ?: listOf()
     }
 
-    private fun userRoot(userId: UserInfo?) = File(
+    private fun userRoot(user: User?) = File(
         File(dataDir, "users"),
-        userId?.email ?: throw IllegalArgumentException("User required for private session")
+        user?.email ?: throw IllegalArgumentException("User required for private session")
     )
 
     companion object {
@@ -161,25 +161,25 @@ open class DataStorage(
         private val log = org.slf4j.LoggerFactory.getLogger(DataStorage::class.java)
 
         fun validateSessionId(
-            sessionId: SessionID
+            session: Session
         ) {
-            if (!sessionId.sessionId.matches("""([GU]-)?\d{8}-\w{8}""".toRegex())) {
-                throw IllegalArgumentException("Invalid session ID: $sessionId")
+            if (!session.sessionId.matches("""([GU]-)?\d{8}-\w{8}""".toRegex())) {
+                throw IllegalArgumentException("Invalid session ID: $session")
             }
         }
 
-        fun newGlobalID(): SessionID {
+        fun newGlobalID(): Session {
             val uuid = UUID.randomUUID().toString().split("-").first()
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
             log.debug("New ID: $yyyyMMdd-$uuid")
-            return SessionID("G-$yyyyMMdd-$uuid")
+            return Session("G-$yyyyMMdd-$uuid")
         }
 
-        fun newUserID(): SessionID {
+        fun newUserID(): Session {
             val uuid = UUID.randomUUID().toString().split("-").first()
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
             log.debug("New ID: $yyyyMMdd-$uuid")
-            return SessionID("U-$yyyyMMdd-$uuid")
+            return Session("U-$yyyyMMdd-$uuid")
         }
 
         private const val MESSAGE_DIR = "messages"

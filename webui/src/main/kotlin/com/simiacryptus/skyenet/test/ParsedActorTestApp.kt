@@ -1,12 +1,12 @@
 package com.simiacryptus.skyenet.test
 
 import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.ApplicationSession
+import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import com.simiacryptus.skyenet.actors.ParsedActor
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.platform.SessionID
-import com.simiacryptus.skyenet.platform.UserInfo
-import com.simiacryptus.skyenet.session.SessionDiv
+import com.simiacryptus.skyenet.platform.Session
+import com.simiacryptus.skyenet.platform.User
+import com.simiacryptus.skyenet.session.SessionMessage
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
@@ -19,17 +19,17 @@ open class ParsedActorTestApp<T : Any>(
     applicationName = applicationName,
     temperature = temperature,
 ) {
-    override fun processMessage(
-        sessionId: SessionID,
-        userId: UserInfo?,
+    override fun newSession(
+        session: Session,
+        user: User?,
         userMessage: String,
-        session: ApplicationSession,
-        sessionDiv: SessionDiv,
+        socketManager: ApplicationSocketManager.ApplicationInterface,
+        sessionMessage: SessionMessage,
         socket: ChatSocket
     ) {
-        sessionDiv.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
+        sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
         val response = actor.answer(userMessage, api = socket.api)
-        sessionDiv.append(
+        sessionMessage.append(
             """<div>${
                 renderMarkdown(
                     """

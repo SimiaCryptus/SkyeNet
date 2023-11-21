@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.servlet
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
-import com.simiacryptus.skyenet.platform.SessionID
+import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -16,8 +16,8 @@ class SessionSettingsServlet(
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
         if (req.parameterMap.containsKey("sessionId")) {
-            val sessionId = SessionID(req.getParameter("sessionId"))
-            val settings = server.getSettings<Any>(sessionId, ApplicationServices.authenticationManager.getUser(
+            val session = Session(req.getParameter("sessionId"))
+            val settings = server.getSettings<Any>(session, ApplicationServices.authenticationManager.getUser(
                 req.getCookie()
             ))
             val json = if(settings != null) JsonUtil.toJson(settings) else ""
@@ -31,7 +31,7 @@ class SessionSettingsServlet(
                     |</head>
                     |<body>
                     |<form action="${req.contextPath}/settings" method="post">
-                    |    <input type="hidden" name="sessionId" value="${sessionId.sessionId}"/>
+                    |    <input type="hidden" name="sessionId" value="${session.sessionId}"/>
                     |    <input type="hidden" name="action" value="save"/>
                     |    <textarea name="settings" style="width: 100%; height: 100px;">$json</textarea>
                     |    <input type="submit" value="Save"/>
@@ -53,12 +53,13 @@ class SessionSettingsServlet(
             resp.status = HttpServletResponse.SC_BAD_REQUEST
             resp.writer.write("Session ID is required")
         } else {
-            val sessionId = SessionID(req.getParameter("sessionId"))
+            val session = Session(req.getParameter("sessionId"))
             val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), server.settingsClass)
             server.dataStorage.setJson(
                 ApplicationServices.authenticationManager.getUser(req.getCookie()),
-                sessionId, settings, "settings.json")
-            resp.sendRedirect("${req.contextPath}/#${sessionId.sessionId}")
+                session, "settings.json", settings
+            )
+            resp.sendRedirect("${req.contextPath}/#${session.sessionId}")
         }
     }
 }

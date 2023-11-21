@@ -15,7 +15,7 @@ open class AuthorizationManager {
 
     open fun isAuthorized(
         applicationClass: Class<*>?,
-        user: UserInfo?,
+        user: User?,
         operationType: OperationType,
     ) = try {
         if (isUserAuthorized("/permissions/${operationType.name.lowercase(Locale.getDefault())}.txt", user?.email)) {

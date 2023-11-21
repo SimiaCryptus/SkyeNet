@@ -9,7 +9,7 @@ import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.heart.GroovyInterpreter
 import com.simiacryptus.skyenet.heart.KotlinInterpreter
 import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter
-import com.simiacryptus.skyenet.platform.UserInfo
+import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.skyenet.test.CodingActorTestApp
 import com.simiacryptus.skyenet.test.ParsedActorTestApp
 import com.simiacryptus.skyenet.test.SimpleActorTestApp
@@ -37,7 +37,7 @@ object ActorTestAppServer : ApplicationDirectory(port = 8082) {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val mockUser = UserInfo(
+        val mockUser = User(
             "1",
             "user@mock.test",
             "Test User",
@@ -45,13 +45,13 @@ object ActorTestAppServer : ApplicationDirectory(port = 8082) {
         )
         ApplicationServices.authenticationManager = object : AuthenticationManager() {
             override fun getUser(sessionId: String?) = mockUser
-            override fun containsKey(value: String) = true
-            override fun setUser(sessionId: String, userInfo: UserInfo) = throw UnsupportedOperationException()
+            override fun containsUser(value: String) = true
+            override fun putUser(sessionId: String, user: User) = throw UnsupportedOperationException()
         }
         ApplicationServices.authorizationManager = object : AuthorizationManager() {
             override fun isAuthorized(
                 applicationClass: Class<*>?,
-                user: UserInfo?,
+                user: User?,
                 operationType: OperationType
             ): Boolean = true
         }

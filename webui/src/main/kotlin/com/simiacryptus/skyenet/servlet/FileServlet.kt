@@ -4,7 +4,7 @@ import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.DataStorage
-import com.simiacryptus.skyenet.platform.SessionID
+import com.simiacryptus.skyenet.platform.Session
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,8 +14,8 @@ class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         val path = req.pathInfo ?: "/"
         val pathSegments = parsePath(path)
-        val sessionID = SessionID(pathSegments.first())
-        val sessionDir = dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(req.getCookie()), sessionID)
+        val session = Session(pathSegments.first())
+        val sessionDir = dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(req.getCookie()), session)
         val filePath = pathSegments.drop(1).joinToString("/")
         val file = File(sessionDir, filePath)
         if (file.isFile) {
@@ -99,7 +99,7 @@ class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
                     |</head>
                     |<body>
                     |<h1 class="archive-title">Archive</h1>
-                    |<a href="${req.contextPath}/fileZip?session=${sessionID.sessionId}&path=$filePath" class="zip-link">ZIP</a>
+                    |<a href="${req.contextPath}/fileZip?session=${session.sessionId}&path=$filePath" class="zip-link">ZIP</a>
                     |<h1 class="folders-title">Folders</h1>
                     |<div class="folders-container">
                     |$folders

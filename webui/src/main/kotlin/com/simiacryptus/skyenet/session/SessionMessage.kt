@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet.session
 
-import com.simiacryptus.skyenet.platform.SessionID
+import com.simiacryptus.skyenet.platform.Session
 
-abstract class SessionDiv {
+abstract class SessionMessage {
     abstract fun append(htmlToAppend: String, showSpinner: Boolean) : Unit
-    abstract fun sessionID(): SessionID
+    abstract fun sessionID(): Session
     abstract fun divID(): String
 }

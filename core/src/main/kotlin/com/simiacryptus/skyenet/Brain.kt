@@ -119,11 +119,11 @@ open class Brain(
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(Brain::class.java)
         fun String.indent(indent: String = "  ") = this.replace("\n", "\n$indent")
-        fun joinYamlList(typeDescriptions: List<String>) = typeDescriptions.joinToString("\n") {
+        private fun joinYamlList(typeDescriptions: List<String>) = typeDescriptions.joinToString("\n") {
             "- " + it.indent()
         }
 
-        fun Method.superMethod(): Method? {
+        private fun Method.superMethod(): Method? {
             val superMethod = declaringClass.superclasses.flatMap { it.methods.toList() }
                 .find { it.name == name && it.parameters.size == parameters.size }
             return superMethod?.superMethod() ?: superMethod
