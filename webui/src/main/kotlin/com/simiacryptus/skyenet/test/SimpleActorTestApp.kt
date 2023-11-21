@@ -1,8 +1,11 @@
 package com.simiacryptus.skyenet.test
 
 import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.ApplicationSession
 import com.simiacryptus.skyenet.actors.SimpleActor
 import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.platform.SessionID
+import com.simiacryptus.skyenet.platform.UserInfo
 import com.simiacryptus.skyenet.session.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
@@ -20,11 +23,11 @@ open class SimpleActorTestApp(
         val actor: SimpleActor? = null,
     )
     override val settingsClass: Class<*> get() = Settings::class.java
-    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(sessionId: String): T? = Settings(actor=actor) as T
+    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(sessionId: SessionID): T? = Settings(actor=actor) as T
 
     override fun processMessage(
-        sessionId: String,
-        userId: String?,
+        sessionId: SessionID,
+        userId: UserInfo?,
         userMessage: String,
         session: ApplicationSession,
         sessionDiv: SessionDiv,

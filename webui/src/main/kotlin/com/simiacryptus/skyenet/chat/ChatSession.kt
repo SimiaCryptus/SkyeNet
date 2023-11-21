@@ -5,12 +5,13 @@ import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.platform.SessionID
 import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.skyenet.util.MarkdownUtil
 
 open class ChatSession(
     val parent: ChatServer,
-    sessionId: String,
+    sessionId: SessionID,
     val model: OpenAITextModel = ChatModels.GPT35Turbo,
     val userInterfacePrompt: String,
     val initialAssistantPrompt: String = "",

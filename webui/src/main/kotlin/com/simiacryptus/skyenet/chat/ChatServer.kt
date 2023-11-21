@@ -1,14 +1,10 @@
 package com.simiacryptus.skyenet.chat
 
-import com.simiacryptus.skyenet.platform.ApplicationServices
-import com.simiacryptus.skyenet.platform.AuthenticationManager
-import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.platform.*
+import com.simiacryptus.skyenet.platform.ApplicationServices.authenticationManager
+import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.COOKIE_NAME
 import com.simiacryptus.skyenet.servlet.NewSessionServlet
 import com.simiacryptus.skyenet.session.SessionInterface
-import com.simiacryptus.util.JsonUtil
-import jakarta.servlet.http.HttpServlet
-import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.util.resource.Resource
@@ -19,60 +15,48 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 
 abstract class ChatServer(val resourceBase: String) {
 
-    fun JettyServerUpgradeRequest.getCookie(name: String) = cookies?.find { it.name == name }?.value
-
     abstract val applicationName: String
     open val dataStorage: DataStorage? = null
-    val stateCache: MutableMap<String, SessionInterface> = mutableMapOf()
 
     inner class WebSocketHandler : JettyWebSocketServlet() {
+        val stateCache: MutableMap<SessionID, SessionInterface> = mutableMapOf()
         override fun configure(factory: JettyWebSocketServletFactory) {
             factory.setCreator { req, resp ->
                 try {
-                    val sessionId = req.parameterMap["sessionId"]?.firstOrNull()
-                    val authId = req.getCookie(AuthenticationManager.COOKIE_NAME)
-                    return@setCreator if (null == sessionId) {
+                    val authId = req.getCookie(COOKIE_NAME)
+                    return@setCreator if (!req.parameterMap.containsKey("sessionId")) {
                         null
                     } else {
-                        val sessionState: SessionInterface
-                        if (stateCache.containsKey(sessionId)) {
-                            sessionState = stateCache[sessionId]!!
-                        } else {
-                            sessionState = newSession(
-                                ApplicationServices.authenticationManager.getUser(
-                                req.getCookie(AuthenticationManager.COOKIE_NAME)
-                            )?.id, sessionId)
-                            stateCache[sessionId] = sessionState
-                        }
-                        ChatSocket(sessionId, sessionState, dataStorage, ApplicationServices.authenticationManager.getUser(authId))
+                        val sessionId = SessionID(req.parameterMap["sessionId"]?.first()!!)
+                        val sessionState: SessionInterface = getSession(sessionId, req)
+                        val user = authenticationManager.getUser(authId)
+                        ChatSocket(sessionId, sessionState, dataStorage, user)
                     }
                 } catch (e: Exception) {
                     log.warn("Error configuring websocket", e)
                 }
             }
         }
-    }
 
-    inner class AppInfoServlet : HttpServlet() {
-        override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-            resp.contentType = "text/json"
-            resp.status = HttpServletResponse.SC_OK
-            resp.writer.write(
-                JsonUtil.objectMapper().writeValueAsString(
-                    mapOf(
-                        "applicationName" to applicationName
-                    )
-                )
-            )
+        private fun getSession(
+            sessionId: SessionID,
+            req: JettyServerUpgradeRequest
+        ) = if (stateCache.containsKey(sessionId)) {
+            stateCache[sessionId]!!
+        } else {
+            val user = authenticationManager.getUser(req.getCookie(COOKIE_NAME))
+            val sessionState = newSession(user, sessionId)
+            stateCache[sessionId] = sessionState
+            sessionState
         }
     }
 
-    abstract fun newSession(userId: String?, sessionId: String): SessionInterface
+    abstract fun newSession(userId: UserInfo?, sessionId: SessionID): SessionInterface
 
     open val baseResource: Resource? get() = Resource.newResource(javaClass.classLoader.getResource(resourceBase))
-    protected val newSessionServlet by lazy { NewSessionServlet() }
-    protected val webSocketHandler by lazy { WebSocketHandler() }
-    protected val defaultServlet by lazy { DefaultServlet() }
+    private val newSessionServlet by lazy { NewSessionServlet() }
+    private val webSocketHandler by lazy { WebSocketHandler() }
+    private val defaultServlet by lazy { DefaultServlet() }
 
     open fun configure(webAppContext: WebAppContext, path: String = "/", baseUrl: String) {
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), "/")
@@ -82,6 +66,7 @@ abstract class ChatServer(val resourceBase: String) {
 
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
+        fun JettyServerUpgradeRequest.getCookie(name: String) = cookies?.find { it.name == name }?.value
     }
 }
 

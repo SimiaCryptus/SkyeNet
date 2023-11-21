@@ -8,10 +8,10 @@ open class UserSettingsManager {
         val apiKey: String = "",
     )
 
-    private val userSettings = HashMap<String, UserSettings>()
+    private val userSettings = HashMap<UserInfo, UserSettings>()
     private val userConfigDirectory = File(".skyenet/users")
 
-    open fun getUserSettings(user: String): UserSettings {
+    open fun getUserSettings(user: UserInfo): UserSettings {
         return userSettings.getOrPut(user) {
             val file = File(userConfigDirectory, "$user.json")
             if (file.exists()) {
@@ -24,7 +24,7 @@ open class UserSettingsManager {
         }
     }
 
-    open fun updateUserSettings(user: String, settings: UserSettings) {
+    open fun updateUserSettings(user: UserInfo, settings: UserSettings) {
         userSettings[user] = settings
         val file = File(userConfigDirectory, "$user.json")
         file.parentFile.mkdirs()

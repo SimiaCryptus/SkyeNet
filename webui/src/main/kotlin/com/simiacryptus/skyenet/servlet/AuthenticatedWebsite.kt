@@ -9,8 +9,8 @@ import com.google.api.services.oauth2.Oauth2
 import com.google.api.services.oauth2.model.Userinfo
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
-import com.simiacryptus.skyenet.platform.AuthenticationManager
 import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.COOKIE_NAME
+import com.simiacryptus.skyenet.platform.UserInfo
 import jakarta.servlet.*
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServlet
@@ -37,12 +37,13 @@ open class AuthenticatedWebsite(
 
     open fun newUserSession(userInfo: Userinfo, sessionId: String) {
         log.info("User $userInfo logged in with session $sessionId")
-        ApplicationServices.authenticationManager.setUser(sessionId, AuthenticationManager.UserInfo(
+        ApplicationServices.authenticationManager.setUser(sessionId, UserInfo(
             id = userInfo.id,
             email = userInfo.email,
             name = userInfo.name,
             picture = userInfo.picture
-        ))
+        )
+        )
     }
 
     open fun configure(context: WebAppContext, addFilter: Boolean = true): WebAppContext {

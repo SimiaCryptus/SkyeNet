@@ -4,13 +4,6 @@ import java.util.HashMap
 
 open class AuthenticationManager {
 
-    data class UserInfo(
-        val id: String,
-        val email: String,
-        val name: String,
-        val picture: String
-    )
-
     private val users = HashMap<String, UserInfo>()
 
     open fun getUser(sessionId: String?) = if (null == sessionId) null else users[sessionId]

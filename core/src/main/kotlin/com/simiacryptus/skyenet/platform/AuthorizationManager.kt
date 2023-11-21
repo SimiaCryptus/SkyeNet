@@ -15,16 +15,16 @@ open class AuthorizationManager {
 
     open fun isAuthorized(
         applicationClass: Class<*>?,
-        user: String?,
+        user: UserInfo?,
         operationType: OperationType,
     ) = try {
-        if (isUserAuthorized("/permissions/${operationType.name.lowercase(Locale.getDefault())}.txt", user)) {
+        if (isUserAuthorized("/permissions/${operationType.name.lowercase(Locale.getDefault())}.txt", user?.email)) {
             log.debug("User {} authorized for {} globally", user, operationType)
             true
         } else if (null != applicationClass) {
             val packagePath = applicationClass.`package`.name.replace('.', '/')
             val opName = operationType.name.lowercase(Locale.getDefault())
-            if (isUserAuthorized("/$packagePath/$opName.txt", user)) {
+            if (isUserAuthorized("/$packagePath/$opName.txt", user?.email)) {
                 log.debug("User {} authorized for {} on {}", user, operationType, applicationClass)
                 true
             } else {

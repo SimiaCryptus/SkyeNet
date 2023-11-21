@@ -2,10 +2,8 @@ package com.simiacryptus.skyenet.chat
 
 import com.simiacryptus.openai.models.OpenAIModel
 import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.skyenet.platform.ApplicationServices
+import com.simiacryptus.skyenet.platform.*
 import com.simiacryptus.skyenet.platform.ApplicationServices.authorizationManager
-import com.simiacryptus.skyenet.platform.AuthenticationManager
-import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.session.SessionInterface
 import com.simiacryptus.skyenet.platform.AuthorizationManager.OperationType.GlobalKey
 import org.eclipse.jetty.websocket.api.Session
@@ -13,10 +11,10 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.slf4j.event.Level
 
 class ChatSocket(
-    private val sessionId: String,
+    private val sessionId: SessionID,
     private val sessionState: SessionInterface,
     private val dataStorage: DataStorage?,
-    private val user: AuthenticationManager.UserInfo?,
+    private val user: UserInfo?,
 ) : WebSocketAdapter() {
 
     val api: OpenAIClient
@@ -24,16 +22,16 @@ class ChatSocket(
             val user = user
             val userApi = userApi
             if (userApi != null) return userApi
-            val canUseGlobalKey = authorizationManager.isAuthorized(null, user?.email, GlobalKey)
+            val canUseGlobalKey = authorizationManager.isAuthorized(null, user, GlobalKey)
             if (!canUseGlobalKey) throw RuntimeException("No API key")
             return object : OpenAIClient(
                 logLevel = Level.DEBUG,
                 logStreams = mutableListOf(
-                    dataStorage?.getSessionDir(user?.id, sessionId)?.resolve("openai.log")?.outputStream()?.buffered()
+                    dataStorage?.getSessionDir(user, sessionId)?.resolve("openai.log")?.outputStream()?.buffered()
                 ).filterNotNull().toMutableList()
             ) {
                 override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
-                    if(null != model) ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model, tokens)
+                    if(null != model) ApplicationServices.usageManager.incrementUsage(sessionId, user, model, tokens)
                     super.incrementTokens(model, tokens)
                 }
             }
@@ -42,17 +40,17 @@ class ChatSocket(
     private val userApi: OpenAIClient?
         get() {
             val user = user
-            val userSettings = if (user == null) null else ApplicationServices.userSettingsManager.getUserSettings(user.id)
+            val userSettings = if (user == null) null else ApplicationServices.userSettingsManager.getUserSettings(user)
             return if (userSettings == null) null else {
                 if (userSettings.apiKey.isBlank()) null else object : OpenAIClient(
                     key = userSettings.apiKey,
                     logLevel = Level.DEBUG,
                     logStreams = mutableListOf(
-                        dataStorage?.getSessionDir(user?.id, sessionId)?.resolve("openai.log")?.outputStream()?.buffered()
+                        dataStorage?.getSessionDir(user, sessionId)?.resolve("openai.log")?.outputStream()?.buffered()
                     ).filterNotNull().toMutableList(),
                 ) {
                     override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
-                        ApplicationServices.usageManager.incrementUsage(sessionId, user?.id, model!!, tokens)
+                        ApplicationServices.usageManager.incrementUsage(sessionId, user, model!!, tokens)
                         super.incrementTokens(model, tokens)
                     }
                 }

@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.servlet
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.platform.SessionID
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,7 +15,7 @@ class SessionListServlet(
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
-        val sessions = dataStorage.listSessions(ApplicationServices.authenticationManager.getUser(req.getCookie())?.id)
+        val sessions = dataStorage.listSessions(ApplicationServices.authenticationManager.getUser(req.getCookie()))
 
         resp.writer.write(
             """
@@ -38,7 +39,7 @@ class SessionListServlet(
                 ${sessions.joinToString("") { session ->
                     """
                     <tr class="session-row">
-                        <td><a href="$prefix#$session" class="session-link">${sessionName(req, session)}</a></td>
+                        <td><a href="$prefix#${session.sessionId}" class="session-link">${sessionName(req, session)}</a></td>
                     </tr>
                     """.trimIndent()
                 }}
@@ -49,7 +50,7 @@ class SessionListServlet(
         )
     }
 
-    private fun sessionName(req: HttpServletRequest, session: String) = dataStorage.getSessionName(
-        ApplicationServices.authenticationManager.getUser(req.getCookie())?.id, session
+    private fun sessionName(req: HttpServletRequest, session: SessionID) = dataStorage.getSessionName(
+        ApplicationServices.authenticationManager.getUser(req.getCookie()), session
     )
 }

@@ -3,10 +3,7 @@ package com.simiacryptus.skyenet.servlet
 import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.ApplicationDirectory
-import com.simiacryptus.skyenet.platform.ApplicationServices
-import com.simiacryptus.skyenet.platform.AuthenticationManager
-import com.simiacryptus.skyenet.platform.AuthorizationManager
-import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.platform.*
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -47,7 +44,7 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
         }
     }
 
-    protected open fun homepage(user: AuthenticationManager.UserInfo?): String {
+    protected open fun homepage(user: UserInfo?): String {
         @Language("HTML")
         val html = """<!DOCTYPE html>
 <html lang="en">
@@ -79,19 +76,19 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
             parent.childWebApps.joinToString("\n") { app ->
                 val canRun = ApplicationServices.authorizationManager.isAuthorized(
                     applicationClass = app.server.javaClass,
-                    user = user?.email,
+                    user = user,
                     operationType = AuthorizationManager.OperationType.Write
                 )
                 val canRead = ApplicationServices.authorizationManager.isAuthorized(
                     applicationClass = app.server.javaClass,
-                    user = user?.email,
+                    user = user,
                     operationType = AuthorizationManager.OperationType.Read
                 )
                 if (!canRead) return@joinToString ""
                 val newGlobalSessionLink =
-                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newGlobalID()}">New Shared Session</a>""" else ""
+                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newGlobalID().sessionId}">New Shared Session</a>""" else ""
                 val newUserSessionLink =
-                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newUserID()}">New Private Session</a>""" else ""
+                    if (canRun) """<a class="new-session-link" href="${app.path}/#${DataStorage.newUserID().sessionId}">New Private Session</a>""" else ""
                 """
                         <a
                         <tr>

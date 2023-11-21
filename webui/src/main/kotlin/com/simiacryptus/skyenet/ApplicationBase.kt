@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet
 
+import com.simiacryptus.skyenet.servlet.AppInfoServlet
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.ApplicationServices.authenticationManager
@@ -7,10 +8,11 @@ import com.simiacryptus.skyenet.platform.ApplicationServices.authorizationManage
 import com.simiacryptus.skyenet.platform.ApplicationServices.dataStorageFactory
 import com.simiacryptus.skyenet.servlet.*
 import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.COOKIE_NAME
-import com.simiacryptus.skyenet.session.SessionBase
 import com.simiacryptus.skyenet.session.SessionDiv
 import com.simiacryptus.skyenet.session.SessionInterface
 import com.simiacryptus.skyenet.platform.AuthorizationManager
+import com.simiacryptus.skyenet.platform.SessionID
+import com.simiacryptus.skyenet.platform.UserInfo
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.FilterHolder
@@ -18,7 +20,6 @@ import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.function.Consumer
 
 abstract class ApplicationBase(
     final override val applicationName: String,
@@ -26,69 +27,42 @@ abstract class ApplicationBase(
     val temperature: Double = 0.1,
 ) : ChatServer(resourceBase) {
 
+    final override val dataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
+    protected open val appInfo = ServletHolder("appInfo", AppInfoServlet(applicationName))
+    protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
+    protected open val usageServlet = ServletHolder("usage", UsageServlet())
+    protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
+    protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
+    protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
 
-    inner class ApplicationSession(
-        sessionId: String,
-        userId: String?,
-    ) : SessionBase(
-        sessionId = sessionId,
-        dataStorage = dataStorage,
-        userId = userId,
-        applicationClass = this@ApplicationBase.javaClass,
-    ) {
-        private val threads = mutableMapOf<String, Thread>()
-        private val linkTriggers = mutableMapOf<String, java.util.function.Consumer<Unit>>()
-        private val txtTriggers = mutableMapOf<String, Consumer<String>>()
-
-        override fun onRun(userMessage: String, socket: ChatSocket) {
-            val operationID = randomID()
-            val sessionDiv = newSessionDiv(operationID, spinner, true)
-            threads[operationID] = Thread.currentThread()
-            processMessage(sessionId, userId = userId, userMessage, this, sessionDiv, socket)
+    override fun newSession(userId: UserInfo?, sessionId: SessionID): SessionInterface {
+        return object : ApplicationSession(
+            sessionId = sessionId,
+            userId = userId,
+            dataStorage = dataStorage,
+            applicationClass = this@ApplicationBase::class.java,
+        ) {
+            override fun processMessage(
+                sessionId: SessionID,
+                userId: UserInfo?,
+                userMessage: String,
+                session: ApplicationSession,
+                sessionDiv: SessionDiv,
+                socket: ChatSocket
+            ) = this@ApplicationBase.processMessage(
+                sessionId = sessionId,
+                userId = userId,
+                userMessage = userMessage,
+                session = session,
+                sessionDiv = sessionDiv,
+                socket = socket
+            )
         }
-
-        override fun onCmd(id: String, code: String, socket: ChatSocket) {
-            if (code == "cancel") {
-                threads[id]?.interrupt()
-            } else if (code == "link") {
-                val consumer = linkTriggers[id]
-                consumer ?: throw IllegalArgumentException("No link handler found")
-                consumer.accept(Unit)
-            } else {
-                throw IllegalArgumentException("Unknown command: $code")
-            }
-        }
-
-        val spinner: String get() = """<div>${ApplicationBase.spinner}</div>"""
-//        val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
-//        val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
-//        val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""
-
-        fun hrefLink(divID: String, linkText : String, classname: String = """href-link""", handler: Consumer<Unit>): String {
-            val operationID = SessionBase.randomID()
-            linkTriggers[operationID] = handler
-            return """<a class="$classname" data-id="$operationID">$linkText</a>"""
-        }
-        fun textInput(divID: String, handler: Consumer<String>): String {
-            val operationID = SessionBase.randomID()
-            txtTriggers[operationID] = handler
-            //language=HTML
-            return """<form class="reply-form">
-                       <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
-                       <button class="text-submit-button" data-id="$operationID">Send</button>
-                   </form>""".trimIndent()
-        }
-//
-//        fun htmlTools(divID: String) = HtmlTools(this, divID)
-    }
-
-    override fun newSession(userId: String?, sessionId: String): SessionInterface {
-        return ApplicationSession(sessionId, userId)
     }
 
     abstract fun processMessage(
-        sessionId: String,
-        userId: String?,
+        sessionId: SessionID,
+        userId: UserInfo?,
         userMessage: String,
         session: ApplicationSession,
         sessionDiv: SessionDiv,
@@ -97,9 +71,9 @@ abstract class ApplicationBase(
 
     open val settingsClass: Class<*> get() = Map::class.java
 
-    open fun <T : Any> initSettings(sessionId: String): T? = null
+    open fun <T : Any> initSettings(sessionId: SessionID): T? = null
 
-    fun <T : Any> getSettings(sessionId: String, userId: String?): T? {
+    fun <T : Any> getSettings(sessionId: SessionID, userId: UserInfo?): T? {
         @Suppress("UNCHECKED_CAST")
         var settings: T? = dataStorage.getJson(userId, sessionId, settingsClass as Class<T>, "settings.json")
         if (null == settings) {
@@ -111,13 +85,6 @@ abstract class ApplicationBase(
         return settings
     }
 
-    final override val dataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
-    protected open val appInfo = ServletHolder("appInfo", AppInfoServlet())
-    protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
-    protected open val usageServlet = ServletHolder("usage", UsageServlet())
-    protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
-    protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
-    protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
     protected open fun sessionsServlet(path: String) = ServletHolder("sessionList", SessionListServlet(this.dataStorage, path))
 
     override fun configure(webAppContext: WebAppContext, path: String, baseUrl: String) {
@@ -128,7 +95,7 @@ abstract class ApplicationBase(
                 val user = authenticationManager.getUser((request as HttpServletRequest).getCookie())
                 val canRead = authorizationManager.isAuthorized(
                     applicationClass = this@ApplicationBase.javaClass,
-                    user = user?.email,
+                    user = user,
                     operationType = AuthorizationManager.OperationType.Read
                 )
                 if (canRead) {
@@ -148,7 +115,6 @@ abstract class ApplicationBase(
         webAppContext.addServlet(sessionsServlet(path), "/sessions")
         webAppContext.addServlet(sessionSettingsServlet, "/settings")
     }
-
 
     companion object {
         private val log = LoggerFactory.getLogger(ApplicationBase::class.java)

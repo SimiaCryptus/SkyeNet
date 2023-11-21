@@ -1,24 +1,21 @@
 package com.simiacryptus.skyenet.session
 
 import com.google.common.util.concurrent.MoreExecutors
-import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.platform.ApplicationServices
-import com.simiacryptus.skyenet.platform.AuthorizationManager
-import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.platform.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 abstract class SessionBase(
-    protected val sessionId: String,
+    protected val sessionId: SessionID,
     private val dataStorage: DataStorage?,
-    protected val userId: String? = null,
+    protected val userId: UserInfo? = null,
     private val messageStates: LinkedHashMap<String, String> = dataStorage?.getMessages(
         userId, sessionId
     ) ?: LinkedHashMap(),
-    private val applicationClass: Class<out ApplicationBase>,
+    private val applicationClass: Class<*>,
 ) : SessionInterface {
     private val sockets: MutableSet<ChatSocket> = mutableSetOf()
     private val messageVersions = HashMap<String, AtomicInteger>()
@@ -59,7 +56,7 @@ abstract class SessionBase(
                 return this@SessionBase.send("""$responseContents$spinner1""")
             }
 
-            override fun sessionID(): String {
+            override fun sessionID(): SessionID {
                 return this@SessionBase.sessionId
             }
 
@@ -94,7 +91,7 @@ abstract class SessionBase(
     }
 
     final override fun onWebSocketText(socket: ChatSocket, message: String) {
-        if (canWrite(socket.user?.email)) pool.submit {
+        if (canWrite(userId)) pool.submit {
             log.debug("$sessionId - Received message: $message")
             try {
                 val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
@@ -115,7 +112,7 @@ abstract class SessionBase(
         }
     }
 
-    open fun canWrite(user: String?) = ApplicationServices.authorizationManager.isAuthorized(
+    open fun canWrite(user: UserInfo?) = ApplicationServices.authorizationManager.isAuthorized(
         applicationClass = applicationClass,
         user = user,
         operationType = AuthorizationManager.OperationType.Write

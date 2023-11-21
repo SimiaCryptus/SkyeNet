@@ -9,6 +9,7 @@ import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.heart.GroovyInterpreter
 import com.simiacryptus.skyenet.heart.KotlinInterpreter
 import com.simiacryptus.skyenet.heart.ScalaLocalInterpreter
+import com.simiacryptus.skyenet.platform.UserInfo
 import com.simiacryptus.skyenet.test.CodingActorTestApp
 import com.simiacryptus.skyenet.test.ParsedActorTestApp
 import com.simiacryptus.skyenet.test.SimpleActorTestApp
@@ -36,7 +37,7 @@ object ActorTestAppServer : ApplicationDirectory(port = 8082) {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        val mockUser = AuthenticationManager.UserInfo(
+        val mockUser = UserInfo(
             "1",
             "user@mock.test",
             "Test User",
@@ -50,7 +51,7 @@ object ActorTestAppServer : ApplicationDirectory(port = 8082) {
         ApplicationServices.authorizationManager = object : AuthorizationManager() {
             override fun isAuthorized(
                 applicationClass: Class<*>?,
-                user: String?,
+                user: UserInfo?,
                 operationType: OperationType
             ): Boolean = true
         }

@@ -1,8 +1,11 @@
 package com.simiacryptus.skyenet.test
 
 import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.ApplicationSession
 import com.simiacryptus.skyenet.actors.ParsedActor
 import com.simiacryptus.skyenet.chat.ChatSocket
+import com.simiacryptus.skyenet.platform.SessionID
+import com.simiacryptus.skyenet.platform.UserInfo
 import com.simiacryptus.skyenet.session.SessionDiv
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.util.JsonUtil
@@ -17,8 +20,8 @@ open class ParsedActorTestApp<T : Any>(
     temperature = temperature,
 ) {
     override fun processMessage(
-        sessionId: String,
-        userId: String?,
+        sessionId: SessionID,
+        userId: UserInfo?,
         userMessage: String,
         session: ApplicationSession,
         sessionDiv: SessionDiv,
@@ -32,7 +35,7 @@ open class ParsedActorTestApp<T : Any>(
                     """
             |${response.getText()}
             |```
-            |${JsonUtil.toJson(response.getObj()!!)}
+            |${JsonUtil.toJson(response.getObj())}
             |```
             """.trimMargin().trim()
                 )

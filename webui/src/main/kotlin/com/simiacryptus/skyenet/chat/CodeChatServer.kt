@@ -4,6 +4,9 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
 import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.platform.SessionID
+import com.simiacryptus.skyenet.platform.UserInfo
+import com.simiacryptus.skyenet.servlet.AppInfoServlet
 import com.simiacryptus.skyenet.util.ClasspathResource
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.util.resource.Resource
@@ -20,7 +23,7 @@ class CodeChatServer(
 ) {
     override val applicationName: String get() = "Code Chat"
 
-    override fun newSession(userId: String?, sessionId: String) = object : ChatSession(
+    override fun newSession(userId: UserInfo?, sessionId: SessionID) = object : ChatSession(
         sessionId = sessionId,
         parent = this@CodeChatServer,
         model = model,
@@ -46,14 +49,14 @@ class CodeChatServer(
             """.trimMargin(),
         applicationClass = ApplicationBase::class.java,
     ) {
-        override fun canWrite(user: String?): Boolean = true
+        override fun canWrite(user: UserInfo?): Boolean = true
     }
 
     override val baseResource: Resource
         get() = ClasspathResource(javaClass.classLoader.getResource(resourceBase)!!)
 
     override fun configure(webAppContext: WebAppContext, path: String, baseUrl: String) {
-        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/appInfo", AppInfoServlet()), "/appInfo")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/appInfo", AppInfoServlet(applicationName)), "/appInfo")
         super.configure(webAppContext, path, baseUrl)
     }
 

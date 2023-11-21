@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.servlet
 import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.DataStorage
+import com.simiacryptus.skyenet.platform.SessionID
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -12,11 +13,11 @@ import java.util.zip.ZipOutputStream
 
 class ZipServlet(val dataStorage: DataStorage) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-        val sessionID = req.getParameter("session")
+        val sessionID = SessionID(req.getParameter("session"))
         val path = req.parameterMap.get("path")?.find { it.isNotBlank() } ?: "/"
         FileServlet.parsePath(path) // Validate path
         val sessionDir = dataStorage.getSessionDir(
-            ApplicationServices.authenticationManager.getUser(req.getCookie())?.id, sessionID)
+            ApplicationServices.authenticationManager.getUser(req.getCookie()), sessionID)
         val file = File(sessionDir, path)
         val zipFile = File.createTempFile("skyenet", ".zip")
         try {

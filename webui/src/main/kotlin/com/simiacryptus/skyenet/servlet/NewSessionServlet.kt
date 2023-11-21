@@ -10,6 +10,6 @@ class NewSessionServlet : HttpServlet() {
         val sessionId = DataStorage.newGlobalID()
         resp.contentType = "text/plain"
         resp.status = HttpServletResponse.SC_OK
-        resp.writer.write(sessionId)
+        resp.writer.write(sessionId.sessionId)
     }
 }

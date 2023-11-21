@@ -14,9 +14,9 @@ open class UsageManager {
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private val txLogFile = File(".skyenet/usage/log.csv")
     @Volatile private var txLogFileWriter: FileWriter?
-    private val usagePerSession = HashMap<String, UsageCounters>()
-    private val sessionsByUser = HashMap<String, HashSet<String>>()
-    private val usersBySession = HashMap<String, HashSet<String>>()
+    private val usagePerSession = HashMap<SessionID, UsageCounters>()
+    private val sessionsByUser = HashMap<UserInfo, HashSet<SessionID>>()
+    private val usersBySession = HashMap<SessionID, HashSet<UserInfo>>()
 
     init {
         txLogFile.parentFile.mkdirs()
@@ -40,15 +40,15 @@ open class UsageManager {
                         ?: throw RuntimeException("Unknown model $model")
                     when (direction) {
                         "input" -> incrementUsage(
-                            sessionId,
-                            user,
+                            SessionID(sessionId),
+                            UserInfo(email=user),
                             modelEnum,
                             OpenAIClient.Usage(prompt_tokens = tokens.toInt())
                         )
 
                         "output" -> incrementUsage(
-                            sessionId,
-                            user,
+                            SessionID(sessionId),
+                            UserInfo(email=user),
                             modelEnum,
                             OpenAIClient.Usage(completion_tokens = tokens.toInt())
                         )
@@ -63,7 +63,7 @@ open class UsageManager {
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
-    open fun writeCompactLog(file: File) {
+    protected open fun writeCompactLog(file: File) {
         val writer = FileWriter(file)
         usagePerSession.forEach { (sessionId, usage) ->
             val user = usersBySession[sessionId]?.firstOrNull()
@@ -107,7 +107,8 @@ open class UsageManager {
         File(".skyenet/usage/counters.json").writeText(JsonUtil.toJson(usagePerSession))
     }
 
-    open fun incrementUsage(sessionId: String, user: String?, model: OpenAIModel, tokens: OpenAIClient.Usage) {
+    open fun incrementUsage(sessionId: SessionID, user: UserInfo?, model: OpenAIModel, tokens: OpenAIClient.Usage) {
+        @Suppress("NAME_SHADOWING") val user = if(null == user) null else UserInfo(email= user.email) // Hack
         val usage = usagePerSession.getOrPut(sessionId) {
             UsageCounters()
         }
@@ -135,8 +136,9 @@ open class UsageManager {
         }
     }
 
-    open fun getUserUsageSummary(user: String): Map<OpenAIModel, OpenAIClient.Usage> =
-        sessionsByUser[user]?.flatMap { sessionId ->
+    open fun getUserUsageSummary(user: UserInfo): Map<OpenAIModel, OpenAIClient.Usage> {
+        @Suppress("NAME_SHADOWING") val user = if(null == user) null else UserInfo(email= user.email) // Hack
+        return sessionsByUser[user]?.flatMap { sessionId ->
             val usage = usagePerSession[sessionId]
             usage?.tokensPerModel?.entries?.map { (model, counter) ->
                 model.model to counter.toUsage()
@@ -149,8 +151,9 @@ open class UsageManager {
                 )
             }
         } ?: emptyMap()
+    }
 
-    open fun getSessionUsageSummary(sessionId: String): Map<OpenAIModel, OpenAIClient.Usage> =
+    open fun getSessionUsageSummary(sessionId: SessionID): Map<OpenAIModel, OpenAIClient.Usage> =
         usagePerSession[sessionId]?.tokensPerModel?.entries?.map { (model, counter) ->
             model.model to counter.toUsage()
         }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.reduce { a, b ->
@@ -161,8 +164,8 @@ open class UsageManager {
         } } ?: emptyMap()
 
     data class UsageKey(
-        val sessionId: String,
-        val user: String?,
+        val sessionId: SessionID,
+        val user: UserInfo?,
         val model: OpenAIModel,
     )
 
