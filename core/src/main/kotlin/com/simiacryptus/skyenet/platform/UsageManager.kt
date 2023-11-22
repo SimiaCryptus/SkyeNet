@@ -1,8 +1,7 @@
 package com.simiacryptus.skyenet.platform
 
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.models.*
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.models.*
+import com.simiacryptus.jopenai.util.JsonUtil
 import java.io.File
 import java.io.FileWriter
 import java.util.concurrent.ConcurrentHashMap
@@ -44,14 +43,14 @@ open class UsageManager {
                             Session(sessionId),
                             User(email=user),
                             modelEnum,
-                            OpenAIClient.Usage(prompt_tokens = tokens.toInt())
+                            com.simiacryptus.jopenai.ApiModel.Usage(prompt_tokens = tokens.toInt())
                         )
 
                         "output" -> incrementUsage(
                             Session(sessionId),
                             User(email=user),
                             modelEnum,
-                            OpenAIClient.Usage(completion_tokens = tokens.toInt())
+                            com.simiacryptus.jopenai.ApiModel.Usage(completion_tokens = tokens.toInt())
                         )
 
                         else -> throw RuntimeException("Unknown direction $direction")
@@ -108,7 +107,7 @@ open class UsageManager {
         File(".skyenet/usage/counters.json").writeText(JsonUtil.toJson(usagePerSession))
     }
 
-    open fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: OpenAIClient.Usage) {
+    open fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: com.simiacryptus.jopenai.ApiModel.Usage) {
         @Suppress("NAME_SHADOWING") val user = if (null == user) null else User(email = user.email) // Hack
         usagePerSession.computeIfAbsent(session) { UsageCounters() }
             .tokensPerModel.computeIfAbsent(UsageKey(session, user, model)) { UsageValues() }
@@ -130,7 +129,7 @@ open class UsageManager {
         }
     }
 
-    open fun getUserUsageSummary(user: User): Map<OpenAIModel, OpenAIClient.Usage> {
+    open fun getUserUsageSummary(user: User): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> {
         @Suppress("NAME_SHADOWING") val user = if(null == user) null else User(email= user.email) // Hack
         return sessionsByUser[user]?.flatMap { sessionId ->
             val usage = usagePerSession[sessionId]
@@ -139,7 +138,7 @@ open class UsageManager {
             } ?: emptyList()
         }?.groupBy { it.first }?.mapValues {
             it.value.map { it.second }.reduce { a, b ->
-                OpenAIClient.Usage(
+                com.simiacryptus.jopenai.ApiModel.Usage(
                     prompt_tokens = a.prompt_tokens + b.prompt_tokens,
                     completion_tokens = a.completion_tokens + b.completion_tokens
                 )
@@ -147,11 +146,11 @@ open class UsageManager {
         } ?: emptyMap()
     }
 
-    open fun getSessionUsageSummary(session: Session): Map<OpenAIModel, OpenAIClient.Usage> =
+    open fun getSessionUsageSummary(session: Session): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> =
         usagePerSession[session]?.tokensPerModel?.entries?.map { (model, counter) ->
             model.model to counter.toUsage()
         }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.reduce { a, b ->
-            OpenAIClient.Usage(
+            com.simiacryptus.jopenai.ApiModel.Usage(
                 prompt_tokens = a.prompt_tokens + b.prompt_tokens,
                 completion_tokens = a.completion_tokens + b.completion_tokens
             )
@@ -167,12 +166,12 @@ open class UsageManager {
         val inputTokens: AtomicInteger = AtomicInteger(),
         val outputTokens: AtomicInteger = AtomicInteger(),
     ) {
-        fun addAndGet(tokens: OpenAIClient.Usage) {
+        fun addAndGet(tokens: com.simiacryptus.jopenai.ApiModel.Usage) {
             inputTokens.addAndGet(tokens.prompt_tokens)
             outputTokens.addAndGet(tokens.completion_tokens)
         }
 
-        fun toUsage() = OpenAIClient.Usage(
+        fun toUsage() = com.simiacryptus.jopenai.ApiModel.Usage(
             prompt_tokens = inputTokens.get(),
             completion_tokens = outputTokens.get()
         )

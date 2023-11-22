@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.application
 
-import com.simiacryptus.openai.OpenAIAPI
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.chat.ChatSocket
 import com.simiacryptus.skyenet.platform.*
 import com.simiacryptus.skyenet.session.SocketManagerBase
@@ -68,7 +68,7 @@ abstract class ApplicationSocketManager(
         user: User?,
         userMessage: String,
         socketManager: ApplicationSocketManager,
-        api: OpenAIAPI
+        api: API
     )
 
     companion object {

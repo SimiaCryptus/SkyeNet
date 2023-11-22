@@ -2,7 +2,7 @@
 
 package com.simiacryptus.skyenet.util
 
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.util.JsonUtil
 import java.io.Closeable
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger

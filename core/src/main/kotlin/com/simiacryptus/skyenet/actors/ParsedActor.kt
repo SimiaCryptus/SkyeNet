@@ -1,10 +1,10 @@
 package com.simiacryptus.skyenet.actors
 
-import com.simiacryptus.openai.OpenAIAPI
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.models.ChatModels
-import com.simiacryptus.openai.models.OpenAITextModel
-import com.simiacryptus.openai.proxy.ChatProxy
+import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.proxy.ChatProxy
 import java.util.function.Function
 
 open class ParsedActor<T:Any>(
@@ -21,7 +21,7 @@ open class ParsedActor<T:Any>(
 ) {
     val resultClass: Class<T> by lazy { parserClass.getMethod("apply", String::class.java).returnType as Class<T> }
 
-    private inner class ParsedResponseImpl(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI) : ParsedResponse<T>(resultClass) {
+    private inner class ParsedResponseImpl(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API) : ParsedResponse<T>(resultClass) {
         private val parser: Function<String, T> = ChatProxy(
             clazz = parserClass,
             api = (api as OpenAIClient),
@@ -34,7 +34,7 @@ open class ParsedActor<T:Any>(
         override fun getObj(clazz: Class<T>): T = _obj
     }
 
-    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI): ParsedResponse<T> {
+    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): ParsedResponse<T> {
         return ParsedResponseImpl(*messages, api = api)
     }
 }

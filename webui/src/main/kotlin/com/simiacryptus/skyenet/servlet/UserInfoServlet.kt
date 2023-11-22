@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.servlet
 import com.simiacryptus.skyenet.application.ApplicationServer.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.User
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

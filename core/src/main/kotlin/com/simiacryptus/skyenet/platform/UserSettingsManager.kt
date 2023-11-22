@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.platform
 
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.util.JsonUtil
 import java.io.File
 
 open class UserSettingsManager {

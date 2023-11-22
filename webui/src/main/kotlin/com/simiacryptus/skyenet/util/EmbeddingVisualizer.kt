@@ -1,16 +1,16 @@
 package com.simiacryptus.skyenet.util
 
-import com.simiacryptus.openai.OpenAIAPI
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.models.EmbeddingModels
+import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.skyenet.application.ApplicationInterface
 import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.util.JsonUtil
 
 class EmbeddingVisualizer(
-    val api: OpenAIAPI,
+    val api: API,
     val dataStorage: DataStorage,
     val sessionID: Session,
     val appPath: String,
@@ -22,7 +22,7 @@ class EmbeddingVisualizer(
     private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {
         val vectors = words.map {word ->
             word to (api as OpenAIClient).createEmbedding(
-                OpenAIClient.EmbeddingRequest(
+                com.simiacryptus.jopenai.ApiModel.EmbeddingRequest(
                     model = EmbeddingModels.AdaEmbedding.modelName,
                     input = word,
                 )

@@ -1,8 +1,7 @@
 package com.simiacryptus.skyenet.actors.record
 
-import com.simiacryptus.openai.OpenAIAPI
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.models.OpenAIModel
+import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.actors.SimpleActor
 import com.simiacryptus.skyenet.util.FunctionWrapper
 
@@ -16,18 +15,18 @@ class SimpleActorInterceptor(
     temperature = inner.temperature,
 ) {
 
-    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI) =
+    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API) =
         functionInterceptor.wrap(messages.toList().toTypedArray()) {
-            messages: Array<OpenAIClient.ChatMessage> ->
+            messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage> ->
             inner.answer(*messages, api = api)
         }
 
     override fun response(
-        vararg messages: OpenAIClient.ChatMessage,
+        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
         model: OpenAIModel,
-        api: OpenAIAPI
+        api: API
     ) = functionInterceptor.wrap(messages.toList().toTypedArray(), model) {
-        messages: Array<OpenAIClient.ChatMessage>,
+        messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage>,
         model: OpenAIModel ->
             inner.response(*messages, model = model, api = api)
     }
@@ -36,7 +35,7 @@ class SimpleActorInterceptor(
         inner.chatMessages(*it)
     }
 
-    override fun answer(vararg questions: String, api: OpenAIAPI) = functionInterceptor.wrap(questions) {
+    override fun answer(vararg questions: String, api: API) = functionInterceptor.wrap(questions) {
         inner.answer(*it, api = api)
     }
 }

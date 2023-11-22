@@ -1,8 +1,7 @@
 package com.simiacryptus.skyenet.actors.record
 
-import com.simiacryptus.openai.OpenAIAPI
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.models.OpenAIModel
+import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.actors.ParsedActor
 import com.simiacryptus.skyenet.actors.ParsedResponse
 import com.simiacryptus.skyenet.util.FunctionWrapper
@@ -17,30 +16,30 @@ class ParsedActorInterceptor<T:Any>(
     model = inner.model,
     temperature = inner.temperature,
 ) {
-    private inner class ParsedResponseInterceptor(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI, private val inner: ParsedResponse<T>) :
+    private inner class ParsedResponseInterceptor(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API, private val inner: ParsedResponse<T>) :
         ParsedResponse<T>(this@ParsedActorInterceptor.inner.resultClass) {
         override fun getText() = functionInterceptor.wrap { inner.getText() }
         override fun getObj(clazz: Class<T>) = functionInterceptor.intercept(clazz) { inner.getObj(clazz) } // <-- Cannot use 'T' as reified type parameter. Use a class instead.
     }
 
-    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI): ParsedResponse<T> {
+    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): ParsedResponse<T> {
         return functionInterceptor.wrap(messages.toList().toTypedArray()) {
-            messages: Array<OpenAIClient.ChatMessage> ->
+            messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage> ->
             ParsedResponseInterceptor(*messages, api = api, inner = inner.answer(*messages, api = api))
         }
     }
 
     override fun response(
-        vararg messages: OpenAIClient.ChatMessage,
+        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
         model: OpenAIModel,
-        api: OpenAIAPI
+        api: API
     ) = functionInterceptor.wrap(messages.toList().toTypedArray(), model) {
-        messages: Array<OpenAIClient.ChatMessage>,
+        messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage>,
         model: OpenAIModel ->
             inner.response(*messages, model = model, api = api)
     }
 
-    override fun answer(vararg questions: String, api: OpenAIAPI) = functionInterceptor.wrap(questions) {
+    override fun answer(vararg questions: String, api: API) = functionInterceptor.wrap(questions) {
         inner.answer(*it, api = api)
     }
 

@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.actors.test
 
-import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.actors.BaseActor
 import com.simiacryptus.skyenet.actors.opt.ActorOptimization
 import org.slf4j.LoggerFactory

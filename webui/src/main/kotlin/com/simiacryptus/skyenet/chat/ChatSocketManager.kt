@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet.chat
 
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
-import com.simiacryptus.openai.models.ChatModels
-import com.simiacryptus.openai.models.OpenAITextModel
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.ClientUtil.toContentList
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.application.ApplicationServer
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.session.SocketManagerBase
@@ -29,9 +29,9 @@ open class ChatSocketManager(
 
     protected val messages by lazy {
         val list = listOf(
-            OpenAIClient.ChatMessage(OpenAIClient.Role.system, systemPrompt.toContentList()),
+            com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.system, systemPrompt.toContentList()),
         ).toMutableList()
-        if(initialAssistantPrompt.isNotBlank()) list += OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, initialAssistantPrompt.toContentList())
+        if(initialAssistantPrompt.isNotBlank()) list += com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.assistant, initialAssistantPrompt.toContentList())
         list
     }
 
@@ -49,9 +49,9 @@ open class ChatSocketManager(
     }
 
     open fun handleMessage(userMessage: String, responseContents: String): String? {
-        messages += OpenAIClient.ChatMessage(OpenAIClient.Role.user, userMessage.toContentList())
+        messages += com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.user, userMessage.toContentList())
         val response = getResponse()
-        messages += OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, response.toContentList())
+        messages += com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.assistant, response.toContentList())
         return response
     }
 
@@ -61,8 +61,8 @@ open class ChatSocketManager(
 
     open fun onResponse(response: String, responseContents: String) {}
 
-    open val newChatRequest: OpenAIClient.ChatRequest
-        get() = OpenAIClient.ChatRequest(
+    open val newChatRequest: com.simiacryptus.jopenai.ApiModel.ChatRequest
+        get() = com.simiacryptus.jopenai.ApiModel.ChatRequest(
             messages = ArrayList(messages),
             temperature = temperature,
             model = model.modelName,

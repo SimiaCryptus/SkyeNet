@@ -1,9 +1,8 @@
 package com.simiacryptus.skyenet.actors.opt
 
-import com.simiacryptus.openai.models.ChatModels
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.models.EmbeddingModels
-import com.simiacryptus.openai.opt.DistanceType
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.EmbeddingModels
+import com.simiacryptus.jopenai.opt.DistanceType
 import org.slf4j.LoggerFactory
 
 abstract class Expectation {
@@ -30,7 +29,7 @@ abstract class Expectation {
         }
 
         private fun createEmbedding(api: OpenAIClient, str: String) = api.createEmbedding(
-            OpenAIClient.EmbeddingRequest(
+            com.simiacryptus.jopenai.ApiModel.EmbeddingRequest(
                 model = EmbeddingModels.AdaEmbedding.modelName, input = str
             )
         ).data.first().embedding!!

@@ -2,14 +2,14 @@
 
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.openai.models.ChatModels
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.OpenAIClient.*
-import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
-import com.simiacryptus.openai.models.OpenAITextModel
-import com.simiacryptus.util.JsonUtil.toJson
-import com.simiacryptus.util.describe.TypeDescriber
-import com.simiacryptus.util.describe.YamlDescriber
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.ApiModel.*
+import com.simiacryptus.jopenai.ClientUtil.toContentList
+import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.util.JsonUtil.toJson
+import com.simiacryptus.jopenai.describe.TypeDescriber
+import com.simiacryptus.jopenai.describe.YamlDescriber
 import org.intellij.lang.annotations.Language
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier

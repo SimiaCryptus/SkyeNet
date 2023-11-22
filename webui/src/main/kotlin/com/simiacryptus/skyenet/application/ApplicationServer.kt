@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.application
 
-import com.simiacryptus.openai.OpenAIAPI
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.servlet.AppInfoServlet
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.platform.ApplicationServices.authenticationManager
@@ -47,7 +47,7 @@ abstract class ApplicationServer(
                 user: User?,
                 userMessage: String,
                 socketManager: ApplicationSocketManager,
-                api: OpenAIAPI
+                api: API
             ) = this@ApplicationServer.newSession(
                 session = session,
                 user = user,
@@ -63,7 +63,7 @@ abstract class ApplicationServer(
         user: User?,
         userMessage: String,
         ui: ApplicationInterface,
-        api: OpenAIAPI
+        api: API
     )
 
     open val settingsClass: Class<*> get() = Map::class.java

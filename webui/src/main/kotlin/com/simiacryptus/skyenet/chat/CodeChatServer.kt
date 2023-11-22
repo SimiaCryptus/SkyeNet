@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.chat
 
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.models.ChatModels
-import com.simiacryptus.openai.models.OpenAITextModel
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.application.ApplicationServer
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User

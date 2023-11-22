@@ -1,13 +1,12 @@
 package com.simiacryptus.skyenet.actors.opt
 
-import com.simiacryptus.openai.models.OpenAIModel
-import com.simiacryptus.openai.models.ChatModels
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.models.OpenAITextModel
-import com.simiacryptus.skyenet.actors.opt.ActorOptimization.GeneticApi.Prompt
-import com.simiacryptus.openai.proxy.ChatProxy
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.proxy.ChatProxy
 import com.simiacryptus.skyenet.actors.BaseActor
-import com.simiacryptus.util.describe.Description
+import com.simiacryptus.skyenet.actors.opt.ActorOptimization.GeneticApi.Prompt
 import org.slf4j.LoggerFactory
 import kotlin.math.ceil
 import kotlin.math.ln

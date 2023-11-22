@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.openai.OpenAIClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.actors.SimpleActor
 import com.simiacryptus.skyenet.actors.opt.ActorOptimization
 import com.simiacryptus.skyenet.actors.opt.Expectation

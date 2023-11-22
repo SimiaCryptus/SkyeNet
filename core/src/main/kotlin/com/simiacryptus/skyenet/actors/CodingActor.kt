@@ -1,17 +1,17 @@
 package com.simiacryptus.skyenet.actors
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.simiacryptus.openai.OpenAIAPI
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
-import com.simiacryptus.openai.models.ChatModels
-import com.simiacryptus.openai.models.OpenAITextModel
+import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.ClientUtil.toContentList
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.Brain
 import com.simiacryptus.skyenet.Brain.Companion.indent
 import com.simiacryptus.skyenet.Heart
 import com.simiacryptus.skyenet.OutputInterceptor
-import com.simiacryptus.util.describe.AbbrevWhitelistYamlDescriber
-import com.simiacryptus.util.describe.TypeDescriber
+import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
+import com.simiacryptus.jopenai.describe.TypeDescriber
 import kotlin.reflect.KClass
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
@@ -67,31 +67,31 @@ open class CodingActor(
 
     open val interpreter by lazy { interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols) }
 
-    override fun answer(vararg questions: String, api: OpenAIAPI): CodeResult =
+    override fun answer(vararg questions: String, api: API): CodeResult =
         if (!autoEvaluate) answer(*chatMessages(*questions), api = api)
         else answerWithAutoEval(*chatMessages(*questions), api = api).first
 
-    override fun answer(vararg messages: OpenAIClient.ChatMessage, api: OpenAIAPI): CodeResult =
+    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): CodeResult =
         if (!autoEvaluate) CodeResultImpl(*messages, api = (api as OpenAIClient))
         else answerWithAutoEval(*messages, api = api).first
 
     open fun answerWithPrefix(
         codePrefix: String,
-        vararg messages: OpenAIClient.ChatMessage,
-        api: OpenAIAPI
+        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
+        api: API
     ): CodeResult =
         if (!autoEvaluate) CodeResultImpl(*injectCodePrefix(messages, codePrefix), api = (api as OpenAIClient))
         else answerWithAutoEval(*injectCodePrefix(messages, codePrefix), api = api).first
 
     open fun answerWithAutoEval(
         vararg messages: String,
-        api: OpenAIAPI,
+        api: API,
         codePrefix: String = ""
     ) = answerWithAutoEval(*injectCodePrefix(chatMessages(*messages), codePrefix), api = api)
 
     open fun answerWithAutoEval(
-        vararg messages: OpenAIClient.ChatMessage,
-        api: OpenAIAPI
+        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
+        api: API
     ): Pair<CodeResult, ExecutionResult> {
         var result = CodeResultImpl(*messages, api = (api as OpenAIClient))
         var lastError: Throwable? = null
@@ -117,15 +117,15 @@ open class CodingActor(
     }
 
     private fun injectCodePrefix(
-        messages: Array<out OpenAIClient.ChatMessage>,
+        messages: Array<out com.simiacryptus.jopenai.ApiModel.ChatMessage>,
         codePrefix: String
     ) = (messages.dropLast(1) + if (codePrefix.isBlank()) listOf() else listOf(
-        OpenAIClient.ChatMessage(OpenAIClient.Role.assistant, codePrefix.toContentList())
+        com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.assistant, codePrefix.toContentList())
     ) + messages.last()).toTypedArray()
 
     private fun fix(
         api: OpenAIClient,
-        messages: Array<out OpenAIClient.ChatMessage>,
+        messages: Array<out com.simiacryptus.jopenai.ApiModel.ChatMessage>,
         result: CodingActor.CodeResultImpl,
         ex: Throwable
     ): CodingActor.CodeResultImpl {
@@ -147,7 +147,7 @@ open class CodingActor(
     )
 
     private inner class CodeResultImpl(
-        vararg messages: OpenAIClient.ChatMessage,
+        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
         codePrefix: String = "",
         api: OpenAIClient,
     ) : CodeResult {
@@ -175,7 +175,7 @@ open class CodingActor(
 
         fun implement(
             brain: Brain,
-            vararg messages: OpenAIClient.ChatMessage,
+            vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
             codePrefix: String = "",
         ): String {
             val response = brain.implement(*messages)
@@ -194,7 +194,7 @@ open class CodingActor(
             brain: Brain,
             codePrefix: String,
             initialCode: String,
-            messages: Array<out OpenAIClient.ChatMessage>
+            messages: Array<out com.simiacryptus.jopenai.ApiModel.ChatMessage>
         ): String? {
             var workingCode = initialCode
             for (fixAttempt in 0..fixIterations) {

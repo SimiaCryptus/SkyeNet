@@ -1,8 +1,10 @@
 package com.simiacryptus.skyenet.platform
 
-import com.simiacryptus.openai.OpenAIClient
-import com.simiacryptus.openai.OpenAIClientBase
-import com.simiacryptus.openai.models.OpenAIModel
+import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ClientUtil
+import com.simiacryptus.jopenai.OpenAIClient
+
+import com.simiacryptus.jopenai.models.OpenAIModel
 import org.slf4j.event.Level
 import java.io.File
 
@@ -20,8 +22,8 @@ open class ClientManager {
             val userApi = createClient(session, user, logfile, userSettings.apiKey)
             if (userApi != null) return userApi
         }
-        val canUseGlobalKey = ApplicationServices.authorizationManager.isAuthorized(null, user,
-            AuthorizationManager.OperationType.GlobalKey
+        val canUseGlobalKey = ApplicationServices.authorizationManager.isAuthorized(
+            null, user, AuthorizationManager.OperationType.GlobalKey
         )
         if (!canUseGlobalKey) throw RuntimeException("No API key")
         val logfile = dataStorage.getSessionDir(user, session).resolve(".sys/openai.log")
@@ -29,19 +31,16 @@ open class ClientManager {
         return createClient(session, user, logfile)!!
     }
 
-    open protected fun createClient(
-        session: Session,
-        user: User?,
-        logfile: File,
-        key: String? = OpenAIClientBase.keyTxt
+    protected open fun createClient(
+        session: Session, user: User?, logfile: File, key: String? = ClientUtil.keyTxt
     ): OpenAIClient? = if (key.isNullOrBlank()) null else object : OpenAIClient(
         key = key,
         logLevel = Level.DEBUG,
         logStreams = mutableListOf(
-            logfile?.outputStream()?.buffered()
+            logfile.outputStream()?.buffered()
         ).filterNotNull().toMutableList(),
     ) {
-        override fun incrementTokens(model: OpenAIModel?, tokens: Usage) {
+        override fun incrementTokens(model: OpenAIModel?, tokens: ApiModel.Usage) {
             ApplicationServices.usageManager.incrementUsage(session, user, model!!, tokens)
             super.incrementTokens(model, tokens)
         }
