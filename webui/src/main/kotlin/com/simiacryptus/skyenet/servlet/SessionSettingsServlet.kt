@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
+import com.simiacryptus.skyenet.application.ApplicationServer
+import com.simiacryptus.skyenet.application.ApplicationServer.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.util.JsonUtil
@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 
 class SessionSettingsServlet(
-    private val server: ApplicationBase,
+    private val server: ApplicationServer,
 ) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"

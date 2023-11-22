@@ -10,10 +10,10 @@ import java.util.concurrent.atomic.AtomicInteger
 
 abstract class SocketManagerBase(
     protected val session: Session,
-    private val dataStorage: DataStorage?,
-    protected val userId: User? = null,
+    protected val dataStorage: DataStorage?,
+    protected val user: User? = null,
     private val messageStates: LinkedHashMap<String, String> = dataStorage?.getMessages(
-        userId, session
+        user, session
     ) ?: LinkedHashMap(),
     private val applicationClass: Class<*>,
 ) : SocketManager {
@@ -85,13 +85,13 @@ abstract class SocketManagerBase(
 
     private fun setMessage(key: String, value: String): Int {
         if (messageStates.containsKey(key) && messageStates[key] == value) return -1
-        dataStorage?.updateMessage(userId, session, key, value)
+        dataStorage?.updateMessage(user, session, key, value)
         messageStates.put(key, value)
         return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
     }
 
     final override fun onWebSocketText(socket: ChatSocket, message: String) {
-        if (canWrite(userId)) pool.submit {
+        if (canWrite(user)) pool.submit {
             log.debug("$session - Received message: $message")
             try {
                 val opCmdPattern = """![a-z]{3,7},.*""".toRegex()

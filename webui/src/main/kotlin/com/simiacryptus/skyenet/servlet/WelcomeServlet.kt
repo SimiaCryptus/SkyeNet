@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
-import com.simiacryptus.skyenet.ApplicationDirectory
+import com.simiacryptus.skyenet.application.ApplicationServer
+import com.simiacryptus.skyenet.application.ApplicationServer.Companion.getCookie
+import com.simiacryptus.skyenet.application.ApplicationDirectory
 import com.simiacryptus.skyenet.platform.*
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -16,7 +16,7 @@ open class WelcomeServlet(private val parent : ApplicationDirectory) : HttpServl
         val requestURI = req.requestURI ?: "/"
         resp?.contentType = when (requestURI) {
             "/" -> "text/html"
-            else -> ApplicationBase.getMimeType(requestURI)
+            else -> ApplicationServer.getMimeType(requestURI)
         }
         when {
             requestURI == "/" -> resp?.writer?.write(homepage(user).trimIndent())

@@ -3,10 +3,10 @@ package com.simiacryptus.skyenet.util
 import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.EmbeddingModels
+import com.simiacryptus.skyenet.application.ApplicationInterface
 import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
-import com.simiacryptus.skyenet.session.ApplicationInterface
 import com.simiacryptus.util.JsonUtil
 
 class EmbeddingVisualizer(

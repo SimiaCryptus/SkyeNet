@@ -1,7 +1,8 @@
-package com.simiacryptus.skyenet
+package com.simiacryptus.skyenet.application
 
 
 import com.simiacryptus.openai.OpenAIClientBase
+import com.simiacryptus.skyenet.OutputInterceptor
 import com.simiacryptus.skyenet.chat.ChatServer
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.servlet.*

@@ -7,7 +7,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.oauth2.Oauth2
 import com.google.api.services.oauth2.model.Userinfo
-import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
+import com.simiacryptus.skyenet.application.ApplicationServer.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.AuthenticationManager.Companion.AUTH_COOKIE
 import com.simiacryptus.skyenet.platform.User

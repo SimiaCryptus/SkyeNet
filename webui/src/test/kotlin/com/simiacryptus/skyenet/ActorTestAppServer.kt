@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet
 import com.simiacryptus.skyenet.actors.CodingActor
 import com.simiacryptus.skyenet.actors.ParsedActor
 import com.simiacryptus.skyenet.actors.SimpleActor
+import com.simiacryptus.skyenet.application.ApplicationDirectory
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.AuthenticationManager
 import com.simiacryptus.skyenet.platform.AuthorizationManager

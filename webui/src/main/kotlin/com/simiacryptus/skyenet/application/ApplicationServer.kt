@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet
+package com.simiacryptus.skyenet.application
 
 import com.simiacryptus.openai.OpenAIAPI
 import com.simiacryptus.skyenet.servlet.AppInfoServlet
@@ -13,8 +13,6 @@ import com.simiacryptus.skyenet.platform.AuthorizationManager
 import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
-import com.simiacryptus.skyenet.session.ApplicationInterface
-import com.simiacryptus.skyenet.session.ApplicationSocketManager
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.FilterHolder
@@ -23,7 +21,7 @@ import org.eclipse.jetty.webapp.WebAppContext
 import org.slf4j.LoggerFactory
 import java.io.File
 
-abstract class ApplicationBase(
+abstract class ApplicationServer(
     final override val applicationName: String,
     resourceBase: String = "simpleSession",
     val temperature: Double = 0.1,
@@ -40,9 +38,9 @@ abstract class ApplicationBase(
     override fun newSession(user: User?, session: Session): SocketManager {
         return object : ApplicationSocketManager(
             session = session,
-            userId = user,
+            user = user,
             dataStorage = dataStorage,
-            applicationClass = this@ApplicationBase::class.java,
+            applicationClass = this@ApplicationServer::class.java,
         ) {
             override fun newSession(
                 session: Session,
@@ -50,7 +48,7 @@ abstract class ApplicationBase(
                 userMessage: String,
                 socketManager: ApplicationSocketManager,
                 api: OpenAIAPI
-            ) = this@ApplicationBase.newSession(
+            ) = this@ApplicationServer.newSession(
                 session = session,
                 user = user,
                 userMessage = userMessage,
@@ -93,7 +91,7 @@ abstract class ApplicationBase(
             FilterHolder { request, response, chain ->
                 val user = authenticationManager.getUser((request as HttpServletRequest).getCookie())
                 val canRead = authorizationManager.isAuthorized(
-                    applicationClass = this@ApplicationBase.javaClass,
+                    applicationClass = this@ApplicationServer.javaClass,
                     user = user,
                     operationType = AuthorizationManager.OperationType.Read
                 )
@@ -116,7 +114,7 @@ abstract class ApplicationBase(
     }
 
     companion object {
-        private val log = LoggerFactory.getLogger(ApplicationBase::class.java)
+        private val log = LoggerFactory.getLogger(ApplicationServer::class.java)
         val spinner =
             """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
 

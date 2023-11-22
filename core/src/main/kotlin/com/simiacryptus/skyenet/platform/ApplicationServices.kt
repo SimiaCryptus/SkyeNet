@@ -33,5 +33,10 @@ object ApplicationServices {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
         }
+    var clientManager: ClientManager = ClientManager()
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
 
 }

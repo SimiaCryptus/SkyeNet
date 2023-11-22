@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
+import com.simiacryptus.skyenet.application.ApplicationServer.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.platform.Session

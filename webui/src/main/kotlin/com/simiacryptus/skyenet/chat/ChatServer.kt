@@ -23,31 +23,25 @@ abstract class ChatServer(val resourceBase: String) {
         override fun configure(factory: JettyWebSocketServletFactory) {
             factory.setCreator { req, resp ->
                 try {
-                    val authId = req.getCookie(AUTH_COOKIE)
                     return@setCreator if (!req.parameterMap.containsKey("sessionId")) {
-                        null
+                        throw IllegalArgumentException("sessionId is required")
                     } else {
                         val session = Session(req.parameterMap["sessionId"]?.first()!!)
-                        val sessionState: SocketManager = getSession(session, req)
-                        val user = authenticationManager.getUser(authId)
-                        ChatSocket(session, sessionState, dataStorage, user)
+                        ChatSocket(
+                            if (stateCache.containsKey(session)) {
+                                stateCache[session]!!
+                            } else {
+                                val user = authenticationManager.getUser(req.getCookie(AUTH_COOKIE))
+                                val sessionState = newSession(user, session)
+                                stateCache[session] = sessionState
+                                sessionState
+                            }
+                        )
                     }
                 } catch (e: Exception) {
                     log.warn("Error configuring websocket", e)
                 }
             }
-        }
-
-        private fun getSession(
-            session: Session,
-            req: JettyServerUpgradeRequest
-        ) = if (stateCache.containsKey(session)) {
-            stateCache[session]!!
-        } else {
-            val user = authenticationManager.getUser(req.getCookie(AUTH_COOKIE))
-            val sessionState = newSession(user, session)
-            stateCache[session] = sessionState
-            sessionState
         }
     }
 

@@ -1,8 +1,9 @@
 package com.simiacryptus.skyenet.test
 
 import com.simiacryptus.openai.OpenAIAPI
-import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.application.ApplicationServer
 import com.simiacryptus.skyenet.actors.SimpleActor
+import com.simiacryptus.skyenet.application.ApplicationInterface
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.skyenet.session.*
@@ -13,7 +14,7 @@ open class SimpleActorTestApp(
     private val actor: SimpleActor,
     applicationName: String = "SimpleActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
-) : ApplicationBase(
+) : ApplicationServer(
     applicationName = applicationName,
     temperature = temperature,
 ) {
@@ -31,7 +32,7 @@ open class SimpleActorTestApp(
         ui: ApplicationInterface,
         api: OpenAIAPI
     ) {
-        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), ApplicationBase.spinner, false)
+        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), ApplicationServer.spinner, false)
         val actor = getSettings<Settings>(session, user)?.actor ?: actor
         sessionMessage.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""", true)
         val moderatorResponse = actor.answer(userMessage, api = api)

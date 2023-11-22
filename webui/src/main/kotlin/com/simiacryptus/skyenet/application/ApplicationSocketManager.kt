@@ -1,22 +1,20 @@
-package com.simiacryptus.skyenet.session
+package com.simiacryptus.skyenet.application
 
 import com.simiacryptus.openai.OpenAIAPI
-import com.simiacryptus.skyenet.ApplicationBase
 import com.simiacryptus.skyenet.chat.ChatSocket
-import com.simiacryptus.skyenet.platform.DataStorage
-import com.simiacryptus.skyenet.platform.Session
-import com.simiacryptus.skyenet.platform.User
+import com.simiacryptus.skyenet.platform.*
+import com.simiacryptus.skyenet.session.SocketManagerBase
 import java.util.function.Consumer
 
 abstract class ApplicationSocketManager(
     session: Session,
-    userId: User?,
+    user: User?,
     dataStorage: DataStorage?,
     applicationClass: Class<*>,
 ) : SocketManagerBase(
     session = session,
     dataStorage = dataStorage,
-    userId = userId,
+    user = user,
     applicationClass = applicationClass,
 ) {
     private val threads = mutableMapOf<String, Thread>()
@@ -26,7 +24,13 @@ abstract class ApplicationSocketManager(
     override fun onRun(userMessage: String, socket: ChatSocket) {
         val operationID = randomID()
         threads[operationID] = Thread.currentThread()
-        newSession(session, user = userId, userMessage, this, socket.api)
+        newSession(
+            session, user = user, userMessage, this, ApplicationServices.clientManager.createClient(
+                session,
+                user,
+                dataStorage ?: throw IllegalStateException("No data storage")
+            )
+        )
     }
 
     val applicationInterface by lazy { ApplicationInterface(this) }
@@ -68,7 +72,7 @@ abstract class ApplicationSocketManager(
     )
 
     companion object {
-        val spinner: String get() = """<div>${ApplicationBase.spinner}</div>"""
+        val spinner: String get() = """<div>${ApplicationServer.spinner}</div>"""
 //        val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
 //        val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
 //        val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""

@@ -1,5 +1,6 @@
-package com.simiacryptus.skyenet.session
+package com.simiacryptus.skyenet.application
 
+import com.simiacryptus.skyenet.session.SessionMessage
 import java.util.function.Consumer
 
 class ApplicationInterface(private val inner: ApplicationSocketManager) {

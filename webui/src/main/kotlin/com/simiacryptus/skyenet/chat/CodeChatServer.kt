@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.chat
 import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
-import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.application.ApplicationServer
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
 import com.simiacryptus.skyenet.servlet.AppInfoServlet
@@ -47,7 +47,7 @@ class CodeChatServer(
             |
             |Responses may use markdown formatting.
             """.trimMargin(),
-        applicationClass = ApplicationBase::class.java,
+        applicationClass = ApplicationServer::class.java,
     ) {
         override fun canWrite(user: User?): Boolean = true
     }

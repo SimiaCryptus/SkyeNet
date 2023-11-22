@@ -4,7 +4,7 @@ import com.simiacryptus.openai.OpenAIClient
 import com.simiacryptus.openai.OpenAIClientBase.Companion.toContentList
 import com.simiacryptus.openai.models.ChatModels
 import com.simiacryptus.openai.models.OpenAITextModel
-import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.application.ApplicationServer
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.session.SocketManagerBase
 import com.simiacryptus.skyenet.util.MarkdownUtil
@@ -18,8 +18,8 @@ open class ChatSocketManager(
     val systemPrompt: String,
     val api: OpenAIClient,
     val temperature: Double = 0.3,
-    applicationClass: Class<out ApplicationBase>,
-) : SocketManagerBase(session, parent.dataStorage, userId = null, applicationClass = applicationClass) {
+    applicationClass: Class<out ApplicationServer>,
+) : SocketManagerBase(session, parent.dataStorage, user = null, applicationClass = applicationClass) {
 
     init {
         if (userInterfacePrompt.isNotBlank()) {
@@ -39,7 +39,7 @@ open class ChatSocketManager(
     override fun onRun(userMessage: String, socket: ChatSocket) {
         var responseContents = divInitializer(cancelable = false)
         responseContents += """<div class="user-message">${renderResponse(userMessage)}</div>"""
-        send("""$responseContents<div class="chat-response">${ApplicationBase.spinner}</div>""")
+        send("""$responseContents<div class="chat-response">${ApplicationServer.spinner}</div>""")
         val response = handleMessage(userMessage, responseContents)
         if(null != response) {
             responseContents += """<div class="chat-response">${renderResponse(response)}</div>"""

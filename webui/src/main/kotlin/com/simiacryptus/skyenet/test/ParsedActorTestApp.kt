@@ -1,11 +1,11 @@
 package com.simiacryptus.skyenet.test
 
 import com.simiacryptus.openai.OpenAIAPI
-import com.simiacryptus.skyenet.ApplicationBase
+import com.simiacryptus.skyenet.application.ApplicationServer
 import com.simiacryptus.skyenet.actors.ParsedActor
+import com.simiacryptus.skyenet.application.ApplicationInterface
 import com.simiacryptus.skyenet.platform.Session
 import com.simiacryptus.skyenet.platform.User
-import com.simiacryptus.skyenet.session.ApplicationInterface
 import com.simiacryptus.skyenet.session.SocketManagerBase
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.util.JsonUtil
@@ -15,7 +15,7 @@ open class ParsedActorTestApp<T : Any>(
     private val actor: ParsedActor<T>,
     applicationName: String = "ParsedActorTest_" + actor.parserClass.simpleName,
     temperature: Double = 0.3,
-) : ApplicationBase(
+) : ApplicationServer(
     applicationName = applicationName,
     temperature = temperature,
 ) {
@@ -26,7 +26,7 @@ open class ParsedActorTestApp<T : Any>(
         ui: ApplicationInterface,
         api: OpenAIAPI
     ) {
-        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), ApplicationBase.spinner, false)
+        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), ApplicationServer.spinner, false)
         sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
         val response = actor.answer(userMessage, api = api)
         sessionMessage.append(

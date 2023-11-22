@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.servlet
 
-import com.simiacryptus.skyenet.ApplicationBase
-import com.simiacryptus.skyenet.ApplicationBase.Companion.getCookie
+import com.simiacryptus.skyenet.application.ApplicationServer
+import com.simiacryptus.skyenet.application.ApplicationServer.Companion.getCookie
 import com.simiacryptus.skyenet.platform.ApplicationServices
 import com.simiacryptus.skyenet.platform.DataStorage
 import com.simiacryptus.skyenet.platform.Session
@@ -20,7 +20,7 @@ class FileServlet(val dataStorage: DataStorage) : HttpServlet() {
         val file = File(sessionDir, filePath)
         if (file.isFile) {
             val filename = file.name
-            resp.contentType = ApplicationBase.getMimeType(filename)
+            resp.contentType = ApplicationServer.getMimeType(filename)
             resp.status = HttpServletResponse.SC_OK
             file.inputStream().use { inputStream ->
                 resp.outputStream.use { outputStream ->
