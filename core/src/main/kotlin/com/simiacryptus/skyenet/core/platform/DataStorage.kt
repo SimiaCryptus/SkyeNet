@@ -77,25 +77,7 @@ open class DataStorage(
         session: Session
     ): String {
         validateSessionId(session)
-        val userMessage = File(this.getSessionDir(user, session), MESSAGE_DIR).listFiles()
-            ?.filter { file -> file.isFile }
-            ?.sortedBy { file -> file.lastModified() }
-            ?.map { messageFile ->
-                val fileText = messageFile.readText()
-                val split = fileText.split("<p>")
-                if (split.size < 2) {
-                    log.debug("Session {}: No messages", session)
-                    ""
-                } else {
-                    val stringList = split[1].split("</p>")
-                    if (stringList.isEmpty()) {
-                        log.debug("Session {}: No messages", session)
-                        ""
-                    } else {
-                        stringList.first()
-                    }
-                }
-            }?.firstOrNull { it.isNotEmpty() }
+        val userMessage = messages(user, session).entries.minByOrNull { it.key.lastModified() }?.value
         return if (null != userMessage) {
             log.debug("Session {}: {}", session, userMessage)
             userMessage
@@ -104,6 +86,42 @@ open class DataStorage(
             session.sessionId
         }
     }
+
+    open fun getSessionTime(
+        user: User?,
+        session: Session
+    ): Date? {
+        validateSessionId(session)
+        val file = messages(user, session).entries.minByOrNull { it.key.lastModified() }?.key
+        return if (null != file) {
+            Date(file.lastModified())
+        } else {
+            log.debug("Session {}: No messages", session)
+            null
+        }
+    }
+
+    private fun messages(
+        user: User?,
+        session: Session
+    ) = File(this.getSessionDir(user, session), MESSAGE_DIR).listFiles()
+        ?.filter { file -> file.isFile }
+        ?.map { messageFile ->
+            val fileText = messageFile.readText()
+            val split = fileText.split("<p>")
+            if (split.size < 2) {
+                log.debug("Session {}: No messages", session)
+                messageFile to ""
+            } else {
+                val stringList = split[1].split("</p>")
+                if (stringList.isEmpty()) {
+                    log.debug("Session {}: No messages", session)
+                    messageFile to ""
+                } else {
+                    messageFile to stringList.first()
+                }
+            }
+        }?.filter { it.second.isNotEmpty() }?.toList()?.toMap() ?: mapOf()
 
     open fun listSessions(
         user: User?
@@ -146,9 +164,9 @@ open class DataStorage(
                 val listFiles = operationDir.listFiles()?.filter { it.isFile && !it.name.startsWith("aaa") }
                 (listFiles?.size ?: 0) > 0
             }
-        }
-        log.debug("Sessions: {}", files?.map { it.parentFile.name + "-" + it.name })
-        return files?.map { it.parentFile.name + "-" + it.name } ?: listOf()
+        }?.sortedBy { it.lastModified() } ?: listOf()
+        log.debug("Sessions: {}", files.map { it.parentFile.name + "-" + it.name })
+        return files.map { it.parentFile.name + "-" + it.name }
     }
 
     private fun userRoot(user: User?) = File(

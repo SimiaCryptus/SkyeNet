@@ -1,7 +1,6 @@
-package com.simiacryptus.skyenet.webui.util
+package com.simiacryptus.skyenet.webui.session
 
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
-import com.simiacryptus.skyenet.webui.session.SocketManager
 
 class MutableSessionHandler(initialDelegate: SocketManager?) : SocketManager {
     private var priorDelegates: MutableList<SocketManager> = mutableListOf()

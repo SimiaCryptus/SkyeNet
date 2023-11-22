@@ -50,6 +50,12 @@ function onWebSocketText(event) {
         messageDiv.id = messageId;
         messageDiv.innerHTML = messageContent;
         messagesDiv.appendChild(messageDiv);
+        const mainInput = document.getElementById('main-input');
+        if (mainInput) {
+            mainInput.style.display = 'none';
+        } else {
+            console.log("Error: Could not find .main-input");
+        }
     }
 
     messagesDiv.scrollTop = messagesDiv.scrollHeight;

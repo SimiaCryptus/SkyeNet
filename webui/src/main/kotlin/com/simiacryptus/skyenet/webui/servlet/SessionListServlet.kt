@@ -1,12 +1,13 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
+import com.simiacryptus.skyenet.core.Brain.Companion.indent
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.DataStorage
-import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import java.text.SimpleDateFormat
 
 class SessionListServlet(
     private val dataStorage: DataStorage,
@@ -15,8 +16,19 @@ class SessionListServlet(
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
-        val sessions = dataStorage.listSessions(ApplicationServices.authenticationManager.getUser(req.getCookie()))
-
+        val user = authenticationManager.getUser(req.getCookie())
+        val sessions = dataStorage.listSessions(user)
+        val sessionRows = sessions.joinToString("") { session ->
+            val sessionName = dataStorage.getSessionName(user, session)
+            val sessionTime = dataStorage.getSessionTime(user, session)
+            val sessionTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(sessionTime)
+            """
+            <tr class="session-row" onclick="window.location.href='$prefix#$session'">                
+                    <td><a href="$prefix#$session" class="session-link">$sessionName</a></td>
+                    <td><a href="$prefix#$session" class="session-link">$sessionTimeStr</a></td>
+            </tr>
+            """.trimIndent()
+        }
         resp.writer.write(
             """
             <html>
@@ -35,14 +47,9 @@ class SessionListServlet(
             <table>
                 <tr>
                     <th>Session Name</th>
+                    <th>Created</th>
                 </tr>
-                ${sessions.joinToString("") { session ->
-                    """
-                    <tr class="session-row">
-                        <td><a href="$prefix#$session" class="session-link">${sessionName(req, session)}</a></td>
-                    </tr>
-                    """.trimIndent()
-                }}
+                ${sessionRows.indent("    ")}
             </table>
             </body>
             </html>
@@ -50,7 +57,4 @@ class SessionListServlet(
         )
     }
 
-    private fun sessionName(req: HttpServletRequest, session: Session) = dataStorage.getSessionName(
-        ApplicationServices.authenticationManager.getUser(req.getCookie()), session
-    )
 }

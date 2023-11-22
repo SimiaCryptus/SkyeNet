@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.webui.chat
 
+import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
@@ -29,9 +30,10 @@ open class ChatSocketManager(
 
     protected val messages by lazy {
         val list = listOf(
-            com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.system, systemPrompt.toContentList()),
+            ApiModel.ChatMessage(ApiModel.Role.system, systemPrompt.toContentList()),
         ).toMutableList()
-        if(initialAssistantPrompt.isNotBlank()) list += com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.assistant, initialAssistantPrompt.toContentList())
+        if (initialAssistantPrompt.isNotBlank()) list +=
+            ApiModel.ChatMessage(ApiModel.Role.assistant, initialAssistantPrompt.toContentList())
         list
     }
 
@@ -40,32 +42,31 @@ open class ChatSocketManager(
         var responseContents = divInitializer(cancelable = false)
         responseContents += """<div class="user-message">${renderResponse(userMessage)}</div>"""
         send("""$responseContents<div class="chat-response">${ApplicationServer.spinner}</div>""")
-        val response = handleMessage(userMessage, responseContents)
-        if(null != response) {
+        messages += ApiModel.ChatMessage(ApiModel.Role.user, userMessage.toContentList())
+        try {
+            val response = api.chat(
+                ApiModel.ChatRequest(
+                    messages = messages,
+                    temperature = temperature,
+                    model = model.modelName,
+                ), model
+            ).choices.first().message?.content.orEmpty()
+            messages += ApiModel.ChatMessage(ApiModel.Role.assistant, response.toContentList())
             responseContents += """<div class="chat-response">${renderResponse(response)}</div>"""
             send(responseContents)
             onResponse(response, responseContents)
+        } catch (e: Exception) {
+            log.info("Error in chat", e)
+            responseContents += """<div class="error">${e.message}</div>"""
+            send(responseContents)
         }
     }
-
-    open fun handleMessage(userMessage: String, responseContents: String): String? {
-        messages += com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.user, userMessage.toContentList())
-        val response = getResponse()
-        messages += com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.assistant, response.toContentList())
-        return response
-    }
-
-    open fun getResponse() = api.chat(newChatRequest, model).choices.first().message?.content.orEmpty()
 
     open fun renderResponse(response: String) = """<div>${MarkdownUtil.renderMarkdown(response)}</div>"""
 
     open fun onResponse(response: String, responseContents: String) {}
 
-    open val newChatRequest: com.simiacryptus.jopenai.ApiModel.ChatRequest
-        get() = com.simiacryptus.jopenai.ApiModel.ChatRequest(
-            messages = ArrayList(messages),
-            temperature = temperature,
-            model = model.modelName,
-        )
-
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(ChatSocketManager::class.java)
+    }
 }

@@ -15,7 +15,7 @@ body {
     color: var(--primary-text-color);
     background-color: var(--primary-bg-color);
     margin: 0;
-    padding: 0 0 50px;
+    padding: 20px 0 50px;
 }
 
 #form {

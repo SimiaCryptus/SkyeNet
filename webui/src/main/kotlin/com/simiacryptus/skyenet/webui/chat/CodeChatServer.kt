@@ -61,11 +61,6 @@ class CodeChatServer(
     }
 
     companion object {
-        fun htmlEscape(html: String) = html
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'", "&#039;")
+        val log = org.slf4j.LoggerFactory.getLogger(CodeChatServer::class.java)
     }
 }
