@@ -46,6 +46,10 @@ abstract class ApplicationSocketManager(
             val consumer = linkTriggers[id]
             consumer ?: throw IllegalArgumentException("No link handler found")
             consumer.accept(Unit)
+        } else if (code.startsWith("userTxt,")) {
+            val consumer = txtTriggers[id]
+            consumer ?: throw IllegalArgumentException("No input handler found")
+            consumer.accept(code.removePrefix("userTxt,"))
         } else {
             throw IllegalArgumentException("Unknown command: $code")
         }

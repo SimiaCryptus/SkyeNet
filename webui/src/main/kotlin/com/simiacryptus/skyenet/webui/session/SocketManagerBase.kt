@@ -58,7 +58,7 @@ abstract class SocketManagerBase(
     inner class SessionMessageImpl(
         responseContents: String,
         spinner: String = SessionMessage.spinner
-    ) : SessionMessage(responseContents, spinner) {
+    ) : SessionMessage(mutableListOf(StringBuilder(responseContents)), spinner) {
         override fun send(html: String) = this@SocketManagerBase.send(html)
         override fun save(file: String, data: ByteArray): String {
             dataStorage?.getSessionDir(user, session)?.let { dir ->

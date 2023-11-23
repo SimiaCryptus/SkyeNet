@@ -3,21 +3,29 @@ package com.simiacryptus.skyenet.webui.session
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
-import java.util.UUID
+import java.util.*
 
 abstract class SessionMessage(
-    private var responseContents: String,
+    private var buffer: MutableList<StringBuilder> = mutableListOf(),
     private val spinner: String = SessionMessage.spinner
 ) {
-    private fun append(htmlToAppend: String, showSpinner: Boolean) {
+    val currentText: String
+        get() = buffer.filter { it.isNotBlank() }.joinToString("")
+
+    private fun append(htmlToAppend: String, showSpinner: Boolean): StringBuilder? {
+        val stringBuilder: StringBuilder?
         if (htmlToAppend.isNotBlank()) {
-            responseContents += """<div>$htmlToAppend</div>"""
+            stringBuilder = StringBuilder("<div>$htmlToAppend</div>")
+            buffer += stringBuilder
+        } else {
+            stringBuilder = null
         }
-        return send("$responseContents${if (showSpinner) "<div>$spinner</div>" else ""}")
+        send(currentText + if (showSpinner) "<div>$spinner</div>" else "")
+        return stringBuilder
     }
 
     abstract fun send(html: String)
-    abstract fun save(file: String, data: ByteArray) : String
+    abstract fun save(file: String, data: ByteArray): String
 
     fun add(
         message: String,
@@ -50,14 +58,13 @@ abstract class SessionMessage(
         className: String = "response-message"
     ) = append("""<$tag class="$className">$message</$tag>""", false)
 
-    fun image(image: BufferedImage) {
+    fun image(image: BufferedImage) =
         add("""<img src="${save("${UUID.randomUUID()}.png", image.toPng())}" />""")
-    }
 
     companion object {
         val log = LoggerFactory.getLogger(SessionMessage::class.java)
 
-        val spinner =
+        const val spinner =
             """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
 
         private fun BufferedImage.toPng(): ByteArray {
