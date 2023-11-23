@@ -14,11 +14,14 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection
 import org.eclipse.jetty.servlet.FilterHolder
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.util.resource.Resource
+import org.eclipse.jetty.util.resource.Resource.newResource
+import org.eclipse.jetty.util.resource.ResourceCollection
 import org.eclipse.jetty.webapp.WebAppContext
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer
 import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.net.URI
+import java.net.URL
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -39,8 +42,8 @@ abstract class ApplicationDirectory(
     private fun domainName(isServer: Boolean) =
         if (isServer) "https://$publicName" else "http://$localName:$port"
 
-    open val welcomeResources = Resource.newResource(javaClass.classLoader.getResource("welcome"))
-        ?: throw IllegalStateException("No welcome resource")
+
+    open val welcomeResources = ResourceCollection(allResources("welcome").map(::newResource))
     open val userInfoServlet = UserInfoServlet()
     open val userSettingsServlet = UserSettingsServlet()
     open val usageServlet = UsageServlet()
@@ -153,6 +156,8 @@ abstract class ApplicationDirectory(
 
     companion object {
         private val log = LoggerFactory.getLogger(com.simiacryptus.skyenet.webui.application.ApplicationDirectory::class.java)
+        fun allResources(resourceName: String) =
+            Thread.currentThread().contextClassLoader.getResources(resourceName).toList()
     }
 
 }
