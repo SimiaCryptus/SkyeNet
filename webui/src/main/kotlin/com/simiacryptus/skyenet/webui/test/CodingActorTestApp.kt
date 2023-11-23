@@ -28,35 +28,41 @@ open class CodingActorTestApp(
         api: API
     ) {
         val message = ui.newMessage()
-        message.echo(renderMarkdown(userMessage))
-        val response = actor.answer(userMessage, api = api)
-        val canPlay = ApplicationServices.authorizationManager.isAuthorized(
-            this::class.java,
-            user,
-            AuthorizationManager.OperationType.Execute
-        )
-        val playLink = if (!canPlay) "" else {
-            ui.hrefLink("▶", "href-link play-button") {
-                message.add("Running...")
-                val result = response.run()
-                message.complete(
-                    """
-                    |<pre>${result.resultValue}</pre>
-                    |<pre>${result.resultOutput}</pre>
-                    """.trimMargin()
-                )
-            }
-        }
-        message.complete(
-            renderMarkdown(
-                """
-                |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
-                |${response.getCode()}
-                |```
-                |$playLink
-                """.trimMargin().trim()
+        try {
+            message.echo(renderMarkdown(userMessage))
+            val response = actor.answer(userMessage, api = api)
+            val canPlay = ApplicationServices.authorizationManager.isAuthorized(
+                this::class.java,
+                user,
+                AuthorizationManager.OperationType.Execute
             )
-        )
+            val playLink = if (!canPlay) "" else {
+                ui.hrefLink("▶", "href-link play-button") {
+                    message.add("Running...")
+                    val result = response.run()
+                    message.complete(
+                        """
+                        |<pre>${result.resultValue}</pre>
+                        |<pre>${result.resultOutput}</pre>
+                        """.trimMargin()
+                    )
+                }
+            }
+            message.complete(
+                renderMarkdown(
+                    """
+                    |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
+                    |${response.getCode()}
+                    |```
+                    |$playLink
+                    """.trimMargin().trim()
+                )
+            )
+        }
+        catch (e: Throwable) {
+            log.warn("Error", e)
+            message.error(e)
+        }
     }
 
     companion object {

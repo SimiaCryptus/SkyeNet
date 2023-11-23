@@ -26,7 +26,7 @@ open class CodingActor(
     ),
     name: String? = interpreterClass.simpleName,
     val details: String? = null,
-    model: OpenAITextModel = ChatModels.GPT35Turbo,
+    model: ChatModels = ChatModels.GPT35Turbo,
     val fallbackModel: OpenAITextModel = ChatModels.GPT4Turbo,
     temperature: Double = 0.1,
     val autoEvaluate: Boolean = false,

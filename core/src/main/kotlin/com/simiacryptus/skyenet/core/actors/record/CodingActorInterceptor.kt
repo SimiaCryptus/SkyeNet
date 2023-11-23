@@ -10,7 +10,7 @@ import com.simiacryptus.skyenet.core.util.FunctionWrapper
 
 class CodingActorInterceptor(
     val inner: CodingActor,
-    val functionInterceptor: FunctionWrapper,
+    private val functionInterceptor: FunctionWrapper,
 ) : CodingActor(
     interpreterClass = inner.interpreterClass,
     symbols = inner.symbols,

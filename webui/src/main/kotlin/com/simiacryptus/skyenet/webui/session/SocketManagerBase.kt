@@ -6,8 +6,10 @@ import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
+import java.net.URL
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.io.path.Path
 
 abstract class SocketManagerBase(
     protected val session: Session,
@@ -58,6 +60,13 @@ abstract class SocketManagerBase(
         spinner: String = SessionMessage.spinner
     ) : SessionMessage(responseContents, spinner) {
         override fun send(html: String) = this@SocketManagerBase.send(html)
+        override fun save(file: String, data: ByteArray): String {
+            dataStorage?.getSessionDir(user, session)?.let { dir ->
+                dir.mkdirs()
+                dir.resolve(file).writeBytes(data)
+            }
+            return "fileIndex/$session/$file"
+        }
     }
 
     fun send(out: String) {
