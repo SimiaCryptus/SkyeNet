@@ -14,7 +14,7 @@ class ApplicationInterface(private val inner: ApplicationSocketManager) {
 
     fun newMessage(
         operationID: String = SocketManagerBase.randomID(),
-        spinner: String = ApplicationServer.spinner,
+        spinner: String = SessionMessage.spinner,
         cancelable: Boolean = false
     ): SessionMessage = inner.newMessage(operationID, spinner, cancelable)
 

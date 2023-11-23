@@ -13,10 +13,10 @@ import java.io.File
 open class ActorSystem<T:Enum<*>>(
     private val actors: Map<T, BaseActor<*>>,
     val dataStorage: DataStorage,
-    val userId: User?,
-    val sessionId: Session
+    val user: User?,
+    val session: Session
 ) {
-    private val sessionDir = dataStorage.getSessionDir(userId, sessionId)
+    private val sessionDir = dataStorage.getSessionDir(user, session)
     fun getActor(actor: T): BaseActor<*> {
         val wrapper = getWrapper(actor.name)
         return when (val baseActor = actors[actor]) {

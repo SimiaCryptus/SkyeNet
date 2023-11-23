@@ -28,7 +28,7 @@ open class CodingActorTestApp(
         api: API
     ) {
         val message = ui.newMessage()
-        message.append("""<div>${renderMarkdown(userMessage)}</div>""")
+        message.echo(renderMarkdown(userMessage))
         val response = actor.answer(userMessage, api = api)
         val canPlay = ApplicationServices.authorizationManager.isAuthorized(
             this::class.java,
@@ -37,7 +37,7 @@ open class CodingActorTestApp(
         )
         val playLink = if (!canPlay) "" else {
             ui.hrefLink("▶", "href-link play-button") {
-                message.append("""<div>Running...</div>""")
+                message.add("Running...")
                 val result = response.run()
                 message.complete(
                     """
@@ -48,20 +48,19 @@ open class CodingActorTestApp(
             }
         }
         message.complete(
-            """<div>${
-                renderMarkdown(
-                    """
-            |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
-            |${response.getCode()}
-            |```
-            |$playLink
-            """.trimMargin().trim()
-                )
-            }</div>"""
+            renderMarkdown(
+                """
+                |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
+                |${response.getCode()}
+                |```
+                |$playLink
+                """.trimMargin().trim()
+            )
         )
     }
 
     companion object {
         private val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
     }
+
 }

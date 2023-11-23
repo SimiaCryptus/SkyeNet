@@ -26,19 +26,17 @@ open class ParsedActorTestApp<T : Any>(
         api: API
     ) {
         val message = ui.newMessage()
-        message.append("""<div>${renderMarkdown(userMessage)}</div>""")
+        message.echo(renderMarkdown(userMessage))
         val response = actor.answer(userMessage, api = api)
         message.complete(
-            """<div>${
-                renderMarkdown(
-                    """
-            |${response.getText()}
-            |```
-            |${JsonUtil.toJson(response.getObj())}
-            |```
-            """.trimMargin().trim()
+            renderMarkdown(
+                """
+                |${response.getText()}
+                |```
+                |${JsonUtil.toJson(response.getObj())}
+                |```
+                """.trimMargin().trim()
                 )
-            }</div>"""
         )
     }
 

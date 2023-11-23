@@ -7,6 +7,7 @@ import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 
 open class SimpleActorTestApp(
@@ -33,9 +34,9 @@ open class SimpleActorTestApp(
     ) {
         val message = ui.newMessage()
         val actor = getSettings<Settings>(session, user)?.actor ?: actor
-        message.append("""<div>${MarkdownUtil.renderMarkdown(userMessage)}</div>""")
+        message.echo(renderMarkdown(userMessage))
         val moderatorResponse = actor.answer(userMessage, api = api)
-        message.complete("""<div>${MarkdownUtil.renderMarkdown(moderatorResponse)}</div>""")
+        message.complete(renderMarkdown(moderatorResponse))
     }
 
     companion object {

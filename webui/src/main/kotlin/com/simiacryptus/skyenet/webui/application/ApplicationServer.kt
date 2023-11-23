@@ -11,6 +11,7 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
+import com.simiacryptus.skyenet.webui.session.SessionMessage
 import com.simiacryptus.skyenet.webui.session.SocketManager
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -114,8 +115,6 @@ abstract class ApplicationServer(
 
     companion object {
         private val log = LoggerFactory.getLogger(ApplicationServer::class.java)
-        val spinner =
-            """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
 
         fun getMimeType(filename: String): String =
             when {
