@@ -1,8 +1,9 @@
 package com.simiacryptus.skyenet.core.actors.record
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.ApiModel.ChatMessage
 import com.simiacryptus.jopenai.models.OpenAIModel
+import com.simiacryptus.skyenet.core.Brain
 import com.simiacryptus.skyenet.core.actors.CodeResult
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.util.FunctionWrapper
@@ -21,32 +22,21 @@ class CodingActorInterceptor(
     temperature = inner.temperature,
     autoEvaluate = inner.autoEvaluate,
 ) {
-    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): CodeResult {
-        return functionInterceptor.wrap(messages.toList().toTypedArray()) {
-            messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage> ->
-            CodingResultInterceptor(*messages, api = (api as OpenAIClient), inner = inner.answer(*messages, api = api))
+    override fun answer(vararg messages: ChatMessage, api: API) =
+        functionInterceptor.wrap(messages.toList().toTypedArray()) {
+            inner.answer(*it, api = api)
         }
-    }
-
-    private inner class CodingResultInterceptor(
-        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
-        private val inner: CodeResult,
-        api: OpenAIClient,
-    ) : CodeResult {
-        override fun getStatus() = functionInterceptor.wrap { inner.getStatus() }
-        override fun getCode() = functionInterceptor.wrap { inner.getCode() }
-        override fun run() = functionInterceptor.wrap { inner.run() }
-
-    }
 
     override fun response(
-        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
+        vararg messages: ChatMessage,
         model: OpenAIModel,
         api: API
-    ) = functionInterceptor.wrap(messages.toList().toTypedArray(), model) {
-        messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage>,
+    ) = functionInterceptor.wrap(
+        messages.toList().toTypedArray(),
+        model
+    ) { messages: Array<ChatMessage>,
         model: OpenAIModel ->
-            inner.response(*messages, model = model, api = api)
+        inner.response(*messages, model = model, api = api)
     }
 
     override fun chatMessages(vararg questions: String) = functionInterceptor.wrap(questions) {
@@ -59,28 +49,65 @@ class CodingActorInterceptor(
 
     override fun answerWithPrefix(
         codePrefix: String,
-        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
+        vararg messages: ChatMessage,
         api: API
-    ) = functionInterceptor.wrap(messages.toList().toTypedArray(), codePrefix) {
-        messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage>,
+    ) = functionInterceptor.wrap(
+        messages.toList().toTypedArray(),
+        codePrefix
+    ) { messages: Array<ChatMessage>,
         codePrefix: String ->
-            inner.answerWithPrefix(codePrefix, *messages, api = api)
+        inner.answerWithPrefix(codePrefix, *messages, api = api)
     }
 
     override fun answerWithAutoEval(
         vararg messages: String,
         api: API,
         codePrefix: String
-    ) = functionInterceptor.wrap(messages.toList().toTypedArray(), codePrefix) {
-        messages: Array<String>,
+    ) = functionInterceptor.wrap(
+        messages.toList().toTypedArray(),
+        codePrefix
+    ) { messages: Array<String>,
         codePrefix: String ->
-            inner.answerWithAutoEval(*messages, api = api, codePrefix = codePrefix)
+        inner.answerWithAutoEval(*messages, api = api, codePrefix = codePrefix)
     }
 
     override fun answerWithAutoEval(
-        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
+        vararg messages: ChatMessage,
         api: API
     ) = functionInterceptor.wrap(messages.toList().toTypedArray()) {
         inner.answerWithAutoEval(*messages, api = api)
+    }
+
+    override fun implement(
+        self: CodeResult,
+        brain: Brain,
+        messages: Array<out ChatMessage>,
+        codePrefix: String
+    ) = functionInterceptor.wrap(
+        messages.toList().toTypedArray(),
+        codePrefix
+    ) { messages: Array<ChatMessage>,
+        codePrefix: String ->
+        inner.implement(self, brain, messages, codePrefix)
+    }
+
+    override fun validateAndFix(
+        self: CodeResult,
+        initialCode: String,
+        codePrefix: String,
+        brain: Brain,
+        messages: Array<out ChatMessage>
+    ) = functionInterceptor.wrap(
+        messages.toList().toTypedArray(),
+        initialCode,
+        codePrefix
+    ) { messages: Array<ChatMessage>,
+        initialCode: String,
+        codePrefix: String ->
+        inner.validateAndFix(self, initialCode, codePrefix, brain, messages) ?: ""
+    }
+
+    override fun execute(code: String) = functionInterceptor.wrap(code) {
+        inner.execute(it)
     }
 }

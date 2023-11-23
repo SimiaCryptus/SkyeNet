@@ -7,7 +7,6 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
-import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 
@@ -26,10 +25,10 @@ open class ParsedActorTestApp<T : Any>(
         ui: ApplicationInterface,
         api: API
     ) {
-        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), spinner, false)
-        sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
+        val message = ui.newMessage()
+        message.append("""<div>${renderMarkdown(userMessage)}</div>""")
         val response = actor.answer(userMessage, api = api)
-        sessionMessage.append(
+        message.complete(
             """<div>${
                 renderMarkdown(
                     """
@@ -39,7 +38,7 @@ open class ParsedActorTestApp<T : Any>(
             |```
             """.trimMargin().trim()
                 )
-            }</div>""", false
+            }</div>"""
         )
     }
 

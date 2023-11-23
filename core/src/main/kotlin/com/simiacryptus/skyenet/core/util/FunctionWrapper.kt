@@ -12,6 +12,11 @@ class FunctionWrapper(val inner: FunctionInterceptor) : FunctionInterceptor {
     inline fun <P:Any, reified T:Any> wrap(p: P, crossinline fn: (P) -> T) = inner.intercept(p, T::class.java) { fn(it) }
     inline fun <P1:Any, P2:Any, reified T:Any> wrap(p1: P1, p2: P2, crossinline fn: (P1, P2) -> T) =
         inner.intercept(p1, p2, T::class.java) { p1, p2 -> fn(p1, p2) }
+    inline fun <P1:Any, P2:Any, P3:Any, reified T:Any> wrap(p1: P1, p2: P2, p3: P3, crossinline fn: (P1, P2, P3) -> T) =
+        inner.intercept(p1, p2, p3, T::class.java) { p1, p2, p3 -> fn(p1, p2, p3) }
+
+    inline fun <P1:Any, P2:Any, P3:Any, P4:Any, reified T:Any> wrap(p1: P1, p2: P2, p3: P3, p4: P4, crossinline fn: (P1, P2, P3, P4) -> T) =
+        inner.intercept(p1, p2, p3, p4, T::class.java) { p1, p2, p3, p4 -> fn(p1, p2, p3, p4) }
 
     override fun <T : Any> intercept(returnClazz: Class<T>, fn: () -> T) = inner.intercept(returnClazz, fn)
 
@@ -32,6 +37,18 @@ interface FunctionInterceptor {
         intercept(listOf(p1, p2), returnClazz) {
             @Suppress("UNCHECKED_CAST")
             fn(it[0] as P1, it[1] as P2)
+        }
+
+    fun <P1:Any, P2:Any, P3:Any, T:Any> intercept(p1: P1, p2: P2, p3: P3, returnClazz: Class<T>, fn: (P1, P2, P3) -> T) =
+        intercept(listOf(p1, p2, p3), returnClazz) {
+            @Suppress("UNCHECKED_CAST")
+            fn(it[0] as P1, it[1] as P2, it[2] as P3)
+        }
+
+    fun <P1:Any, P2:Any, P3:Any, P4:Any, T:Any> intercept(p1: P1, p2: P2, p3: P3, p4: P4, returnClazz: Class<T>, fn: (P1, P2, P3, P4) -> T) =
+        intercept(listOf(p1, p2, p3, p4), returnClazz) {
+            @Suppress("UNCHECKED_CAST")
+            fn(it[0] as P1, it[1] as P2, it[2] as P3, it[3] as P4)
         }
 }
 

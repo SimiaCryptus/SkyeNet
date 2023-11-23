@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ApiModel.*
 import com.simiacryptus.jopenai.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
@@ -12,6 +13,7 @@ import com.simiacryptus.skyenet.core.Brain
 import com.simiacryptus.skyenet.core.Brain.Companion.indent
 import com.simiacryptus.skyenet.core.Heart
 import com.simiacryptus.skyenet.core.OutputInterceptor
+import javax.script.ScriptException
 import kotlin.reflect.KClass
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
@@ -71,13 +73,13 @@ open class CodingActor(
         if (!autoEvaluate) answer(*chatMessages(*questions), api = api)
         else answerWithAutoEval(*chatMessages(*questions), api = api).first
 
-    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): CodeResult =
+    override fun answer(vararg messages: ChatMessage, api: API): CodeResult =
         if (!autoEvaluate) CodeResultImpl(*messages, api = (api as OpenAIClient))
         else answerWithAutoEval(*messages, api = api).first
 
     open fun answerWithPrefix(
         codePrefix: String,
-        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
+        vararg messages: ChatMessage,
         api: API
     ): CodeResult =
         if (!autoEvaluate) CodeResultImpl(*injectCodePrefix(messages, codePrefix), api = (api as OpenAIClient))
@@ -90,7 +92,7 @@ open class CodingActor(
     ) = answerWithAutoEval(*injectCodePrefix(chatMessages(*messages), codePrefix), api = api)
 
     open fun answerWithAutoEval(
-        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
+        vararg messages: ChatMessage,
         api: API
     ): Pair<CodeResult, ExecutionResult> {
         var result = CodeResultImpl(*messages, api = (api as OpenAIClient))
@@ -117,15 +119,15 @@ open class CodingActor(
     }
 
     private fun injectCodePrefix(
-        messages: Array<out com.simiacryptus.jopenai.ApiModel.ChatMessage>,
+        messages: Array<out ChatMessage>,
         codePrefix: String
     ) = (messages.dropLast(1) + if (codePrefix.isBlank()) listOf() else listOf(
-        com.simiacryptus.jopenai.ApiModel.ChatMessage(com.simiacryptus.jopenai.ApiModel.Role.assistant, codePrefix.toContentList())
+        ChatMessage(Role.assistant, codePrefix.toContentList())
     ) + messages.last()).toTypedArray()
 
     private fun fix(
         api: OpenAIClient,
-        messages: Array<out com.simiacryptus.jopenai.ApiModel.ChatMessage>,
+        messages: Array<out ChatMessage>,
         result: CodeResultImpl,
         ex: Throwable
     ): CodeResultImpl {
@@ -147,22 +149,22 @@ open class CodingActor(
     )
 
     private inner class CodeResultImpl(
-        vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
+        vararg messages: ChatMessage,
         codePrefix: String = "",
         api: OpenAIClient,
     ) : CodeResult {
-        private var _status = CodeResult.Status.Coding
+        var _status = CodeResult.Status.Coding
         override fun getStatus(): CodeResult.Status {
             return _status
         }
 
         private val impl by lazy {
             var codedInstruction = implement(
-                brain(api, model), *messages, codePrefix = codePrefix
+                this, brain(api, model), messages, codePrefix = codePrefix
             )
             if (_status != CodeResult.Status.Success && fallbackModel != model) {
                 codedInstruction = implement(
-                    brain(api, fallbackModel), *messages, codePrefix = codePrefix
+                    this, brain(api, fallbackModel), messages, codePrefix = codePrefix
                 )
             }
             if (_status != CodeResult.Status.Success) {
@@ -172,71 +174,72 @@ open class CodingActor(
             codedInstruction
         }
 
-
-        fun implement(
-            brain: Brain,
-            vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
-            codePrefix: String = "",
-        ): String {
-            val response = brain.implement(*messages)
-            val codeBlocks = Brain.extractCodeBlocks(response)
-            for (codingAttempt in 0..fixRetries) {
-                var renderedResponse = getRenderedResponse(codeBlocks)
-                val codedInstruction = getCode(interpreter.getLanguage(), codeBlocks)
-                log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
-                log.info("Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
-                return validateAndFix(brain, codePrefix, codedInstruction, messages) ?: continue
-            }
-            return ""
-        }
-
-        fun validateAndFix(
-            brain: Brain,
-            codePrefix: String,
-            initialCode: String,
-            messages: Array<out com.simiacryptus.jopenai.ApiModel.ChatMessage>
-        ): String? {
-            var workingCode = initialCode
-            for (fixAttempt in 0..fixIterations) {
-                try {
-                    val validate = interpreter.validate((codePrefix + "\n" + workingCode).trim())
-                    if (validate != null) throw validate
-                    log.info("Validation succeeded")
-                    _status = CodeResult.Status.Success
-                    return workingCode
-                } catch (ex: Throwable) {
-                    log.info("Validation failed - ${ex.message}")
-                    _status = CodeResult.Status.Correcting
-                    val respondWithCode = brain.fixCommand(workingCode, ex, "", *messages)
-                    val response = getRenderedResponse(respondWithCode.second)
-                    workingCode = getCode(interpreter.getLanguage(), respondWithCode.second)
-                    log.info("Response: \n\t${response.replace("\n", "\n\t", false)}".trimMargin())
-                    log.info("Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
-                }
-            }
-            return null
-        }
-
         @JsonIgnore
-        override fun getCode(): String {
-            return impl
-        }
+        override fun getCode(): String = impl
 
-        override fun run(): ExecutionResult {
-            //language=HTML
-            log.info("Running ${getCode()}")
-            OutputInterceptor.clearGlobalOutput()
-            val result = try {
-                interpreter.run(getCode())
-            } catch (ex: javax.script.ScriptException) {
-                throw RuntimeException(errorMessage(getCode(), ex.lineNumber, ex.columnNumber, ex.message ?: ""), ex)
-            }
-            log.info("Result: $result")
-            //language=HTML
-            val executionResult = ExecutionResult(result.toString(), OutputInterceptor.getGlobalOutput())
-            OutputInterceptor.clearGlobalOutput()
-            return executionResult
+        override fun run() = execute(getCode())
+    }
+
+    open fun implement(
+        self:CodeResult,
+        brain: Brain,
+        messages: Array<out ChatMessage>,
+        codePrefix: String
+    ): String {
+        val response = brain.implement(*messages)
+        val codeBlocks = Brain.extractCodeBlocks(response)
+        for (codingAttempt in 0..fixRetries) {
+            var renderedResponse = getRenderedResponse(codeBlocks)
+            val codedInstruction = getCode(interpreter.getLanguage(), codeBlocks)
+            log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
+            log.info("Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
+            return validateAndFix(self, codedInstruction, codePrefix, brain, messages) ?: continue
         }
+        return ""
+    }
+
+    open fun validateAndFix(
+        self : CodeResult,
+        initialCode: String,
+        codePrefix: String,
+        brain: Brain,
+        messages: Array<out ChatMessage>
+    ): String? {
+        var workingCode = initialCode
+        for (fixAttempt in 0..fixIterations) {
+            try {
+                val validate = interpreter.validate((codePrefix + "\n" + workingCode).trim())
+                if (validate != null) throw validate
+                log.info("Validation succeeded")
+                (self as CodeResultImpl)._status = CodeResult.Status.Success
+                return workingCode
+            } catch (ex: Throwable) {
+                log.info("Validation failed - ${ex.message}")
+                (self as CodeResultImpl)._status = CodeResult.Status.Correcting
+                val respondWithCode = brain.fixCommand(workingCode, ex, "", *messages)
+                val response = getRenderedResponse(respondWithCode.second)
+                workingCode = getCode(interpreter.getLanguage(), respondWithCode.second)
+                log.info("Response: \n\t${response.replace("\n", "\n\t", false)}".trimMargin())
+                log.info("Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
+            }
+        }
+        return null
+    }
+
+    open fun execute(code: String): ExecutionResult {
+        //language=HTML
+        log.info("Running $code")
+        OutputInterceptor.clearGlobalOutput()
+        val result = try {
+            interpreter.run(code)
+        } catch (ex: ScriptException) {
+            throw RuntimeException(errorMessage(code, ex.lineNumber, ex.columnNumber, ex.message ?: ""), ex)
+        }
+        log.info("Result: $result")
+        //language=HTML
+        val executionResult = ExecutionResult(result.toString(), OutputInterceptor.getGlobalOutput())
+        OutputInterceptor.clearGlobalOutput()
+        return executionResult
     }
 
     companion object {

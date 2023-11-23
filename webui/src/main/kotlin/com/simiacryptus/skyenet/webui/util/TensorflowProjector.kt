@@ -9,7 +9,7 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 
-class EmbeddingVisualizer(
+class TensorflowProjector(
     val api: API,
     val dataStorage: DataStorage,
     val sessionID: Session,

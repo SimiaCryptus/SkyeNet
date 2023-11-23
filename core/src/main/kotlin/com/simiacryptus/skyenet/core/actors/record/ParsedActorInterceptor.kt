@@ -16,18 +16,10 @@ class ParsedActorInterceptor<T:Any>(
     model = inner.model,
     temperature = inner.temperature,
 ) {
-    private inner class ParsedResponseInterceptor(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API, private val inner: ParsedResponse<T>) :
-        ParsedResponse<T>(this@ParsedActorInterceptor.inner.resultClass) {
-        override fun getText() = functionInterceptor.wrap { inner.getText() }
-        override fun getObj(clazz: Class<T>) = functionInterceptor.intercept(clazz) { inner.getObj(clazz) } // <-- Cannot use 'T' as reified type parameter. Use a class instead.
-    }
-
-    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): ParsedResponse<T> {
-        return functionInterceptor.wrap(messages.toList().toTypedArray()) {
-            messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage> ->
-            ParsedResponseInterceptor(*messages, api = api, inner = inner.answer(*messages, api = api))
+    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API) =
+        functionInterceptor.wrap(messages.toList().toTypedArray()) {
+            inner.answer(*it, api = api)
         }
-    }
 
     override fun response(
         vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage,
