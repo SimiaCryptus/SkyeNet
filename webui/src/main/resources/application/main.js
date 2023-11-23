@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loginLink = document.getElementById('username');
     if (loginLink) {
-        loginLink.href = '/googleLogin?redirect=' + encodeURIComponent(window.location.pathname);
+        loginLink.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
     }
 
     fetch('appInfo')
