@@ -14,6 +14,10 @@ object AwsUtil {
     fun encryptFile(inputFilePath: String, outputFilePath: String) {
         val filePath = Paths.get(inputFilePath)
         val fileBytes = Files.readAllBytes(filePath)
+        encryptData(fileBytes, outputFilePath)
+    }
+
+    fun encryptData(fileBytes: ByteArray, outputFilePath: String) {
         val kmsClient = AWSKMSClientBuilder.standard().build()
         val encryptRequest =
             EncryptRequest().withKeyId("arn:aws:kms:us-east-1:470240306861:key/a1340b89-64e6-480c-a44c-e7bc0c70dcb1")

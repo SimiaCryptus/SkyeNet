@@ -21,7 +21,6 @@ import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerI
 import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.net.URI
-import java.net.URL
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -49,7 +48,7 @@ abstract class ApplicationDirectory(
     open val usageServlet = UsageServlet()
     open val proxyHttpServlet = ProxyHttpServlet()
     open val welcomeServlet = WelcomeServlet(this)
-    open fun authenticatedWebsite(): AuthenticatedWebsite? = AuthenticatedWebsite(
+    open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(
         redirectUri = "$domainName/oauth2callback",
         applicationName = "Demo",
         key = { decryptResource("client_secret_google_oauth.json.kms").byteInputStream() }
