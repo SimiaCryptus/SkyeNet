@@ -8,7 +8,6 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
-import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -28,37 +27,46 @@ open class CodingActorTestApp(
         ui: ApplicationInterface,
         api: API
     ) {
-        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), spinner, false)
-        sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
-        val response = actor.answer(userMessage, api = api)
-        val canPlay = ApplicationServices.authorizationManager.isAuthorized(
-            this::class.java,
-            user,
-            AuthorizationManager.OperationType.Execute
-        )
-        val playLink = if(!canPlay) "" else {
-            ui.hrefLink("▶", "href-link play-button") {
-                sessionMessage.append("""<div>Running...</div>""", true)
-                val result = response.run()
-                sessionMessage.append(
-                    """
-                    |<pre>${result.resultValue}</pre>
-                    |<pre>${result.resultOutput}</pre>
-                    """.trimMargin(), false
-                )
+        val message = ui.newMessage()
+        try {
+            message.echo(renderMarkdown(userMessage))
+            val response = actor.answer(userMessage, api = api)
+            val canPlay = ApplicationServices.authorizationManager.isAuthorized(
+                this::class.java,
+                user,
+                AuthorizationManager.OperationType.Execute
+            )
+            val playLink = if (!canPlay) "" else {
+                ui.hrefLink("▶", "href-link play-button") {
+                    message.add("Running...")
+                    val result = response.run()
+                    message.complete(
+                        """
+                        |<pre>${result.resultValue}</pre>
+                        |<pre>${result.resultOutput}</pre>
+                        """.trimMargin()
+                    )
+                }
             }
+            message.complete(
+                renderMarkdown(
+                    """
+                    |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
+                    |${response.getCode()}
+                    |```
+                    |$playLink
+                    """.trimMargin().trim()
+                )
+            )
         }
-        sessionMessage.append("""<div>${
-            renderMarkdown("""
-            |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
-            |${response.getCode()}
-            |```
-            |$playLink
-            """.trimMargin().trim())
-        }</div>""", false)
+        catch (e: Throwable) {
+            log.warn("Error", e)
+            message.error(e)
+        }
     }
 
     companion object {
         private val log = LoggerFactory.getLogger(CodingActorTestApp::class.java)
     }
+
 }

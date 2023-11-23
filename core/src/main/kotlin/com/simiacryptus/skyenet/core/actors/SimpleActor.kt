@@ -7,7 +7,7 @@ import com.simiacryptus.jopenai.models.OpenAITextModel
 open class SimpleActor(
     prompt: String,
     name: String? = null,
-    model: OpenAITextModel = ChatModels.GPT35Turbo,
+    model: ChatModels = ChatModels.GPT35Turbo,
     temperature: Double = 0.3,
 ) : BaseActor<String>(
     prompt = prompt,

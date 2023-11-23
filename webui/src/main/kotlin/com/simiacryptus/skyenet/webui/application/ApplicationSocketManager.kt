@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.platform.DataStorage
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
+import com.simiacryptus.skyenet.webui.session.SessionMessage
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import java.util.function.Consumer
 
@@ -45,6 +46,10 @@ abstract class ApplicationSocketManager(
             val consumer = linkTriggers[id]
             consumer ?: throw IllegalArgumentException("No link handler found")
             consumer.accept(Unit)
+        } else if (code.startsWith("userTxt,")) {
+            val consumer = txtTriggers[id]
+            consumer ?: throw IllegalArgumentException("No input handler found")
+            consumer.accept(code.removePrefix("userTxt,"))
         } else {
             throw IllegalArgumentException("Unknown command: $code")
         }
@@ -75,7 +80,7 @@ abstract class ApplicationSocketManager(
     )
 
     companion object {
-        val spinner: String get() = """<div>${ApplicationServer.spinner}</div>"""
+        val spinner: String get() = """<div>${SessionMessage.spinner}</div>"""
 //        val playButton: String get() = """<button class="play-button" data-id="$operationID">▶</button>"""
 //        val cancelButton: String get() = """<button class="cancel-button" data-id="$operationID">&times;</button>"""
 //        val regenButton: String get() = """<button class="regen-button" data-id="$operationID">♲</button>"""

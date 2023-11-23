@@ -7,7 +7,6 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
-import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 
@@ -26,21 +25,24 @@ open class ParsedActorTestApp<T : Any>(
         ui: ApplicationInterface,
         api: API
     ) {
-        val sessionMessage = ui.newMessage(SocketManagerBase.randomID(), spinner, false)
-        sessionMessage.append("""<div>${renderMarkdown(userMessage)}</div>""", true)
-        val response = actor.answer(userMessage, api = api)
-        sessionMessage.append(
-            """<div>${
+        val message = ui.newMessage()
+        try {
+            message.echo(renderMarkdown(userMessage))
+            val response = actor.answer(userMessage, api = api)
+            message.complete(
                 renderMarkdown(
                     """
-            |${response.getText()}
-            |```
-            |${JsonUtil.toJson(response.getObj())}
-            |```
-            """.trimMargin().trim()
-                )
-            }</div>""", false
-        )
+                    |${response.getText()}
+                    |```
+                    |${JsonUtil.toJson(response.getObj())}
+                    |```
+                    """.trimMargin().trim()
+                    )
+            )
+        } catch (e: Throwable) {
+            log.warn("Error", e)
+            message.error(e)
+        }
     }
 
     companion object {

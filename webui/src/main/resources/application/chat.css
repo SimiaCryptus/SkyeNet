@@ -64,11 +64,28 @@ body {
 }
 
 .reply-form {
-    width: 100%;
+    position: relative;
+    align-items: flex-start;
+    left: 0;
+    right: 0;
+    top: 0;
+    display: flex;
+    margin: 0;
+    padding: 5px;
+    flex-shrink: 0;
+    background-color: var(--primary-bg-color);
 }
 
 .reply-input {
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius);
+    padding: 10px;
+    margin-bottom: 10px;
+    overflow: auto;
     resize: vertical;
+    flex: 1;
+    border: 1px solid #ddd;
+    box-shadow: var(--box-shadow);
 }
 
 .href-link {

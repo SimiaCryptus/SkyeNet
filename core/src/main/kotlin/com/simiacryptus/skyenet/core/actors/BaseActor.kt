@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.core.actors
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
@@ -10,7 +11,7 @@ import com.simiacryptus.jopenai.models.OpenAITextModel
 abstract class BaseActor<T>(
     open val prompt: String,
     val name: String? = null,
-    val model: OpenAITextModel = ChatModels.GPT35Turbo,
+    val model: ChatModels = ChatModels.GPT35Turbo,
     val temperature: Double = 0.3,
 ) {
     abstract fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): T

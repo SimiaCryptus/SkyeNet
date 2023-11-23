@@ -5,8 +5,11 @@ import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import org.slf4j.LoggerFactory
+import java.net.URL
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.io.path.Path
 
 abstract class SocketManagerBase(
     protected val session: Session,
@@ -43,26 +46,26 @@ abstract class SocketManagerBase(
     }
 
     fun newMessage(
-        operationID: String, spinner: String, cancelable: Boolean = false
+        operationID: String = randomID(),
+        spinner: String = SessionMessage.spinner,
+        cancelable: Boolean = false
     ): SessionMessage {
         var responseContents = divInitializer(operationID, cancelable)
         send(responseContents)
-        return object : SessionMessage() {
-            override fun append(htmlToAppend: String, showSpinner: Boolean) {
-                if (htmlToAppend.isNotBlank()) {
-                    responseContents += """<div>$htmlToAppend</div>"""
-                }
-                val spinner1 = if (showSpinner) """<div>$spinner</div>""" else ""
-                return this@SocketManagerBase.send("""$responseContents$spinner1""")
-            }
+        return SessionMessageImpl(responseContents, spinner)
+    }
 
-            override fun sessionID(): Session {
-                return this@SocketManagerBase.session
+    inner class SessionMessageImpl(
+        responseContents: String,
+        spinner: String = SessionMessage.spinner
+    ) : SessionMessage(mutableListOf(StringBuilder(responseContents)), spinner) {
+        override fun send(html: String) = this@SocketManagerBase.send(html)
+        override fun save(file: String, data: ByteArray): String {
+            dataStorage?.getSessionDir(user, session)?.let { dir ->
+                dir.mkdirs()
+                dir.resolve(file).writeBytes(data)
             }
-
-            override fun divID(): String {
-                return operationID
-            }
+            return "fileIndex/$session/$file"
         }
     }
 
@@ -131,7 +134,7 @@ abstract class SocketManagerBase(
     )
 
     companion object {
-        private val log = org.slf4j.LoggerFactory.getLogger(ChatServer::class.java)
+        private val log = LoggerFactory.getLogger(ChatServer::class.java)
 
         fun randomID() = (0..5).map { ('a'..'z').random() }.joinToString("")
         fun divInitializer(operationID: String = randomID(), cancelable: Boolean): String =

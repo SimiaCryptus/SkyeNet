@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.skyenet.core.actors.record.CodingActorInterceptor
+import com.simiacryptus.skyenet.core.actors.record.ImageActorInterceptor
 import com.simiacryptus.skyenet.core.actors.record.ParsedActorInterceptor
 import com.simiacryptus.skyenet.core.actors.record.SimpleActorInterceptor
 import com.simiacryptus.skyenet.core.platform.DataStorage
@@ -13,10 +14,10 @@ import java.io.File
 open class ActorSystem<T:Enum<*>>(
     private val actors: Map<T, BaseActor<*>>,
     val dataStorage: DataStorage,
-    val userId: User?,
-    val sessionId: Session
+    val user: User?,
+    val session: Session
 ) {
-    private val sessionDir = dataStorage.getSessionDir(userId, sessionId)
+    private val sessionDir = dataStorage.getSessionDir(user, session)
     fun getActor(actor: T): BaseActor<*> {
         val wrapper = getWrapper(actor.name)
         return when (val baseActor = actors[actor]) {
@@ -24,6 +25,7 @@ open class ActorSystem<T:Enum<*>>(
             is SimpleActor -> SimpleActorInterceptor(baseActor, wrapper)
             is ParsedActor<*> -> ParsedActorInterceptor(baseActor, wrapper)
             is CodingActor -> CodingActorInterceptor(baseActor, wrapper)
+            is ImageActor -> ImageActorInterceptor(baseActor, wrapper)
             else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
         }
     }
