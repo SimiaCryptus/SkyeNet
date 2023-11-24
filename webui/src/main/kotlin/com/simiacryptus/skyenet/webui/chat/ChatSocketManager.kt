@@ -7,7 +7,7 @@ import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
-import com.simiacryptus.skyenet.webui.session.SessionMessage
+import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 
@@ -42,7 +42,7 @@ open class ChatSocketManager(
     override fun onRun(userMessage: String, socket: ChatSocket) {
         var responseContents = divInitializer(cancelable = false)
         responseContents += """<div class="user-message">${renderResponse(userMessage)}</div>"""
-        send("""$responseContents<div class="chat-response">${SessionMessage.spinner}</div>""")
+        send("""$responseContents<div class="chat-response">${SessionTask.spinner}</div>""")
         messages += ApiModel.ChatMessage(ApiModel.Role.user, userMessage.toContentList())
         try {
             val response = api.chat(

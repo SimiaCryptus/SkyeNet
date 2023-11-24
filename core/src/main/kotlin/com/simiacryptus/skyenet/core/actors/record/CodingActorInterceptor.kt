@@ -70,9 +70,10 @@ class CodingActorInterceptor(
 
     override fun answerWithAutoEval(
         vararg messages: ChatMessage,
-        api: API
+        api: API,
+        codePrefix: String,
     ) = functionInterceptor.wrap(messages.toList().toTypedArray()) {
-        inner.answerWithAutoEval(*messages, api = api)
+        inner.answerWithAutoEval(*messages, api = api, codePrefix = codePrefix)
     }
 
     override fun implement(

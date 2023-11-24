@@ -45,15 +45,18 @@ abstract class ActorTestBase<R : Any> {
 
     open fun testRun() {
         testCases.forEach { testCase ->
-            val answer = actor.answer(messages = arrayOf(
+            val messages = arrayOf(
                 ApiModel.ChatMessage(
                     role = com.simiacryptus.jopenai.ApiModel.Role.system,
                     content = actor.prompt.toContentList()
                 ),
-            ) + testCase.userMessages.toTypedArray(), api)
+            ) + testCase.userMessages.toTypedArray()
+            val answer = answer(messages)
             log.info("Answer: ${resultMapper(answer)}")
         }
     }
+
+    open fun answer(messages: Array<ApiModel.ChatMessage>): R = actor.answer(messages = messages, api)
 
     companion object {
         private val log = LoggerFactory.getLogger(ActorTestBase::class.java)

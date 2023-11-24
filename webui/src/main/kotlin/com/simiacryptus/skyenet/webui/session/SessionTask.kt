@@ -5,9 +5,9 @@ import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
 import java.util.*
 
-abstract class SessionMessage(
+abstract class SessionTask(
     private var buffer: MutableList<StringBuilder> = mutableListOf(),
-    private val spinner: String = SessionMessage.spinner
+    private val spinner: String = SessionTask.spinner
 ) {
     val currentText: String
         get() = buffer.filter { it.isNotBlank() }.joinToString("")
@@ -62,7 +62,7 @@ abstract class SessionMessage(
         add("""<img src="${save("${UUID.randomUUID()}.png", image.toPng())}" />""")
 
     companion object {
-        val log = LoggerFactory.getLogger(SessionMessage::class.java)
+        val log = LoggerFactory.getLogger(SessionTask::class.java)
 
         const val spinner =
             """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""

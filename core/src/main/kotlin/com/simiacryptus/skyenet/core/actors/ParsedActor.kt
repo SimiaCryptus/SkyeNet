@@ -3,19 +3,18 @@ package com.simiacryptus.skyenet.core.actors
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.proxy.ChatProxy
 import java.util.function.Function
 
 open class ParsedActor<T:Any>(
     val parserClass: Class<out Function<String, T>>,
     prompt: String,
-    val action: String? = null,
+    name: String? = parserClass.simpleName,
     model: ChatModels = ChatModels.GPT35Turbo,
     temperature: Double = 0.3,
 ) : BaseActor<ParsedResponse<T>>(
     prompt = prompt,
-    name = action,
+    name = name,
     model = model,
     temperature = temperature,
 ) {

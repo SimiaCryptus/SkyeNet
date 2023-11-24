@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.core.actors.record
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.actors.ParsedActor
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.core.util.FunctionWrapper
 
 class ParsedActorInterceptor<T:Any>(
@@ -12,7 +11,7 @@ class ParsedActorInterceptor<T:Any>(
 ) : ParsedActor<T>(
     parserClass = inner.parserClass,
     prompt = inner.prompt,
-    action = inner.action,
+    name = inner.name,
     model = inner.model,
     temperature = inner.temperature,
 ) {

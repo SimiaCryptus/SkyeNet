@@ -11,7 +11,6 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
-import com.simiacryptus.skyenet.webui.session.SessionMessage
 import com.simiacryptus.skyenet.webui.session.SocketManager
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

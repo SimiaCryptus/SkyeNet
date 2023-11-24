@@ -10,6 +10,7 @@ import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.core.Interpreter
 import com.simiacryptus.skyenet.core.OutputInterceptor
+import java.util.*
 import javax.script.ScriptException
 import kotlin.reflect.KClass
 
@@ -28,6 +29,7 @@ open class CodingActor(
     val autoEvaluate: Boolean = false,
     private val fixIterations: Int = 3,
     private val fixRetries: Int = 2,
+    val runtimeSymbols: Map<String, Any> = mapOf()
 ) : BaseActor<CodingActor.CodeResult>(
     prompt = "",
     name = name,
@@ -52,19 +54,21 @@ open class CodingActor(
     override val prompt: String
         get() = if (symbols.isNotEmpty()) """
             |You will translate natural language instructions into 
-            |an implementation using ${interpreter.getLanguage()} and the script context.
-            |Use ``` code blocks labeled with ${interpreter.getLanguage()} where appropriate.
-            |Defined symbols include ${symbols.keys.joinToString(", ")}.
-            |The runtime context is described below:
+            |an implementation using ${language} and the script context.
+            |Use ``` code blocks labeled with ${language} where appropriate.
             |
+            |Defined symbols include {${symbols.keys.joinToString(", ")}} described below:
+            |
+            |```${this.describer.markupLanguage}
             |${this.apiDescription}
+            |```
             |
             |${details ?: ""}
             |""".trimMargin().trim()
         else """
             |You will translate natural language instructions into 
-            |an implementation using ${interpreter.getLanguage()} and the script context.
-            |Use ``` code blocks labeled with ${interpreter.getLanguage()} where appropriate.
+            |an implementation using ${language} and the script context.
+            |Use ``` code blocks labeled with ${language} where appropriate.
             |
             |${details ?: ""}
             |""".trimMargin().trim()
@@ -77,9 +81,9 @@ open class CodingActor(
             |""".trimMargin().trim()
         }.joinToString("\n")
 
-    open val interpreter: Interpreter by lazy { interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols) }
+    open val interpreter: Interpreter by lazy { interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols + runtimeSymbols) }
 
-    protected val language: String by lazy { interpreter.getLanguage() }
+    val language: String by lazy { interpreter.getLanguage() }
 
     override fun answer(vararg questions: String, api: API): CodeResult =
         if (!autoEvaluate) answer(*chatMessages(*questions), api = api)
@@ -95,7 +99,7 @@ open class CodingActor(
         api: API
     ): CodeResult =
         if (!autoEvaluate) CodeResultImpl(*injectCodePrefix(messages, codePrefix), api = (api as OpenAIClient))
-        else answerWithAutoEval(*injectCodePrefix(messages, codePrefix), api = api).first
+        else answerWithAutoEval(*injectCodePrefix(messages, codePrefix), api = api, codePrefix=codePrefix).first
 
     open fun answerWithAutoEval(
         vararg messages: String,
@@ -105,9 +109,10 @@ open class CodingActor(
 
     open fun answerWithAutoEval(
         vararg messages: ChatMessage,
-        api: API
+        api: API,
+        codePrefix: String = ""
     ): Pair<CodeResult, ExecutionResult> {
-        var result = CodeResultImpl(*messages, api = (api as OpenAIClient))
+        var result = CodeResultImpl(*messages, api = (api as OpenAIClient), codePrefix = codePrefix)
         var lastError: Throwable? = null
         for (i in 0..fixIterations) try {
             return result to result.run()
@@ -116,7 +121,7 @@ open class CodingActor(
             result = run {
                 val respondWithCode = fixCommand(api, result.getCode(), ex, *messages, model = model)
                 val renderedResponse = getRenderedResponse(respondWithCode.second)
-                val codedInstruction = getCode(interpreter.getLanguage(), respondWithCode.second)
+                val codedInstruction = getCode(language, respondWithCode.second)
                 log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
                 log.info("Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
                 CodeResultImpl(*messages, codePrefix = codedInstruction, api = api)
@@ -125,7 +130,7 @@ open class CodingActor(
         throw RuntimeException(
             """
             |Failed to fix code. Last attempt: 
-            |```${interpreter.getLanguage().lowercase()}
+            |```${language.lowercase()}
             |${result.getCode()}
             |```
             |
@@ -150,7 +155,7 @@ open class CodingActor(
         val codeBlocks = extractCodeBlocks(response)
         for (codingAttempt in 0..fixRetries) {
             val renderedResponse = getRenderedResponse(codeBlocks)
-            val codedInstruction = getCode(interpreter.getLanguage(), codeBlocks)
+            val codedInstruction = getCode(language, codeBlocks)
             log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
             log.info("Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
             return validateAndFix(self, codedInstruction, codePrefix, api, messages, model) ?: continue
@@ -169,7 +174,7 @@ open class CodingActor(
         var workingCode = initialCode
         for (fixAttempt in 0..fixIterations) {
             try {
-                val validate = interpreter.validate((codePrefix + "\n" + workingCode).trim())
+                val validate = interpreter.validate((codePrefix + "\n" + workingCode).sortCode())
                 if (validate != null) throw validate
                 log.info("Validation succeeded")
                 (self as CodeResultImpl)._status = CodeResult.Status.Success
@@ -179,7 +184,7 @@ open class CodingActor(
                 (self as CodeResultImpl)._status = CodeResult.Status.Correcting
                 val respondWithCode = fixCommand(api, workingCode, ex, *messages, model = model)
                 val response = getRenderedResponse(respondWithCode.second)
-                workingCode = getCode(interpreter.getLanguage(), respondWithCode.second)
+                workingCode = getCode(language, respondWithCode.second)
                 log.info("Response: \n\t${response.replace("\n", "\n\t", false)}".trimMargin())
                 log.info("Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
             }
@@ -211,7 +216,7 @@ open class CodingActor(
 
     private inner class CodeResultImpl(
         vararg messages: ChatMessage,
-        codePrefix: String = "",
+        val codePrefix: String = "",
         api: OpenAIClient,
     ) : CodeResult {
         var _status = CodeResult.Status.Coding
@@ -238,7 +243,7 @@ open class CodingActor(
         @JsonIgnore
         override fun getCode(): String = impl
 
-        override fun run() = execute(getCode())
+        override fun run() = execute(codePrefix + "\n" + getCode().sortCode())
     }
 
     private fun injectCodePrefix(
@@ -361,6 +366,61 @@ open class CodingActor(
                     ""
                 }
             }
+        }
+
+        fun String.sortCode(bodyWrapper: (String) -> String = { it }): String {
+            val (imports, otherCode) = this.split("\n").partition { it.trim().startsWith("import ") }
+            return imports.distinct().sorted().joinToString("\n") + "\n\n" + bodyWrapper(otherCode.joinToString("\n"))
+        }
+
+        fun String.camelCase(locale: Locale = Locale.getDefault()): String {
+            val words = fromPascalCase().split(" ").map { it.trim() }.filter { it.isNotEmpty() }
+            return words.first().lowercase(locale) + words.drop(1).joinToString("") {
+                it.replaceFirstChar { c ->
+                    when {
+                        c.isLowerCase() -> c.titlecase(locale)
+                        else -> c.toString()
+                    }
+                }
+            }
+        }
+
+        fun String.pascalCase(locale: Locale = Locale.getDefault()): String =
+            fromPascalCase().split(" ").map { it.trim() }.filter { it.isNotEmpty() }.joinToString("") {
+                it.replaceFirstChar { c ->
+                    when {
+                        c.isLowerCase() -> c.titlecase(locale)
+                        else -> c.toString()
+                    }
+                }
+            }
+
+        // Detect changes in the case of the first letter and prepend a space
+        fun String.fromPascalCase(): String = buildString {
+            var lastChar = ' '
+            for (c in this@fromPascalCase) {
+                if (c.isUpperCase() && lastChar.isLowerCase()) append(' ')
+                append(c)
+                lastChar = c
+            }
+        }
+
+        fun String.upperSnakeCase(locale: Locale = Locale.getDefault()): String =
+            fromPascalCase().split(" ").map { it.trim() }.filter { it.isNotEmpty() }.joinToString("_") {
+                it.replaceFirstChar { c ->
+                    when {
+                        c.isLowerCase() -> c.titlecase(locale)
+                        else -> c.toString()
+                    }
+                }
+            }.uppercase(locale)
+
+        fun String.imports(): List<String> {
+            return this.split("\n").filter { it.trim().startsWith("import ") }.distinct().sorted()
+        }
+
+        fun String.stripImports(): String {
+            return this.split("\n").filter { !it.trim().startsWith("import ") }.joinToString("\n")
         }
 
     }

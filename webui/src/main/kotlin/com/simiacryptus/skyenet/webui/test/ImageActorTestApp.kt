@@ -31,7 +31,7 @@ open class ImageActorTestApp(
         ui: ApplicationInterface,
         api: API
     ) {
-        val message = ui.newMessage()
+        val message = ui.newTask()
         try {
             val actor = getSettings<Settings>(session, user)?.actor ?: actor
             message.echo(renderMarkdown(userMessage))

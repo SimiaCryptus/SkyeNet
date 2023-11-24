@@ -14,7 +14,7 @@ import java.util.*
 
 open class CodingActorTestApp(
     private val actor: CodingActor,
-    applicationName: String = "CodingActorTest_" + actor.interpreter.javaClass.simpleName,
+    applicationName: String = "CodingActorTest_" + actor.name,
     temperature: Double = 0.3,
 ) : ApplicationServer(
     applicationName = applicationName,
@@ -27,7 +27,7 @@ open class CodingActorTestApp(
         ui: ApplicationInterface,
         api: API
     ) {
-        val message = ui.newMessage()
+        val message = ui.newTask()
         try {
             message.echo(renderMarkdown(userMessage))
             val response = actor.answer(userMessage, api = api)
@@ -51,7 +51,7 @@ open class CodingActorTestApp(
             message.complete(
                 renderMarkdown(
                     """
-                    |```${actor.interpreter.getLanguage().lowercase(Locale.getDefault())}
+                    |```${actor.language.lowercase(Locale.getDefault())}
                     |${response.getCode()}
                     |```
                     |$playLink
