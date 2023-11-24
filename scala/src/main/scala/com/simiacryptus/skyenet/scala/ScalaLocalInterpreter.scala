@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.scala
 
-import com.simiacryptus.skyenet.core.Heart
+import com.simiacryptus.skyenet.core.Interpreter
 import com.simiacryptus.skyenet.scala.ScalaLocalInterpreter.log
 
 import java.nio.file.Paths
@@ -22,7 +22,7 @@ object ScalaLocalInterpreter {
 
 }
 
-class ScalaLocalInterpreter(javaDefs: java.util.Map[String, Object]) extends Heart {
+class ScalaLocalInterpreter(javaDefs: java.util.Map[String, Object]) extends Interpreter {
   val defs: Map[String, Any] = javaDefs.asInstanceOf[java.util.Map[String, Any]].asScala.toMap
   val typeTags: Map[String, Type] = javaDefs.asScala.map(x => (x._1, ScalaLocalInterpreter.getTypeTag(x._2))).toMap
 

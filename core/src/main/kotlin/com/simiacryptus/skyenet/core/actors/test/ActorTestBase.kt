@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.core.actors.test
 
+import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization
@@ -43,7 +45,12 @@ abstract class ActorTestBase<R : Any> {
 
     open fun testRun() {
         testCases.forEach { testCase ->
-            val answer = actor.answer(questions = testCase.userMessages.toTypedArray(), api)
+            val answer = actor.answer(messages = arrayOf(
+                ApiModel.ChatMessage(
+                    role = com.simiacryptus.jopenai.ApiModel.Role.system,
+                    content = actor.prompt.toContentList()
+                ),
+            ) + testCase.userMessages.toTypedArray(), api)
             log.info("Answer: ${resultMapper(answer)}")
         }
     }

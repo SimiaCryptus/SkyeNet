@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.core
 
-interface Heart {
+interface Interpreter {
 
     fun getLanguage(): String
     fun run(code: String): Any?
@@ -18,7 +18,7 @@ interface Heart {
             fun square(x: Int): Int
         }
         @JvmStatic
-        fun test(factory: java.util.function.Function<Map<String, Any>, Heart>) {
+        fun test(factory: java.util.function.Function<Map<String, Any>, Interpreter>) {
             val testImpl = object : TestInterface {
                 override fun square(x: Int): Int = x * x
             }

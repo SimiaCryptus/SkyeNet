@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
@@ -14,9 +15,9 @@ abstract class BaseActor<T>(
     val model: ChatModels = ChatModels.GPT35Turbo,
     val temperature: Double = 0.3,
 ) {
-    abstract fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): T
-    open fun response(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, model: OpenAIModel = this.model, api: API) = (api as OpenAIClient).chat(
-        com.simiacryptus.jopenai.ApiModel.ChatRequest(
+    abstract fun answer(vararg messages: ApiModel.ChatMessage, api: API): T
+    open fun response(vararg messages: ApiModel.ChatMessage, model: OpenAIModel = this.model, api: API) = (api as OpenAIClient).chat(
+        ApiModel.ChatRequest(
             messages = ArrayList(messages.toList()),
             temperature = temperature,
             model = this.model.modelName,
@@ -25,13 +26,13 @@ abstract class BaseActor<T>(
     )
     open fun answer(vararg questions: String, api: API): T = answer(*chatMessages(*questions), api = api)
 
-    open fun chatMessages(vararg questions: String) = arrayOf(
-        com.simiacryptus.jopenai.ApiModel.ChatMessage(
+    fun chatMessages(vararg questions: String) = arrayOf(
+        ApiModel.ChatMessage(
             role = com.simiacryptus.jopenai.ApiModel.Role.system,
             content = prompt.toContentList()
         ),
     ) + questions.map {
-        com.simiacryptus.jopenai.ApiModel.ChatMessage(
+        ApiModel.ChatMessage(
             role = com.simiacryptus.jopenai.ApiModel.Role.user,
             content = it.toContentList()
         )

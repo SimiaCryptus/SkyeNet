@@ -2,9 +2,9 @@ package com.simiacryptus.skyenet.core.actors.record
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel.ChatMessage
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
-import com.simiacryptus.skyenet.core.Brain
-import com.simiacryptus.skyenet.core.actors.CodeResult
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.util.FunctionWrapper
 
@@ -39,9 +39,6 @@ class CodingActorInterceptor(
         inner.response(*messages, model = model, api = api)
     }
 
-    override fun chatMessages(vararg questions: String) = functionInterceptor.wrap(questions) {
-        inner.chatMessages(*it)
-    }
 
     override fun answer(vararg questions: String, api: API) = functionInterceptor.wrap(questions) {
         inner.answer(*it, api = api)
@@ -80,23 +77,25 @@ class CodingActorInterceptor(
 
     override fun implement(
         self: CodeResult,
-        brain: Brain,
+        brain: OpenAIClient,
         messages: Array<out ChatMessage>,
-        codePrefix: String
+        codePrefix: String,
+        model: ChatModels
     ) = functionInterceptor.wrap(
         messages.toList().toTypedArray(),
         codePrefix
     ) { messages: Array<ChatMessage>,
         codePrefix: String ->
-        inner.implement(self, brain, messages, codePrefix)
+        inner.implement(self, brain, messages, codePrefix, inner.model)
     }
 
     override fun validateAndFix(
         self: CodeResult,
         initialCode: String,
         codePrefix: String,
-        brain: Brain,
-        messages: Array<out ChatMessage>
+        brain: OpenAIClient,
+        messages: Array<out ChatMessage>,
+        model: ChatModels
     ) = functionInterceptor.wrap(
         messages.toList().toTypedArray(),
         initialCode,
@@ -104,7 +103,7 @@ class CodingActorInterceptor(
     ) { messages: Array<ChatMessage>,
         initialCode: String,
         codePrefix: String ->
-        inner.validateAndFix(self, initialCode, codePrefix, brain, messages) ?: ""
+        inner.validateAndFix(self, initialCode, codePrefix, brain, messages, inner.model) ?: ""
     }
 
     override fun execute(code: String) = functionInterceptor.wrap(code) {

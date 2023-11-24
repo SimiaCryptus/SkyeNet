@@ -31,10 +31,6 @@ class SimpleActorInterceptor(
             inner.response(*messages, model = model, api = api)
     }
 
-    override fun chatMessages(vararg questions: String) = functionInterceptor.wrap(questions) {
-        inner.chatMessages(*it)
-    }
-
     override fun answer(vararg questions: String, api: API) = functionInterceptor.wrap(questions) {
         inner.answer(*it, api = api)
     }

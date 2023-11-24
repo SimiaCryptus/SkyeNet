@@ -2,7 +2,7 @@
 
 package com.simiacryptus.skyenet.kotlin
 
-import com.simiacryptus.skyenet.core.Heart
+import com.simiacryptus.skyenet.core.Interpreter
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -44,7 +44,7 @@ import kotlin.script.experimental.jvmhost.jsr223.KotlinJsr223ScriptEngineImpl
 
 open class KotlinInterpreter(
     private val defs: Map<String, Object> = HashMap<String, Object>() as Map<String, Object>
-) : Heart {
+) : Interpreter {
 
     override fun validate(code: String): Throwable? {
         val messageCollector = MessageCollectorImpl(code)

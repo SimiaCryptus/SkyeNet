@@ -24,7 +24,7 @@ open class AuthorizationManager {
         } else if (null != applicationClass) {
             val packagePath = applicationClass.`package`.name.replace('.', '/')
             val opName = operationType.name.lowercase(Locale.getDefault())
-            if (isUserAuthorized("/$packagePath/$opName.txt", user?.email)) {
+            if (isUserAuthorized("/permissions/$packagePath/$opName.txt", user?.email)) {
                 log.debug("User {} authorized for {} on {}", user, operationType, applicationClass)
                 true
             } else {

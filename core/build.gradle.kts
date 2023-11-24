@@ -46,16 +46,13 @@ dependencies {
     compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-api", version = junit_version)
     compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
 
-    compileOnlyApi(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.28.0")
     compileOnlyApi(group = "com.amazonaws", name = "aws-java-sdk", version = "1.12.587")
     compileOnlyApi(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
     compileOnlyApi(group = "ch.qos.logback", name = "logback-core", version = logback_version)
 
-    testImplementation(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.28.0")
     testImplementation(group = "com.amazonaws", name = "aws-java-sdk", version = "1.12.587")
     testImplementation(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
     testImplementation(group = "ch.qos.logback", name = "logback-core", version = logback_version)
-    //mockito
     testImplementation(group = "org.mockito", name = "mockito-core", version = "5.7.0")
 
 }

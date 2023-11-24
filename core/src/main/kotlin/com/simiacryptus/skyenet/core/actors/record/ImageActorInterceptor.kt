@@ -37,7 +37,4 @@ class ImageActorInterceptor(
         inner.answer(*it, api = api)
     }
 
-    override fun chatMessages(vararg questions: String) = functionInterceptor.wrap(questions) {
-        inner.chatMessages(*it)
-    }
 }

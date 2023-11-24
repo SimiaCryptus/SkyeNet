@@ -1,12 +1,12 @@
 package com.simiacryptus.skyenet.groovy
 
-import com.simiacryptus.skyenet.core.Heart
+import com.simiacryptus.skyenet.core.Interpreter
 import groovy.lang.GroovyShell
 import groovy.lang.Script
 import org.codehaus.groovy.control.CompilationFailedException
 import org.codehaus.groovy.control.CompilerConfiguration
 
-open class GroovyInterpreter(defs: java.util.Map<String, Object>) : Heart {
+open class GroovyInterpreter(defs: java.util.Map<String, Object>) : Interpreter {
 
     private val shell: GroovyShell
 

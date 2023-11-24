@@ -2,9 +2,9 @@
 
 package com.simiacryptus.skyenet.groovy
 
-import com.simiacryptus.skyenet.core.util.HeartTestBase
+import com.simiacryptus.skyenet.core.util.InterpreterTestBase
 
-class GroovyInterpreterTest : HeartTestBase() {
+class GroovyInterpreterTest : InterpreterTestBase() {
     override fun newInterpreter(map: java.util.Map<String,Object>) = GroovyInterpreter(map)
 
 }

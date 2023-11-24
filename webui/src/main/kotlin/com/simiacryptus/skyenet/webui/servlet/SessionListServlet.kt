@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.skyenet.core.Brain.Companion.indent
+import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.DataStorage
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
