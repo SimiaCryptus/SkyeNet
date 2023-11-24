@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization
+import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization.Companion.toChatMessage
 import com.simiacryptus.skyenet.core.actors.opt.Expectation
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
@@ -44,7 +45,7 @@ object ActorOptTest {
                         userMessages = listOf(
                             "I want to buy a book.",
                             "A history book about Napoleon.",
-                        ),
+                        ).map { it.toChatMessage() },
                         expectations = listOf(
                             Expectation.ContainsMatch("""`search\('.*?'\)`""".toRegex(), critical = false),
                             Expectation.ContainsMatch("""search\(.*?\)""".toRegex(), critical = false),
