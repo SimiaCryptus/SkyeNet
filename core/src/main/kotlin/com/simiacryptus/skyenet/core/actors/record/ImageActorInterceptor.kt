@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.core.actors.record
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.actors.ImageActor
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.core.util.FunctionWrapper
 
 class ImageActorInterceptor(
@@ -11,7 +10,7 @@ class ImageActorInterceptor(
     private val functionInterceptor: FunctionWrapper,
 ) : ImageActor(
     prompt = inner.prompt,
-    action = inner.action,
+    name = inner.name,
     textModel = inner.model,
     imageModel = inner.imageModel,
     temperature = inner.temperature,
