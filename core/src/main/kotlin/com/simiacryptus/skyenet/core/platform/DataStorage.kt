@@ -29,12 +29,12 @@ open class DataStorage(
         validateSessionId(session)
         val messageDir = File(this.getSessionDir(user, session), MESSAGE_DIR)
         val messages = LinkedHashMap<String, String>()
-        log.debug("Loading messages for {}: {}", session, messageDir.absolutePath)
+        //log.debug("Loading messages for {}: {}", session, messageDir.absolutePath)
         messageDir.listFiles()?.sortedBy { it.lastModified() }?.forEach { file ->
             val message = JsonUtil.objectMapper().readValue(file, String::class.java)
             messages[file.nameWithoutExtension] = message
         }
-        log.debug("Loaded {} messages for {}", messages.size, session)
+        //log.debug("Loaded {} messages for {}", messages.size, session)
         return messages
     }
 
@@ -52,17 +52,17 @@ open class DataStorage(
                     else -> throw IllegalArgumentException("Invalid session ID: $session")
                 }
                 val dateDir = File(root, parts[1])
-                log.debug("Date Dir for {}: {}", session, dateDir.absolutePath)
+                //log.debug("Date Dir for {}: {}", session, dateDir.absolutePath)
                 val sessionDir = File(dateDir, parts[2])
-                log.debug("Instance Dir for {}: {}", session, sessionDir.absolutePath)
+                //log.debug("Instance Dir for {}: {}", session, sessionDir.absolutePath)
                 sessionDir
             }
 
             2 -> {
                 val dateDir = File(dataDir, parts[0])
-                log.debug("Date Dir for {}: {}", session, dateDir.absolutePath)
+                //log.debug("Date Dir for {}: {}", session, dateDir.absolutePath)
                 val sessionDir = File(dateDir, parts[1])
-                log.debug("Instance Dir for {}: {}", session, sessionDir.absolutePath)
+                //log.debug("Instance Dir for {}: {}", session, sessionDir.absolutePath)
                 sessionDir
             }
 
@@ -79,10 +79,10 @@ open class DataStorage(
         validateSessionId(session)
         val userMessage = messages(user, session).entries.minByOrNull { it.key.lastModified() }?.value
         return if (null != userMessage) {
-            log.debug("Session {}: {}", session, userMessage)
+            //log.debug("Session {}: {}", session, userMessage)
             userMessage
         } else {
-            log.debug("Session {}: No messages", session)
+            //log.debug("Session {}: No messages", session)
             session.sessionId
         }
     }
@@ -96,7 +96,7 @@ open class DataStorage(
         return if (null != file) {
             Date(file.lastModified())
         } else {
-            log.debug("Session {}: No messages", session)
+            //log.debug("Session {}: No messages", session)
             null
         }
     }
@@ -110,12 +110,12 @@ open class DataStorage(
             val fileText = messageFile.readText()
             val split = fileText.split("<p>")
             if (split.size < 2) {
-                log.debug("Session {}: No messages", session)
+                //log.debug("Session {}: No messages", session)
                 messageFile to ""
             } else {
                 val stringList = split[1].split("</p>")
                 if (stringList.isEmpty()) {
-                    log.debug("Session {}: No messages", session)
+                    //log.debug("Session {}: No messages", session)
                     messageFile to ""
                 } else {
                     messageFile to stringList.first()
@@ -152,7 +152,7 @@ open class DataStorage(
     ) {
         validateSessionId(session)
         val file = File(File(this.getSessionDir(user, session), MESSAGE_DIR), "$messageId.json")
-        log.debug("Updating message for {} / {}: {}", session, messageId, file.absolutePath)
+        //log.debug("Updating message for {} / {}: {}", session, messageId, file.absolutePath)
         file.parentFile.mkdirs()
         JsonUtil.objectMapper().writeValue(file, value)
     }
@@ -165,7 +165,7 @@ open class DataStorage(
                 (listFiles?.size ?: 0) > 0
             }
         }?.sortedBy { it.lastModified() } ?: listOf()
-        log.debug("Sessions: {}", files.map { it.parentFile.name + "-" + it.name })
+        //log.debug("Sessions: {}", files.map { it.parentFile.name + "-" + it.name })
         return files.map { it.parentFile.name + "-" + it.name }
     }
 
