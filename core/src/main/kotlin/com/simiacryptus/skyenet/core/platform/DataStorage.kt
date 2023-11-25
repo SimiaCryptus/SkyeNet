@@ -189,14 +189,14 @@ open class DataStorage(
         fun newGlobalID(): Session {
             val uuid = UUID.randomUUID().toString().split("-").first()
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
-            log.debug("New ID: $yyyyMMdd-$uuid")
+            //log.debug("New ID: $yyyyMMdd-$uuid")
             return Session("G-$yyyyMMdd-$uuid")
         }
 
         fun newUserID(): Session {
             val uuid = UUID.randomUUID().toString().split("-").first()
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
-            log.debug("New ID: $yyyyMMdd-$uuid")
+            //log.debug("New ID: $yyyyMMdd-$uuid")
             return Session("U-$yyyyMMdd-$uuid")
         }
 
