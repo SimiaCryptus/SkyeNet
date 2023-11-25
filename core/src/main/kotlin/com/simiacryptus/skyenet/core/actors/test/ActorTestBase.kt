@@ -8,20 +8,20 @@ import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 
-abstract class ActorTestBase<R : Any> {
+abstract class ActorTestBase<I: Any, R : Any> {
 
     open val api = OpenAIClient(logLevel = Level.DEBUG)
 
     abstract val testCases: List<ActorOptimization.TestCase>
-    abstract val actor: BaseActor<R>
-    abstract fun actorFactory(prompt: String): BaseActor<R>
-    abstract fun getPrompt(actor: BaseActor<R>): String
+    abstract val actor: BaseActor<I, R>
+    abstract fun actorFactory(prompt: String): BaseActor<I, R>
+    abstract fun getPrompt(actor: BaseActor<I, R>): String
     abstract fun resultMapper(result: R): String
 
     open fun opt(
-        actor: BaseActor<R> = this.actor,
+        actor: BaseActor<I, R> = this.actor,
         testCases: List<ActorOptimization.TestCase> = this.testCases,
-        actorFactory: (String) -> BaseActor<R> = this::actorFactory,
+        actorFactory: (String) -> BaseActor<I, R> = this::actorFactory,
         resultMapper: (R) -> String = this::resultMapper
     ) {
         ActorOptimization(
@@ -30,7 +30,7 @@ abstract class ActorTestBase<R : Any> {
             populationSize = 1,
             generations = 1,
             selectionSize = 1,
-            actorFactory = actorFactory,
+            actorFactory = actorFactory as (String) -> BaseActor<List<String>, R>,
             resultMapper = resultMapper,
             prompts = listOf(
                 getPrompt(actor),
@@ -56,7 +56,8 @@ abstract class ActorTestBase<R : Any> {
         }
     }
 
-    open fun answer(messages: Array<ApiModel.ChatMessage>): R = actor.answer(messages = messages, api)
+    open fun answer(messages: Array<ApiModel.ChatMessage>): R = actor.answer(*messages,
+        input = (messages.map { it.content?.first()?.text }) as I, api=api)
 
     companion object {
         private val log = LoggerFactory.getLogger(ActorTestBase::class.java)

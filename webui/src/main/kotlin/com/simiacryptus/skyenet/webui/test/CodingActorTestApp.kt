@@ -30,7 +30,7 @@ open class CodingActorTestApp(
         val message = ui.newTask()
         try {
             message.echo(renderMarkdown(userMessage))
-            val response = actor.answer(userMessage, api = api)
+            val response = actor.answer(CodingActor.CodeRequest(listOf(userMessage)), api = api)
             val canPlay = ApplicationServices.authorizationManager.isAuthorized(
                 this::class.java,
                 user,
@@ -39,7 +39,7 @@ open class CodingActorTestApp(
             val playLink = if (!canPlay) "" else {
                 ui.hrefLink("▶", "href-link play-button") {
                     message.add("Running...")
-                    val result = response.run()
+                    val result = response.result()
                     message.complete(
                         """
                         |<pre>${result.resultValue}</pre>

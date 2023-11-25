@@ -12,13 +12,13 @@ import com.simiacryptus.skyenet.core.util.JsonFunctionRecorder
 import java.io.File
 
 open class ActorSystem<T:Enum<*>>(
-    private val actors: Map<T, BaseActor<*>>,
+    private val actors: Map<T, BaseActor<*,*>>,
     val dataStorage: DataStorage,
     val user: User?,
     val session: Session
 ) {
     private val sessionDir = dataStorage.getSessionDir(user, session)
-    fun getActor(actor: T): BaseActor<*> {
+    fun getActor(actor: T): BaseActor<*,*> {
         val wrapper = getWrapper(actor.name)
         return when (val baseActor = actors[actor]) {
             null -> throw RuntimeException("No actor for $actor")

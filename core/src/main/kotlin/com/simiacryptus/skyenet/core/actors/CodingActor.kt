@@ -26,21 +26,23 @@ open class CodingActor(
     model: ChatModels = ChatModels.GPT35Turbo,
     val fallbackModel: ChatModels = ChatModels.GPT4Turbo,
     temperature: Double = 0.1,
-    val autoEvaluate: Boolean = false,
     private val fixIterations: Int = 3,
     private val fixRetries: Int = 2,
     val runtimeSymbols: Map<String, Any> = mapOf()
-) : BaseActor<CodingActor.CodeResult>(
+) : BaseActor<CodingActor.CodeRequest, CodingActor.CodeResult>(
     prompt = "",
     name = name,
     model = model,
     temperature = temperature,
 ) {
+    val interpreter: Interpreter get() = interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols + runtimeSymbols)
 
-    data class ExecutionResult(
-        val resultValue: String,
-        val resultOutput: String
+    data class CodeRequest(
+        val messages: List<String>,
+        val codePrefix: String = "",
+        val autoEvaluate: Boolean = false
     )
+
     interface CodeResult {
         enum class Status {
             Coding, Correcting, Success, Failure
@@ -48,8 +50,13 @@ open class CodingActor(
 
         fun getStatus(): Status
         fun getCode(): String
-        fun run(): ExecutionResult
+        fun result(): ExecutionResult
     }
+
+    data class ExecutionResult(
+        val resultValue: String,
+        val resultOutput: String
+    )
 
     override val prompt: String
         get() = if (symbols.isNotEmpty()) """
@@ -81,41 +88,49 @@ open class CodingActor(
             |""".trimMargin().trim()
         }.joinToString("\n")
 
-    open val interpreter: Interpreter by lazy { interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols + runtimeSymbols) }
 
     val language: String by lazy { interpreter.getLanguage() }
 
-    override fun answer(vararg questions: String, api: API): CodeResult =
-        if (!autoEvaluate) answer(*chatMessages(*questions), api = api)
-        else answerWithAutoEval(*chatMessages(*questions), api = api).first
+    override fun chatMessages(questions: CodeRequest): Array<ChatMessage> {
+        //injectCodePrefix
+        var chatMessages = arrayOf(
+            ChatMessage(
+                role = Role.system,
+                content = prompt.toContentList()
+            ),
+        ) + questions.messages.map {
+            ChatMessage(
+                role = Role.user,
+                content = it.toContentList()
+            )
+        }
+        if (questions.codePrefix.isNotBlank()) {
+            chatMessages = injectCodePrefix(chatMessages, questions.codePrefix)
+        }
+        return chatMessages
 
-    override fun answer(vararg messages: ChatMessage, api: API): CodeResult =
-        if (!autoEvaluate) CodeResultImpl(*messages, api = (api as OpenAIClient))
-        else answerWithAutoEval(*messages, api = api).first
+    }
 
-    open fun answerWithPrefix(
+    fun answerWithPrefix(
         codePrefix: String,
         vararg messages: ChatMessage,
         api: API
-    ): CodeResult =
-        if (!autoEvaluate) CodeResultImpl(*injectCodePrefix(messages, codePrefix), api = (api as OpenAIClient))
-        else answerWithAutoEval(*injectCodePrefix(messages, codePrefix), api = api, codePrefix=codePrefix).first
+    ): CodeResult = answer(CodeRequest(
+        messages = messages.map { it.content?.first()?.text!! }.toList(),
+        codePrefix = codePrefix
+    ), api = api)
 
-    open fun answerWithAutoEval(
-        vararg messages: String,
-        api: API,
-        codePrefix: String = ""
-    ) = answerWithAutoEval(*injectCodePrefix(chatMessages(*messages), codePrefix), api = api)
-
-    open fun answerWithAutoEval(
+    override fun answer(
         vararg messages: ChatMessage,
+        input: CodeRequest,
         api: API,
-        codePrefix: String = ""
-    ): Pair<CodeResult, ExecutionResult> {
-        var result = CodeResultImpl(*messages, api = (api as OpenAIClient), codePrefix = codePrefix)
+    ): CodeResult {
+        var result = CodeResultImpl(*messages, api = (api as OpenAIClient), codePrefix = input.codePrefix)
+        if(!input.autoEvaluate) return result
         var lastError: Throwable? = null
         for (i in 0..fixIterations) try {
-            return result to result.run()
+            result.result()
+            return result
         } catch (ex: Throwable) {
             lastError = ex
             result = run {
@@ -123,8 +138,8 @@ open class CodingActor(
                 val renderedResponse = getRenderedResponse(respondWithCode.second)
                 val codedInstruction = getCode(language, respondWithCode.second)
                 log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
-                log.info("Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
-                CodeResultImpl(*messages, codePrefix = codedInstruction, api = api)
+                log.info("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
+                CodeResultImpl(*messages, codePrefix = input.codePrefix, api = api, givenCode = codedInstruction)
             }
         }
         throw RuntimeException(
@@ -138,32 +153,12 @@ open class CodingActor(
             |```
             |${lastError?.message}
             |```
-            |""".trimMargin().trim()
+            |""".trimMargin().trim(), lastError
         )
     }
 
-    open fun implement(
-        self: CodeResult,
-        api: OpenAIClient,
-        messages: Array<out ChatMessage>,
-        codePrefix: String,
-        model: ChatModels
-    ): String {
-        var request = ChatRequest()
-        request = request.copy(messages = ArrayList(messages.toList()))
-        val response = chat(api, request, this.model)
-        val codeBlocks = extractCodeBlocks(response)
-        for (codingAttempt in 0..fixRetries) {
-            val renderedResponse = getRenderedResponse(codeBlocks)
-            val codedInstruction = getCode(language, codeBlocks)
-            log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
-            log.info("Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
-            return validateAndFix(self, codedInstruction, codePrefix, api, messages, model) ?: continue
-        }
-        return ""
-    }
 
-    open fun validateAndFix(
+    private fun validateAndFix(
         self: CodeResult,
         initialCode: String,
         codePrefix: String,
@@ -186,7 +181,7 @@ open class CodingActor(
                 val response = getRenderedResponse(respondWithCode.second)
                 workingCode = getCode(language, respondWithCode.second)
                 log.info("Response: \n\t${response.replace("\n", "\n\t", false)}".trimMargin())
-                log.info("Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
+                log.info("New Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
             }
         }
         return null
@@ -218,13 +213,14 @@ open class CodingActor(
         vararg messages: ChatMessage,
         val codePrefix: String = "",
         api: OpenAIClient,
+        val givenCode: String? = null,
     ) : CodeResult {
         var _status = CodeResult.Status.Coding
-        override fun getStatus(): CodeResult.Status {
-            return _status
-        }
 
-        private val impl by lazy {
+        override fun getStatus() = _status
+
+        private val _code by lazy {
+            if(null != givenCode) return@lazy givenCode
             var codedInstruction = implement(
                 this, api, messages, codePrefix = codePrefix, model
             )
@@ -239,11 +235,31 @@ open class CodingActor(
             }
             codedInstruction
         }
+        private fun implement(
+            self: CodeResult,
+            api: OpenAIClient,
+            messages: Array<out ChatMessage>,
+            codePrefix: String,
+            model: ChatModels
+        ): String {
+            val request = ChatRequest(messages = ArrayList(messages.toList()))
+            val response = chat(api, request, model)
+            val codeBlocks = extractCodeBlocks(response)
+            for (codingAttempt in 0..fixRetries) {
+                val renderedResponse = getRenderedResponse(codeBlocks)
+                val codedInstruction = getCode(language, codeBlocks)
+                log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
+                log.info("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
+                return validateAndFix(self, codedInstruction, codePrefix, api, messages, model) ?: continue
+            }
+            return ""
+        }
 
         @JsonIgnore
-        override fun getCode(): String = impl
+        override fun getCode(): String = _code
 
-        override fun run() = execute(codePrefix + "\n" + getCode().sortCode())
+        private val executionResult by lazy { execute((codePrefix + "\n" + getCode()).sortCode()) }
+        override fun result() = executionResult
     }
 
     private fun injectCodePrefix(
@@ -283,7 +299,8 @@ open class CodingActor(
                                 |Correct the code and try again.
                                 |""".trimMargin().trim().toContentList()
                     )
-                ))
+                )
+            )
         )
         val response = chat(api, request, model)
         val codeBlocks = extractCodeBlocks(response)
@@ -426,4 +443,3 @@ open class CodingActor(
     }
 
 }
-

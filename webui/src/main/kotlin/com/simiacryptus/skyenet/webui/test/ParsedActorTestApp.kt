@@ -28,7 +28,7 @@ open class ParsedActorTestApp<T : Any>(
         val message = ui.newTask()
         try {
             message.echo(renderMarkdown(userMessage))
-            val response = actor.answer(userMessage, api = api)
+            val response = actor.answer(listOf(userMessage), api = api)
             message.complete(
                 renderMarkdown(
                     """

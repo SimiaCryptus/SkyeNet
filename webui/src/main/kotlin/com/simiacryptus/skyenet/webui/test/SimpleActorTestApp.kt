@@ -35,7 +35,7 @@ open class SimpleActorTestApp(
         try {
             val actor = getSettings<Settings>(session, user)?.actor ?: actor
             message.echo(renderMarkdown(userMessage))
-            val response = actor.answer(userMessage, api = api)
+            val response = actor.answer(listOf(userMessage), api = api)
             message.complete(renderMarkdown(response))
         } catch (e: Throwable) {
             log.warn("Error", e)

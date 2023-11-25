@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.ref.WeakReference
 import java.lang.reflect.Proxy
+import java.net.URL
+import java.net.URLClassLoader
 import java.util.*
 import java.util.Map
 import javax.script.Bindings
@@ -34,10 +36,7 @@ import kotlin.script.experimental.api.with
 import kotlin.script.experimental.host.ScriptDefinition
 import kotlin.script.experimental.jsr223.KOTLIN_JSR223_RESOLVE_FROM_CLASSLOADER_PROPERTY
 import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScript
-import kotlin.script.experimental.jvm.JvmDependencyFromClassLoader
-import kotlin.script.experimental.jvm.JvmScriptCompilationConfigurationBuilder
-import kotlin.script.experimental.jvm.jvm
-import kotlin.script.experimental.jvm.updateClasspath
+import kotlin.script.experimental.jvm.*
 import kotlin.script.experimental.jvm.util.scriptCompilationClasspathFromContext
 import kotlin.script.experimental.jvmhost.createJvmScriptDefinitionFromTemplate
 import kotlin.script.experimental.jvmhost.jsr223.KotlinJsr223ScriptEngineImpl
@@ -45,6 +44,7 @@ import kotlin.script.experimental.jvmhost.jsr223.KotlinJsr223ScriptEngineImpl
 open class KotlinInterpreter(
     private val defs: Map<String, Object> = HashMap<String, Object>() as Map<String, Object>
 ) : Interpreter {
+    override fun symbols() = defs as kotlin.collections.Map<String, Any>
 
     override fun validate(code: String): Throwable? {
         val messageCollector = MessageCollectorImpl(code)
@@ -124,33 +124,18 @@ open class KotlinInterpreter(
 
     protected open fun jvmCompilerArguments(code: String): K2JVMCompilerArguments {
         val arguments = K2JVMCompilerArguments()
-        //arguments.fragmentSources = arrayOf(tempFile.absolutePath)
-//        arguments.allowNoSourceFiles = false
         arguments.expression = code
         arguments.classpath = System.getProperty("java.class.path")
-//        arguments.compileJava = true
-//        arguments.allowAnyScriptsInSourceRoots = true
-//        arguments.allowUnstableDependencies = false
-//        arguments.checkPhaseConditions = true
         arguments.enableDebugMode = true
-//        arguments.enableSignatureClashChecks = true
         arguments.extendedCompilerChecks = true
-//        arguments.linkViaSignatures = true
         arguments.reportOutputFiles = true
         arguments.moduleName = "KotlinInterpreter"
         arguments.noOptimize = true
-//        arguments.noReflect = true
         arguments.script = true
         arguments.validateIr = true
         arguments.validateBytecode = true
         arguments.verbose = true
-//        arguments.javaParameters = true
         arguments.useTypeTable = true
-//        arguments.useJavac = true
-//        arguments.useFirExtendedCheckers = true
-//        arguments.destination = "kotlinBuild"
-//        File(arguments.destination).mkdirs()
-
         return arguments
     }
 
@@ -174,6 +159,7 @@ open class KotlinInterpreter(
         updateClasspath(classPath)
     }
 
+
     protected open val scriptEngineFactory by lazy { KotlinScriptEngineFactory() }
 
     inner class KotlinScriptEngineFactory : KotlinJsr223JvmScriptEngineFactoryBase() {
@@ -188,7 +174,11 @@ open class KotlinInterpreter(
                     }
                 }
             },
-            scriptDefinition.evaluationConfiguration
+            scriptDefinition.evaluationConfiguration.with {
+                jvm {
+                    set(baseClassLoader, Thread.currentThread().contextClassLoader.isolatedClassLoader())
+                }
+            }
         ) {
             ScriptArgsWithTypes(
                 arrayOf(it.getBindings(ScriptContext.ENGINE_SCOPE).orEmpty()),
@@ -218,7 +208,7 @@ open class KotlinInterpreter(
                 }
             }
             throw RuntimeException(
-                errorMessage(code, lineNumber, column, ex.message ?: ""), ex
+                errorMessage(wrappedCode, lineNumber, column, ex.message ?: ""), ex
             )
         }
     }
@@ -261,6 +251,8 @@ open class KotlinInterpreter(
                 |  ${code.split("\n")[line - 1]}
                 |  ${" ".repeat(column - 1) + "^"}
                 """.trimMargin().trim()
+
+        fun ClassLoader.isolatedClassLoader() = URLClassLoader(arrayOf<URL>(), this)
     }
 
     override fun getLanguage(): String {
