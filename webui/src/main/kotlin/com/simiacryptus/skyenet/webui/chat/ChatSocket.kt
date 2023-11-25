@@ -11,7 +11,7 @@ class ChatSocket(
 
     override fun onWebSocketConnect(session: Session) {
         super.onWebSocketConnect(session)
-        log.debug("{} - Socket connected: {}", session, session.remote)
+        //log.debug("{} - Socket connected: {}", session, session.remote)
         sessionState.addSocket(this)
         sessionState.getReplay().forEach {
             try {

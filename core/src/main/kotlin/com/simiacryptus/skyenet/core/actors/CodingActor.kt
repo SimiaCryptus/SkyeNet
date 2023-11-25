@@ -111,15 +111,6 @@ open class CodingActor(
 
     }
 
-    fun answerWithPrefix(
-        codePrefix: String,
-        vararg messages: ChatMessage,
-        api: API
-    ): CodeResult = answer(CodeRequest(
-        messages = messages.map { it.content?.first()?.text!! }.toList(),
-        codePrefix = codePrefix
-    ), api = api)
-
     override fun answer(
         vararg messages: ChatMessage,
         input: CodeRequest,
@@ -142,7 +133,7 @@ open class CodingActor(
                 CodeResultImpl(*messages, codePrefix = input.codePrefix, api = api, givenCode = codedInstruction)
             }
         }
-        throw RuntimeException(
+        throw FailedToImplementException(lastError,
             """
             |Failed to fix code. Last attempt: 
             |```${language.lowercase()}
@@ -153,7 +144,7 @@ open class CodingActor(
             |```
             |${lastError?.message}
             |```
-            |""".trimMargin().trim(), lastError
+            |""".trimMargin().trim(), result.getCode()
         )
     }
 
@@ -165,7 +156,7 @@ open class CodingActor(
         api: OpenAIClient,
         messages: Array<out ChatMessage>,
         model: ChatModels
-    ): String? {
+    ): String {
         var workingCode = initialCode
         for (fixAttempt in 0..fixIterations) {
             try {
@@ -175,6 +166,15 @@ open class CodingActor(
                 (self as CodeResultImpl)._status = CodeResult.Status.Success
                 return workingCode
             } catch (ex: Throwable) {
+                if(fixAttempt == fixIterations) throw FailedToImplementException(ex, """
+                    |Failed to fix code:
+                    |
+                    |```${language.lowercase()}
+                    |${workingCode}
+                    |```
+                    |
+                    |${ex.message}
+                    """.trimMargin().trim(), workingCode)
                 log.info("Validation failed - ${ex.message}")
                 (self as CodeResultImpl)._status = CodeResult.Status.Correcting
                 val respondWithCode = fixCommand(api, workingCode, ex, *messages, model = model)
@@ -184,7 +184,7 @@ open class CodingActor(
                 log.info("New Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
             }
         }
-        return null
+        throw FailedToImplementException()
     }
 
     open fun execute(code: String): ExecutionResult {
@@ -221,20 +221,26 @@ open class CodingActor(
 
         private val _code by lazy {
             if(null != givenCode) return@lazy givenCode
-            var codedInstruction = implement(
-                this, api, messages, codePrefix = codePrefix, model
-            )
-            if (_status != CodeResult.Status.Success && fallbackModel != model) {
-                codedInstruction = implement(
-                    this, api, messages, codePrefix = codePrefix, fallbackModel
-                )
-            }
-            if (_status != CodeResult.Status.Success) {
-                log.info("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
-                _status = CodeResult.Status.Failure
+            val codedInstruction = try {
+                implement(this, api, messages, codePrefix = codePrefix, model)
+            } catch (ex: FailedToImplementException) {
+                if (fallbackModel != model) {
+                    try {
+                        implement(this, api, messages, codePrefix = codePrefix, fallbackModel)
+                    } catch (ex: FailedToImplementException) {
+                        log.info("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
+                        _status = CodeResult.Status.Failure
+                        throw ex
+                    }
+                } else {
+                    log.info("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
+                    _status = CodeResult.Status.Failure
+                    throw ex
+                }
             }
             codedInstruction
         }
+
         private fun implement(
             self: CodeResult,
             api: OpenAIClient,
@@ -246,13 +252,19 @@ open class CodingActor(
             val response = chat(api, request, model)
             val codeBlocks = extractCodeBlocks(response)
             for (codingAttempt in 0..fixRetries) {
-                val renderedResponse = getRenderedResponse(codeBlocks)
-                val codedInstruction = getCode(language, codeBlocks)
-                log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
-                log.info("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
-                return validateAndFix(self, codedInstruction, codePrefix, api, messages, model) ?: continue
+                try {
+                    val renderedResponse = getRenderedResponse(codeBlocks)
+                    val codedInstruction = getCode(language, codeBlocks)
+                    log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
+                    log.info("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
+                    return validateAndFix(self, codedInstruction, codePrefix, api, messages, model)
+                } catch (ex: FailedToImplementException) {
+                    if (codingAttempt == fixRetries) throw ex
+                    log.info("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
+                    _status = CodeResult.Status.Correcting
+                }
             }
-            return ""
+            throw FailedToImplementException()
         }
 
         @JsonIgnore
@@ -442,4 +454,9 @@ open class CodingActor(
 
     }
 
+    class FailedToImplementException(
+        cause: Throwable? = null,
+        message: String = "Failed to implement",
+        val code: String? = null
+    ) : RuntimeException(message, cause)
 }
