@@ -1,12 +1,12 @@
 package com.simiacryptus.skyenet.core.util
 
-import com.simiacryptus.skyenet.core.Heart
+import com.simiacryptus.skyenet.core.Interpreter
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.Map
 
-abstract class HeartTestBase {
+abstract class InterpreterTestBase {
 
     @Test
     fun `test run with valid code`() {
@@ -87,5 +87,5 @@ abstract class HeartTestBase {
         assertThrows<Exception> { with(interpreter.validate("x * y")) { throw this!! } }
     }
 
-    abstract fun newInterpreter(map: Map<String, Object>): Heart
+    abstract fun newInterpreter(map: Map<String, Object>): Interpreter
 }

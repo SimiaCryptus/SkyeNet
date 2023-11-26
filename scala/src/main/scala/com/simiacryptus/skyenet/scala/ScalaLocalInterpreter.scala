@@ -1,11 +1,12 @@
 package com.simiacryptus.skyenet.scala
 
-import com.simiacryptus.skyenet.core.Heart
+import com.simiacryptus.skyenet.core.Interpreter
 import com.simiacryptus.skyenet.scala.ScalaLocalInterpreter.log
 
 import java.nio.file.Paths
+import java.util
 import java.util.function.Supplier
-import scala.jdk.CollectionConverters.MapHasAsScala
+import scala.jdk.CollectionConverters.{MapHasAsJava, MapHasAsScala}
 import scala.reflect.internal.util.Position
 import scala.reflect.runtime.universe._
 import scala.tools.nsc.Settings
@@ -22,7 +23,7 @@ object ScalaLocalInterpreter {
 
 }
 
-class ScalaLocalInterpreter(javaDefs: java.util.Map[String, Object]) extends Heart {
+class ScalaLocalInterpreter(javaDefs: java.util.Map[String, Object]) extends Interpreter {
   val defs: Map[String, Any] = javaDefs.asInstanceOf[java.util.Map[String, Any]].asScala.toMap
   val typeTags: Map[String, Type] = javaDefs.asScala.map(x => (x._1, ScalaLocalInterpreter.getTypeTag(x._2))).toMap
 
@@ -147,5 +148,9 @@ class ScalaLocalInterpreter(javaDefs: java.util.Map[String, Object]) extends Hea
   override def wrapCode(code: String): String = code
 
   override def wrapExecution[T](fn: Supplier[T]): T = fn.get()
+
+  override def symbols(): util.Map[String, AnyRef] = defs.map { t =>
+    (t._1, t._2.asInstanceOf[AnyRef])
+  }.asJava
 
 }

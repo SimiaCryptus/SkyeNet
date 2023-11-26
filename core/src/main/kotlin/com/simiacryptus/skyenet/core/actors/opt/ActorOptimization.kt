@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.core.actors.opt
 
+import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModels
@@ -28,15 +30,15 @@ open class ActorOptimization(
 ) {
 
     data class TestCase(
-        val userMessages: List<String>,
+        val userMessages: List<ApiModel.ChatMessage>,
         val expectations: List<Expectation>,
         val retries: Int = 3
     )
 
-    open fun <T:Any> runGeneticGenerations(
+    open fun <I:List<String>,T:Any> runGeneticGenerations(
         prompts: List<String>,
         testCases: List<TestCase>,
-        actorFactory: (String) -> BaseActor<T>,
+        actorFactory: (String) -> BaseActor<I, T>,
         resultMapper: (T) -> String,
         selectionSize: Int = defaultSelectionSize(prompts),
         populationSize: Int = defaultPositionSize(selectionSize, prompts),
@@ -46,7 +48,13 @@ open class ActorOptimization(
         for (generation in 0..generations) {
             val scores = topPrompts.map { prompt ->
                 prompt to testCases.map { testCase ->
-                    val answer = actorFactory(prompt).answer(*testCase.userMessages.toTypedArray<String>(), api = api)
+                    val actor = actorFactory(prompt)
+                    val answer = actor.answer(*(listOf(
+                        ApiModel.ChatMessage(
+                            role = ApiModel.Role.system,
+                            content = actor.prompt.toContentList()
+                        ),
+                    ) + testCase.userMessages).toTypedArray(), input = listOf(actor.prompt) as I, api = api)
                     testCase.expectations.map { it.score(api, resultMapper(answer)) }.average()
                 }.average()
             }
@@ -188,6 +196,9 @@ open class ActorOptimization(
 
     companion object {
         private val log = LoggerFactory.getLogger(ActorOptimization::class.java)
+        fun String.toChatMessage(role: ApiModel.Role = ApiModel.Role.user) = ApiModel.ChatMessage(
+            role = role, content = this.toContentList()
+        )
     }
 
 }

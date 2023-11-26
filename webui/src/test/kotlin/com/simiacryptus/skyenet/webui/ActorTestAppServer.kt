@@ -47,9 +47,9 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
             ""
         )
         ApplicationServices.authenticationManager = object : AuthenticationManager() {
-            override fun getUser(sessionId: String?) = mockUser
+            override fun getUser(accessToken: String?) = mockUser
             override fun containsUser(value: String) = true
-            override fun putUser(sessionId: String, user: User) = throw UnsupportedOperationException()
+            override fun putUser(accessToken: String, user: User) = throw UnsupportedOperationException()
         }
         ApplicationServices.authorizationManager = object : AuthorizationManager() {
             override fun isAuthorized(

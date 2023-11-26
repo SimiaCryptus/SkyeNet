@@ -2,12 +2,12 @@
 
 package com.simiacryptus.skyenet.kotlin
 
-import com.simiacryptus.skyenet.core.util.HeartTestBase
+import com.simiacryptus.skyenet.core.util.InterpreterTestBase
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.util.Map
 
-class KotlinInterpreterTest : HeartTestBase() {
+class KotlinInterpreterTest : InterpreterTestBase() {
 
     override fun newInterpreter(map: Map<String, Object>) = KotlinInterpreter(map)
 

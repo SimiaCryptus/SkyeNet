@@ -6,10 +6,8 @@ import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
-import java.net.URL
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.io.path.Path
 
 abstract class SocketManagerBase(
     protected val session: Session,
@@ -45,20 +43,18 @@ abstract class SocketManagerBase(
         }
     }
 
-    fun newMessage(
-        operationID: String = randomID(),
-        spinner: String = SessionMessage.spinner,
+    fun newTask(
         cancelable: Boolean = false
-    ): SessionMessage {
-        var responseContents = divInitializer(operationID, cancelable)
+    ): SessionTask {
+        var responseContents = divInitializer(randomID(), cancelable)
         send(responseContents)
-        return SessionMessageImpl(responseContents, spinner)
+        return SessionTaskImpl(responseContents, SessionTask.spinner)
     }
 
-    inner class SessionMessageImpl(
+    inner class SessionTaskImpl(
         responseContents: String,
-        spinner: String = SessionMessage.spinner
-    ) : SessionMessage(mutableListOf(StringBuilder(responseContents)), spinner) {
+        spinner: String = SessionTask.spinner
+    ) : SessionTask(mutableListOf(StringBuilder(responseContents)), spinner) {
         override fun send(html: String) = this@SocketManagerBase.send(html)
         override fun save(file: String, data: ByteArray): String {
             dataStorage?.getSessionDir(user, session)?.let { dir ->

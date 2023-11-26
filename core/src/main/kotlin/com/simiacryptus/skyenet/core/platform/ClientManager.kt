@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.ClientUtil
 import com.simiacryptus.jopenai.OpenAIClient
 
 import com.simiacryptus.jopenai.models.OpenAIModel
+import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import java.io.File
 
@@ -33,12 +34,19 @@ open class ClientManager {
 
     protected open fun createClient(
         session: Session, user: User?, logfile: File, key: String? = ClientUtil.keyTxt
-    ): OpenAIClient? = if (key.isNullOrBlank()) null else object : OpenAIClient(
+    ): OpenAIClient? = if (key.isNullOrBlank()) null else MonitoredClient(key, logfile, session, user)
+
+    inner class MonitoredClient(
+        key: String,
+        logfile: File,
+        private val session: Session,
+        private val user: User?
+    ) : OpenAIClient(
         key = key,
         logLevel = Level.DEBUG,
         logStreams = mutableListOf(
-            logfile.outputStream()?.buffered()
-        ).filterNotNull().toMutableList(),
+            logfile.outputStream().buffered()
+        ),
     ) {
         override fun incrementTokens(model: OpenAIModel?, tokens: ApiModel.Usage) {
             ApplicationServices.usageManager.incrementUsage(session, user, model!!, tokens)
@@ -46,5 +54,5 @@ open class ClientManager {
         }
     }
 
-    private val log = org.slf4j.LoggerFactory.getLogger(ClientManager::class.java)
+    private val log = LoggerFactory.getLogger(ClientManager::class.java)
 }

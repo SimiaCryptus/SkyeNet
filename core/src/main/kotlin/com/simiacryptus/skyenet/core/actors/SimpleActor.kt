@@ -1,22 +1,32 @@
 package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ClientUtil.toContentList
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.models.OpenAITextModel
 
 open class SimpleActor(
     prompt: String,
     name: String? = null,
     model: ChatModels = ChatModels.GPT35Turbo,
     temperature: Double = 0.3,
-) : BaseActor<String>(
+) : BaseActor<List<String>,String>(
     prompt = prompt,
     name = name,
     model = model,
     temperature = temperature,
 ) {
 
-    override fun answer(vararg questions: String, api: API): String = answer(*chatMessages(*questions), api = api)
-
-    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, api: API): String = response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
+    override fun answer(vararg messages: ApiModel.ChatMessage, input: List<String>, api: API): String = response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
+    override fun chatMessages(questions: List<String>) = arrayOf(
+        ApiModel.ChatMessage(
+            role = ApiModel.Role.system,
+            content = prompt.toContentList()
+        ),
+    ) + questions.map {
+        ApiModel.ChatMessage(
+            role = ApiModel.Role.user,
+            content = it.toContentList()
+        )
+    }
 }

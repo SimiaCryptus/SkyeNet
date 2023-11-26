@@ -70,7 +70,7 @@ open class WelcomeServlet(private val parent : com.simiacryptus.skyenet.webui.ap
 </div>
 
 <div id="namebar">
-    <a href="/googleLogin" id="username">Login</a>
+    <a href="/login" id="username">Login</a>
 </div>
 
 <table id="applist">

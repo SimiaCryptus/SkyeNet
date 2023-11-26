@@ -28,13 +28,18 @@ kotlin {
 
 val junit_version = "5.10.1"
 val logback_version = "1.4.11"
+val jackson_version = "2.15.3"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.35")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.36")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
+
+    implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jackson_version)
+    implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
+    implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
     compileOnlyApi(kotlin("stdlib"))
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
@@ -46,16 +51,16 @@ dependencies {
     compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-api", version = junit_version)
     compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
 
-    compileOnlyApi(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.28.0")
-    compileOnlyApi(group = "com.amazonaws", name = "aws-java-sdk", version = "1.12.587")
+    compileOnlyApi(platform("software.amazon.awssdk:bom:2.21.29"))
+    compileOnlyApi(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+    testImplementation(platform("software.amazon.awssdk:bom:2.21.29"))
+    testImplementation(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+
     compileOnlyApi(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
     compileOnlyApi(group = "ch.qos.logback", name = "logback-core", version = logback_version)
-
-    testImplementation(group = "com.google.cloud", name = "google-cloud-texttospeech", version = "2.28.0")
-    testImplementation(group = "com.amazonaws", name = "aws-java-sdk", version = "1.12.587")
     testImplementation(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
     testImplementation(group = "ch.qos.logback", name = "logback-core", version = logback_version)
-    //mockito
+
     testImplementation(group = "org.mockito", name = "mockito-core", version = "5.7.0")
 
 }
