@@ -24,7 +24,7 @@ open class ClientManager {
             if (userApi != null) return userApi
         }
         val canUseGlobalKey = ApplicationServices.authorizationManager.isAuthorized(
-            null, user, AuthorizationManager.OperationType.GlobalKey
+                null, user, AuthorizationManager.OperationType.GlobalKey
         )
         if (!canUseGlobalKey) throw RuntimeException("No API key")
         val logfile = dataStorage.getSessionDir(user, session).resolve(".sys/openai.log")
