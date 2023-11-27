@@ -1,5 +1,5 @@
-function showModal(endpoint) {
-    fetchData(endpoint);
+function showModal(endpoint, useSession = true) {
+    fetchData(endpoint, useSession);
     document.getElementById('modal').style.display = 'block';
 }
 
@@ -7,12 +7,14 @@ function closeModal() {
     document.getElementById('modal').style.display = 'none';
 }
 
-async function fetchData(endpoint) {
+async function fetchData(endpoint, useSession = true) {
     try {
         // Add session id to the endpoint as a path parameter
-        const sessionId = getSessionId();
-        if (sessionId) {
-            endpoint = endpoint + "?sessionId=" + sessionId;
+        if(useSession) {
+            const sessionId = getSessionId();
+            if (sessionId) {
+                endpoint = endpoint + "?sessionId=" + sessionId;
+            }
         }
         const response = await fetch(endpoint);
         const text = await response.text();
@@ -200,11 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(url, "_blank");
     });
 
-    const loginLink = document.getElementById('username');
-    if (loginLink) {
-        loginLink.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-    }
-
     fetch('appInfo')
         .then(response => {
             if (!response.ok) {
@@ -221,6 +218,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('There was a problem with the fetch operation:', error);
         });
 
+
+    // Get the login and username links
+    const loginLink = document.getElementById('login');
+    const usernameLink = document.getElementById('username');
+    const userSettingsLink = document.getElementById('user-settings');
+    const userUsageLink = document.getElementById('user-usage');
+    const logoutLink = document.getElementById('logout');
+
+    // Fetch user information
     fetch('userInfo')
         .then(response => {
             if (!response.ok) {
@@ -229,10 +235,25 @@ document.addEventListener('DOMContentLoaded', () => {
             return response.json();
         })
         .then(data => {
-            if (data.name && loginLink) {
-                loginLink.innerHTML = data.name;
-                loginLink.href = "javascript:void(0);";
-                loginLink.addEventListener('click', () => showModal('/userSettings'));
+            if (data.name) {
+                // Update the username link with the user's name and make it visible
+                usernameLink.textContent = data.name;
+                usernameLink.style = 'visibility: visible';
+
+                // Update the href for user settings and make it visible
+                userSettingsLink.addEventListener('click', () => showModal('/userSettings'));
+                userSettingsLink.style = 'visibility: visible';
+
+                // Update the href for user usage and make it visible
+                userUsageLink.addEventListener('click', () => showModal('/usage', false));
+                userUsageLink.style = 'visibility: visible';
+
+                // Update the logout link and make it visible
+                logoutLink.href = '/logout';
+                logoutLink.style = 'visibility: visible';
+
+                // Hide the login link since the user is logged in
+                loginLink.style = 'visibility: hidden';
             }
         })
         .catch(error => {

@@ -28,6 +28,7 @@ open class WelcomeServlet(private val parent : com.simiacryptus.skyenet.webui.ap
             }
 
             requestURI.startsWith("/userSettings") -> parent.userSettingsServlet.doGet(req, resp!!)
+            requestURI.startsWith("/logout") -> parent.logoutServlet.doGet(req, resp!!)
             requestURI.startsWith("/usage") -> parent.usageServlet.doGet(req, resp!!)
             else -> try {
                 val inputStream = parent.welcomeResources.addPath(requestURI)?.inputStream
@@ -70,7 +71,15 @@ open class WelcomeServlet(private val parent : com.simiacryptus.skyenet.webui.ap
 </div>
 
 <div id="namebar">
-    <a href="/login" id="username">Login</a>
+    <div class="dropdown">
+        <a href="/login" id="login">Login</a>
+        <a id="username" style="visibility: hidden"></a>
+        <div class="dropdown-content">
+            <a id="user-settings" style="visibility: hidden">Settings</a>
+            <a id="user-usage" style="visibility: hidden">Usage</a>
+            <a id="logout" style="visibility: hidden">Logout</a>
+        </div>
+    </div>
 </div>
 
 <table id="applist">

@@ -273,8 +273,6 @@ pre {
     }
 }
 
-
-
 @keyframes spin {
     0% {
         transform: rotate(0deg);
@@ -284,7 +282,6 @@ pre {
     }
 }
 
-/* Styling for user and response messages */
 .user-message, .response-message {
     padding: 10px;
     margin-bottom: 10px;
@@ -301,7 +298,6 @@ pre {
     border: 1px solid #eee;
 }
 
-/* Styling for code blocks */
 pre.verbose, pre.response-message {
     background-color: #f5f5f5;
     border: 1px solid #e1e1e1;
@@ -311,7 +307,6 @@ pre.verbose, pre.response-message {
     font-family: 'Courier New', Courier, monospace;
 }
 
-/* Styling for headers within the response */
 .response-header {
     font-weight: bold;
     margin-top: 20px;
@@ -334,4 +329,40 @@ pre.verbose, pre.response-message {
 
 #footer a:hover {
     text-decoration: underline;
+}
+
+.dropbtn {
+    border: none;
+    cursor: pointer;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {background-color: #f1f1f1}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown:hover .dropbtn {
+    background-color: #3e8e41;
 }
