@@ -259,6 +259,21 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
         });
+/*
 
+            <a id="privacy">Privacy Policy</a>
+            <a id="tos">Terms of Service</a>
+ */
+    // Get the privacy and terms links
+    const privacyLink = document.getElementById('privacy');
+    const tosLink = document.getElementById('tos');
+    if (privacyLink) {
+        // Update the privacy link with the user's name and make it visible
+        privacyLink.addEventListener('click', () => showModal('/privacy.html', false));
+    }
+    if (tosLink) {
+        // Update the terms link with the user's name and make it visible
+        tosLink.addEventListener('click', () => showModal('/tos.html', false));
+    }
 });
 
