@@ -9,10 +9,10 @@ function closeModal() {
 
 async function fetchData(endpoint) {
     try {
+        // Add session id to the endpoint as a path parameter
         const response = await fetch(endpoint);
         const text = await response.text();
         document.getElementById('modal-content').innerHTML = "<div>" + text + "</div>";
-        Prism.highlightAll();
     } catch (error) {
         console.error('Error fetching data:', error);
     }
@@ -20,12 +20,13 @@ async function fetchData(endpoint) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    document.querySelector('.close').addEventListener('click', closeModal);
+
     window.addEventListener('click', (event) => {
         if (event.target === document.getElementById('modal')) {
             closeModal();
         }
     });
-    document.querySelector('.close').addEventListener('click', closeModal);
 
     // Get the login and username links
     const loginLink = document.getElementById('login');
@@ -68,5 +69,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('There was a problem with the fetch operation:', error);
         });
 
+    // Get the privacy and terms links
+    const privacyLink = document.getElementById('privacy');
+    const tosLink = document.getElementById('tos');
+    if (privacyLink) {
+        // Update the privacy link with the user's name and make it visible
+        privacyLink.addEventListener('click', () => showModal('/privacy.html'));
+    }
+    if (tosLink) {
+        // Update the terms link with the user's name and make it visible
+        tosLink.addEventListener('click', () => showModal('/tos.html'));
+    }
 });
 
