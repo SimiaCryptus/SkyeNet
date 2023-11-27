@@ -15,7 +15,7 @@ body {
     color: var(--primary-text-color);
     background-color: var(--primary-bg-color);
     margin: 0;
-    padding: 0 0 50px;
+    padding: 30px 0 50px;
 }
 
 #messages {
@@ -273,8 +273,6 @@ pre {
     }
 }
 
-
-
 @keyframes spin {
     0% {
         transform: rotate(0deg);
@@ -284,7 +282,6 @@ pre {
     }
 }
 
-/* Styling for user and response messages */
 .user-message, .response-message {
     padding: 10px;
     margin-bottom: 10px;
@@ -301,7 +298,6 @@ pre {
     border: 1px solid #eee;
 }
 
-/* Styling for code blocks */
 pre.verbose, pre.response-message {
     background-color: #f5f5f5;
     border: 1px solid #e1e1e1;
@@ -311,7 +307,6 @@ pre.verbose, pre.response-message {
     font-family: 'Courier New', Courier, monospace;
 }
 
-/* Styling for headers within the response */
 .response-header {
     font-weight: bold;
     margin-top: 20px;
@@ -334,4 +329,95 @@ pre.verbose, pre.response-message {
 
 #footer a:hover {
     text-decoration: underline;
+}
+
+.dropbtn {
+    border: none;
+    cursor: pointer;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {background-color: #f1f1f1}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown:hover .dropbtn {
+    background-color: #3e8e41;
+}
+
+
+#applist {
+    width: 100%; /* Full width */
+    border-collapse: collapse; /* Collapse borders */
+    margin-top: 20px; /* Add some space above the table */
+}
+
+#applist td, #applist th {
+    border: 1px solid #ddd; /* Light grey border */
+    padding: 8px; /* Padding for content */
+    text-align: left; /* Align text to the left */
+}
+
+#applist tr:nth-child(even) {
+    background-color: #f2f2f2; /* Zebra striping for rows */
+}
+
+#applist tr:hover {
+    background-color: #ddd; /* Highlight on hover */
+}
+
+#applist th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    background-color: #4CAF50; /* Darker background for headers */
+    color: white; /* White text for headers */
+}
+
+#applist a {
+    color: #2196F3; /* Blue color for links */
+    text-decoration: none; /* No underline */
+}
+
+#applist a:hover {
+    text-decoration: underline; /* Underline on hover */
+}
+
+#applist td a {
+    margin-right: 10px; /* Space between links */
+}
+
+/* Additional styling for New Session links */
+.new-session-link {
+    background-color: #f0f332;
+    color: white; /* White text */
+    padding: 5px 10px; /* Padding */
+    border-radius: 5px; /* Rounded corners */
+    display: inline-block; /* Allows padding and margin */
+    margin-right: 0; /* No margin to the right */
+}
+
+.new-session-link:hover {
+    background-color: #eaae35; /* Darker green on hover */
 }

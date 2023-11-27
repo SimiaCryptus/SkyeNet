@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>WebSocket Client</title>
-    <link href="chat.css" rel="stylesheet"/>
+    <link href="main.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-ghcolors.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet"/>
@@ -25,14 +25,35 @@
 <div id="toolbar">
     <a href="/">Home</a>
     <a id="history">Session List</a>
-    <a id="settings">Session Settings</a>
-    <a id="files">Files</a>
-    <a id="usage">Usage</a>
-    <a id="verbose">Show Verbose</a>
+    <div class="dropdown">
+        <a class="dropbtn">Session Details</a>
+        <div class="dropdown-content">
+            <a id="settings">Settings</a>
+            <a id="files">Files</a>
+            <a id="usage">Usage</a>
+            <a id="delete">Delete</a>
+            <a id="verbose">Show Verbose</a>
+        </div>
+    </div>
+    <div class="dropdown">
+        <a class="dropbtn">About</a>
+        <div class="dropdown-content">
+            <a id="privacy">Privacy Policy</a>
+            <a id="tos">Terms of Service</a>
+        </div>
+    </div>
 </div>
 
 <div id="namebar">
-    <a href="/login" id="username">Login</a>
+    <div class="dropdown">
+        <a href="/login" id="login">Login</a>
+        <a id="username" style="visibility: hidden"></a>
+        <div class="dropdown-content">
+            <a id="user-settings" style="visibility: hidden">Settings</a>
+            <a id="user-usage" style="visibility: hidden">Usage</a>
+            <a id="logout" style="visibility: hidden">Logout</a>
+        </div>
+    </div>
 </div>
 
 <div id="session">

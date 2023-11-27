@@ -45,6 +45,7 @@ abstract class ApplicationDirectory(
     open val welcomeResources = ResourceCollection(allResources("welcome").map(::newResource))
     open val userInfoServlet = UserInfoServlet()
     open val userSettingsServlet = UserSettingsServlet()
+    open val logoutServlet = LogoutServlet()
     open val usageServlet = UsageServlet()
     open val proxyHttpServlet = ProxyHttpServlet()
     open val welcomeServlet = WelcomeServlet(this)

@@ -13,6 +13,11 @@ open class AuthenticationManager {
         return user
     }
 
+    fun logout(accessToken: String, user: User) {
+        require(users[accessToken] == user) { "Invalid user" }
+        users.remove(accessToken)
+    }
+
     companion object {
         const val AUTH_COOKIE = "sessionId"
     }
