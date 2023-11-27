@@ -174,6 +174,12 @@ open class DataStorage(
         user?.email ?: throw IllegalArgumentException("User required for private session")
     )
 
+    fun deleteSession(user: User?, session: Session) {
+        validateSessionId(session)
+        val sessionDir = getSessionDir(user, session)
+        sessionDir.deleteRecursively()
+    }
+
     companion object {
 
         private val log = org.slf4j.LoggerFactory.getLogger(DataStorage::class.java)

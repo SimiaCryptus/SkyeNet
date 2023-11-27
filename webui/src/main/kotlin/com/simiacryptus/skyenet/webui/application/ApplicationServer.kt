@@ -33,6 +33,7 @@ abstract class ApplicationServer(
     protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
     protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
+    protected open val deleteSessionServlet = ServletHolder("delete", DeleteSessionServlet(this))
 
     override fun newSession(user: User?, session: Session): SocketManager {
         return object : ApplicationSocketManager(
@@ -110,6 +111,8 @@ abstract class ApplicationServer(
         webAppContext.addServlet(fileZip, "/fileZip")
         webAppContext.addServlet(sessionsServlet(path), "/sessions")
         webAppContext.addServlet(sessionSettingsServlet, "/settings")
+        webAppContext.addServlet(deleteSessionServlet, "/delete")
+
     }
 
     companion object {

@@ -106,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settings').addEventListener('click', () => showModal('settings'));
     document.getElementById('usage').addEventListener('click', () => showModal('usage'));
     document.getElementById('verbose').addEventListener('click', () => toggleVerbose());
+    document.getElementById('delete').addEventListener('click', () => showModal('delete'));
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {
