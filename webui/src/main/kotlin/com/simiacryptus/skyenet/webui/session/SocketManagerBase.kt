@@ -1,7 +1,9 @@
 package com.simiacryptus.skyenet.webui.session
 
+import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import com.simiacryptus.skyenet.core.platform.*
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.clientManager
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
@@ -20,7 +22,7 @@ abstract class SocketManagerBase(
 ) : SocketManager {
     private val sockets: MutableSet<ChatSocket> = mutableSetOf()
     private val messageVersions = HashMap<String, AtomicInteger>()
-    protected open val pool = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool())
+    protected val pool get() = clientManager.getPool(session, user, dataStorage)
 
     override fun removeSocket(socket: ChatSocket) {
         sockets.remove(socket)
@@ -86,7 +88,8 @@ abstract class SocketManagerBase(
         if (messageStates.containsKey(key) && messageStates[key] == value) return -1
         dataStorage?.updateMessage(user, session, key, value)
         messageStates.put(key, value)
-        return messageVersions.computeIfAbsent(key) { AtomicInteger(0) }.incrementAndGet()
+        return synchronized(messageVersions)
+            { messageVersions.getOrPut(key) { AtomicInteger(0) } }.incrementAndGet()
     }
 
     final override fun onWebSocketText(socket: ChatSocket, message: String) {

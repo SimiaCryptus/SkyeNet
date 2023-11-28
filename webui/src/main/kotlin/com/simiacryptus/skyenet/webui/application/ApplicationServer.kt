@@ -26,6 +26,8 @@ abstract class ApplicationServer(
     val temperature: Double = 0.1,
 ) : ChatServer(resourceBase) {
 
+    open val description: String = ""
+
     final override val dataStorage: DataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
     protected open val appInfo = ServletHolder("appInfo", AppInfoServlet(applicationName))
     protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
@@ -33,6 +35,9 @@ abstract class ApplicationServer(
     protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
     protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
+    //SessionThreadsServlet
+    protected open val sessionThreadsServlet = ServletHolder("threads", SessionThreadsServlet(this))
+
     protected open val deleteSessionServlet = ServletHolder("delete", DeleteSessionServlet(this))
 
     override fun newSession(user: User?, session: Session): SocketManager {
@@ -82,7 +87,7 @@ abstract class ApplicationServer(
         return settings
     }
 
-    protected open fun sessionsServlet(path: String) = ServletHolder("sessionList", SessionListServlet(this.dataStorage, path))
+    protected open fun sessionsServlet(path: String) = ServletHolder("sessionList", SessionListServlet(this.dataStorage, path, this))
 
     override fun configure(webAppContext: WebAppContext, path: String, baseUrl: String) {
         super.configure(webAppContext, path, baseUrl)
@@ -111,6 +116,7 @@ abstract class ApplicationServer(
         webAppContext.addServlet(fileZip, "/fileZip")
         webAppContext.addServlet(sessionsServlet(path), "/sessions")
         webAppContext.addServlet(sessionSettingsServlet, "/settings")
+        webAppContext.addServlet(sessionThreadsServlet, "/threads")
         webAppContext.addServlet(deleteSessionServlet, "/delete")
 
     }

@@ -29,7 +29,7 @@ abstract class ApplicationSocketManager(
         val operationID = randomID()
         threads[operationID] = Thread.currentThread()
         newSession(
-            session, user = user, userMessage, this, ApplicationServices.clientManager.createClient(
+            session, user = user, userMessage, this, ApplicationServices.clientManager.getClient(
                 session,
                 user,
                 dataStorage ?: throw IllegalStateException("No data storage")

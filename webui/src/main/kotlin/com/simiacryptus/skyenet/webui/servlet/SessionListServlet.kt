@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.webui.servlet
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.DataStorage
+import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -10,8 +11,9 @@ import jakarta.servlet.http.HttpServletResponse
 import java.text.SimpleDateFormat
 
 class SessionListServlet(
-    private val dataStorage: DataStorage,
-    private val prefix: String
+  private val dataStorage: DataStorage,
+  private val prefix: String,
+  private val applicationServer: ApplicationServer
 ) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
@@ -29,11 +31,12 @@ class SessionListServlet(
             </tr>
             """.trimIndent()
         }
+        val title = """Sessions"""
         resp.writer.write(
             """
             <html>
             <head>
-            <title>Sessions</title>
+            <title>$title</title>
             <style>
                 body { font-family: Arial, sans-serif; }
                 table { width: 100%; border-collapse: collapse; }
@@ -44,6 +47,7 @@ class SessionListServlet(
             </style>
             </head>
             <body>
+            ${applicationServer.description}
             <table>
                 <tr>
                     <th>Session Name</th>
