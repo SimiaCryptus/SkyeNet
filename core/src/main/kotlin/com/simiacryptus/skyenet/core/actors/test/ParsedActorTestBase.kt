@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.core.actors.test
 
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
@@ -10,12 +11,13 @@ abstract class ParsedActorTestBase<T:Any>(
 ) : ActorTestBase<List<String>,ParsedResponse<T>>() {
 
     override fun actorFactory(prompt: String) = ParsedActor(
-        parserClass = parserClass,
-        prompt = prompt,
+      parserClass = parserClass,
+      prompt = prompt,
+      parsingModel = ChatModels.GPT35Turbo,
     )
 
     override fun getPrompt(actor: BaseActor<List<String>,ParsedResponse<T>>): String = actor.prompt
 
-    override fun resultMapper(result: ParsedResponse<T>): String = result.getText()
+    override fun resultMapper(result: ParsedResponse<T>): String = result.text
 
 }

@@ -54,12 +54,12 @@ dependencies {
 tasks {
 
     compileKotlin {
-        kotlinOptions {
+        compilerOptions {
             javaParameters = true
         }
     }
     compileTestKotlin {
-        kotlinOptions {
+        compilerOptions {
             javaParameters = true
         }
     }

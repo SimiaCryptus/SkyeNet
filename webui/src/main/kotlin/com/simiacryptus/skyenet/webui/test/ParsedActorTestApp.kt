@@ -32,9 +32,9 @@ open class ParsedActorTestApp<T : Any>(
             message.complete(
                 renderMarkdown(
                     """
-                    |${response.getText()}
+                    |${response.text}
                     |```
-                    |${JsonUtil.toJson(response.getObj())}
+                    |${JsonUtil.toJson(response.obj)}
                     |```
                     """.trimMargin().trim()
                     )
