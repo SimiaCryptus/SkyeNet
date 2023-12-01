@@ -14,7 +14,7 @@ open class ParsedActor<T>(
   name: String? = parserClass.simpleName,
   model: ChatModels = ChatModels.GPT35Turbo,
   temperature: Double = 0.3,
-  val parsingModel: ChatModels,
+  val parsingModel: ChatModels = ChatModels.GPT35Turbo,
 ) : BaseActor<List<String>, ParsedResponse<T>>(
   prompt = prompt,
   name = name,

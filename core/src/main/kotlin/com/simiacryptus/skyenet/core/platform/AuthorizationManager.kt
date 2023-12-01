@@ -7,6 +7,7 @@ open class AuthorizationManager {
     enum class OperationType {
         Read,
         Write,
+        Share,
         Execute,
         Delete,
         Admin,
@@ -18,13 +19,13 @@ open class AuthorizationManager {
         user: User?,
         operationType: OperationType,
     ) = try {
-        if (isUserAuthorized("/permissions/${operationType.name.lowercase(Locale.getDefault())}.txt", user?.email)) {
+        if (isUserAuthorized("/permissions/${operationType.name.lowercase(Locale.getDefault())}.txt", user)) {
             log.debug("User {} authorized for {} globally", user, operationType)
             true
         } else if (null != applicationClass) {
             val packagePath = applicationClass.`package`.name.replace('.', '/')
             val opName = operationType.name.lowercase(Locale.getDefault())
-            if (isUserAuthorized("/permissions/$packagePath/$opName.txt", user?.email)) {
+            if (isUserAuthorized("/permissions/$packagePath/$opName.txt", user)) {
                 log.debug("User {} authorized for {} on {}", user, operationType, applicationClass)
                 true
             } else {
@@ -40,18 +41,20 @@ open class AuthorizationManager {
         false
     }
 
-    private fun isUserAuthorized(permissionPath: String, user: String?) =
+    open fun isUserAuthorized(permissionPath: String, user: User?) =
         javaClass.getResourceAsStream(permissionPath)?.use { stream ->
             val lines = stream.bufferedReader().readLines()
-            lines.any {
-                when {
-                    it.equals(user, ignoreCase = true) -> true // Exact match
-                    it == "." && user != null -> true // Any user
-                    it == "*" -> true // Any user including anonymous
-                    else -> false
-                }
+            lines.any { line ->
+                matches(user, line)
             }
         } ?: false
+
+    open fun matches(user: User?, line: String) = when {
+        line.equals(user?.email, ignoreCase = true) -> true // Exact match
+        line == "." && user != null -> true // Any user
+        line == "*" -> true // Any user including anonymous
+        else -> false
+    }
 
     private val log = org.slf4j.LoggerFactory.getLogger(AuthorizationManager::class.java)
 
