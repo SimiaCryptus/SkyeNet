@@ -1,23 +1,15 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.file
 
+import com.simiacryptus.skyenet.core.platform.AuthorizationInterface
+import com.simiacryptus.skyenet.core.platform.User
 import java.util.*
 
-open class AuthorizationManager {
+open class AuthorizationManager : AuthorizationInterface {
 
-    enum class OperationType {
-        Read,
-        Write,
-        Share,
-        Execute,
-        Delete,
-        Admin,
-        GlobalKey,
-    }
-
-    open fun isAuthorized(
+    override fun isAuthorized(
         applicationClass: Class<*>?,
         user: User?,
-        operationType: OperationType,
+        operationType: AuthorizationInterface.OperationType,
     ) = try {
         if (isUserAuthorized("/permissions/${operationType.name.lowercase(Locale.getDefault())}.txt", user)) {
             log.debug("User {} authorized for {} globally", user, operationType)
@@ -41,7 +33,7 @@ open class AuthorizationManager {
         false
     }
 
-    open fun isUserAuthorized(permissionPath: String, user: User?) =
+    fun isUserAuthorized(permissionPath: String, user: User?) =
         javaClass.getResourceAsStream(permissionPath)?.use { stream ->
             val lines = stream.bufferedReader().readLines()
             lines.any { line ->
@@ -56,6 +48,8 @@ open class AuthorizationManager {
         else -> false
     }
 
-    private val log = org.slf4j.LoggerFactory.getLogger(AuthorizationManager::class.java)
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(AuthorizationManager::class.java)
+    }
 
 }

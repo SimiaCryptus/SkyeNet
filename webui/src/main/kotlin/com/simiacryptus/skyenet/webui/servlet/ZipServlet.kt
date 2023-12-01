@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.DataStorage
 import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -11,7 +11,7 @@ import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-class ZipServlet(val dataStorage: DataStorage) : HttpServlet() {
+class ZipServlet(val dataStorage: StorageInterface) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         val session = Session(req.getParameter("session"))
         val path = req.parameterMap.get("path")?.find { it.isNotBlank() } ?: "/"

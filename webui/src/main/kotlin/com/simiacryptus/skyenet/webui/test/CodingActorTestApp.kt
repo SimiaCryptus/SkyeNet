@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.webui.test
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.AuthorizationManager
+import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -34,7 +34,7 @@ open class CodingActorTestApp(
             val canPlay = ApplicationServices.authorizationManager.isAuthorized(
                 this::class.java,
                 user,
-                AuthorizationManager.OperationType.Execute
+              OperationType.Execute
             )
             val playLink = if (!canPlay) "" else {
                 ui.hrefLink("▶", "href-link play-button") {

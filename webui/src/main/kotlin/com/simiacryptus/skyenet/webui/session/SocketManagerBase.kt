@@ -1,19 +1,20 @@
 package com.simiacryptus.skyenet.webui.session
 
-import com.google.common.util.concurrent.ListeningExecutorService
-import com.google.common.util.concurrent.MoreExecutors
-import com.simiacryptus.skyenet.core.platform.*
+import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.clientManager
+import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
+import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 abstract class SocketManagerBase(
     protected val session: Session,
-    protected val dataStorage: DataStorage?,
+    protected val dataStorage: StorageInterface?,
     protected val user: User? = null,
     private val messageStates: LinkedHashMap<String, String> = dataStorage?.getMessages(
         user, session
@@ -117,7 +118,7 @@ abstract class SocketManagerBase(
     open fun canWrite(user: User?) = ApplicationServices.authorizationManager.isAuthorized(
         applicationClass = applicationClass,
         user = user,
-        operationType = AuthorizationManager.OperationType.Write
+        operationType = OperationType.Write
     )
 
     protected open fun onCmd(

@@ -6,8 +6,8 @@ import com.simiacryptus.skyenet.core.actors.ImageActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.AuthenticationManager
-import com.simiacryptus.skyenet.core.platform.AuthorizationManager
+import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
+import com.simiacryptus.skyenet.core.platform.AuthorizationInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.groovy.GroovyInterpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
@@ -51,16 +51,17 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
             "Test User",
             ""
         )
-        ApplicationServices.authenticationManager = object : AuthenticationManager() {
+        ApplicationServices.authenticationManager = object : AuthenticationInterface {
             override fun getUser(accessToken: String?) = mockUser
             override fun containsUser(value: String) = true
             override fun putUser(accessToken: String, user: User) = throw UnsupportedOperationException()
+            override fun logout(accessToken: String, user: User) {}
         }
-        ApplicationServices.authorizationManager = object : AuthorizationManager() {
+        ApplicationServices.authorizationManager = object : AuthorizationInterface {
             override fun isAuthorized(
                 applicationClass: Class<*>?,
                 user: User?,
-                operationType: OperationType
+                operationType: AuthorizationInterface.OperationType
             ): Boolean = true
         }
         super._main(args)

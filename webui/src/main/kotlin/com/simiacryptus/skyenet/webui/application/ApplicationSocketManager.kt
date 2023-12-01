@@ -2,8 +2,8 @@ package com.simiacryptus.skyenet.webui.application
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.DataStorage
 import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -13,7 +13,7 @@ import java.util.function.Consumer
 abstract class ApplicationSocketManager(
     session: Session,
     user: User?,
-    dataStorage: DataStorage?,
+    dataStorage: StorageInterface?,
     applicationClass: Class<*>,
 ) : SocketManagerBase(
     session = session,

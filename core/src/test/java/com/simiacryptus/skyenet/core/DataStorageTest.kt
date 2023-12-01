@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.core
 
-import com.simiacryptus.skyenet.core.platform.DataStorage
+import com.simiacryptus.skyenet.core.platform.file.DataStorage
+import com.simiacryptus.skyenet.core.platform.StorageInterface
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -11,7 +12,7 @@ import java.nio.file.Files
 
 class DataStorageTest {
     private lateinit var tempDir: File
-    private lateinit var storage: DataStorage
+    private lateinit var storage: StorageInterface
 
     @BeforeEach
     fun setUp() {
@@ -26,7 +27,7 @@ class DataStorageTest {
 
     @Test
     fun testUpdateAndLoadMessage() {
-        val sessionId = DataStorage.newGlobalID()
+        val sessionId = StorageInterface.newGlobalID()
         val messageId = "message1"
         val message = "This is a test message."
 

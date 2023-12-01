@@ -1,14 +1,11 @@
 package com.simiacryptus.skyenet.webui.application
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
-import com.simiacryptus.skyenet.core.platform.AuthenticationManager.Companion.AUTH_COOKIE
-import com.simiacryptus.skyenet.core.platform.AuthorizationManager
-import com.simiacryptus.skyenet.core.platform.DataStorage
-import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.session.SocketManager
@@ -28,7 +25,7 @@ abstract class ApplicationServer(
 
     open val description: String = ""
 
-    final override val dataStorage: DataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
+    final override val dataStorage: StorageInterface = dataStorageFactory(File(File(".skyenet"), applicationName))
     protected open val appInfo = ServletHolder("appInfo", AppInfoServlet(applicationName))
     protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
     protected open val usageServlet = ServletHolder("usage", UsageServlet())
@@ -98,7 +95,7 @@ abstract class ApplicationServer(
                 val canRead = authorizationManager.isAuthorized(
                     applicationClass = this@ApplicationServer.javaClass,
                     user = user,
-                    operationType = AuthorizationManager.OperationType.Read
+                    operationType = OperationType.Read
                 )
                 if (canRead) {
                     chain?.doFilter(request, response)
@@ -137,7 +134,8 @@ abstract class ApplicationServer(
                 filename.endsWith(".css") -> "text/css"
                 else -> "text/plain"
             }
-        fun HttpServletRequest.getCookie(name: String = AUTH_COOKIE) = cookies?.find { it.name == name }?.value
+        fun HttpServletRequest.getCookie(name: String = AuthenticationInterface.AUTH_COOKIE) =
+            cookies?.find { it.name == name }?.value
 
     }
 

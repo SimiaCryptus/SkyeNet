@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
-import com.simiacryptus.skyenet.core.platform.DataStorage
+import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServletResponse
 import java.text.SimpleDateFormat
 
 class SessionListServlet(
-  private val dataStorage: DataStorage,
+  private val dataStorage: StorageInterface,
   private val prefix: String,
   private val applicationServer: ApplicationServer
 ) : HttpServlet() {

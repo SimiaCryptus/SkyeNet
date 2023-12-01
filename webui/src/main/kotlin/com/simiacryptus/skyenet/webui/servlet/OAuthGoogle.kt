@@ -7,7 +7,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.oauth2.Oauth2
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.AuthenticationManager.Companion.AUTH_COOKIE
+import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.User
 import jakarta.servlet.*
 import jakarta.servlet.http.Cookie
@@ -95,7 +95,7 @@ open class OAuthGoogle(
                 )
                 ApplicationServices.authenticationManager.putUser(accessToken = sessionID, user = user)
                 log.info("User $user logged in with session $sessionID")
-                val sessionCookie = Cookie(AUTH_COOKIE, sessionID)
+                val sessionCookie = Cookie(AuthenticationInterface.AUTH_COOKIE, sessionID)
                 sessionCookie.path = "/"
                 sessionCookie.isHttpOnly = true
                 sessionCookie.secure = true

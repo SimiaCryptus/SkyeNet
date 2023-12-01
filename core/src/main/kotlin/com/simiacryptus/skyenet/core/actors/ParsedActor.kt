@@ -47,7 +47,7 @@ open class ParsedActor<T>(
     }
     private val _obj: T by lazy { parser.apply(text) }
     override val text get() = _text
-    override fun getObj(clazz: Class<T>): T = _obj
+    override val obj get() = _obj
   }
 
   override fun answer(vararg messages: ApiModel.ChatMessage, input: List<String>, api: API): ParsedResponse<T> {

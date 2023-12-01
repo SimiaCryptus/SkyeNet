@@ -1,15 +1,18 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.file
 
 import com.simiacryptus.jopenai.models.*
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.UsageInterface
+import com.simiacryptus.skyenet.core.platform.UsageInterface.*
+import com.simiacryptus.skyenet.core.platform.User
 import java.io.File
 import java.io.FileWriter
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
-open class UsageManager {
+open class UsageManager : UsageInterface {
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private val txLogFile = File(".skyenet/usage/log.csv")
@@ -26,7 +29,7 @@ open class UsageManager {
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
-    open fun loadFromLog(file: File) {
+    private fun loadFromLog(file: File) {
         if (file.exists()) {
             try {
                 file.readLines().forEach { line ->
@@ -63,7 +66,7 @@ open class UsageManager {
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
-    protected open fun writeCompactLog(file: File) {
+    private fun writeCompactLog(file: File) {
         FileWriter(file).use { writer ->
             usagePerSession.forEach { (sessionId, usage) ->
                 val user = usersBySession[sessionId]?.firstOrNull()
@@ -107,7 +110,7 @@ open class UsageManager {
         File(".skyenet/usage/counters.json").writeText(JsonUtil.toJson(usagePerSession))
     }
 
-    open fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: com.simiacryptus.jopenai.ApiModel.Usage) {
+    override fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: com.simiacryptus.jopenai.ApiModel.Usage) {
         @Suppress("NAME_SHADOWING") val user = if (null == user) null else User(email = user.email) // Hack
         usagePerSession.computeIfAbsent(session) { UsageCounters() }
             .tokensPerModel.computeIfAbsent(UsageKey(session, user, model)) { UsageValues() }
@@ -129,7 +132,7 @@ open class UsageManager {
         }
     }
 
-    open fun getUserUsageSummary(user: User): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> {
+    override fun getUserUsageSummary(user: User): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> {
         @Suppress("NAME_SHADOWING") val user = if(null == user) null else User(email= user.email) // Hack
         return sessionsByUser[user]?.flatMap { sessionId ->
             val usage = usagePerSession[sessionId]
@@ -146,7 +149,7 @@ open class UsageManager {
         } ?: emptyMap()
     }
 
-    open fun getSessionUsageSummary(session: Session): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> =
+    override fun getSessionUsageSummary(session: Session): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> =
         usagePerSession[session]?.tokensPerModel?.entries?.map { (model, counter) ->
             model.model to counter.toUsage()
         }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.reduce { a, b ->
@@ -155,31 +158,6 @@ open class UsageManager {
                 completion_tokens = a.completion_tokens + b.completion_tokens
             )
         } } ?: emptyMap()
-
-    data class UsageKey(
-        val session: Session,
-        val user: User?,
-        val model: OpenAIModel,
-    )
-
-    class UsageValues(
-        val inputTokens: AtomicInteger = AtomicInteger(),
-        val outputTokens: AtomicInteger = AtomicInteger(),
-    ) {
-        fun addAndGet(tokens: com.simiacryptus.jopenai.ApiModel.Usage) {
-            inputTokens.addAndGet(tokens.prompt_tokens)
-            outputTokens.addAndGet(tokens.completion_tokens)
-        }
-
-        fun toUsage() = com.simiacryptus.jopenai.ApiModel.Usage(
-            prompt_tokens = inputTokens.get(),
-            completion_tokens = outputTokens.get()
-        )
-    }
-
-    data class UsageCounters(
-        val tokensPerModel: HashMap<UsageKey, UsageValues> = HashMap(),
-    )
 
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(UsageManager::class.java)
