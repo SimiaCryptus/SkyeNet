@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import java.util.*
 
 open class AuthenticationInterfaceTest(
-  val authInterface: AuthenticationInterface
+  private val authInterface: AuthenticationInterface
 ) {
 
   private val validAccessToken = UUID.randomUUID().toString()

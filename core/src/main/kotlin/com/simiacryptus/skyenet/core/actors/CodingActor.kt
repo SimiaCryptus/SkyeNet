@@ -139,12 +139,12 @@ open class CodingActor(
     throw IllegalStateException()
   }
 
-  open fun execute(code: String): ExecutionResult {
+  open fun execute(prefix: String, code: String): ExecutionResult {
     //language=HTML
     log.info("Running $code")
     OutputInterceptor.clearGlobalOutput()
     val result = try {
-      interpreter.run(code)
+      interpreter.run((prefix + code).sortCode())
     } catch (e: Exception) {
       when {
         e is ScriptException -> throw FailedToImplementException(e, errorMessage(e, code), code)
@@ -174,7 +174,7 @@ open class CodingActor(
 
     override fun getStatus() = _status
 
-    private val _code by lazy {
+    private val _code: String by lazy {
       if (null != givenCode) return@lazy givenCode
       try {
         implement(model)
@@ -245,13 +245,13 @@ open class CodingActor(
           _status = CodeResult.Status.Correcting
         }
       }
-      throw FailedToImplementException()
+      throw IllegalStateException()
     }
 
     @JsonIgnore
     override fun getCode(): String = _code
 
-    private val executionResult by lazy { execute((input.codePrefix + "\n" + getCode()).sortCode()) }
+    private val executionResult by lazy { execute(input.codePrefix, getCode()) }
     override fun result() = executionResult
   }
 

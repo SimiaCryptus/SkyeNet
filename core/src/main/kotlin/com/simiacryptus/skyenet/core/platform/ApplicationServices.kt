@@ -4,9 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.file.*
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -79,39 +76,6 @@ interface AuthorizationInterface {
         user: User?,
         operationType: OperationType,
     ): Boolean
-}
-
-data class User(
-    @get:JsonProperty("email") internal val email: String,
-    @get:JsonProperty("name") internal val name: String? = null,
-    @get:JsonProperty("id") internal val id: String? = null,
-    @get:JsonProperty("picture") internal val picture: String? = null,
-) {
-    override fun toString() = email
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as User
-
-        return email == other.email
-    }
-
-    override fun hashCode(): Int {
-        return email.hashCode()
-    }
-
-}
-
-data class Session(
-    internal val sessionId: String
-) {
-    init {
-        StorageInterface.validateSessionId(this)
-    }
-
-    override fun toString() = sessionId
 }
 
 interface StorageInterface {
@@ -191,53 +155,16 @@ interface StorageInterface {
     }
 }
 
+interface UserSettingsInterface {
+    data class UserSettings(
+        val apiKey: String = "",
+    )
 
-class StorageInterfaceTest(val storage: StorageInterface) {
+    fun getUserSettings(user: User): UserSettings
 
-
-    @Test
-    fun testGetJson() {
-        // Arrange
-        val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
-        val filename = "test.json"
-
-        // Act
-        val result = storage.getJson(user, session, filename, Any::class.java)
-
-        // Assert
-        assertNull(result, "Expected null result for non-existing JSON file")
-    }
-
-    @Test
-    fun testGetMessages() {
-        // Arrange
-        val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
-
-        // Act
-        val messages = storage.getMessages(user, session)
-
-        // Assert
-        assertTrue(messages is LinkedHashMap<*, *>, "Expected LinkedHashMap type for messages")
-    }
-
-    @Test
-    fun testGetSessionDir() {
-        // Arrange
-        val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
-
-        // Act
-        val sessionDir = storage.getSessionDir(user, session)
-
-        // Assert
-        assertTrue(sessionDir is File, "Expected File type for session directory")
-    }
-
-    // Continue writing tests for each method in StorageInterface...
-    // ...
+    fun updateUserSettings(user: User, settings: UserSettings)
 }
+
 
 interface UsageInterface {
     fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: ApiModel.Usage)
@@ -273,14 +200,37 @@ interface UsageInterface {
 }
 
 
-interface UserSettingsInterface {
-    data class UserSettings(
-        val apiKey: String = "",
-    )
+data class User(
+    @get:JsonProperty("email") internal val email: String,
+    @get:JsonProperty("name") internal val name: String? = null,
+    @get:JsonProperty("id") internal val id: String? = null,
+    @get:JsonProperty("picture") internal val picture: String? = null,
+) {
+    override fun toString() = email
 
-    fun getUserSettings(user: User): UserSettings
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
-    fun updateUserSettings(user: User, settings: UserSettings)
+        other as User
+
+        return email == other.email
+    }
+
+    override fun hashCode(): Int {
+        return email.hashCode()
+    }
+
+}
+
+data class Session(
+    internal val sessionId: String
+) {
+    init {
+        StorageInterface.validateSessionId(this)
+    }
+
+    override fun toString() = sessionId
 }
 
 

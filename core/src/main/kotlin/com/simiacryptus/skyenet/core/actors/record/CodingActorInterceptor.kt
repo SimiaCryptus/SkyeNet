@@ -33,11 +33,10 @@ class CodingActorInterceptor(
 
 
     override fun answer(vararg messages: ChatMessage, input: CodeRequest, api: API) =
-        functionInterceptor.wrap(messages, input) { messages, input ->
-        inner.answer(*messages, input=input, api = api)
-    }
+        functionInterceptor.wrap(messages, input)
+        { messages, input -> inner.answer(*messages, input=input, api = api) }
 
-    override fun execute(code: String) = functionInterceptor.wrap(code) {
-        inner.execute(it)
-    }
+    override fun execute(prefix: String, code: String) =
+        functionInterceptor.wrap(prefix, code)
+        { prefix, code -> inner.execute(prefix, code) }
 }
