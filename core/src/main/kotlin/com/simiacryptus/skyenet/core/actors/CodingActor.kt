@@ -223,7 +223,9 @@ open class CodingActor(
                                 |${workingCode}
                                 |```
                                 |
+                                |```text
                                 |${ex.message}
+                                |```
                                 """.trimMargin().trim(), workingCode
               )
               log.info("Validation failed - ${ex.message}")
@@ -427,10 +429,12 @@ open class CodingActor(
 
     fun errorMessage(ex: ScriptException, code: String) = try {
       """
-            |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
-            |  ${code.split("\n")[ex.lineNumber - 1]}
-            |  ${" ".repeat(ex.columnNumber - 1) + "^"}
-            """.trimMargin().trim()
+      |```text
+      |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
+      |  ${if(ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}
+      |  ${if(ex.columnNumber > 0) " ".repeat(ex.columnNumber - 1) + "^" else ""}
+      |```
+      """.trimMargin().trim()
     } catch (_: Exception) {
       ex.message ?: ""
     }
