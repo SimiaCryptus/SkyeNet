@@ -62,12 +62,12 @@ abstract class SocketManagerBase(
     spinner: String = SessionTask.spinner
   ) : SessionTask(mutableListOf(StringBuilder(responseContents)), spinner) {
     override fun send(html: String) = this@SocketManagerBase.send(html)
-    override fun save(file: String, data: ByteArray): String {
+    override fun saveFile(relativePath: String, data: ByteArray): String {
       dataStorage?.getSessionDir(owner, session)?.let { dir ->
         dir.mkdirs()
-        dir.resolve(file).writeBytes(data)
+        dir.resolve(relativePath).writeBytes(data)
       }
-      return "fileIndex/$session/$file"
+      return "fileIndex/$session/$relativePath"
     }
   }
 

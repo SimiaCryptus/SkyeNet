@@ -151,11 +151,20 @@ open class CodingActor(
       interpreter.run((prefix + code).sortCode())
     } catch (e: Exception) {
       when {
-        e is ScriptException -> throw FailedToImplementException(e, errorMessage(e, code), code)
+        e is FailedToImplementException -> throw e
+        e is ScriptException -> throw FailedToImplementException(
+          cause = e,
+          message = errorMessage(e, code),
+          language = language,
+          code = code,
+          prefix = prefix
+        )
         e.cause is ScriptException -> throw FailedToImplementException(
-          e,
-          errorMessage(e.cause!! as ScriptException, code),
-          code
+          cause = e,
+          message = errorMessage(e.cause!! as ScriptException, code),
+          language = language,
+          code = code,
+          prefix = prefix
         )
         else -> throw e
       }
@@ -218,17 +227,17 @@ open class CodingActor(
               return workingCode
             } catch (ex: Throwable) {
               if (fixAttempt == input.fixIterations) throw FailedToImplementException(
-                ex, """
-                                |Failed to fix code:
-                                |
-                                |```${language.lowercase()}
-                                |${workingCode}
-                                |```
-                                |
-                                |```text
-                                |${ex.message}
-                                |```
-                                """.trimMargin().trim(), workingCode
+                cause = ex,
+                message = """
+                  |**ERROR**
+                  |
+                  |```text
+                  |${ex.message}
+                  |```
+                  |""".trimMargin().trim(),
+                language = language,
+                code = workingCode,
+                prefix = input.codePrefix
               )
               log.info("Validation failed - ${ex.message}")
               _status = CodeResult.Status.Correcting
@@ -444,6 +453,8 @@ open class CodingActor(
   class FailedToImplementException(
     cause: Throwable? = null,
     message: String = "Failed to implement",
-    val code: String? = null
+    val language: String? = null,
+    val code: String? = null,
+    val prefix: String? = null,
   ) : RuntimeException(message, cause)
 }
