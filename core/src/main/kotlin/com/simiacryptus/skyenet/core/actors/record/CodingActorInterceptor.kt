@@ -32,9 +32,16 @@ class CodingActorInterceptor(
     }
 
 
-    override fun answer(vararg messages: ChatMessage, input: CodeRequest, api: API) =
-        functionInterceptor.wrap(messages, input)
-        { messages, input -> inner.answer(*messages, input=input, api = api) }
+    override fun answer(vararg messages: ChatMessage, input: CodeRequest, api: API): CodeResult {
+        val codeResult = functionInterceptor.wrap(messages, input)
+        { messages, input -> inner.answer(*messages, input = input, api = api).code }
+        return inner.CodeResultImpl(
+            messages=messages,
+            input=input,
+            api=api as com.simiacryptus.jopenai.OpenAIClient,
+            givenCode = codeResult
+        )
+    }
 
     override fun execute(prefix: String, code: String) =
         functionInterceptor.wrap(prefix, code)

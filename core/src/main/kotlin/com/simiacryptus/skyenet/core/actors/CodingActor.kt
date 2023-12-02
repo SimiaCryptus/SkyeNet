@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.core.actors
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel.*
 import com.simiacryptus.jopenai.ClientUtil.toContentList
@@ -50,7 +49,7 @@ open class CodingActor(
     }
 
     val code: String
-    val status: CodeResult.Status
+    val status: Status
     val result: ExecutionResult
   }
 
@@ -176,17 +175,16 @@ open class CodingActor(
     return executionResult
   }
 
-  private inner class CodeResultImpl(
+  inner class CodeResultImpl(
     vararg val messages: ChatMessage,
-    val input: CodeRequest,
-    val api: OpenAIClient,
-    val givenCode: String? = null,
+    private val input: CodeRequest,
+    private val api: OpenAIClient,
+    private val givenCode: String? = null,
   ) : CodeResult {
     var _status = CodeResult.Status.Coding
 
     override val status get() = _status
 
-    @JsonIgnore
     override val code: String = givenCode ?: try {
         implement(model)
       } catch (ex: FailedToImplementException) {
@@ -263,6 +261,7 @@ open class CodingActor(
 
 
     private val executionResult by lazy { execute(input.codePrefix, code) }
+
     override val result get() = executionResult
   }
 

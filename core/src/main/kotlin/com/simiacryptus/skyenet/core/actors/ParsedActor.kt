@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.core.actors
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ClientUtil.toContentList
