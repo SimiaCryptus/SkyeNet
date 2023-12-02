@@ -49,9 +49,9 @@ open class CodingActor(
       Coding, Correcting, Success, Failure
     }
 
-    fun getStatus(): Status
-    fun getCode(): String
-    fun result(): ExecutionResult
+    val code: String
+    val status: CodeResult.Status
+    val result: ExecutionResult
   }
 
   data class ExecutionResult(
@@ -121,14 +121,18 @@ open class CodingActor(
     var result = CodeResultImpl(*messages, api = (api as OpenAIClient), input = input)
     if (!input.autoEvaluate) return result
     for (i in 0..input.fixIterations) try {
-      result.result()
+      require(result.result.resultValue.length > -1)
       return result
     } catch (ex: Throwable) {
       if (i == input.fixIterations) {
-        log.info("Failed to implement ${messages.map { it.content?.joinToString("\n") { it.text ?: "" } }.joinToString("\n")}")
+        log.info(
+          "Failed to implement ${
+            messages.map { it.content?.joinToString("\n") { it.text ?: "" } }.joinToString("\n")
+          }"
+        )
         throw ex
       }
-      val respondWithCode = fixCommand(api, result.getCode(), ex, *messages, model = model)
+      val respondWithCode = fixCommand(api, result.code, ex, *messages, model = model)
       val codeBlocks = extractCodeBlocks(respondWithCode)
       val renderedResponse = getRenderedResponse(codeBlocks)
       val codedInstruction = getCode(language, codeBlocks)
@@ -153,7 +157,6 @@ open class CodingActor(
           errorMessage(e.cause!! as ScriptException, code),
           code
         )
-
         else -> throw e
       }
     }
@@ -172,11 +175,10 @@ open class CodingActor(
   ) : CodeResult {
     var _status = CodeResult.Status.Coding
 
-    override fun getStatus() = _status
+    override val status get() = _status
 
-    private val _code: String by lazy {
-      if (null != givenCode) return@lazy givenCode
-      try {
+    @JsonIgnore
+    override val code: String = givenCode ?: try {
         implement(model)
       } catch (ex: FailedToImplementException) {
         if (fallbackModel != model) {
@@ -193,7 +195,7 @@ open class CodingActor(
           throw ex
         }
       }
-    }
+
 
     private fun implement(
       model: ChatModels,
@@ -250,11 +252,9 @@ open class CodingActor(
       throw IllegalStateException()
     }
 
-    @JsonIgnore
-    override fun getCode(): String = _code
 
-    private val executionResult by lazy { execute(input.codePrefix, getCode()) }
-    override fun result() = executionResult
+    private val executionResult by lazy { execute(input.codePrefix, code) }
+    override val result get() = executionResult
   }
 
   private fun fixCommand(
@@ -431,8 +431,8 @@ open class CodingActor(
       """
       |```text
       |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
-      |  ${if(ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}
-      |  ${if(ex.columnNumber > 0) " ".repeat(ex.columnNumber - 1) + "^" else ""}
+      |  ${if (ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}
+      |  ${if (ex.columnNumber > 0) " ".repeat(ex.columnNumber - 1) + "^" else ""}
       |```
       """.trimMargin().trim()
     } catch (_: Exception) {

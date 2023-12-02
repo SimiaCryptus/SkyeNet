@@ -36,12 +36,8 @@ open class ParsedActor<T>(
 
   private inner class ParsedResponseImpl(vararg messages: ApiModel.ChatMessage, api: API) :
     ParsedResponse<T>(resultClass) {
-    private val parser: Function<String, T> = getParser(api)
-    private val _text: String by lazy {
-      response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
-    }
-    private val _obj: T by lazy { parser.apply(text) }
-    override val text get() = _text
+    override val text = response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
+    private val _obj: T by lazy { getParser(api).apply(text) }
     override val obj get() = _obj
   }
 

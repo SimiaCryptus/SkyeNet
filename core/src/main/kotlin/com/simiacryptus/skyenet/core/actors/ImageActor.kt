@@ -39,11 +39,11 @@ open class ImageActor(
     private inner class ImageResponseImpl(vararg messages: ChatMessage, val api: API) : ImageResponse {
 
         private val _text: String by lazy { response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response") }
-        override fun getText(): String = _text
-        override fun getImage(): BufferedImage {
+        override val text: String get() = _text
+        override val image: BufferedImage get() {
             val url = (api as OpenAIClient).createImage(
                 ImageGenerationRequest(
-                    prompt = getText(),
+                    prompt = text,
                     model = imageModel.modelName,
                     size = "${width}x$height"
                 )
@@ -58,6 +58,6 @@ open class ImageActor(
 }
 
 interface ImageResponse {
-    fun getText(): String
-    fun getImage(): BufferedImage
+    val text: String
+    val image: BufferedImage
 }

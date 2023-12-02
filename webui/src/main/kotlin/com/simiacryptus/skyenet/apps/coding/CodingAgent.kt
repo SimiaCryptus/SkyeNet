@@ -59,7 +59,7 @@ class CodingAgent<T:Interpreter>(
                     //language=Markdown
                     """
                 |```${actor.language.lowercase(Locale.getDefault())}
-                |${response.getCode()}
+                |${response.code}
                 |```
                 """.trimMargin().trim()
                 )
@@ -74,7 +74,7 @@ class CodingAgent<T:Interpreter>(
                 ui.hrefLink("▶", "href-link play-button") {
                     val header = task.header("Running...")
                     try {
-                        val result = response.result()
+                        val result = response.result
                         header?.clear()
                         task.header("Result")
                         task.add(result.resultValue, tag = "pre")
@@ -94,7 +94,7 @@ class CodingAgent<T:Interpreter>(
                     formHandle?.clear()
                     playLink?.clear()
                     task.echo(MarkdownUtil.renderMarkdown(feedback))
-                    val revisedCode = actor.answer(CodingActor.CodeRequest(listOf(userMessage, response.getCode(), feedback)), api = api)
+                    val revisedCode = actor.answer(CodingActor.CodeRequest(listOf(userMessage, response.code, feedback)), api = api)
                     displayCode(user, ui, task, revisedCode, userMessage, api)
                 } catch (e: Throwable) {
                     log.warn("Error", e)

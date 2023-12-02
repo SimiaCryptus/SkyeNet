@@ -39,7 +39,7 @@ open class CodingActorTestApp(
             val playLink = if (!canPlay) "" else {
                 ui.hrefLink("▶", "href-link play-button") {
                     message.add("Running...")
-                    val result = response.result()
+                    val result = response.result
                     message.complete(
                         """
                         |<pre>${result.resultValue}</pre>
@@ -52,7 +52,7 @@ open class CodingActorTestApp(
                 renderMarkdown(
                     """
                     |```${actor.language.lowercase(Locale.getDefault())}
-                    |${response.getCode()}
+                    |${response.code}
                     |```
                     |$playLink
                     """.trimMargin().trim()

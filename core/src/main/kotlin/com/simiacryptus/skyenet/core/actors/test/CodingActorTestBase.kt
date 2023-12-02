@@ -14,6 +14,6 @@ abstract class CodingActorTestBase : ActorTestBase<CodingActor.CodeRequest, Code
     )
 
     override fun getPrompt(actor: BaseActor<CodingActor.CodeRequest, CodeResult>): String = (actor as CodingActor).details!!
-    override fun resultMapper(result: CodeResult): String = result.getCode()
+    override fun resultMapper(result: CodeResult): String = result.code
 }
 
