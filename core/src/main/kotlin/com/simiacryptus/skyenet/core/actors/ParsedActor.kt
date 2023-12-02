@@ -36,12 +36,7 @@ open class ParsedActor<T>(
 
   private inner class ParsedResponseImpl(vararg messages: ApiModel.ChatMessage, api: API) :
     ParsedResponse<T>(resultClass) {
-    private val parser: Function<String, T> = ChatProxy(
-      clazz = parserClass,
-      api = (api as OpenAIClient),
-      model = parsingModel,
-      temperature = temperature,
-    ).create()
+    private val parser: Function<String, T> = getParser(api)
     private val _text: String by lazy {
       response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
     }
@@ -49,6 +44,13 @@ open class ParsedActor<T>(
     override val text get() = _text
     override val obj get() = _obj
   }
+
+  protected fun getParser(api: API) = ChatProxy(
+    clazz = parserClass,
+    api = (api as OpenAIClient),
+    model = parsingModel,
+    temperature = temperature,
+  ).create()
 
   override fun answer(vararg messages: ApiModel.ChatMessage, input: List<String>, api: API): ParsedResponse<T> {
     return ParsedResponseImpl(*messages, api = api)
