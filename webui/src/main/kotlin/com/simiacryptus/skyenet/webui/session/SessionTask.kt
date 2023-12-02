@@ -12,7 +12,10 @@ abstract class SessionTask(
     val currentText: String
         get() = buffer.filter { it.isNotBlank() }.joinToString("")
 
-    private fun append(htmlToAppend: String, showSpinner: Boolean): StringBuilder? {
+    private fun append(
+        htmlToAppend: String,
+        showSpinner: Boolean
+    ): StringBuilder? {
         val stringBuilder: StringBuilder?
         if (htmlToAppend.isNotBlank()) {
             stringBuilder = StringBuilder("<div>$htmlToAppend</div>")
@@ -24,8 +27,13 @@ abstract class SessionTask(
         return stringBuilder
     }
 
-    abstract fun send(html: String)
-    abstract fun save(file: String, data: ByteArray): String
+    abstract fun send(
+        html: String
+    )
+    abstract fun save(
+        file: String,
+        data: ByteArray
+    ): String
 
     fun add(
         message: String,
@@ -34,23 +42,35 @@ abstract class SessionTask(
         className: String = "response-message"
     ) = append("""<$tag class="$className">$message</$tag>""", showSpinner)
 
-    fun echo(message: String, showSpinner: Boolean = true, tag: String = "div") =
-        add(message, showSpinner, tag, "user-message")
+    fun echo(
+        message: String,
+        showSpinner: Boolean = true,
+        tag: String = "div"
+    ) = add(message, showSpinner, tag, "user-message")
 
-    fun header(message: String, showSpinner: Boolean = true, tag: String = "div") =
-        add(message, showSpinner, tag, "response-header")
+    fun header(
+        message: String,
+        showSpinner: Boolean = true,
+        tag: String = "div"
+    ) = add(message, showSpinner, tag, "response-header")
 
-    fun verbose(message: String, showSpinner: Boolean = true, tag: String = "pre") =
-        add(message, showSpinner, tag, "verbose")
+    fun verbose(
+        message: String,
+        showSpinner: Boolean = true,
+        tag: String = "pre"
+    ) = add(message, showSpinner, tag, "verbose")
 
-    fun error(message: String, showSpinner: Boolean = false, tag: String = "div") =
-        add(message, showSpinner, tag, "error")
+    fun error(
+        message: String,
+        showSpinner: Boolean = false,
+        tag: String = "div"
+    ) = add(message, showSpinner, tag, "error")
 
-    fun error(e: Throwable, showSpinner: Boolean = false, tag: String = "div") =
-        add(
-            "Error: ${renderMarkdown(e.message ?: "")}",
-            showSpinner, tag, "error"
-        )
+    fun error(
+        e: Throwable,
+        showSpinner: Boolean = false,
+        tag: String = "div"
+    ) = add("Error: ${renderMarkdown(e.message ?: "")}", showSpinner, tag, "error")
 
     fun complete(
         message: String = "",
@@ -58,8 +78,9 @@ abstract class SessionTask(
         className: String = "response-message"
     ) = append("""<$tag class="$className">$message</$tag>""", false)
 
-    fun image(image: BufferedImage) =
-        add("""<img src="${save("${UUID.randomUUID()}.png", image.toPng())}" />""")
+    fun image(
+        image: BufferedImage
+    ) = add("""<img src="${save("${UUID.randomUUID()}.png", image.toPng())}" />""")
 
     companion object {
         val log = LoggerFactory.getLogger(SessionTask::class.java)

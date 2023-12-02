@@ -1,11 +1,14 @@
 package com.simiacryptus.skyenet.webui.application
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
+import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
+import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.session.SocketManager
@@ -32,15 +35,13 @@ abstract class ApplicationServer(
     protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
     protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
-    //SessionThreadsServlet
     protected open val sessionThreadsServlet = ServletHolder("threads", SessionThreadsServlet(this))
-
     protected open val deleteSessionServlet = ServletHolder("delete", DeleteSessionServlet(this))
 
     override fun newSession(user: User?, session: Session): SocketManager {
         return object : ApplicationSocketManager(
             session = session,
-            user = user,
+            owner = user,
             dataStorage = dataStorage,
             applicationClass = this@ApplicationServer::class.java,
         ) {
