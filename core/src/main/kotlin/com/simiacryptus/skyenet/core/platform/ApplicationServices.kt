@@ -50,8 +50,6 @@ object ApplicationServices {
 interface AuthenticationInterface {
     fun getUser(accessToken: String?): User?
 
-    fun containsUser(value: String): Boolean
-
     fun putUser(accessToken: String, user: User): User
     fun logout(accessToken: String, user: User)
 

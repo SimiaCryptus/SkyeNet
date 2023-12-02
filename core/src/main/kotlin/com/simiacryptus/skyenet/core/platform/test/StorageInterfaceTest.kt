@@ -72,6 +72,7 @@ open class StorageInterfaceTest(val storage: StorageInterface) {
         // Arrange
         val user = User(email = "test@example.com")
         val session = Session("G-20230101-12345678")
+        storage.updateMessage(user, session, "msg001", "<p>Hello, World!</p><p>Hello, World!</p>")
 
         // Act
         val sessionTime = storage.getSessionTime(user, session)

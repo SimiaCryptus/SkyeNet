@@ -9,20 +9,20 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 open class UsageTest(val impl: UsageInterface) {
-    private val testUser = User(email = "test@example.com")
+  private val testUser = User(email = "test@example.com")
 
-    @Test
-    fun `incrementUsage should increment usage for session`() {
-        val model = ChatModels.GPT35Turbo
-        val session = StorageInterface.newGlobalID()
-        val usage = ApiModel.Usage(
-          prompt_tokens = 10,
-          completion_tokens = 20
-        )
-        impl.incrementUsage(session, testUser, model, usage)
-        val usageSummary = impl.getSessionUsageSummary(session)
-      Assertions.assertEquals(usage, usageSummary[model])
-        val userUsageSummary = impl.getUserUsageSummary(testUser)
-      Assertions.assertEquals(usage, userUsageSummary[model])
-    }
+  @Test
+  fun `incrementUsage should increment usage for session`() {
+    val model = ChatModels.GPT35Turbo
+    val session = StorageInterface.newGlobalID()
+    val usage = ApiModel.Usage(
+      prompt_tokens = 10,
+      completion_tokens = 20
+    )
+    impl.incrementUsage(session, testUser, model, usage)
+    val usageSummary = impl.getSessionUsageSummary(session)
+    Assertions.assertEquals(usage, usageSummary[model])
+    val userUsageSummary = impl.getUserUsageSummary(testUser)
+    Assertions.assertEquals(usage, userUsageSummary[model])
+  }
 }

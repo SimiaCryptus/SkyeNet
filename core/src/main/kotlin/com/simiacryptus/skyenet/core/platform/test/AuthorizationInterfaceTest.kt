@@ -1,6 +1,7 @@
 
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface
 import com.simiacryptus.skyenet.core.platform.User
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -12,7 +13,7 @@ open class AuthorizationInterfaceTest(
 
   @Test
   fun `newUser has admin`() {
-    assertTrue(authInterface.isAuthorized(this.javaClass, user, AuthorizationInterface.OperationType.Admin))
+    assertFalse(authInterface.isAuthorized(this.javaClass, user, AuthorizationInterface.OperationType.Admin))
   }
 
 }

@@ -9,8 +9,6 @@ open class AuthenticationManager : AuthenticationInterface {
 
     override fun getUser(accessToken: String?) = if (null == accessToken) null else users[accessToken]
 
-    override fun containsUser(value: String): Boolean = users.containsKey(value)
-
     override fun putUser(accessToken: String, user: User): User {
         users[accessToken] = user
         return user

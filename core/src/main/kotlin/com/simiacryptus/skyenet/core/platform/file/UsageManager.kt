@@ -12,10 +12,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-open class UsageManager : UsageInterface {
+open class UsageManager(val root : File = File(".skyenet/usage")) : UsageInterface {
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
-    private val txLogFile = File(".skyenet/usage/log.csv")
+    private val txLogFile = File(root, "log.csv")
     @Volatile private var txLogFileWriter: FileWriter?
     private val usagePerSession = ConcurrentHashMap<Session, UsageCounters>()
     private val sessionsByUser = ConcurrentHashMap<User, HashSet<Session>>()
@@ -107,7 +107,7 @@ open class UsageManager : UsageInterface {
             }
             txLogFileWriter = FileWriter(txLogFile, true)
         }
-        File(".skyenet/usage/counters.json").writeText(JsonUtil.toJson(usagePerSession))
+        File(root,"counters.json").writeText(JsonUtil.toJson(usagePerSession))
     }
 
     override fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: com.simiacryptus.jopenai.ApiModel.Usage) {

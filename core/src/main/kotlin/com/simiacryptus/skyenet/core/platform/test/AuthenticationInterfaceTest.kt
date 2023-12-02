@@ -33,19 +33,6 @@ open class AuthenticationInterfaceTest(
   }
 
   @Test
-  fun `containsUser should return false for non-existing user`() {
-    val exists = authInterface.containsUser(newUser.email)
-    assertFalse(exists)
-  }
-
-  @Test
-  fun `containsUser should return true after user is added`() {
-    authInterface.putUser(validAccessToken, newUser)
-    val exists = authInterface.containsUser(newUser.email)
-    assertTrue(exists)
-  }
-
-  @Test
   fun `logout should remove the user associated with the access token`() {
     authInterface.putUser(validAccessToken, newUser)
     assertNotNull(authInterface.getUser(validAccessToken))
