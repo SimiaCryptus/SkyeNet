@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.session
 
 import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
@@ -93,6 +94,7 @@ abstract class SessionTask(
     tag: String = "div"
   ) = add(
     when {
+      e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
       e is CodingActor.FailedToImplementException -> renderMarkdown(
         """
         |**Failed to Implement** 

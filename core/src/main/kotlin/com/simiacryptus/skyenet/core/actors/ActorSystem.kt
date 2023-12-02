@@ -4,6 +4,7 @@ import com.simiacryptus.skyenet.core.actors.record.CodingActorInterceptor
 import com.simiacryptus.skyenet.core.actors.record.ImageActorInterceptor
 import com.simiacryptus.skyenet.core.actors.record.ParsedActorInterceptor
 import com.simiacryptus.skyenet.core.actors.record.SimpleActorInterceptor
+import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
@@ -18,6 +19,7 @@ open class ActorSystem<T:Enum<*>>(
     val session: Session
 ) {
     private val sessionDir = dataStorage.getSessionDir(user, session)
+    protected val pool by lazy { ApplicationServices.clientManager.getPool(session, user, dataStorage) }
     fun getActor(actor: T): BaseActor<*,*> {
         val wrapper = getWrapper(actor.name)
         return when (val baseActor = actors[actor]) {
