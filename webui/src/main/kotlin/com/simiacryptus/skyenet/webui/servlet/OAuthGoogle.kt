@@ -9,7 +9,7 @@ import com.google.api.services.oauth2.Oauth2
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.User
-import jakarta.servlet.*
+import jakarta.servlet.DispatcherType
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -113,7 +113,7 @@ open class OAuthGoogle(
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(OAuthGoogle::class.java)
 
-        fun String.urlDecode(): String? = try {
+        fun String.urlDecode(): String = try {
             URLDecoder.decode(this, StandardCharsets.UTF_8.toString())
         } catch (e: UnsupportedEncodingException) {
             this
