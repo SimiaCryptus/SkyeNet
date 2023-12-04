@@ -20,17 +20,27 @@ repositories {
       artifact()
     }
   }
+  // https://maven.pkg.jetbrains.space/kotlin/p/kotlin/kotlin-ide-plugin-dependencies/
+  maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/kotlin-ide-plugin-dependencies")
 }
 
 val kotlin_version = "1.9.21"
 dependencies {
+
+  implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-cli-for-ide", version = "1.9.21-631")
+  { isTransitive = false }
+
   implementation(project(":kotlin"))
   {
     exclude(group = "com.simiacryptus", module = "jo-penai")
     exclude(group = "com.simiacryptus.skyenet", module = "core")
+    exclude(group = "commons-io", module = "")
+    exclude(group = "org.slf4j", module = "")
+    exclude(group = "org.jetbrains.kotlinx", module = "")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-scripting-common")
   }
 }
 
@@ -42,6 +52,7 @@ tasks.withType(ShadowJar::class.java).configureEach {
   relocate("org.jetbrains.kotlin.org", "org")
   relocate("org.jetbrains.org", "org")
   relocate("org.jetbrains.kotlin.it", "it")
+  //exclude("com/intellij/openapi/**")
 }
 
 tasks.named("build") {

@@ -7,27 +7,18 @@ import com.simiacryptus.skyenet.core.Interpreter
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
+import org.jetbrains.kotlin.cli.common.incrementalCompilationIsEnabled
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineFactoryBase
 import org.jetbrains.kotlin.cli.common.repl.ScriptArgsWithTypes
-import org.jetbrains.kotlin.cli.common.setupCommonArguments
-import org.jetbrains.kotlin.cli.common.setupLanguageVersionSettings
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment.Companion.getOrCreateApplicationEnvironmentForProduction
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment.ProjectEnvironment
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
-import org.jetbrains.kotlin.cli.jvm.compiler.setupIdeaStandaloneExecution
-import org.jetbrains.kotlin.cli.jvm.setupJvmSpecificArguments
 import org.jetbrains.kotlin.codegen.CompilationException
 import org.jetbrains.kotlin.codegen.state.GenerationState
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.com.intellij.psi.PsiFileFactory
-import org.jetbrains.kotlin.config.CommonConfigurationKeys
-import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.LanguageVersion
+import org.jetbrains.kotlin.config.*
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.ref.WeakReference
@@ -39,48 +30,25 @@ import java.util.Map
 import javax.script.Bindings
 import javax.script.ScriptContext
 import kotlin.script.experimental.api.with
-import kotlin.script.experimental.host.ScriptDefinition
-import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScript
+import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptCompilationConfiguration
+import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptEvaluationConfiguration
 import kotlin.script.experimental.jvm.JvmScriptCompilationConfigurationBuilder
 import kotlin.script.experimental.jvm.jvm
 import kotlin.script.experimental.jvm.updateClasspath
 import kotlin.script.experimental.jvm.util.scriptCompilationClasspathFromContext
-import kotlin.script.experimental.jvmhost.createJvmScriptDefinitionFromTemplate
 import kotlin.script.experimental.jvmhost.jsr223.KotlinJsr223ScriptEngineImpl
 
 open class KotlinInterpreter(
   private val defs: Map<String, Object> = HashMap<String, Object>() as Map<String, Object>,
 ) : Interpreter {
-  open val classLoader: ClassLoader = KotlinInterpreter::class.java.classLoader
-  override fun symbols() = defs as kotlin.collections.Map<String, Any>
+  open val classLoader: ClassLoader get() = KotlinInterpreter::class.java.classLoader
 
+  override fun symbols() = defs as kotlin.collections.Map<String, Any>
 
 
   override fun validate(code: String): Throwable? {
     val messageCollector = MessageCollectorImpl(code)
-    val environment: KotlinCoreEnvironment by lazy {
-      KotlinCoreEnvironment.createForProduction(
-        {},
-        CompilerConfiguration().apply {
-          val arguments = jvmCompilerArguments(code)
-          arguments.configureAnalysisFlags(messageCollector, LanguageVersion.KOTLIN_2_1)
-          arguments.configureLanguageFeatures(messageCollector)
-          put(
-            CommonConfigurationKeys.MODULE_NAME,
-            arguments.moduleName!!
-          )
-          put(
-            CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY,
-            messageCollector
-          )
-          this.setupJvmSpecificArguments(arguments)
-          this.setupCommonArguments(arguments)
-          this.setupLanguageVersionSettings(arguments)
-        },
-        EnvironmentConfigFiles.JVM_CONFIG_FILES
-      )
-    }
-
+    val environment: KotlinCoreEnvironment = kotlinCoreEnvironment(code, messageCollector)
     return try {
       val compileBunchOfSources: GenerationState? =
         KotlinToJVMBytecodeCompiler.analyzeAndGenerate(environment)
@@ -109,65 +77,56 @@ open class KotlinInterpreter(
       e
     }
   }
-//
-//  override fun validate(code: String) = try {
-//    val messageCollector = MessageCollectorImpl(code)
-//    val psiFileFactory = getPsiFileFactory(code, messageCollector)
-//    AnalyzingUtils.checkForSyntacticErrors(
-//      psiFileFactory.createFileFromText(
-//        "Dummy.kt",
-//        Language.findLanguageByID("kotlin")!!,
-//        code
-//      )
-//    )
-//    if (messageCollector.errors.isEmpty()) {
-//      null
-//    } else RuntimeException(
-//      """
-//      |${messageCollector.errors.joinToString("\n") { "Error: $it" }}
-//      |${messageCollector.warnings.joinToString("\n") { "Warning: $it" }}
-//      """.trimMargin()
-//    )
-//  } catch (e: Throwable) {
-//    e
-//  }
 
-  open fun getPsiFileFactory(
+  open fun kotlinCoreEnvironment(
     code: String,
     messageCollector: MessageCollector
-  ): PsiFileFactory = PsiFileFactory.getInstance(getProject(code, messageCollector))
-
-  open fun getProject(
-    code: String,
-    messageCollector: MessageCollector
-  ): Project {
+  ): KotlinCoreEnvironment {
     val environment: KotlinCoreEnvironment by lazy {
-      val parentDisposable = {}
-      val configuration = CompilerConfiguration().apply {
-        val arguments = jvmCompilerArguments(code)
-        arguments.configureAnalysisFlags(messageCollector, LanguageVersion.KOTLIN_2_1)
-        arguments.configureLanguageFeatures(messageCollector)
-        put(
-          CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY,
-          messageCollector
-        )
-        put(
-          CommonConfigurationKeys.MODULE_NAME,
-          arguments.moduleName!!
-        )
-        setupJvmSpecificArguments(arguments)
-        setupCommonArguments(arguments)
-        setupLanguageVersionSettings(arguments)
-      }
-      setupIdeaStandaloneExecution()
-      val appEnv = getOrCreateApplicationEnvironmentForProduction(parentDisposable, configuration)
-      val projectEnv = ProjectEnvironment(parentDisposable, appEnv, configuration)
-      KotlinCoreEnvironment.createForProduction(projectEnv, configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES)
+      KotlinCoreEnvironment.createForProduction(
+        {},
+        CompilerConfiguration().apply {
+          val arguments = jvmCompilerArguments(code)
+          arguments.configureAnalysisFlags(messageCollector, LanguageVersion.KOTLIN_2_1)
+          arguments.configureLanguageFeatures(messageCollector)
+          put(
+            CommonConfigurationKeys.MODULE_NAME,
+            arguments.moduleName!!
+          )
+          put(
+            CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY,
+            messageCollector
+          )
+          //setupJvmSpecificArguments(arguments)
+          put(JVMConfigurationKeys.INCLUDE_RUNTIME, arguments.includeRuntime)
+          put(JVMConfigurationKeys.NO_REFLECT, arguments.noReflect)
+          put(JVMConfigurationKeys.JDK_RELEASE, 17)
+          put(JVMConfigurationKeys.JVM_TARGET, JvmTarget.JVM_17)
+
+          //setupCommonArguments(arguments)
+          put(CommonConfigurationKeys.DISABLE_INLINE, arguments.noInline)
+          put(CommonConfigurationKeys.USE_FIR_EXTENDED_CHECKERS, arguments.useFirExtendedCheckers)
+          put(CommonConfigurationKeys.EXPECT_ACTUAL_LINKER, arguments.expectActualLinker)
+          putIfNotNull(CLIConfigurationKeys.INTELLIJ_PLUGIN_ROOT, arguments.intellijPluginRoot)
+          put(CommonConfigurationKeys.REPORT_OUTPUT_FILES, arguments.reportOutputFiles)
+          put(CommonConfigurationKeys.INCREMENTAL_COMPILATION, incrementalCompilationIsEnabled(arguments))
+          put(CommonConfigurationKeys.ALLOW_ANY_SCRIPTS_IN_SOURCE_ROOTS, arguments.allowAnyScriptsInSourceRoots)
+          put(CommonConfigurationKeys.IGNORE_CONST_OPTIMIZATION_ERRORS, arguments.ignoreConstOptimizationErrors)
+          val usesK2 = arguments.useK2 || languageVersionSettings.languageVersion.usesK2
+          put(CommonConfigurationKeys.USE_FIR, usesK2)
+          put(CommonConfigurationKeys.USE_LIGHT_TREE, arguments.useFirLT)
+
+          //setupLanguageVersionSettings(arguments)
+          languageVersionSettings = arguments.toLanguageVersionSettings(getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY))
+        },
+        EnvironmentConfigFiles.JVM_CONFIG_FILES
+      )
     }
-    return environment.project
+    return environment
   }
 
-  private class MessageCollectorImpl(
+  //
+  class MessageCollectorImpl(
     val code: String,
     val errors: ArrayList<String> = ArrayList(),
     val warnings: ArrayList<String> = ArrayList(),
@@ -206,7 +165,7 @@ open class KotlinInterpreter(
     return arguments
   }
 
-  private val scriptDefinition: ScriptDefinition = createJvmScriptDefinitionFromTemplate<KotlinJsr223DefaultScript>()
+
   private var lastClassLoader: ClassLoader? = null
   private var lastClassPath: List<File>? = null
 
@@ -227,18 +186,18 @@ open class KotlinInterpreter(
   }
 
 
-  open val scriptEngine get() = KotlinScriptEngineFactory().scriptEngine
+  open val scriptEngine : javax.script.ScriptEngine get() = KotlinScriptEngineFactory().scriptEngine
 
   inner class KotlinScriptEngineFactory : KotlinJsr223JvmScriptEngineFactoryBase() {
     override fun getScriptEngine() = KotlinJsr223ScriptEngineImpl(
       this,
-      scriptDefinition.compilationConfiguration.with {
+      KotlinJsr223DefaultScriptCompilationConfiguration.with {
         jvm {
 //                    dependencies(JvmDependencyFromClassLoader { classLoader })
           dependenciesFromCurrentContext()
         }
       },
-      scriptDefinition.evaluationConfiguration.with {
+      KotlinJsr223DefaultScriptEvaluationConfiguration.with {
 //                jvm {
 //                    set(baseClassLoader, classLoader)
 //                }
@@ -257,10 +216,12 @@ open class KotlinInterpreter(
 
   override fun run(code: String): Any? {
     val wrappedCode = wrapCode(code)
-    log.info("""
+    log.info(
+      """
       |Running:
       |   ${wrappedCode.trimIndent().replace("\n", "\n\t")}
-      |""".trimMargin().trim())
+      |""".trimMargin().trim()
+    )
     try {
       return scriptEngine.eval(wrappedCode)
     } catch (ex: javax.script.ScriptException) {
@@ -323,10 +284,12 @@ open class KotlinInterpreter(
       column: Int,
       message: String
     ) = """
-                |$message at line ${line} column ${column}
-                |  ${if (line < 0) "" else code.split("\n")[line - 1]}
-                |  ${if (column < 0) "" else " ".repeat(column - 1) + "^"}
-                """.trimMargin().trim()
+        |```text
+        |$message at line ${line} column ${column}
+        |  ${if (line < 0) "" else code.split("\n")[line - 1]}
+        |  ${if (column < 0) "" else " ".repeat(column - 1) + "^"}
+        |```
+        """.trimMargin().trim()
 
     fun ClassLoader.isolatedClassLoader() = URLClassLoader(arrayOf<URL>(), this)
   }

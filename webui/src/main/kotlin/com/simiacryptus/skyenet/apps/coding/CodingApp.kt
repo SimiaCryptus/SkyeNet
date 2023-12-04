@@ -5,7 +5,6 @@ import com.simiacryptus.skyenet.core.Interpreter
 import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
-import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import kotlin.reflect.KClass
 
 open class CodingApp<T:Interpreter>(

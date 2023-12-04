@@ -44,23 +44,23 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
-    compileOnlyApi(kotlin("stdlib"))
+    compileOnly(kotlin("stdlib"))
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
     testImplementation(kotlin("stdlib"))
     testImplementation(kotlin("script-runtime"))
 
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = junit_version)
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
-    compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-api", version = junit_version)
-    compileOnlyApi(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
+    compileOnly(group = "org.junit.jupiter", name = "junit-jupiter-api", version = junit_version)
+    compileOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
 
-    compileOnlyApi(platform("software.amazon.awssdk:bom:2.21.29"))
-    compileOnlyApi(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+    compileOnly(platform("software.amazon.awssdk:bom:2.21.29"))
+    compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
     testImplementation(platform("software.amazon.awssdk:bom:2.21.29"))
     testImplementation(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
 
-    compileOnlyApi(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
-    compileOnlyApi(group = "ch.qos.logback", name = "logback-core", version = logback_version)
+    compileOnly(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
+    compileOnly(group = "ch.qos.logback", name = "logback-core", version = logback_version)
     testImplementation(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
     testImplementation(group = "ch.qos.logback", name = "logback-core", version = logback_version)
 
