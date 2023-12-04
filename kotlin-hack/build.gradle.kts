@@ -20,7 +20,6 @@ repositories {
       artifact()
     }
   }
-  // https://maven.pkg.jetbrains.space/kotlin/p/kotlin/kotlin-ide-plugin-dependencies/
   maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/kotlin-ide-plugin-dependencies")
 }
 
@@ -52,7 +51,6 @@ tasks.withType(ShadowJar::class.java).configureEach {
   relocate("org.jetbrains.kotlin.org", "org")
   relocate("org.jetbrains.org", "org")
   relocate("org.jetbrains.kotlin.it", "it")
-  //exclude("com/intellij/openapi/**")
 }
 
 tasks.named("build") {
@@ -73,7 +71,7 @@ publishing {
   publications {
     create<MavenPublication>("mavenJava") {
       artifactId = "kotlin-hack"
-      from(components["java"])
+      //from(components["java"])
       artifact(tasks["shadowJar"])
       artifact(sourcesJar.get())
       artifact(javadocJar.get())
