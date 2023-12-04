@@ -108,7 +108,7 @@ abstract class SocketManagerBase(
         } else {
           onRun(message, socket)
         }
-      } catch (e: Exception) {
+      } catch (e: Throwable) {
         log.warn("$session - Error processing message: $message", e)
         send("""${randomID()},<div class="error">${MarkdownUtil.renderMarkdown(e.message ?: "")}</div>""")
       }
@@ -139,7 +139,11 @@ abstract class SocketManagerBase(
   companion object {
     private val log = LoggerFactory.getLogger(ChatServer::class.java)
 
-    fun randomID() = (0..5).map { ('a'..'z').random() }.joinToString("")
+      private val range = ('a'..'z').toList().toTypedArray()
+    fun randomID(): String {
+      val random = java.util.Random()
+      return (0..5).map { range[random.nextInt(range.size)] }.joinToString("")
+    }
     fun divInitializer(operationID: String = randomID(), cancelable: Boolean): String =
       if (!cancelable) """$operationID,""" else
         """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
