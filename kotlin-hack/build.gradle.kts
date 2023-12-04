@@ -24,8 +24,10 @@ repositories {
 
 val kotlin_version = "1.9.21"
 dependencies {
-  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-jsr223", version = kotlin_version)
+  implementation(project(":kotlin"))
   {
+    exclude(group = "com.simiacryptus", module = "jo-penai")
+    exclude(group = "com.simiacryptus.skyenet", module = "core")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler")
     exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")

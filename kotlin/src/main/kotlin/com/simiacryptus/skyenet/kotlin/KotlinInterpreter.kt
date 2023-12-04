@@ -2,11 +2,10 @@
 
 package com.simiacryptus.skyenet.kotlin
 
-import com.intellij.lang.Language
-import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiFileFactory
+
 import com.simiacryptus.skyenet.core.Interpreter
 import com.simiacryptus.skyenet.core.actors.CodingActor
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
@@ -19,12 +18,16 @@ import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment.Companion.getOrCreateApplicationEnvironmentForProduction
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment.ProjectEnvironment
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
 import org.jetbrains.kotlin.cli.jvm.compiler.setupIdeaStandaloneExecution
 import org.jetbrains.kotlin.cli.jvm.setupJvmSpecificArguments
+import org.jetbrains.kotlin.codegen.CompilationException
+import org.jetbrains.kotlin.codegen.state.GenerationState
+import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.com.intellij.psi.PsiFileFactory
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.LanguageVersion
-import org.jetbrains.kotlin.resolve.AnalyzingUtils
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.ref.WeakReference
@@ -51,27 +54,83 @@ open class KotlinInterpreter(
   open val classLoader: ClassLoader = KotlinInterpreter::class.java.classLoader
   override fun symbols() = defs as kotlin.collections.Map<String, Any>
 
-  override fun validate(code: String) = try {
+
+
+  override fun validate(code: String): Throwable? {
     val messageCollector = MessageCollectorImpl(code)
-    val psiFileFactory = getPsiFileFactory(code, messageCollector)
-    AnalyzingUtils.checkForSyntacticErrors(
-      psiFileFactory.createFileFromText(
-        "Dummy.kt",
-        Language.findLanguageByID("kotlin")!!,
-        code
+    val environment: KotlinCoreEnvironment by lazy {
+      KotlinCoreEnvironment.createForProduction(
+        {},
+        CompilerConfiguration().apply {
+          val arguments = jvmCompilerArguments(code)
+          arguments.configureAnalysisFlags(messageCollector, LanguageVersion.KOTLIN_2_1)
+          arguments.configureLanguageFeatures(messageCollector)
+          put(
+            CommonConfigurationKeys.MODULE_NAME,
+            arguments.moduleName!!
+          )
+          put(
+            CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY,
+            messageCollector
+          )
+          this.setupJvmSpecificArguments(arguments)
+          this.setupCommonArguments(arguments)
+          this.setupLanguageVersionSettings(arguments)
+        },
+        EnvironmentConfigFiles.JVM_CONFIG_FILES
       )
-    )
-    if (messageCollector.errors.isEmpty()) {
-      null
-    } else RuntimeException(
-      """
-      |${messageCollector.errors.joinToString("\n") { "Error: $it" }}
-      |${messageCollector.warnings.joinToString("\n") { "Warning: $it" }}
-      """.trimMargin()
-    )
-  } catch (e: Throwable) {
-    e
+    }
+
+    return try {
+      val compileBunchOfSources: GenerationState? =
+        KotlinToJVMBytecodeCompiler.analyzeAndGenerate(environment)
+      //val compileBunchOfSources1 = KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment)
+      if (null == compileBunchOfSources) {
+        Exception("Compilation failed")
+      } else {
+        if (messageCollector.errors.isEmpty()) {
+          null
+        } else RuntimeException(
+          """
+                    |${messageCollector.errors.joinToString("\n") { "Error: $it" }}
+                    |${messageCollector.warnings.joinToString("\n") { "Warning: $it" }}
+                    """.trimMargin()
+        )
+      }
+    } catch (e: CompilationException) {
+      RuntimeException(
+        """
+                |${e.message}
+                |${messageCollector.errors.joinToString("\n") { "Error: " + it }}
+                |${messageCollector.warnings.joinToString("\n") { "Warning: " + it }}
+                """.trimMargin(), e
+      )
+    } catch (e: Exception) {
+      e
+    }
   }
+//
+//  override fun validate(code: String) = try {
+//    val messageCollector = MessageCollectorImpl(code)
+//    val psiFileFactory = getPsiFileFactory(code, messageCollector)
+//    AnalyzingUtils.checkForSyntacticErrors(
+//      psiFileFactory.createFileFromText(
+//        "Dummy.kt",
+//        Language.findLanguageByID("kotlin")!!,
+//        code
+//      )
+//    )
+//    if (messageCollector.errors.isEmpty()) {
+//      null
+//    } else RuntimeException(
+//      """
+//      |${messageCollector.errors.joinToString("\n") { "Error: $it" }}
+//      |${messageCollector.warnings.joinToString("\n") { "Warning: $it" }}
+//      """.trimMargin()
+//    )
+//  } catch (e: Throwable) {
+//    e
+//  }
 
   open fun getPsiFileFactory(
     code: String,
@@ -88,6 +147,10 @@ open class KotlinInterpreter(
         val arguments = jvmCompilerArguments(code)
         arguments.configureAnalysisFlags(messageCollector, LanguageVersion.KOTLIN_2_1)
         arguments.configureLanguageFeatures(messageCollector)
+        put(
+          CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY,
+          messageCollector
+        )
         put(
           CommonConfigurationKeys.MODULE_NAME,
           arguments.moduleName!!
