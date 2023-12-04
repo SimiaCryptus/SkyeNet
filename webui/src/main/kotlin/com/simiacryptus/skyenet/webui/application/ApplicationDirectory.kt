@@ -31,7 +31,7 @@ abstract class ApplicationDirectory(
 ) {
     var domainName: String = "" // Resolved in _main
         private set
-    abstract val childWebApps: List<com.simiacryptus.skyenet.webui.application.ApplicationDirectory.ChildWebApp>
+    abstract val childWebApps: List<ChildWebApp>
 
     data class ChildWebApp(
         val path: String,
@@ -54,9 +54,11 @@ abstract class ApplicationDirectory(
         applicationName = "Demo",
         key = { decryptResource("client_secret_google_oauth.json.kms").byteInputStream() }
     )
+    open fun setupPlatform() {}
 
     protected open fun _main(args: Array<String>) {
         try {
+            setupPlatform()
             init(args.contains("--server"))
             ClientUtil.keyTxt = decryptResource("openai.key.kms", javaClass.classLoader)
             ApplicationServices.isLocked = true
@@ -89,7 +91,7 @@ abstract class ApplicationDirectory(
         }
     }
 
-    open fun init(isServer: Boolean): com.simiacryptus.skyenet.webui.application.ApplicationDirectory {
+    open fun init(isServer: Boolean): ApplicationDirectory {
         OutputInterceptor.setupInterceptor()
         domainName = domainName(isServer)
         return this
@@ -155,7 +157,7 @@ abstract class ApplicationDirectory(
 
 
     companion object {
-        private val log = LoggerFactory.getLogger(com.simiacryptus.skyenet.webui.application.ApplicationDirectory::class.java)
+        private val log = LoggerFactory.getLogger(ApplicationDirectory::class.java)
         fun allResources(resourceName: String) =
             Thread.currentThread().contextClassLoader.getResources(resourceName).toList()
     }

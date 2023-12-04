@@ -4,10 +4,10 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
-import com.simiacryptus.skyenet.core.platform.AuthenticationManager.Companion.AUTH_COOKIE
-import com.simiacryptus.skyenet.core.platform.AuthorizationManager
-import com.simiacryptus.skyenet.core.platform.DataStorage
+import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
+import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
@@ -28,22 +28,20 @@ abstract class ApplicationServer(
 
     open val description: String = ""
 
-    final override val dataStorage: DataStorage = dataStorageFactory(File(File(".skyenet"), applicationName))
+    final override val dataStorage: StorageInterface = dataStorageFactory(File(File(".skyenet"), applicationName))
     protected open val appInfo = ServletHolder("appInfo", AppInfoServlet(applicationName))
     protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
     protected open val usageServlet = ServletHolder("usage", UsageServlet())
     protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
     protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
     protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
-    //SessionThreadsServlet
     protected open val sessionThreadsServlet = ServletHolder("threads", SessionThreadsServlet(this))
-
     protected open val deleteSessionServlet = ServletHolder("delete", DeleteSessionServlet(this))
 
     override fun newSession(user: User?, session: Session): SocketManager {
         return object : ApplicationSocketManager(
             session = session,
-            user = user,
+            owner = user,
             dataStorage = dataStorage,
             applicationClass = this@ApplicationServer::class.java,
         ) {
@@ -98,7 +96,7 @@ abstract class ApplicationServer(
                 val canRead = authorizationManager.isAuthorized(
                     applicationClass = this@ApplicationServer.javaClass,
                     user = user,
-                    operationType = AuthorizationManager.OperationType.Read
+                    operationType = OperationType.Read
                 )
                 if (canRead) {
                     chain?.doFilter(request, response)
@@ -137,7 +135,8 @@ abstract class ApplicationServer(
                 filename.endsWith(".css") -> "text/css"
                 else -> "text/plain"
             }
-        fun HttpServletRequest.getCookie(name: String = AUTH_COOKIE) = cookies?.find { it.name == name }?.value
+        fun HttpServletRequest.getCookie(name: String = AuthenticationInterface.AUTH_COOKIE) =
+            cookies?.find { it.name == name }?.value
 
     }
 

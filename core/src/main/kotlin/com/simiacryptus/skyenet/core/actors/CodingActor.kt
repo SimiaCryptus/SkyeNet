@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.core.actors
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel.*
 import com.simiacryptus.jopenai.ClientUtil.toContentList
@@ -49,9 +48,9 @@ open class CodingActor(
       Coding, Correcting, Success, Failure
     }
 
-    fun getStatus(): Status
-    fun getCode(): String
-    fun result(): ExecutionResult
+    val code: String
+    val status: Status
+    val result: ExecutionResult
   }
 
   data class ExecutionResult(
@@ -121,14 +120,18 @@ open class CodingActor(
     var result = CodeResultImpl(*messages, api = (api as OpenAIClient), input = input)
     if (!input.autoEvaluate) return result
     for (i in 0..input.fixIterations) try {
-      result.result()
+      require(result.result.resultValue.length > -1)
       return result
     } catch (ex: Throwable) {
       if (i == input.fixIterations) {
-        log.info("Failed to implement ${messages.map { it.content?.joinToString("\n") { it.text ?: "" } }.joinToString("\n")}")
+        log.info(
+          "Failed to implement ${
+            messages.map { it.content?.joinToString("\n") { it.text ?: "" } }.joinToString("\n")
+          }"
+        )
         throw ex
       }
-      val respondWithCode = fixCommand(api, result.getCode(), ex, *messages, model = model)
+      val respondWithCode = fixCommand(api, result.code, ex, *messages, model = model)
       val codeBlocks = extractCodeBlocks(respondWithCode)
       val renderedResponse = getRenderedResponse(codeBlocks)
       val codedInstruction = getCode(language, codeBlocks)
@@ -139,21 +142,29 @@ open class CodingActor(
     throw IllegalStateException()
   }
 
-  open fun execute(code: String): ExecutionResult {
+  open fun execute(prefix: String, code: String): ExecutionResult {
     //language=HTML
     log.info("Running $code")
     OutputInterceptor.clearGlobalOutput()
     val result = try {
-      interpreter.run(code)
+      interpreter.run((prefix + code).sortCode())
     } catch (e: Exception) {
       when {
-        e is ScriptException -> throw FailedToImplementException(e, errorMessage(e, code), code)
-        e.cause is ScriptException -> throw FailedToImplementException(
-          e,
-          errorMessage(e.cause!! as ScriptException, code),
-          code
+        e is FailedToImplementException -> throw e
+        e is ScriptException -> throw FailedToImplementException(
+          cause = e,
+          message = errorMessage(e, code),
+          language = language,
+          code = code,
+          prefix = prefix
         )
-
+        e.cause is ScriptException -> throw FailedToImplementException(
+          cause = e,
+          message = errorMessage(e.cause!! as ScriptException, code),
+          language = language,
+          code = code,
+          prefix = prefix
+        )
         else -> throw e
       }
     }
@@ -164,19 +175,17 @@ open class CodingActor(
     return executionResult
   }
 
-  private inner class CodeResultImpl(
+  inner class CodeResultImpl(
     vararg val messages: ChatMessage,
-    val input: CodeRequest,
-    val api: OpenAIClient,
-    val givenCode: String? = null,
+    private val input: CodeRequest,
+    private val api: OpenAIClient,
+    private val givenCode: String? = null,
   ) : CodeResult {
     var _status = CodeResult.Status.Coding
 
-    override fun getStatus() = _status
+    override val status get() = _status
 
-    private val _code by lazy {
-      if (null != givenCode) return@lazy givenCode
-      try {
+    override val code: String = givenCode ?: try {
         implement(model)
       } catch (ex: FailedToImplementException) {
         if (fallbackModel != model) {
@@ -193,7 +202,7 @@ open class CodingActor(
           throw ex
         }
       }
-    }
+
 
     private fun implement(
       model: ChatModels,
@@ -216,15 +225,17 @@ open class CodingActor(
               return workingCode
             } catch (ex: Throwable) {
               if (fixAttempt == input.fixIterations) throw FailedToImplementException(
-                ex, """
-                                |Failed to fix code:
-                                |
-                                |```${language.lowercase()}
-                                |${workingCode}
-                                |```
-                                |
-                                |${ex.message}
-                                """.trimMargin().trim(), workingCode
+                cause = ex,
+                message = """
+                  |**ERROR**
+                  |
+                  |```text
+                  |${ex.message}
+                  |```
+                  |""".trimMargin().trim(),
+                language = language,
+                code = workingCode,
+                prefix = input.codePrefix
               )
               log.info("Validation failed - ${ex.message}")
               _status = CodeResult.Status.Correcting
@@ -245,14 +256,13 @@ open class CodingActor(
           _status = CodeResult.Status.Correcting
         }
       }
-      throw FailedToImplementException()
+      throw IllegalStateException()
     }
 
-    @JsonIgnore
-    override fun getCode(): String = _code
 
-    private val executionResult by lazy { execute((input.codePrefix + "\n" + getCode()).sortCode()) }
-    override fun result() = executionResult
+    private val executionResult by lazy { execute(input.codePrefix, code) }
+
+    override val result get() = executionResult
   }
 
   private fun fixCommand(
@@ -427,10 +437,12 @@ open class CodingActor(
 
     fun errorMessage(ex: ScriptException, code: String) = try {
       """
-            |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
-            |  ${code.split("\n")[ex.lineNumber - 1]}
-            |  ${" ".repeat(ex.columnNumber - 1) + "^"}
-            """.trimMargin().trim()
+      |```text
+      |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
+      |  ${if (ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}
+      |  ${if (ex.columnNumber > 0) " ".repeat(ex.columnNumber - 1) + "^" else ""}
+      |```
+      """.trimMargin().trim()
     } catch (_: Exception) {
       ex.message ?: ""
     }
@@ -440,6 +452,8 @@ open class CodingActor(
   class FailedToImplementException(
     cause: Throwable? = null,
     message: String = "Failed to implement",
-    val code: String? = null
+    val language: String? = null,
+    val code: String? = null,
+    val prefix: String? = null,
   ) : RuntimeException(message, cause)
 }

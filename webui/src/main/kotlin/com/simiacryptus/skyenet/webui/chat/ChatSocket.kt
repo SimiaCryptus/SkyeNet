@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.chat
 
 import com.simiacryptus.skyenet.webui.session.SocketManager
+import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
 
@@ -8,11 +9,12 @@ class ChatSocket(
     private val sessionState: SocketManager,
 ) : WebSocketAdapter() {
 
+    val user get() = SocketManagerBase.getUser(session)
 
     override fun onWebSocketConnect(session: Session) {
         super.onWebSocketConnect(session)
         //log.debug("{} - Socket connected: {}", session, session.remote)
-        sessionState.addSocket(this)
+        sessionState.addSocket(this, session)
         sessionState.getReplay().forEach {
             try {
                 remote.sendString(it)

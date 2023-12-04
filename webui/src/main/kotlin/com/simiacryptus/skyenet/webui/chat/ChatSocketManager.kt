@@ -21,7 +21,7 @@ open class ChatSocketManager(
     val api: OpenAIClient,
     val temperature: Double = 0.3,
     applicationClass: Class<out ApplicationServer>,
-) : SocketManagerBase(session, parent.dataStorage, user = null, applicationClass = applicationClass) {
+) : SocketManagerBase(session, parent.dataStorage, owner = null, applicationClass = applicationClass) {
 
     init {
         if (userInterfacePrompt.isNotBlank()) {

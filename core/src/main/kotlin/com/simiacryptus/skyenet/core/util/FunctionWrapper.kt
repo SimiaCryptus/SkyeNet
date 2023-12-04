@@ -72,17 +72,27 @@ class JsonFunctionRecorder(baseDir: File) : FunctionInterceptor, Closeable {
 
     override fun <T : Any> intercept(returnClazz: Class<T>, fn: () -> T): T {
         val dir = operationDir()
-        val result = fn()
-        File(dir, "output.json").writeText(JsonUtil.toJson(result))
-        return result
+        try {
+            val result = fn()
+            File(dir, "output.json").writeText(JsonUtil.toJson(result))
+            return result
+        } catch (e: Throwable) {
+            File(dir, "error.json").writeText(JsonUtil.toJson(e))
+            throw e
+        }
     }
 
     override fun <P : Any, T : Any> intercept(params: P, returnClazz: Class<T>, fn: (P) -> T): T {
         val dir = operationDir()
         File(dir, "input.json").writeText(JsonUtil.toJson(params))
-        val result = fn(params)
-        File(dir, "output.json").writeText(JsonUtil.toJson(result))
-        return result
+        try {
+            val result = fn(params)
+            File(dir, "output.json").writeText(JsonUtil.toJson(result))
+            return result
+        } catch (e: Throwable) {
+            File(dir, "error.json").writeText(JsonUtil.toJson(e))
+            throw e
+        }
     }
 
     private fun operationDir(): File {

@@ -1,10 +1,7 @@
 package com.simiacryptus.skyenet.webui.chat
 
+import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
-import com.simiacryptus.skyenet.core.platform.AuthenticationManager.Companion.AUTH_COOKIE
-import com.simiacryptus.skyenet.core.platform.DataStorage
-import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.servlet.NewSessionServlet
 import com.simiacryptus.skyenet.webui.session.SocketManager
 import org.eclipse.jetty.servlet.DefaultServlet
@@ -18,7 +15,7 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 abstract class ChatServer(val resourceBase: String) {
 
     abstract val applicationName: String
-    open val dataStorage: DataStorage? = null
+    open val dataStorage: StorageInterface? = null
 
     inner class WebSocketHandler : JettyWebSocketServlet() {
         private val stateCache: MutableMap<Session, SocketManager> = mutableMapOf()
@@ -33,7 +30,7 @@ abstract class ChatServer(val resourceBase: String) {
                             if (stateCache.containsKey(session)) {
                                 stateCache[session]!!
                             } else {
-                                val user = authenticationManager.getUser(req.getCookie(AUTH_COOKIE))
+                                val user = authenticationManager.getUser(req.getCookie(AuthenticationInterface.AUTH_COOKIE))
                                 val sessionState = newSession(user, session)
                                 stateCache[session] = sessionState
                                 sessionState

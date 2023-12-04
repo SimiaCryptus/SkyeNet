@@ -4,14 +4,14 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.core.platform.DataStorage
 import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 
 class TensorflowProjector(
     val api: API,
-    val dataStorage: DataStorage,
+    val dataStorage: StorageInterface,
     val sessionID: Session,
     val appPath: String,
     val host: String,

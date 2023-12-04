@@ -17,7 +17,7 @@ class SessionIdFilter(
         if (request is HttpServletRequest && response is HttpServletResponse) {
             if (isSecure(request)) {
                 val sessionIdCookie = request.getCookie()
-                if (sessionIdCookie == null || !ApplicationServices.authenticationManager.containsUser(
+                if (sessionIdCookie == null || null == ApplicationServices.authenticationManager.getUser(
                         sessionIdCookie
                     )
                 ) {

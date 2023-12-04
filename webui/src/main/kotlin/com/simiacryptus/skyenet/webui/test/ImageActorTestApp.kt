@@ -37,8 +37,8 @@ open class ImageActorTestApp(
             message.echo(renderMarkdown(userMessage))
             val response = actor.answer(
                 listOf(userMessage), api = api)
-            message.verbose(response.getText())
-            message.image(response.getImage())
+            message.verbose(response.text)
+            message.image(response.image)
             message.complete()
         } catch (e: Throwable) {
             log.warn("Error flushing image", e)

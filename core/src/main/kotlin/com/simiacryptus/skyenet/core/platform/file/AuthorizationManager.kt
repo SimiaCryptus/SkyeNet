@@ -1,30 +1,23 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.file
 
+import com.simiacryptus.skyenet.core.platform.AuthorizationInterface
+import com.simiacryptus.skyenet.core.platform.User
 import java.util.*
 
-open class AuthorizationManager {
+open class AuthorizationManager : AuthorizationInterface {
 
-    enum class OperationType {
-        Read,
-        Write,
-        Execute,
-        Delete,
-        Admin,
-        GlobalKey,
-    }
-
-    open fun isAuthorized(
+    override fun isAuthorized(
         applicationClass: Class<*>?,
         user: User?,
-        operationType: OperationType,
+        operationType: AuthorizationInterface.OperationType,
     ) = try {
-        if (isUserAuthorized("/permissions/${operationType.name.lowercase(Locale.getDefault())}.txt", user?.email)) {
+        if (isUserAuthorized("/permissions/${operationType.name.lowercase(Locale.getDefault())}.txt", user)) {
             log.debug("User {} authorized for {} globally", user, operationType)
             true
         } else if (null != applicationClass) {
             val packagePath = applicationClass.`package`.name.replace('.', '/')
             val opName = operationType.name.lowercase(Locale.getDefault())
-            if (isUserAuthorized("/permissions/$packagePath/$opName.txt", user?.email)) {
+            if (isUserAuthorized("/permissions/$packagePath/$opName.txt", user)) {
                 log.debug("User {} authorized for {} on {}", user, operationType, applicationClass)
                 true
             } else {
@@ -40,19 +33,23 @@ open class AuthorizationManager {
         false
     }
 
-    private fun isUserAuthorized(permissionPath: String, user: String?) =
+    fun isUserAuthorized(permissionPath: String, user: User?) =
         javaClass.getResourceAsStream(permissionPath)?.use { stream ->
             val lines = stream.bufferedReader().readLines()
-            lines.any {
-                when {
-                    it.equals(user, ignoreCase = true) -> true // Exact match
-                    it == "." && user != null -> true // Any user
-                    it == "*" -> true // Any user including anonymous
-                    else -> false
-                }
+            lines.any { line ->
+                matches(user, line)
             }
         } ?: false
 
-    private val log = org.slf4j.LoggerFactory.getLogger(AuthorizationManager::class.java)
+    open fun matches(user: User?, line: String) = when {
+        line.equals(user?.email, ignoreCase = true) -> true // Exact match
+        line == "." && user != null -> true // Any user
+        line == "*" -> true // Any user including anonymous
+        else -> false
+    }
+
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(AuthorizationManager::class.java)
+    }
 
 }

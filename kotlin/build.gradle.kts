@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.9.20"
+    id("org.jetbrains.kotlin.jvm") version "1.9.21"
     `maven-publish`
     id("signing")
 }
@@ -33,12 +33,13 @@ dependencies {
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
 
     implementation(kotlin("stdlib"))
+    implementation(kotlin("compiler"))
     implementation(kotlin("scripting-jsr223"))
     implementation(kotlin("scripting-jvm"))
     implementation(kotlin("scripting-jvm-host"))
     implementation(kotlin("script-runtime"))
-    implementation(kotlin("compiler-embeddable"))
     implementation(kotlin("scripting-compiler-embeddable"))
+//    implementation(kotlin("compiler-embeddable"))
 
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
 
@@ -54,12 +55,12 @@ dependencies {
 tasks {
 
     compileKotlin {
-        kotlinOptions {
+        compilerOptions {
             javaParameters = true
         }
     }
     compileTestKotlin {
-        kotlinOptions {
+        compilerOptions {
             javaParameters = true
         }
     }

@@ -1,15 +1,19 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.file
 
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
+import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.validateSessionId
+import com.simiacryptus.skyenet.core.platform.User
 import java.io.File
 import java.util.*
 
 
 open class DataStorage(
     private val dataDir: File
-) {
+) : StorageInterface {
 
-    open fun <T> getJson(
+    override fun <T> getJson(
         user: User?,
         session: Session,
         filename: String,
@@ -22,7 +26,7 @@ open class DataStorage(
         }
     }
 
-    open fun getMessages(
+    override fun getMessages(
         user: User?,
         session: Session
     ): LinkedHashMap<String, String> {
@@ -38,7 +42,7 @@ open class DataStorage(
         return messages
     }
 
-    open fun getSessionDir(
+    override fun getSessionDir(
         user: User?,
         session: Session
     ): File {
@@ -72,12 +76,12 @@ open class DataStorage(
         }
     }
 
-    open fun getSessionName(
+    override fun getSessionName(
         user: User?,
         session: Session
     ): String {
         validateSessionId(session)
-        val userMessage = messages(user, session).entries.minByOrNull { it.key.lastModified() }?.value
+        val userMessage = messageFiles(user, session).entries.minByOrNull { it.key.lastModified() }?.value
         return if (null != userMessage) {
             //log.debug("Session {}: {}", session, userMessage)
             userMessage
@@ -87,12 +91,12 @@ open class DataStorage(
         }
     }
 
-    open fun getSessionTime(
+    override fun getSessionTime(
         user: User?,
         session: Session
     ): Date? {
         validateSessionId(session)
-        val file = messages(user, session).entries.minByOrNull { it.key.lastModified() }?.key
+        val file = messageFiles(user, session).entries.minByOrNull { it.key.lastModified() }?.key
         return if (null != file) {
             Date(file.lastModified())
         } else {
@@ -101,7 +105,7 @@ open class DataStorage(
         }
     }
 
-    private fun messages(
+    fun messageFiles(
         user: User?,
         session: Session
     ) = File(this.getSessionDir(user, session), MESSAGE_DIR).listFiles()
@@ -123,7 +127,7 @@ open class DataStorage(
             }
         }?.filter { it.second.isNotEmpty() }?.toList()?.toMap() ?: mapOf()
 
-    open fun listSessions(
+    override fun listSessions(
         user: User?
     ): List<Session> {
         val globalSessions = listSessions(dataDir)
@@ -131,7 +135,7 @@ open class DataStorage(
         return globalSessions.map { Session("G-$it") } + userSessions.map { Session("U-$it") }
     }
 
-    open fun <T : Any> setJson(
+    override fun <T : Any> setJson(
         user: User?,
         session: Session,
         filename: String,
@@ -144,7 +148,7 @@ open class DataStorage(
         return settings
     }
 
-    open fun updateMessage(
+    override fun updateMessage(
         user: User?,
         session: Session,
         messageId: String,
@@ -157,7 +161,7 @@ open class DataStorage(
         JsonUtil.objectMapper().writeValue(file, value)
     }
 
-    private fun listSessions(dir: File): List<String> {
+    override fun listSessions(dir: File): List<String> {
         val files = dir.listFiles()?.flatMap { it.listFiles()?.toList() ?: listOf() }?.filter { sessionDir ->
             val operationDir = File(sessionDir, MESSAGE_DIR)
             if (!operationDir.exists()) false else {
@@ -169,12 +173,12 @@ open class DataStorage(
         return files.map { it.parentFile.name + "-" + it.name }
     }
 
-    private fun userRoot(user: User?) = File(
+    override fun userRoot(user: User?) = File(
         File(dataDir, "users"),
         user?.email ?: throw IllegalArgumentException("User required for private session")
     )
 
-    fun deleteSession(user: User?, session: Session) {
+    override fun deleteSession(user: User?, session: Session) {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
         sessionDir.deleteRecursively()
@@ -182,29 +186,7 @@ open class DataStorage(
 
     companion object {
 
-        private val log = org.slf4j.LoggerFactory.getLogger(DataStorage::class.java)
-
-        fun validateSessionId(
-            session: Session
-        ) {
-            if (!session.sessionId.matches("""([GU]-)?\d{8}-\w{8}""".toRegex())) {
-                throw IllegalArgumentException("Invalid session ID: $session")
-            }
-        }
-
-        fun newGlobalID(): Session {
-            val uuid = UUID.randomUUID().toString().split("-").first()
-            val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
-            //log.debug("New ID: $yyyyMMdd-$uuid")
-            return Session("G-$yyyyMMdd-$uuid")
-        }
-
-        fun newUserID(): Session {
-            val uuid = UUID.randomUUID().toString().split("-").first()
-            val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
-            //log.debug("New ID: $yyyyMMdd-$uuid")
-            return Session("U-$yyyyMMdd-$uuid")
-        }
+        private val log = org.slf4j.LoggerFactory.getLogger(StorageInterface::class.java)
 
         private val MESSAGE_DIR = ".sys" + File.separator + "messages"
 

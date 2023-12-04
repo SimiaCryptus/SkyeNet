@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.9.20"
+    id("org.jetbrains.kotlin.jvm") version "1.9.21"
     `maven-publish`
     id("signing")
 }
@@ -27,17 +27,15 @@ kotlin {
 //    jvmToolchain(17)
 }
 
-val kotlin_version = "1.9.20"
+val kotlin_version = "1.9.21"
 val jetty_version = "11.0.18"
 val jackson_version = "2.15.3"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.38")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.40")
 
     implementation(project(":core"))
-    testImplementation(project(":groovy"))
-    testImplementation(project(":kotlin"))
-    testImplementation(project(":scala"))
+
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
@@ -51,7 +49,12 @@ dependencies {
 
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
 
-    implementation(kotlin("stdlib"))
+    compileOnly(kotlin("stdlib"))
+    testImplementation(kotlin("stdlib"))
+
+    testImplementation(project(":groovy"))
+    testImplementation(project(":kotlin"))
+    testImplementation(project(":scala"))
 
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-core", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jackson_version)
@@ -76,12 +79,12 @@ dependencies {
 tasks {
 
     compileKotlin {
-        kotlinOptions {
+        compilerOptions {
             javaParameters = true
         }
     }
     compileTestKotlin {
-        kotlinOptions {
+        compilerOptions {
             javaParameters = true
         }
     }
