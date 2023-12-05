@@ -26,7 +26,6 @@ import java.lang.reflect.Proxy
 import java.net.URL
 import java.net.URLClassLoader
 import java.util.*
-import java.util.Map
 import javax.script.Bindings
 import javax.script.ScriptContext
 import kotlin.script.experimental.api.with
@@ -39,7 +38,7 @@ import kotlin.script.experimental.jvm.util.scriptCompilationClasspathFromContext
 import kotlin.script.experimental.jvmhost.jsr223.KotlinJsr223ScriptEngineImpl
 
 open class KotlinInterpreter(
-  private val defs: Map<String, Object> = HashMap<String, Object>() as Map<String, Object>,
+  private val defs: Map<String, Any> = HashMap<String, Any>(),
 ) : Interpreter {
   open val classLoader: ClassLoader get() = KotlinInterpreter::class.java.classLoader
 
@@ -254,7 +253,7 @@ open class KotlinInterpreter(
     val out = ArrayList<String>()
     val (imports, otherCode) = code.split("\n").partition { it.trim().startsWith("import ") }
     out.addAll(imports)
-    defs.entrySet().forEach { (key, value) ->
+    defs.forEach { key, value ->
       val uuid = storageMap.getOrPut(value) { UUID.randomUUID() }
       retrievalIndex.put(uuid, WeakReference(value))
       val fqClassName = KotlinInterpreter::class.java.name.replace("$", ".")
@@ -275,8 +274,8 @@ open class KotlinInterpreter(
 
   companion object {
     private val log = LoggerFactory.getLogger(KotlinInterpreter::class.java)
-    val storageMap = WeakHashMap<Object, UUID>()
-    val retrievalIndex = HashMap<UUID, WeakReference<Object>>()
+    val storageMap = WeakHashMap<Any, UUID>()
+    val retrievalIndex = HashMap<UUID, WeakReference<Any>>()
 
     fun errorMessage(
       code: String,
