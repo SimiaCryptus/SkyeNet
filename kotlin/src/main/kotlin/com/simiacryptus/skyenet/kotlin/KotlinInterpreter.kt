@@ -26,12 +26,9 @@ import java.lang.reflect.Proxy
 import java.net.URL
 import java.net.URLClassLoader
 import java.util.*
-import javax.script.Bindings
-import javax.script.ScriptContext
 import kotlin.script.experimental.api.with
 import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptCompilationConfiguration
 import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptEvaluationConfiguration
-import kotlin.script.experimental.jvm.JvmScriptCompilationConfigurationBuilder
 import kotlin.script.experimental.jvm.jvm
 import kotlin.script.experimental.jvm.updateClasspath
 import kotlin.script.experimental.jvm.util.scriptCompilationClasspathFromContext
@@ -47,32 +44,38 @@ open class KotlinInterpreter(
 
   override fun validate(code: String): Throwable? {
     val messageCollector = MessageCollectorImpl(code)
-    val environment: KotlinCoreEnvironment = kotlinCoreEnvironment(code, messageCollector)
     return try {
+      val environment = kotlinCoreEnvironment(code, messageCollector)
       val compileBunchOfSources: GenerationState? =
         KotlinToJVMBytecodeCompiler.analyzeAndGenerate(environment)
-      //val compileBunchOfSources1 = KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment)
       if (null == compileBunchOfSources) {
-        Exception("Compilation failed")
+        RuntimeException(
+          if (messageCollector.errors.isEmpty()) "Compilation failed"
+          else """Compilation failed
+          |${messageCollector.errors.joinToString("\n") { "Error: $it" }}
+          |${messageCollector.warnings.joinToString("\n") { "Warning: $it" }}
+          """.trimMargin()
+        )
       } else {
         if (messageCollector.errors.isEmpty()) {
+          //compileBunchOfSources.scriptSpecific.resultType
           null
         } else RuntimeException(
           """
-                    |${messageCollector.errors.joinToString("\n") { "Error: $it" }}
-                    |${messageCollector.warnings.joinToString("\n") { "Warning: $it" }}
-                    """.trimMargin()
+          |${messageCollector.errors.joinToString("\n") { "Error: $it" }}
+          |${messageCollector.warnings.joinToString("\n") { "Warning: $it" }}
+          """.trimMargin()
         )
       }
     } catch (e: CompilationException) {
       RuntimeException(
         """
-                |${e.message}
-                |${messageCollector.errors.joinToString("\n") { "Error: " + it }}
-                |${messageCollector.warnings.joinToString("\n") { "Warning: " + it }}
-                """.trimMargin(), e
+        |${e.message}
+        |${messageCollector.errors.joinToString("\n") { "Error: " + it }}
+        |${messageCollector.warnings.joinToString("\n") { "Warning: " + it }}
+        """.trimMargin(), e
       )
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
       e
     }
   }
@@ -85,7 +88,29 @@ open class KotlinInterpreter(
       KotlinCoreEnvironment.createForProduction(
         {},
         CompilerConfiguration().apply {
-          val arguments = jvmCompilerArguments(code)
+          val arguments = K2JVMCompilerArguments()
+          arguments.expression = code
+          arguments.classpath = System.getProperty("java.class.path")
+          arguments.enableDebugMode = true
+          arguments.extendedCompilerChecks = true
+          arguments.reportOutputFiles = true
+          arguments.moduleName = "KotlinInterpreter"
+          arguments.noOptimize = true
+          arguments.script = true
+          arguments.validateIr = true
+          arguments.validateBytecode = true
+          arguments.verbose = true
+          arguments.useTypeTable = true
+          arguments.includeRuntime = true
+          arguments.noReflect = true
+          arguments.useK2 = true
+          arguments.jdkHome = System.getProperty("java.home")
+          arguments.noInline = true
+          arguments.expectActualLinker = true
+          arguments.reportOutputFiles = false
+          arguments.incrementalCompilation = false
+          arguments.allowAnyScriptsInSourceRoots = true
+          arguments.ignoreConstOptimizationErrors = true
           arguments.configureAnalysisFlags(messageCollector, LanguageVersion.KOTLIN_2_1)
           arguments.configureLanguageFeatures(messageCollector)
           put(
@@ -99,8 +124,19 @@ open class KotlinInterpreter(
           //setupJvmSpecificArguments(arguments)
           put(JVMConfigurationKeys.INCLUDE_RUNTIME, arguments.includeRuntime)
           put(JVMConfigurationKeys.NO_REFLECT, arguments.noReflect)
-          put(JVMConfigurationKeys.JDK_RELEASE, 17)
-          put(JVMConfigurationKeys.JVM_TARGET, JvmTarget.JVM_17)
+          put(JVMConfigurationKeys.JDK_RELEASE, 11)
+          put(JVMConfigurationKeys.JVM_TARGET, JvmTarget.JVM_11)
+          put(JVMConfigurationKeys.JDK_HOME, File(arguments.jdkHome!!))
+          put(JVMConfigurationKeys.SAM_CONVERSIONS, JvmClosureGenerationScheme.INDY)
+          put(JVMConfigurationKeys.LAMBDAS, JvmClosureGenerationScheme.INDY)
+          put(JVMConfigurationKeys.COMPILE_JAVA, false)
+          put(JVMConfigurationKeys.USE_JAVAC, false)
+          put(JVMConfigurationKeys.RETAIN_OUTPUT_IN_MEMORY, true)
+          put(JVMConfigurationKeys.VALIDATE_IR, true)
+          put(JVMConfigurationKeys.VALIDATE_BYTECODE, true)
+
+          //setupLanguageVersionSettings(arguments)
+          languageVersionSettings = arguments.toLanguageVersionSettings(messageCollector)
 
           //setupCommonArguments(arguments)
           put(CommonConfigurationKeys.DISABLE_INLINE, arguments.noInline)
@@ -114,17 +150,14 @@ open class KotlinInterpreter(
           val usesK2 = arguments.useK2 || languageVersionSettings.languageVersion.usesK2
           put(CommonConfigurationKeys.USE_FIR, usesK2)
           put(CommonConfigurationKeys.USE_LIGHT_TREE, arguments.useFirLT)
-
-          //setupLanguageVersionSettings(arguments)
-          languageVersionSettings = arguments.toLanguageVersionSettings(getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY))
         },
         EnvironmentConfigFiles.JVM_CONFIG_FILES
       )
     }
+    //environment.projectEnvironment.configureProjectEnvironment()
     return environment
   }
 
-  //
   class MessageCollectorImpl(
     val code: String,
     val errors: ArrayList<String> = ArrayList(),
@@ -147,67 +180,40 @@ open class KotlinInterpreter(
 
   }
 
-  protected open fun jvmCompilerArguments(code: String): K2JVMCompilerArguments {
-    val arguments = K2JVMCompilerArguments()
-    arguments.expression = code
-    arguments.classpath = System.getProperty("java.class.path")
-    arguments.enableDebugMode = true
-    arguments.extendedCompilerChecks = true
-    arguments.reportOutputFiles = true
-    arguments.moduleName = "KotlinInterpreter"
-    arguments.noOptimize = true
-    arguments.script = true
-    arguments.validateIr = true
-    arguments.validateBytecode = true
-    arguments.verbose = true
-    arguments.useTypeTable = true
-    return arguments
-  }
-
-
   private var lastClassLoader: ClassLoader? = null
   private var lastClassPath: List<File>? = null
 
-  @Synchronized
-  private fun JvmScriptCompilationConfigurationBuilder.dependenciesFromCurrentContext() {
-    val currentClassLoader = classLoader
-    val classPath = if (lastClassLoader == null || lastClassLoader != currentClassLoader) {
-      scriptCompilationClasspathFromContext(
-        classLoader = currentClassLoader,
-        wholeClasspath = true,
-        unpackJarCollections = true
-      ).also {
-        lastClassLoader = currentClassLoader
-        lastClassPath = it
-      }
-    } else lastClassPath!!
-    updateClasspath(classPath)
-  }
-
-
-  open val scriptEngine : javax.script.ScriptEngine get() = KotlinScriptEngineFactory().scriptEngine
+  open val scriptEngine: javax.script.ScriptEngine get() = KotlinScriptEngineFactory().scriptEngine
 
   inner class KotlinScriptEngineFactory : KotlinJsr223JvmScriptEngineFactoryBase() {
     override fun getScriptEngine() = KotlinJsr223ScriptEngineImpl(
       this,
       KotlinJsr223DefaultScriptCompilationConfiguration.with {
         jvm {
-//                    dependencies(JvmDependencyFromClassLoader { classLoader })
-          dependenciesFromCurrentContext()
+          val currentClassLoader = classLoader
+          val classPath = if (lastClassLoader == null || lastClassLoader != currentClassLoader) {
+            scriptCompilationClasspathFromContext(
+              classLoader = currentClassLoader,
+              wholeClasspath = true,
+              unpackJarCollections = true
+            ).also {
+              lastClassLoader = currentClassLoader
+              lastClassPath = it
+            }
+          } else lastClassPath!!
+          updateClasspath(classPath)
         }
       },
       KotlinJsr223DefaultScriptEvaluationConfiguration.with {
-//                jvm {
-//                    set(baseClassLoader, classLoader)
-//                }
+
       }
     ) {
       ScriptArgsWithTypes(
         arrayOf(
-          it.getBindings(ScriptContext.ENGINE_SCOPE).orEmpty()
+//          it.getBindings(ScriptContext.ENGINE_SCOPE).orEmpty()
         ),
         arrayOf(
-          Bindings::class
+//          Bindings::class
         )
       )
     }
