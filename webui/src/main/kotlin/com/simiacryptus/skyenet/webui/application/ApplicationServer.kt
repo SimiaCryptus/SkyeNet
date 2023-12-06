@@ -23,7 +23,6 @@ import java.io.File
 abstract class ApplicationServer(
     final override val applicationName: String,
     resourceBase: String = "application",
-    val temperature: Double = 0.1,
 ) : ChatServer(resourceBase) {
 
     open val description: String = ""

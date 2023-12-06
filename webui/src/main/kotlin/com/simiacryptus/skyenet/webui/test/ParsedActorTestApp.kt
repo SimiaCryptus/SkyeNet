@@ -15,8 +15,7 @@ open class ParsedActorTestApp<T : Any>(
     applicationName: String = "ParsedActorTest_" + actor.parserClass.simpleName,
     temperature: Double = 0.3,
 ) : ApplicationServer(
-    applicationName = applicationName,
-    temperature = temperature,
+  applicationName = applicationName,
 ) {
     override fun newSession(
         session: Session,

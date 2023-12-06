@@ -15,7 +15,6 @@ open class CodingApp<T:Interpreter>(
         temperature: Double = 0.1,
 ) : ApplicationServer(
     applicationName = applicationName,
-    temperature = temperature,
 ) {
     override fun newSession(
         session: Session,

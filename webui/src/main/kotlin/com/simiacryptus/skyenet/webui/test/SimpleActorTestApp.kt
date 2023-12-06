@@ -14,8 +14,7 @@ open class SimpleActorTestApp(
     applicationName: String = "SimpleActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
 ) : ApplicationServer(
-    applicationName = applicationName,
-    temperature = temperature,
+  applicationName = applicationName,
 ) {
 
     data class Settings(

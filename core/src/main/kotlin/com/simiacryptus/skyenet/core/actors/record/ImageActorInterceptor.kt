@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.actors.ImageActor
 import com.simiacryptus.skyenet.core.util.FunctionWrapper
+import java.awt.image.BufferedImage
 
 class ImageActorInterceptor(
     val inner: ImageActor,
@@ -32,8 +33,13 @@ class ImageActorInterceptor(
             inner.response(*messages, model = model, api = api)
     }
 
-    override fun answer(input: List<String>, api: API) = functionInterceptor.wrap(input) {
-        inner.answer(it, api = api)
-    }
 
+
+    override fun answer(input: List<String>, api: API) = ImageResponseImpl(functionInterceptor.wrap(input) {
+        inner.answer(it, api = api).text
+    }, api)
+
+    override fun render(text: String, api: API): BufferedImage = functionInterceptor.wrap(text) {
+        inner.render(it, api = api)
+    }
 }
