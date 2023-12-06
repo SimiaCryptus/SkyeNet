@@ -24,5 +24,5 @@ abstract class BaseActor<I,R>(
     open fun answer(input: I, api: API): R = answer(*chatMessages(input), input=input, api = api)
 
     abstract fun chatMessages(questions: I): Array<ApiModel.ChatMessage>
-
+    abstract fun withModel(model: ChatModels): BaseActor<I,R>
 }

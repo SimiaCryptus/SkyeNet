@@ -15,12 +15,6 @@ class SimpleActorInterceptor(
     temperature = inner.temperature,
 ) {
 
-    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, input: List<String>, api: API) =
-        functionInterceptor.wrap(messages.toList().toTypedArray()) {
-            messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage> ->
-            inner.answer(*messages, input=input, api = api)
-        }
-
     override fun response(
         vararg input: com.simiacryptus.jopenai.ApiModel.ChatMessage,
         model: OpenAIModel,
@@ -31,7 +25,4 @@ class SimpleActorInterceptor(
             inner.response(*messages, model = model, api = api)
     }
 
-    override fun answer(input: List<String>, api: API) = functionInterceptor.wrap(input) {
-        inner.answer(it, api = api)
-    }
 }

@@ -29,4 +29,11 @@ open class SimpleActor(
             content = it.toContentList()
         )
     }
+
+    override fun withModel(model: ChatModels): SimpleActor = SimpleActor(
+        prompt = prompt,
+        name = name,
+        model = model,
+        temperature = temperature,
+    )
 }
