@@ -38,7 +38,7 @@ dependencies {
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
     implementation(group = "com.google.guava", name = "guava", version = "32.1.3-jre")
     implementation(group = "com.google.code.gson", name = "gson", version = "2.10.1")
-    implementation(group = "org.apache.httpcomponents.client5", name = "httpclient5", version = "5.2.1")
+    implementation(group = "org.apache.httpcomponents.client5", name = "httpclient5", version = "5.2.3")
 
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
