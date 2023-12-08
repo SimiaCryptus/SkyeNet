@@ -12,11 +12,11 @@ open class CodingApp<T:Interpreter>(
         applicationName: String,
         private val interpreter: KClass<T>,
         private val symbols: Map<String, Any>,
-        temperature: Double = 0.1,
+        val temperature: Double = 0.1,
 ) : ApplicationServer(
     applicationName = applicationName,
 ) {
-    override fun newSession(
+    override fun userMessage(
         session: Session,
         user: User?,
         userMessage: String,
@@ -31,6 +31,7 @@ open class CodingApp<T:Interpreter>(
             ui = ui,
             interpreter = interpreter,
             symbols = symbols,
+            temperature = temperature,
         ).start(
             userMessage = userMessage,
         )

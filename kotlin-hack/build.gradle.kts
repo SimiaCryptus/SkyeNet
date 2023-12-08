@@ -29,28 +29,110 @@ dependencies {
   implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-cli-for-ide", version = "1.9.21-631")
   { isTransitive = false }
 
-  implementation(project(":kotlin"))
+//  implementation(project(":kotlin"))
+//  {
+//    exclude(group = "com.simiacryptus", module = "jo-penai")
+//    exclude(group = "com.simiacryptus.skyenet", module = "core")
+//    exclude(group = "commons-io", module = "")
+//    exclude(group = "org.slf4j", module = "")
+//    exclude(group = "org.jetbrains.kotlinx", module = "")
+//    exclude(group = "org.jetbrains.kotlin", module = "")
+//  }
+
+
+  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-jsr223", version = kotlin_version)
   {
-    exclude(group = "com.simiacryptus", module = "jo-penai")
-    exclude(group = "com.simiacryptus.skyenet", module = "core")
-    exclude(group = "commons-io", module = "")
-    exclude(group = "org.slf4j", module = "")
-    exclude(group = "org.jetbrains.kotlinx", module = "")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
-    exclude(group = "org.jetbrains.kotlin", module = "kotlin-scripting-common")
+    exclude(group = "org.jetbrains.kotlin", module = "")
   }
+
+  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-jvm-host", version = kotlin_version)
+  {
+    exclude(group = "org.jetbrains.kotlin", module = "")
+  }
+
+  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-compiler-embeddable", version = kotlin_version)
+  {
+    exclude(group = "org.jetbrains.kotlin", module = "")
+  }
+
+  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-jvm", version = kotlin_version)
+  {
+    exclude(group = "org.jetbrains.kotlin", module = "")
+  }
+
+  implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable", version = kotlin_version)
+  {
+    exclude(group = "org.jetbrains.kotlin", module = "")
+  }
+
 }
 
 tasks.withType(ShadowJar::class.java).configureEach {
   archiveClassifier.set("")
   isZip64 = true
   mergeServiceFiles()
-  relocate("org.jetbrains.kotlin.com", "com")
-  relocate("org.jetbrains.kotlin.org", "org")
-  relocate("org.jetbrains.org", "org")
-  relocate("org.jetbrains.kotlin.it", "it")
+  relocate("org.jetbrains.kotlin.com.intellij.core.", "aicoder.com.intellij.core.")
+  relocate("org.jetbrains.kotlin.com.intellij.mock.", "aicoder.com.intellij.mock.")
+  relocate("org.jetbrains.kotlin.com.intellij.openapi.extensions.", "aicoder.com.intellij.openapi.extensions.")
+  relocate("org.jetbrains.kotlin.com.", "com.")
+
+  relocate("org.jetbrains.org.", "org.")
+  relocate("org.jetbrains.kotlin.org.", "org.")
+  relocate("org.jetbrains.kotlin.it.", "it.")
+
+  // need com/intellij/openapi/util/StaxFactory
+  // exclude com.intellij.openapi.editor.Document
+  // exclude com.intellij.openapi.application
+  // exclude com.intellij.openapi.progress.Task.WithResult
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/editor/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/application/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/progress/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/command/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/components/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/diagnostic/**")
+  //exclude("org/jetbrains/kotlin/com/intellij/openapi/extensions/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/fileEditor/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/fileTypes/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/module/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/progress/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/project/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/projectRoots/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/roots/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/ui/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/vfs/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/wm/**")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/util/TextRange.class")
+  exclude("org/jetbrains/kotlin/com/intellij/openapi/*.class")
+
+
+  // exclude com.intellij.mock.MockApplication
+  //include com.intellij.mock.MockComponentManager (needs to have classloader in plugin)
+  //exclude("org/jetbrains/kotlin/com/intellij/mock/**")
+
+  // exclude com.intellij.core.CoreApplicationEnvironment
+  //exclude("org/jetbrains/kotlin/com/intellij/core/**")
+
+  // exclude com.fasterxml.aalto.in.ReaderScanner
+  exclude("org/jetbrains/kotlin/com/fasterxml/**")
+
+
+  // needs com.intellij.util.messages.impl.MessageBusImpl
+  // exclude com.intellij.util.Consumer
+  // exclude com.intellij.util.messages.MessageBus
+  exclude("org/jetbrains/kotlin/com/intellij/util/*.class")
+  exclude("org/jetbrains/kotlin/com/intellij/util/messages/*.class")
+
+
+  exclude("org/jetbrains/kotlin/com/intellij/lang/**")
+
+  // ??? include com.intellij.psi.compiled.ClassFileDecompilers$Decompiler (in com.intellij.java)
+  // exclude com.intellij.psi.PsiManager
+//  exclude("org/jetbrains/kotlin/com/intellij/psi/*.class")
+  exclude("org/jetbrains/kotlin/com/intellij/psi/**")
+
+
+  exclude("org/jetbrains/kotlin/config/**")
+
 }
 
 tasks.named("build") {

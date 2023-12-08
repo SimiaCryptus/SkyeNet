@@ -18,12 +18,14 @@ abstract class SocketManagerBase(
   ) ?: LinkedHashMap(),
   private val applicationClass: Class<*>,
 ) : SocketManager {
-  protected val sockets: MutableMap<ChatSocket, org.eclipse.jetty.websocket.api.Session> = mutableMapOf()
+  private val sockets: MutableMap<ChatSocket, org.eclipse.jetty.websocket.api.Session> = mutableMapOf()
   private val messageVersions = HashMap<String, AtomicInteger>()
   protected val pool get() = clientManager.getPool(session, owner, dataStorage)
 
   override fun removeSocket(socket: ChatSocket) {
-    sockets.remove(socket)
+    synchronized(sockets) {
+      sockets.remove(socket)
+    }
   }
 
   override fun addSocket(socket: ChatSocket, session: org.eclipse.jetty.websocket.api.Session) {
@@ -34,17 +36,22 @@ abstract class SocketManagerBase(
         operationType = OperationType.Read
       )
     ) throw IllegalArgumentException("Unauthorized")
-    sockets[socket] = session
+    synchronized(sockets) {
+      sockets[socket] = session
+    }
   }
 
   private fun publish(
     out: String,
   ) {
-    sockets.keys.forEach {
-      try {
-        it.remote.sendString(out)
-      } catch (e: Exception) {
-        e.printStackTrace()
+    synchronized(sockets) {
+      sockets.keys.forEach {
+        try {
+          it.remote.sendString(out)
+          it.remote.flush()
+        } catch (e: Exception) {
+          log.info("Error sending message", e)
+        }
       }
     }
   }
@@ -73,7 +80,7 @@ abstract class SocketManagerBase(
 
   fun send(out: String) {
     try {
-      log.debug("Send Msg: $session - $out")
+      log.debug("Send Msg: {} - {}", session, out)
       val split = out.split(',', ignoreCase = false, limit = 2)
       val newVersion = setMessage(split[0], split[1])
       publish("${split[0]},$newVersion,${split[1]}")

@@ -6,13 +6,13 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 
 open class ChatSocketManager(
-    val parent: ChatServer,
     session: Session,
     val model: OpenAITextModel = ChatModels.GPT35Turbo,
     val userInterfacePrompt: String,
@@ -21,7 +21,8 @@ open class ChatSocketManager(
     val api: OpenAIClient,
     val temperature: Double = 0.3,
     applicationClass: Class<out ApplicationServer>,
-) : SocketManagerBase(session, parent.dataStorage, owner = null, applicationClass = applicationClass) {
+    val storage: StorageInterface?,
+) : SocketManagerBase(session, storage, owner = null, applicationClass = applicationClass) {
 
     init {
         if (userInterfacePrompt.isNotBlank()) {

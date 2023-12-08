@@ -23,34 +23,43 @@ import java.io.File
 abstract class ApplicationServer(
     final override val applicationName: String,
     resourceBase: String = "application",
+    open val root: File = File(File(".skyenet"), applicationName),
 ) : ChatServer(resourceBase) {
 
     open val description: String = ""
+    open val singleInput = true
+    open val appInfo: Any by lazy {
+        mapOf(
+            "applicationName" to applicationName,
+            "singleInput" to singleInput
+        )
+    }
 
-    final override val dataStorage: StorageInterface = dataStorageFactory(File(File(".skyenet"), applicationName))
-    protected open val appInfo = ServletHolder("appInfo", AppInfoServlet(applicationName))
-    protected open val userInfo = ServletHolder("userInfo", UserInfoServlet())
-    protected open val usageServlet = ServletHolder("usage", UsageServlet())
-    protected open val fileZip = ServletHolder("fileZip", ZipServlet(dataStorage))
-    protected open val fileIndex = ServletHolder("fileIndex", FileServlet(dataStorage))
-    protected open val sessionSettingsServlet = ServletHolder("settings", SessionSettingsServlet(this))
-    protected open val sessionThreadsServlet = ServletHolder("threads", SessionThreadsServlet(this))
-    protected open val deleteSessionServlet = ServletHolder("delete", DeleteSessionServlet(this))
+    final override val dataStorage: StorageInterface by lazy { dataStorageFactory(root) }
 
-    override fun newSession(user: User?, session: Session): SocketManager {
-        return object : ApplicationSocketManager(
+    protected open val appInfoServlet by lazy { ServletHolder("appInfo", AppInfoServlet(appInfo)) }
+    protected open val userInfo by lazy { ServletHolder("userInfo", UserInfoServlet()) }
+    protected open val usageServlet by lazy { ServletHolder("usage", UsageServlet()) }
+    protected open val fileZip by lazy { ServletHolder("fileZip", ZipServlet(dataStorage)) }
+    protected open val fileIndex by lazy { ServletHolder("fileIndex", FileServlet(dataStorage)) }
+    protected open val sessionSettingsServlet by lazy { ServletHolder("settings", SessionSettingsServlet(this)) }
+    protected open val sessionThreadsServlet by lazy { ServletHolder("threads", SessionThreadsServlet(this)) }
+    protected open val deleteSessionServlet by lazy { ServletHolder("delete", DeleteSessionServlet(this)) }
+
+    override fun newSession(user: User?, session: Session): SocketManager =
+        object : ApplicationSocketManager(
             session = session,
             owner = user,
             dataStorage = dataStorage,
             applicationClass = this@ApplicationServer::class.java,
         ) {
-            override fun newSession(
+            override fun userMessage(
                 session: Session,
                 user: User?,
                 userMessage: String,
                 socketManager: ApplicationSocketManager,
                 api: API
-            ) = this@ApplicationServer.newSession(
+            ) = this@ApplicationServer.userMessage(
                 session = session,
                 user = user,
                 userMessage = userMessage,
@@ -58,15 +67,27 @@ abstract class ApplicationServer(
                 api = api
             )
         }
-    }
 
-    abstract fun newSession(
+    open fun userMessage(
+        session: Session,
+        user: User?,
+        userMessage: String,
+        socketManager: ApplicationSocketManager,
+        api: API
+    ) : Unit = this@ApplicationServer.userMessage(
+        session = session,
+        user = user,
+        userMessage = userMessage,
+        ui = socketManager.applicationInterface,
+        api = api
+    )
+    open fun userMessage(
         session: Session,
         user: User?,
         userMessage: String,
         ui: ApplicationInterface,
         api: API
-    )
+    ) : Unit = throw UnsupportedOperationException()
 
     open val settingsClass: Class<*> get() = Map::class.java
 
@@ -106,7 +127,7 @@ abstract class ApplicationServer(
             }, "/*", null
         )
 
-        webAppContext.addServlet(appInfo, "/appInfo")
+        webAppContext.addServlet(appInfoServlet, "/appInfo")
         webAppContext.addServlet(userInfo, "/userInfo")
         webAppContext.addServlet(usageServlet, "/usage")
         webAppContext.addServlet(fileIndex, "/fileIndex/*")

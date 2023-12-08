@@ -23,7 +23,7 @@ open class SimpleActorTestApp(
     override val settingsClass: Class<*> get() = Settings::class.java
     @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(session: Session): T? = Settings(actor=actor) as T
 
-    override fun newSession(
+    override fun userMessage(
         session: Session,
         user: User?,
         userMessage: String,

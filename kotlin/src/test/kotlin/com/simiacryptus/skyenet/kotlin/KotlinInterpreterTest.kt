@@ -13,12 +13,6 @@ class KotlinInterpreterTest : InterpreterTestBase() {
     override fun newInterpreter(map: Map<String, Any>) = KotlinInterpreter(map)
 
     @Test
-    override fun `test run with variables`() {
-        // TODO: This test is failing due to a bug with supplied primitives (e.g. Integer)
-    }
-
-
-    @Test
     fun `test run with kotlin println`() {
         val interpreter = newInterpreter(mapOf())
         val result = interpreter.run("""println("Hello World")""")
@@ -42,7 +36,7 @@ class KotlinInterpreterTest : InterpreterTestBase() {
         """.trimIndent()
         // This should fail because functionNotDefined is not defined...
         val result = interpreter.validate(code)
-        Assertions.assertEquals(null, result) // <-- Bug: This should be an exception
+        Assertions.assertTrue(result is CodingActor.FailedToImplementException)
         try {
             interpreter.run(code)
             Assertions.fail<Any>("Expected exception")

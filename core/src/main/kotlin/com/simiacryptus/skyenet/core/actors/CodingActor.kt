@@ -89,7 +89,7 @@ open class CodingActor(
     }.joinToString("\n")
 
 
-  val language: String by lazy { interpreter.getLanguage() }
+  val language: String by lazy { interpreter.language }
 
   override fun chatMessages(questions: CodeRequest): Array<ChatMessage> {
     var chatMessages = arrayOf(
@@ -224,7 +224,8 @@ open class CodingActor(
               _status = CodeResult.Status.Success
               return workingCode
             } catch (ex: Throwable) {
-              if (fixAttempt == input.fixIterations) throw FailedToImplementException(
+              if (fixAttempt == input.fixIterations)
+                throw if(ex is FailedToImplementException) ex else FailedToImplementException(
                 cause = ex,
                 message = """
                   |**ERROR**

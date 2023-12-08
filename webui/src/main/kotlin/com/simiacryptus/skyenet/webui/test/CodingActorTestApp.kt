@@ -19,7 +19,7 @@ open class CodingActorTestApp(
 ) : ApplicationServer(
   applicationName = applicationName,
 ) {
-    override fun newSession(
+    override fun userMessage(
         session: Session,
         user: User?,
         userMessage: String,

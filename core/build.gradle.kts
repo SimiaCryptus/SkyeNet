@@ -45,7 +45,7 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
     compileOnly(kotlin("stdlib"))
-    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
+    compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
     testImplementation(kotlin("stdlib"))
     testImplementation(kotlin("script-runtime"))
 
