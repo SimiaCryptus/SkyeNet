@@ -17,9 +17,11 @@ import kotlin.script.experimental.jvm.util.scriptCompilationClasspathFromContext
 import kotlin.script.experimental.jvmhost.jsr223.KotlinJsr223ScriptEngineImpl
 
 open class KotlinInterpreter(
-  final override val symbols: Map<String, Any> = mapOf(),
+  val defs: Map<String, Any> = mapOf(),
 ) : Interpreter {
-  final override val language: String = "Kotlin"
+  final override fun getLanguage(): String = "Kotlin"
+  override fun getSymbols() = defs
+
   open val scriptEngine: KotlinJsr223JvmScriptEngineBase
     get() = object : KotlinJsr223JvmScriptEngineFactoryBase() {
       override fun getScriptEngine() = KotlinJsr223ScriptEngineImpl(
@@ -46,7 +48,7 @@ open class KotlinInterpreter(
         //this.
       }
     }.scriptEngine.apply {
-      getBindings(ScriptContext.ENGINE_SCOPE).putAll(symbols)
+      getBindings(ScriptContext.ENGINE_SCOPE).putAll(getSymbols())
     }
 
   override fun validate(code: String): Throwable? {

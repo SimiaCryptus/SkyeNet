@@ -89,7 +89,7 @@ open class CodingActor(
     }.joinToString("\n")
 
 
-  val language: String by lazy { interpreter.language }
+  val language: String by lazy { interpreter.getLanguage() }
 
   override fun chatMessages(questions: CodeRequest): Array<ChatMessage> {
     var chatMessages = arrayOf(

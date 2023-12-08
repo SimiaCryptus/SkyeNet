@@ -149,7 +149,7 @@ class ScalaLocalInterpreter(javaDefs: java.util.Map[String, Object]) extends Int
 
   override def wrapExecution[T](fn: Supplier[T]): T = fn.get()
 
-  override def symbols(): util.Map[String, AnyRef] = defs.map { t =>
+  override def getSymbols(): util.Map[String, AnyRef] = defs.map { t =>
     (t._1, t._2.asInstanceOf[AnyRef])
   }.asJava
 
