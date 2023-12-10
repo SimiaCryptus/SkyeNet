@@ -62,9 +62,41 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
         if (!when {
 
             path.startsWith("com/intellij/") -> when {
+              path.contains("Provider[.$]".toRegex()) -> true
 
               // Type 'com/intellij/core/CoreFileTypeRegistry' (current frame, stack[0]) is not assignable to 'aicoder/com/intellij/openapi/fileTypes/FileTypeRegistry'
               path.startsWith("com/intellij/core/CoreFileTypeRegistry") -> true
+              // com.intellij.psi.search.searches.SuperMethodsSearch
+              path.startsWith("com/intellij/psi/search/searches/SuperMethodsSearch") -> true
+              // com.intellij.psi.compiled.ClassFileDecompilers
+              path.startsWith("com/intellij/psi/compiled/ClassFileDecompilers") -> true
+              // com.intellij.psi.compiled.ClassFileDecompilers
+              path.startsWith("com/intellij/psi/compiled/ClassFileDecompilers") -> true
+              // com.intellij.psi.meta.MetaDataContributor
+              path.startsWith("com/intellij/psi/meta/MetaDataContributor") -> true
+              // org.jetbrains.kotlin.cli.jvm.compiler.IdeaExtensionPoints
+              path.startsWith("org/jetbrains/kotlin/cli/jvm/compiler/IdeaExtensionPoints") -> true
+              // com.intellij.psi.JavaModuleSystem
+              path.startsWith("com/intellij/psi/JavaModuleSystem") -> true
+
+
+
+
+
+              // 'void com.intellij.core.CoreProjectScopeBuilder.<init>(aicoder.com.intellij.openapi.project.Project, aicoder.com.intellij.openapi.roots.FileIndexFacade)'
+              path.startsWith("com/intellij/core/CoreProjectScopeBuilder") -> true
+              // Type 'com/intellij/lang/LanguageASTFactory' (current frame, stack[1]) is not assignable to 'aicoder/com/intellij/lang/LanguageExtension'
+              path.startsWith("com/intellij/lang/LanguageASTFactory") -> true
+              // com.intellij.lang.MetaLanguage
+              path.startsWith("com/intellij/lang/MetaLanguage") -> true
+              // Type 'com/intellij/lang/folding/LanguageFolding' (current frame, stack[1]) is not assignable to 'aicoder/com/intellij/lang/LanguageExtension'
+              path.startsWith("com/intellij/lang/folding/LanguageFolding") -> true
+              // java.lang.IllegalAccessError: class aicoder.com.intellij.lang.LanguageExtension tried to access method 'java.util.Collection com.intellij.lang.LanguageUtil.matchingMetaLanguages(com.intellij.lang.Language)' (aicoder.com.intellij.lang.LanguageExtension is in unnamed module of loader com.intellij.ide.plugins.cl.PluginClassLoader @2336f05f; com.intellij.lang.LanguageUtil is in unnamed module of loader com.intellij.util.lang.PathClassLoader @4563e9ab)
+              path.startsWith("com/intellij/lang/LanguageUtil") -> true
+              // java.lang.NoSuchMethodError: 'void com.intellij.core.CoreJavaPsiImplementationHelper.<init>(aicoder.com.intellij.openapi.project.Project)'
+              path.startsWith("com/intellij/core/CoreJavaPsiImplementationHelper") -> true
+              // java.lang.NoSuchMethodError: 'void com.intellij.core.CoreJavaFileManager.<init>(aicoder.com.intellij.psi.PsiManager)'
+              path.startsWith("com/intellij/core/CoreJavaFileManager") -> true
 
               path.startsWith("com/intellij/openapi/fileTypes/") -> when {
                 // java.lang.NoSuchFieldError: ourInstanceGetter (defined by com.intellij.openapi.fileTypes.FileTypeRegistry refed from aicoder.com.intellij.openapi.application.ApplicationManager)
@@ -72,9 +104,10 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
                 else -> false
               }
 
-              // com.intellij.openapi.components.ComponentManager is interface of com/intellij/openapi/application/Application
-              path.endsWith("/ComponentManager.class") -> true
+              // (interface com.intellij.openapi.application.ex.ApplicationEx in chain) com.intellij.openapi.components.ComponentManager is interface of com/intellij/openapi/application/Application
+              path.startsWith("com/intellij/openapi/application/ex/ApplicationEx") -> true
 
+              // Class aicoder.com.intellij.core.CoreApplicationEnvironment$1 does not implement the requested interface aicoder.com.intellij.openapi.application.Application
               // java.lang.NoSuchMethodError: 'aicoder.com.intellij.openapi.extensions.ExtensionsArea com.intellij.openapi.application.Application.getExtensionArea()'
               path.startsWith("com/intellij/openapi/application/Application") -> true
               path.startsWith("com/intellij/openapi/application/") -> when {
@@ -82,16 +115,85 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
                 path.endsWith("/CachedSingletonsRegistry.class") -> true
                 else -> false
               }
+              // com.intellij.openapi.components.ComponentManager in chain for java.lang.NoSuchMethodError: 'aicoder.com.intellij.openapi.extensions.ExtensionsArea aicoder.com.intellij.openapi.application.Application.getExtensionArea()'
+              path.startsWith("com/intellij/openapi/components/ComponentManager") -> true
 
-              path.startsWith("com/intellij/openapi/extensions/impl/ExtensionsAreaImpl") -> true // in callstack
+              // Derive from GlobalSearchScope
+              path.contains("Scope") -> when {
+                path.startsWith("com/intellij/") -> true
+                else -> false
+              }
+
+              // com.intellij.DynamicBundle
+              path.startsWith("com/intellij/DynamicBundle") -> true
+
+              path.startsWith("com/intellij/openapi/extensions/") -> true // be aggressive
+              // class com.intellij.openapi.extensions.ExtensionPointDescriptor cannot be cast to class aicoder.com.intellij.openapi.extensions.ExtensionPointDescriptor
+              //path.endsWith("/ExtensionPointDescriptor.class") -> true
+              // ERROR loader constraint violation: when resolving field "EP_NAME" of type com.intellij.openapi.extensions.ExtensionPointName, the class loader com.intellij.ide.plugins.cl.PluginClassLoader @68f40e0f of the current class, aicoder.com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistryImpl, and the class loader com.intellij.util.lang.PathClassLoader @4563e9ab for the field's defining abstract class, com.intellij.psi.PsiReferenceContributor, have different Class objects for type com.intellij.openapi.extensions.ExtensionPointName
+              //path.endsWith("/extensions/ExtensionPointName.class") -> false
+              // com.intellij.openapi.extensions.AreaInstance in inheritance chain
+              path.endsWith("/AreaInstance.class") -> true
+              // internal: java.lang.NoSuchMethodError: 'com.intellij.openapi.extensions.ExtensionPointListener[] com.intellij.openapi.extensions.ExtensionPointListener.emptyArray()'
+              path.startsWith("com/intellij/openapi/extensions/ExtensionPointListener") -> true
+              // java.lang.NoSuchMethodError: 'com.intellij.openapi.extensions.ExtensionPoint com.intellij.openapi.extensions.ProjectExtensionPointName.getPoint(aicoder.com.intellij.openapi.extensions.AreaInstance)'
+              path.startsWith("com/intellij/openapi/extensions/ProjectExtensionPointName") -> true
               path.startsWith("com/intellij/openapi/extensions/Extensions") -> true // needs to be compatible with ExtensionsAreaImpl
+              // ERROR class com.intellij.openapi.extensions.ExtensionPointDescriptor cannot be cast to class aicoder.com.intellij.openapi.extensions.ExtensionPointDescriptor
+              path.startsWith("com/intellij/openapi/extensions/impl/") -> true // Be aggressive...
+              //java.lang.NoSuchMethodError: 'void com.intellij.openapi.extensions.impl.InterfaceExtensionPoint.<init>(java.lang.String, java.lang.String, com.intellij.openapi.extensions.PluginDescriptor, aicoder.com.intellij.openapi.components.ComponentManager, java.lang.Class, boolean)'
+              path.startsWith("com/intellij/openapi/extensions/impl/InterfaceExtensionPoint") -> true
+              //Type 'com/intellij/openapi/extensions/impl/BeanExtensionPoint' (current frame, locals[7]) is not assignable to 'aicoder/com/intellij/openapi/extensions/impl/ExtensionPointImpl' (stack map, locals[7])
+              path.startsWith("com/intellij/openapi/extensions/impl/BeanExtensionPoint") -> true
+              //'void com.intellij.openapi.extensions.impl.ExtensionPointImpl.<init>(java.lang.String, java.lang.String, com.intellij.openapi.extensions.PluginDescriptor, aicoder.com.intellij.openapi.components.ComponentManager, java.lang.Class, boolean)'
+              path.startsWith("com/intellij/openapi/extensions/impl/ExtensionPointImpl") -> true
+              path.startsWith("com/intellij/openapi/extensions/impl/ExtensionsAreaImpl") -> true // in callstack
+              //com.intellij.openapi.extensions.BaseExtensionPointName
+              path.startsWith("com/intellij/openapi/extensions/BaseExtensionPointName") -> true
 
+              // java.lang.AbstractMethodError: Receiver class aicoder.com.intellij.openapi.extensions.impl.InterfaceExtensionPoint does not define or inherit an implementation of the resolved method 'abstract void registerExtension(java.lang.Object)' of interface com.intellij.openapi.extensions.ExtensionPoint.
+              path.startsWith("com/intellij/openapi/extensions/ExtensionPoint") -> true
+
+              // com.intellij.openapi.project.Project in inheritance chain
+              path.startsWith("com/intellij/openapi/project/Project") -> true
+              // com.intellij.openapi.roots.FileIndexFacade in inheritance chain
+              path.startsWith("com/intellij/openapi/roots/FileIndexFacade") -> true
+
+              // com.intellij.psi.PsiReferenceProviderBean
+              path.startsWith("com/intellij/psi/PsiReferenceProviderBean") -> true
+              // com.intellij.psi.PsiElementFinder
+              path.startsWith("com/intellij/psi/PsiElementFinder") -> true
+              // java.lang.NoSuchMethodError: 'com.intellij.psi.PsiManager com.intellij.psi.PsiManager.getInstance(aicoder.com.intellij.openapi.project.Project)'
+              path.startsWith("com/intellij/psi/PsiManager") -> true
+              // com.intellij.psi.PsiReferenceContributor
+              path.startsWith("com/intellij/psi/PsiReferenceContributor") -> true
+              // java.lang.NoSuchMethodError: 'void com.intellij.psi.controlFlow.ControlFlowFactory.<init>(aicoder.com.intellij.openapi.project.Project)'
+              path.startsWith("com/intellij/psi/controlFlow/ControlFlowFactory") -> true
+              // java.lang.NoSuchMethodError: 'com.intellij.psi.util.PsiModificationTracker com.intellij.psi.util.PsiModificationTracker$SERVICE.getInstance(aicoder.com.intellij.openapi.project.Project)'
+              path.startsWith("com/intellij/psi/util/PsiModificationTracker") -> true
+
+              path.startsWith("com/intellij/psi/impl/") -> true // be aggressive
+              // java.lang.NoSuchMethodError: 'void com.intellij.psi.impl.PsiManagerImpl.<init>(aicoder.com.intellij.openapi.project.Project)'
+              path.startsWith("com/intellij/psi/impl/PsiManagerImpl") -> true
+              // java.lang.NoSuchMethodError: 'void com.intellij.psi.impl.PsiModificationTrackerImpl.<init>(aicoder.com.intellij.openapi.project.Project)'
+              path.startsWith("com/intellij/psi/impl/PsiModificationTrackerImpl") -> true
 
               //            path.endsWith("components/ComponentManager.class") -> false
               //            path.startsWith("com/intellij/openapi/components/") -> true
               //            path.endsWith("extensions/ExtensionPointName.class") -> false
               //            path.startsWith("com/intellij/openapi/extensions/") -> true
               path.startsWith("com/intellij/psi/impl/source/resolve/") -> true
+
+              // java.lang.NoSuchMethodError: 'com.intellij.psi.search.GlobalSearchScope com.intellij.psi.search.GlobalSearchScope.allScope(aicoder.com.intellij.openapi.project.Project)'
+              path.startsWith("com/intellij/psi/search/GlobalSearchScope") -> true
+              // Type 'com/intellij/psi/search/EverythingGlobalScope' (current frame, stack[0]) is not assignable to 'aicoder/com/intellij/psi/search/GlobalSearchScope'
+              path.startsWith("com/intellij/psi/search/EverythingGlobalScope") -> true
+              // Type 'com/intellij/psi/search/ProjectScopeImpl' (current frame, stack[0]) is not assignable to 'aicoder/com/intellij/psi/search/GlobalSearchScope
+              path.startsWith("com/intellij/psi/search/ProjectScopeImpl") -> true
+
+              // java.lang.NoSuchMethodError: 'void com.intellij.util.CachedValuesManagerImpl.<init>(aicoder.com.intellij.openapi.project.Project, com.intellij.util.CachedValuesFactory)'
+              path.startsWith("com/intellij/util/CachedValuesManagerImpl") -> true
+
               path.startsWith("com/intellij/util/messages/impl/") -> true
 
               // com.intellij.psi.impl.compiled.ClsDecompilerImpl does not implement interface aicoder.com.intellij.psi.compiled.ClassFileDecompilers$Decompiler
@@ -101,6 +203,12 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
               path.endsWith("/JvmFacadeImpl.class") -> true
 
               path.startsWith("com/intellij/mock/") -> true
+
+              // java.lang.NoSuchMethodError: 'void com.intellij.lang.LanguageExtension.<init>(aicoder.com.intellij.openapi.extensions.ExtensionPointName)'
+              path.startsWith("com/intellij/lang/LanguageExtension") -> true
+              // Type 'com/intellij/lang/LanguageParserDefinitions' (current frame, stack[1]) is not assignable to 'aicoder/com/intellij/lang/LanguageExtension'
+              path.startsWith("com/intellij/lang/LanguageParserDefinitions") -> true
+
               path.endsWith("/DisabledPluginsState.class") -> true
 
               path.contains("/MockDocumentCommitProcessor") -> true // MockDocumentCommitProcessor is internal
@@ -114,13 +222,23 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
               else -> false
             }
 
-            path.startsWith("org/jetbrains/kotlin/cli/jvm/") -> true
-            // java.lang.ClassNotFoundException: org.jetbrains.kotlin.cli.common.messages.MessageCollectorBasedReporter PluginClassLoader(plugin=PluginDescriptor(name=AI Coding Assistant, id=com.github.simiacryptus.intellijopenaicodeassist, descriptorPath=plugin.xml, path=~\code\intellij-aicoder\build\idea-sandbox\plugins-uiTest\intellij-aicoder, version=1.2.24, package=null, isBundled=false), packagePrefix=null, state=active)
-            path.startsWith("org/jetbrains/kotlin/cli/") -> true
-
             path.startsWith("org/jetbrains/kotlin/") -> when {
+
+              path.startsWith("org/jetbrains/kotlin/cli/jvm/") -> true
+              // java.lang.ClassNotFoundException: org.jetbrains.kotlin.cli.common.messages.MessageCollectorBasedReporter PluginClassLoader(plugin=PluginDescriptor(name=AI Coding Assistant, id=com.github.simiacryptus.intellijopenaicodeassist, descriptorPath=plugin.xml, path=~\code\intellij-aicoder\build\idea-sandbox\plugins-uiTest\intellij-aicoder, version=1.2.24, package=null, isBundled=false), packagePrefix=null, state=active)
+              path.startsWith("org/jetbrains/kotlin/cli/") -> true
+
               // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar.registerProjectComponents(aicoder.com.intellij.mock.MockProject, org.jetbrains.kotlin.config.CompilerConfiguration)'
               path.contains("/ComponentRegistrar") -> true
+
+              // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.asJava.KotlinAsJavaSupportBase.<init>(aicoder.com.intellij.openapi.project.Project)'
+              path.contains("/KotlinAsJavaSupportBase") -> true
+
+              // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.asJava.finder.JavaElementFinder.<init>(aicoder.com.intellij.openapi.project.Project)'
+              path.contains("/JavaElementFinder") -> true
+
+              // java.lang.NoSuchMethodError: 'org.jetbrains.kotlin.asJava.KotlinAsJavaSupport org.jetbrains.kotlin.asJava.KotlinAsJavaSupport$Companion.getInstance(aicoder.com.intellij.openapi.project.Project)'
+              path.contains("/KotlinAsJavaSupport") -> true
 
               // org.jetbrains.kotlin.scripting.compiler.plugin.ScriptingCompilerConfigurationComponentRegistrar cannot be cast to class aicoder.org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
               // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.scripting.compiler.plugin.ScriptingCompilerConfigurationExtension.<init>(aicoder.com.intellij.mock.MockProject, kotlin.script.experimental.host.ScriptingHostConfiguration)'
@@ -199,13 +317,14 @@ val shadowJarFinalStage by tasks.registering(ShadowJar::class) {
               false
             }
 
+            //ERROR loader constraint violation: when resolving field "EP_NAME" of type com.intellij.openapi.extensions.ExtensionPointName, the class loader com.intellij.ide.plugins.cl.PluginClassLoader @59ee1f6f of the current class, aicoder.com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistryImpl, and the class loader com.intellij.util.lang.PathClassLoader @4563e9ab for the field's defining abstract class, com.intellij.psi.PsiReferenceContributor, have different Class objects for type com.intellij.openapi.extensions.ExtensionPointName
+            it.contains("/ExtensionPointName") -> true //false
             it.contains("/KotlinJsr223") -> false
-            it.contains("/ExtensionPointName") -> false
             it.startsWith("kotlin/script/experimental/jvm") -> false
             //it.startsWith("com/intellij/psi") -> true
             it.startsWith("com/intellij/") -> true
             //org/jetbrains/kotlin/cli/common/extensions/ReplFactoryExtension$Companion
-            it.startsWith("org/jetbrains/kotlin/") && it.contains("Extension([.$].*)?".toRegex()) -> false
+            it.startsWith("org/jetbrains/kotlin/") && it.contains("Extension(?![^.$])".toRegex()) -> false
             it.startsWith("org/jetbrains/") -> true
             it.startsWith("kotlin/") -> true
             it.startsWith("cli/") -> true

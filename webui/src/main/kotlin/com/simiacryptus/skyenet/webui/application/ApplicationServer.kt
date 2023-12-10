@@ -45,6 +45,7 @@ abstract class ApplicationServer(
     protected open val sessionSettingsServlet by lazy { ServletHolder("settings", SessionSettingsServlet(this)) }
     protected open val sessionThreadsServlet by lazy { ServletHolder("threads", SessionThreadsServlet(this)) }
     protected open val deleteSessionServlet by lazy { ServletHolder("delete", DeleteSessionServlet(this)) }
+    protected open val cancelSessionServlet by lazy { ServletHolder("cancel", DeleteSessionServlet(this)) }
 
     override fun newSession(user: User?, session: Session): SocketManager =
         object : ApplicationSocketManager(
@@ -136,7 +137,7 @@ abstract class ApplicationServer(
         webAppContext.addServlet(sessionSettingsServlet, "/settings")
         webAppContext.addServlet(sessionThreadsServlet, "/threads")
         webAppContext.addServlet(deleteSessionServlet, "/delete")
-
+        webAppContext.addServlet(cancelSessionServlet, "/cancel")
     }
 
     companion object {
