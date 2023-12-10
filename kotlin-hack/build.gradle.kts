@@ -78,9 +78,8 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
               path.startsWith("org/jetbrains/kotlin/cli/jvm/compiler/IdeaExtensionPoints") -> true
               // com.intellij.psi.JavaModuleSystem
               path.startsWith("com/intellij/psi/JavaModuleSystem") -> true
-
-
-
+              // java.lang.NoSuchMethodError: 'java.util.Map com.intellij.ide.plugins.PluginManagerCore.getBrokenPluginVersions()'
+              path.startsWith("com/intellij/ide/plugins/PluginManagerCore") -> true
 
 
               // 'void com.intellij.core.CoreProjectScopeBuilder.<init>(aicoder.com.intellij.openapi.project.Project, aicoder.com.intellij.openapi.roots.FileIndexFacade)'
@@ -123,6 +122,16 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
                 path.startsWith("com/intellij/") -> true
                 else -> false
               }
+
+              // com.intellij.ide.plugins.PluginDescriptorLoader
+              path.startsWith("com/intellij/ide/plugins/PluginDescriptorLoader") -> true
+              // com.intellij.ide.plugins.IdeaPluginDescriptorImpl
+              path.startsWith("com/intellij/ide/plugins/IdeaPluginDescriptorImpl") -> true
+              // com/intellij/ide/plugins/PluginXmlPathResolver
+              path.startsWith("com/intellij/ide/plugins/PluginXmlPathResolver") -> true
+              // com/intellij/ide/plugins/DescriptorListLoadingContext
+              path.startsWith("com/intellij/ide/plugins/DescriptorListLoadingContext") -> true
+
 
               // com.intellij.DynamicBundle
               path.startsWith("com/intellij/DynamicBundle") -> true
@@ -224,9 +233,18 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
 
             path.startsWith("org/jetbrains/kotlin/") -> when {
 
+              // org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+              path.startsWith("org/jetbrains/kotlin/resolve/diagnostics/DiagnosticSuppressor") -> true
+              // org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
+              path.startsWith("org/jetbrains/kotlin/fir/extensions/FirExtensionRegistrarAdapter") -> true
+              // org.jetbrains.kotlin.serialization.DescriptorSerializerPlugin
+              path.startsWith("org/jetbrains/kotlin/serialization/DescriptorSerializerPlugin") -> true
+              // org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages.Extension
+              path.startsWith("org/jetbrains/kotlin/diagnostics/rendering/DefaultErrorMessages") -> true
               path.startsWith("org/jetbrains/kotlin/cli/jvm/") -> true
               // java.lang.ClassNotFoundException: org.jetbrains.kotlin.cli.common.messages.MessageCollectorBasedReporter PluginClassLoader(plugin=PluginDescriptor(name=AI Coding Assistant, id=com.github.simiacryptus.intellijopenaicodeassist, descriptorPath=plugin.xml, path=~\code\intellij-aicoder\build\idea-sandbox\plugins-uiTest\intellij-aicoder, version=1.2.24, package=null, isBundled=false), packagePrefix=null, state=active)
               path.startsWith("org/jetbrains/kotlin/cli/") -> true
+
 
               // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar.registerProjectComponents(aicoder.com.intellij.mock.MockProject, org.jetbrains.kotlin.config.CompilerConfiguration)'
               path.contains("/ComponentRegistrar") -> true
