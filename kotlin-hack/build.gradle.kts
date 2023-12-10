@@ -23,120 +23,155 @@ repositories {
   maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/kotlin-ide-plugin-dependencies")
 }
 
-val kotlin_version = "1.9.21"
+val kVersion = "1.9.21"
+val kGroup = "org.jetbrains.kotlin"
 dependencies {
-
-  implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-cli-for-ide", version = "1.9.21-631")
-  { isTransitive = false }
-
-//  implementation(project(":kotlin"))
-//  {
-//    exclude(group = "com.simiacryptus", module = "jo-penai")
-//    exclude(group = "com.simiacryptus.skyenet", module = "core")
-//    exclude(group = "commons-io", module = "")
-//    exclude(group = "org.slf4j", module = "")
-//    exclude(group = "org.jetbrains.kotlinx", module = "")
-//    exclude(group = "org.jetbrains.kotlin", module = "")
-//  }
-
-
-  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-jsr223", version = kotlin_version)
-  {
-    exclude(group = "org.jetbrains.kotlin", module = "")
-  }
-
-  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-jvm-host", version = kotlin_version)
-  {
-    exclude(group = "org.jetbrains.kotlin", module = "")
-  }
-
-  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-compiler-embeddable", version = kotlin_version)
-  {
-    exclude(group = "org.jetbrains.kotlin", module = "")
-  }
-
-  implementation(group = "org.jetbrains.kotlin", name = "kotlin-scripting-jvm", version = kotlin_version)
-  {
-    exclude(group = "org.jetbrains.kotlin", module = "")
-  }
-
-  implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable", version = kotlin_version)
-  {
-    exclude(group = "org.jetbrains.kotlin", module = "")
-  }
-
+  implementation(kGroup, name = "kotlin-compiler-cli-for-ide", version = "1.9.21-631") { isTransitive = false }
+  implementation(kGroup, name = "kotlin-scripting-jsr223", version = kVersion) { isTransitive = false }
+  implementation(kGroup, name = "kotlin-scripting-jvm-host", version = kVersion) { isTransitive = false }
+  implementation(kGroup, name = "kotlin-scripting-compiler-embeddable", version = kVersion) { isTransitive = false }
+  implementation(kGroup, name = "kotlin-scripting-jvm", version = kVersion) { isTransitive = false }
+  implementation(kGroup, name = "kotlin-compiler-embeddable", version = kVersion) { isTransitive = false }
 }
 
-tasks.withType(ShadowJar::class.java).configureEach {
-  archiveClassifier.set("")
+// Filtering and assembly
+val shadowJarStage1 by tasks.registering(ShadowJar::class) {
+  archiveClassifier.set("stage1")
   isZip64 = true
   mergeServiceFiles()
-  relocate("org.jetbrains.kotlin.com.intellij.core.", "aicoder.com.intellij.core.")
-  relocate("org.jetbrains.kotlin.com.intellij.mock.", "aicoder.com.intellij.mock.")
-  relocate("org.jetbrains.kotlin.com.intellij.openapi.extensions.", "aicoder.com.intellij.openapi.extensions.")
-  relocate("org.jetbrains.kotlin.com.", "com.")
+  dependsOn("jar")
+  configurations = listOf(project.configurations.getByName("runtimeClasspath"))
+  doFirst {
+    this@registering.includedDependencies.forEach { file ->
+      zipTree(file).visit {
+        if (this.isDirectory) return@visit
+        // Adjust the path so we can express rules based on the desired final paths
+        val path = when {
+          path.startsWith("org/jetbrains/kotlin/com/") -> path.removePrefix("org/jetbrains/kotlin/")
+          path.startsWith("org/jetbrains/kotlin/org/") -> path.removePrefix("org/jetbrains/kotlin/")
+          path.startsWith("org/jetbrains/kotlin/it/") -> path.removePrefix("org/jetbrains/kotlin/")
+          path.startsWith("org/jetbrains/org/") -> path.removePrefix("org/jetbrains/")
+          path.startsWith("org/jetbrains/com/") -> path.removePrefix("org/jetbrains/")
+          else -> path
+        }
+        if (!when {
+            path.startsWith("com/intellij/openapi/fileTypes/") -> when {
+              path.endsWith("/FileTypeRegistry.class") -> true
+              else -> false
+            }
 
-  relocate("org.jetbrains.org.", "org.")
-  relocate("org.jetbrains.kotlin.org.", "org.")
-  relocate("org.jetbrains.kotlin.it.", "it.")
+            path.startsWith("com/intellij/openapi/application/") -> when {
+              path.endsWith("/ApplicationManager.class") -> true
+              path.endsWith("/CachedSingletonsRegistry.class") -> true
+              else -> false
+            }
 
-  // need com/intellij/openapi/util/StaxFactory
-  // exclude com.intellij.openapi.editor.Document
-  // exclude com.intellij.openapi.application
-  // exclude com.intellij.openapi.progress.Task.WithResult
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/editor/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/application/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/progress/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/command/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/components/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/diagnostic/**")
-  //exclude("org/jetbrains/kotlin/com/intellij/openapi/extensions/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/fileEditor/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/fileTypes/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/module/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/progress/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/project/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/projectRoots/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/roots/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/ui/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/vfs/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/wm/**")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/util/TextRange.class")
-  exclude("org/jetbrains/kotlin/com/intellij/openapi/*.class")
+            path.startsWith("com/intellij/openapi/components/") -> true
+            path.startsWith("com/intellij/openapi/extensions/") -> true
+            path.startsWith("com/intellij/psi/impl/source/resolve/") -> true
+            path.startsWith("com/intellij/util/messages/impl/") -> true
 
+            path.startsWith("com/intellij/") -> when {
+              path.endsWith("/DisabledPluginsState.class") -> true
+              else -> false
+            }
 
-  // exclude com.intellij.mock.MockApplication
-  //include com.intellij.mock.MockComponentManager (needs to have classloader in plugin)
-  //exclude("org/jetbrains/kotlin/com/intellij/mock/**")
+            path.startsWith("org/jetbrains/kotlin/com/intellij/psi/compiled/") -> true
 
-  // exclude com.intellij.core.CoreApplicationEnvironment
-  //exclude("org/jetbrains/kotlin/com/intellij/core/**")
+            path.startsWith("org/jetbrains/kotlin/") -> when {
+              path.contains("CLICompilerKt") -> true
+              path.contains("UtilsKt") -> true
+              path.contains("ArgumentsKt") -> true
+              path.contains("CompilationContextKt") -> true
+              path.contains("JvmReplCompiler") -> true
+              else -> false
+            }
 
-  // exclude com.fasterxml.aalto.in.ReaderScanner
-  exclude("org/jetbrains/kotlin/com/fasterxml/**")
-
-
-  // needs com.intellij.util.messages.impl.MessageBusImpl
-  // exclude com.intellij.util.Consumer
-  // exclude com.intellij.util.messages.MessageBus
-  exclude("org/jetbrains/kotlin/com/intellij/util/*.class")
-  exclude("org/jetbrains/kotlin/com/intellij/util/messages/*.class")
-
-
-  exclude("org/jetbrains/kotlin/com/intellij/lang/**")
-
-  // ??? include com.intellij.psi.compiled.ClassFileDecompilers$Decompiler (in com.intellij.java)
-  // exclude com.intellij.psi.PsiManager
-//  exclude("org/jetbrains/kotlin/com/intellij/psi/*.class")
-  exclude("org/jetbrains/kotlin/com/intellij/psi/**")
-
-
-  exclude("org/jetbrains/kotlin/config/**")
-
+            path.startsWith("kotlin/script/") -> true
+            path.startsWith("kotlin/") -> false
+            path.startsWith("misc/") -> false
+            path.startsWith("javaslang/") -> false
+            path.startsWith("config/") -> false
+            path.startsWith("idea/") -> false
+            path.startsWith("org/apache/") -> false
+            path.startsWith("org/codehaus/stax2/") -> false
+            path.startsWith("org/objectweb/") -> false
+            else -> true
+          }
+        ) {
+          println("${this.path} excluded from ${file.name} as $path")
+          exclude(this.path)
+        } else {
+          println("${this.path} included from ${file.name} as $path")
+        }
+      }
+    }
+  }
 }
 
+// Cannonicalization - previously relocated classes should be moved back to their original locations
+val shadowJarStage2 by tasks.registering(ShadowJar::class) {
+  archiveClassifier.set("stage2")
+  isZip64 = true
+  dependsOn(shadowJarStage1)
+  doFirst {
+    from(zipTree(shadowJarStage1.get().archiveFile))
+    relocate("org.jetbrains.kotlin.com.", "com.")
+    relocate("org.jetbrains.org.", "org.")
+    relocate("org.jetbrains.kotlin.org.", "org.")
+    relocate("org.jetbrains.kotlin.it.", "it.")
+  }
+}
+
+// Class isolations to avoid conflicts with the IntelliJ classpath
+val shadowJarStage3 by tasks.registering(ShadowJar::class) {
+  archiveClassifier.set("stage3")
+  isZip64 = true
+  dependsOn(shadowJarStage2)
+  doFirst {
+    from(zipTree(shadowJarStage2.get().archiveFile))
+    val prefix = "aicoder."
+    zipTree(shadowJarStage2.get().archiveFile).visit {
+      if (this.isDirectory) return@visit
+      if (when {
+          path.endsWith("/ExtensionPointName.class") -> false
+          path.startsWith("com/intellij/openapi/extensions/") -> true
+          path.startsWith("com/intellij/") -> true
+          path.startsWith("cli/") -> true
+          else -> false
+        }
+      ) {
+        val from = path.replace('/', '.').removeSuffix(".class")
+        val to = prefix + path.replace('/', '.').removeSuffix(".class")
+        println("""relocate("$from", "$to")""")
+        relocate(from, to)
+      }
+    }
+  }
+}
+
+// Final stage - may not be needed anymore
+val shadowJarFinalStage by tasks.registering(ShadowJar::class) {
+  dependsOn(shadowJarStage3)
+  isZip64 = true
+  archiveClassifier.set("") // Final artifact should not have a classifier
+  doFirst {
+    from(zipTree(shadowJarStage3.get().archiveFile))
+//    // Make a backup of the "" classifier jar
+//    val backup = archiveFile.get().asFile
+//    if (!backup.exists()) return@doFirst
+//    val backupFile = File(backup.parentFile, backup.name.removeSuffix(".jar") + "-input.jar")
+//    backup.copyTo(backupFile, true)
+//    // Final isolations to fix remaining references
+//    listOf(
+//      "com.intellij.openapi.extensions.AreaInstance"
+//    ).forEach { className -> relocate("$className.class", "aicoder.$className.class") }
+  }
+}
+
+// Update the build task to depend on the second shadowJar stage
 tasks.named("build") {
-  dependsOn("shadowJar")
+  dependsOn(shadowJarFinalStage)
 }
 
 val javadocJar by tasks.registering(Jar::class) {
@@ -154,7 +189,7 @@ publishing {
     create<MavenPublication>("mavenJava") {
       artifactId = "kotlin-hack"
       //from(components["java"])
-      artifact(tasks["shadowJar"])
+      artifact(shadowJarFinalStage.get())
       artifact(sourcesJar.get())
       artifact(javadocJar.get())
       versionMapping {
