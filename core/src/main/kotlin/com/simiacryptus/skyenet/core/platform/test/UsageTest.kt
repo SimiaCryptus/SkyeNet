@@ -7,9 +7,14 @@ import com.simiacryptus.skyenet.core.platform.UsageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import kotlin.random.Random
 
 open class UsageTest(val impl: UsageInterface) {
-  private val testUser = User(email = "test@example.com")
+  private val testUser = User(
+    email = "test@example.com",
+    name = "Test User",
+    id = Random.nextInt().toString()
+  )
 
   @Test
   fun `incrementUsage should increment usage for session`() {

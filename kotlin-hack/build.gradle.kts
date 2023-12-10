@@ -1,3 +1,6 @@
+import com.github.jengelman.gradle.plugins.shadow.relocation.RelocateClassContext
+import com.github.jengelman.gradle.plugins.shadow.relocation.RelocatePathContext
+import com.github.jengelman.gradle.plugins.shadow.relocation.Relocator
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import java.net.URI
 
@@ -6,7 +9,7 @@ plugins {
   `java-library`
   `maven-publish`
   id("signing")
-  id("com.github.johnrengelman.shadow") version "7.1.2"
+  id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 fun properties(key: String) = project.findProperty(key).toString()
@@ -34,6 +37,8 @@ dependencies {
   implementation(kGroup, name = "kotlin-compiler-embeddable", version = kVersion) { isTransitive = false }
 }
 
+val verbose = true
+
 // Filtering and assembly
 val shadowJarStage1 by tasks.registering(ShadowJar::class) {
   archiveClassifier.set("stage1")
@@ -55,35 +60,81 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
           else -> path
         }
         if (!when {
-            path.startsWith("com/intellij/openapi/fileTypes/") -> when {
-              path.endsWith("/FileTypeRegistry.class") -> true
-              else -> false
-            }
-
-            path.startsWith("com/intellij/openapi/application/") -> when {
-              path.endsWith("/ApplicationManager.class") -> true
-              path.endsWith("/CachedSingletonsRegistry.class") -> true
-              else -> false
-            }
-
-            path.startsWith("com/intellij/openapi/components/") -> true
-            path.startsWith("com/intellij/openapi/extensions/") -> true
-            path.startsWith("com/intellij/psi/impl/source/resolve/") -> true
-            path.startsWith("com/intellij/util/messages/impl/") -> true
 
             path.startsWith("com/intellij/") -> when {
+
+              // Type 'com/intellij/core/CoreFileTypeRegistry' (current frame, stack[0]) is not assignable to 'aicoder/com/intellij/openapi/fileTypes/FileTypeRegistry'
+              path.startsWith("com/intellij/core/CoreFileTypeRegistry") -> true
+
+              path.startsWith("com/intellij/openapi/fileTypes/") -> when {
+                // java.lang.NoSuchFieldError: ourInstanceGetter (defined by com.intellij.openapi.fileTypes.FileTypeRegistry refed from aicoder.com.intellij.openapi.application.ApplicationManager)
+                path.endsWith("/FileTypeRegistry.class") -> true
+                else -> false
+              }
+
+              // com.intellij.openapi.components.ComponentManager is interface of com/intellij/openapi/application/Application
+              path.endsWith("/ComponentManager.class") -> true
+
+              // java.lang.NoSuchMethodError: 'aicoder.com.intellij.openapi.extensions.ExtensionsArea com.intellij.openapi.application.Application.getExtensionArea()'
+              path.startsWith("com/intellij/openapi/application/Application") -> true
+              path.startsWith("com/intellij/openapi/application/") -> when {
+                //path.endsWith("/ApplicationManager.class") -> true
+                path.endsWith("/CachedSingletonsRegistry.class") -> true
+                else -> false
+              }
+
+              path.startsWith("com/intellij/openapi/extensions/impl/ExtensionsAreaImpl") -> true // in callstack
+              path.startsWith("com/intellij/openapi/extensions/Extensions") -> true // needs to be compatible with ExtensionsAreaImpl
+
+
+              //            path.endsWith("components/ComponentManager.class") -> false
+              //            path.startsWith("com/intellij/openapi/components/") -> true
+              //            path.endsWith("extensions/ExtensionPointName.class") -> false
+              //            path.startsWith("com/intellij/openapi/extensions/") -> true
+              path.startsWith("com/intellij/psi/impl/source/resolve/") -> true
+              path.startsWith("com/intellij/util/messages/impl/") -> true
+
+              // com.intellij.psi.impl.compiled.ClsDecompilerImpl does not implement interface aicoder.com.intellij.psi.compiled.ClassFileDecompilers$Decompiler
+              //path.startsWith("com/intellij/psi/compiled/") -> true
+
+              // java.lang.NoSuchMethodError: 'void com.intellij.lang.jvm.facade.JvmFacadeImpl.<init>(com.intellij.openapi.project.Project, com.intellij.util.messages.MessageBus)'
+              path.endsWith("/JvmFacadeImpl.class") -> true
+
+              path.startsWith("com/intellij/mock/") -> true
               path.endsWith("/DisabledPluginsState.class") -> true
+
+              path.contains("/MockDocumentCommitProcessor") -> true // MockDocumentCommitProcessor is internal
+              path.contains("/CorePsiDocumentManager") -> true // CorePsiDocumentManager is internal
+              path.contains("/CoreInjectedLanguageManager") -> true // CoreInjectedLanguageManager is internal
+              path.contains("/CoreProjectEnvironment") -> true
+              path.contains("/CoreApplicationEnvironment") -> true
+
+              path.contains("/JavaCoreProjectEnvironment") -> true
+              path.contains("/JavaCoreApplicationEnvironment") -> true
               else -> false
             }
 
-            path.startsWith("org/jetbrains/kotlin/com/intellij/psi/compiled/") -> true
+            path.startsWith("org/jetbrains/kotlin/cli/jvm/") -> true
+            // java.lang.ClassNotFoundException: org.jetbrains.kotlin.cli.common.messages.MessageCollectorBasedReporter PluginClassLoader(plugin=PluginDescriptor(name=AI Coding Assistant, id=com.github.simiacryptus.intellijopenaicodeassist, descriptorPath=plugin.xml, path=~\code\intellij-aicoder\build\idea-sandbox\plugins-uiTest\intellij-aicoder, version=1.2.24, package=null, isBundled=false), packagePrefix=null, state=active)
+            path.startsWith("org/jetbrains/kotlin/cli/") -> true
 
             path.startsWith("org/jetbrains/kotlin/") -> when {
+              // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar.registerProjectComponents(aicoder.com.intellij.mock.MockProject, org.jetbrains.kotlin.config.CompilerConfiguration)'
+              path.contains("/ComponentRegistrar") -> true
+
+              // org.jetbrains.kotlin.scripting.compiler.plugin.ScriptingCompilerConfigurationComponentRegistrar cannot be cast to class aicoder.org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+              // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.scripting.compiler.plugin.ScriptingCompilerConfigurationExtension.<init>(aicoder.com.intellij.mock.MockProject, kotlin.script.experimental.host.ScriptingHostConfiguration)'
+              // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.scripting.compiler.plugin.extensions.ScriptingCollectAdditionalSourcesExtension.<init>(aicoder.com.intellij.mock.MockProject)'
+              // java.lang.NoSuchMethodError: 'void org.jetbrains.kotlin.scripting.compiler.plugin.PluginRegisrarKt.access$registerExtensionIfRequired(org.jetbrains.kotlin.extensions.ProjectExtensionDescriptor, aicoder.com.intellij.mock.MockProject, java.lang.Object)'
+              path.startsWith("org/jetbrains/kotlin/scripting/compiler/plugin/") -> true
+              //org.jetbrains.kotlin.extensions.ProjectExtensionDescriptor in call stack
+              path.contains("/ProjectExtensionDescriptor") -> true
               path.contains("CLICompilerKt") -> true
               path.contains("UtilsKt") -> true
               path.contains("ArgumentsKt") -> true
               path.contains("CompilationContextKt") -> true
               path.contains("JvmReplCompiler") -> true
+              path.contains("Jsr223") -> true
               else -> false
             }
 
@@ -96,13 +147,14 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
             path.startsWith("org/apache/") -> false
             path.startsWith("org/codehaus/stax2/") -> false
             path.startsWith("org/objectweb/") -> false
+            path.startsWith("org/picocontainer/") -> false
             else -> true
           }
         ) {
-          println("${this.path} excluded from ${file.name} as $path")
+          if (verbose) println("${this.path} excluded from ${file.name} as $path")
           exclude(this.path)
         } else {
-          println("${this.path} included from ${file.name} as $path")
+          if (verbose) println("${this.path} included from ${file.name} as $path")
         }
       }
     }
@@ -124,48 +176,71 @@ val shadowJarStage2 by tasks.registering(ShadowJar::class) {
 }
 
 // Class isolations to avoid conflicts with the IntelliJ classpath
-val shadowJarStage3 by tasks.registering(ShadowJar::class) {
-  archiveClassifier.set("stage3")
+val shadowJarFinalStage by tasks.registering(ShadowJar::class) {
+  archiveClassifier.set("")
   isZip64 = true
   dependsOn(shadowJarStage2)
   doFirst {
     from(zipTree(shadowJarStage2.get().archiveFile))
-    val prefix = "aicoder."
+    val inputFiles: MutableSet<String> = mutableSetOf()
     zipTree(shadowJarStage2.get().archiveFile).visit {
       if (this.isDirectory) return@visit
-      if (when {
-          path.endsWith("/ExtensionPointName.class") -> false
-          path.startsWith("com/intellij/openapi/extensions/") -> true
-          path.startsWith("com/intellij/") -> true
-          path.startsWith("cli/") -> true
-          else -> false
-        }
-      ) {
-        val from = path.replace('/', '.').removeSuffix(".class")
-        val to = prefix + path.replace('/', '.').removeSuffix(".class")
-        println("""relocate("$from", "$to")""")
-        relocate(from, to)
-      }
+      inputFiles.add(this.relativePath.toString().removeSuffix(".class"))
     }
-  }
-}
+    val prefix = "aicoder"
+    relocate(object : Relocator {
 
-// Final stage - may not be needed anymore
-val shadowJarFinalStage by tasks.registering(ShadowJar::class) {
-  dependsOn(shadowJarStage3)
-  isZip64 = true
-  archiveClassifier.set("") // Final artifact should not have a classifier
-  doFirst {
-    from(zipTree(shadowJarStage3.get().archiveFile))
-//    // Make a backup of the "" classifier jar
-//    val backup = archiveFile.get().asFile
-//    if (!backup.exists()) return@doFirst
-//    val backupFile = File(backup.parentFile, backup.name.removeSuffix(".jar") + "-input.jar")
-//    backup.copyTo(backupFile, true)
-//    // Final isolations to fix remaining references
-//    listOf(
-//      "com.intellij.openapi.extensions.AreaInstance"
-//    ).forEach { className -> relocate("$className.class", "aicoder.$className.class") }
+      override fun canRelocatePath(path: String?) = true
+      fun shouldRelocatePath(path: String?) =
+        path?.removeSuffix(".class")?.let {
+          when {
+            !inputFiles.contains(path) -> {
+              if (verbose) println("""ignoring non-present "$path"""")
+              false
+            }
+
+            it.contains("/KotlinJsr223") -> false
+            it.contains("/ExtensionPointName") -> false
+            it.startsWith("kotlin/script/experimental/jvm") -> false
+            //it.startsWith("com/intellij/psi") -> true
+            it.startsWith("com/intellij/") -> true
+            //org/jetbrains/kotlin/cli/common/extensions/ReplFactoryExtension$Companion
+            it.startsWith("org/jetbrains/kotlin/") && it.contains("Extension([.$].*)?".toRegex()) -> false
+            it.startsWith("org/jetbrains/") -> true
+            it.startsWith("kotlin/") -> true
+            it.startsWith("cli/") -> true
+            else -> false
+          }
+        } ?: false
+
+      override fun relocatePath(context: RelocatePathContext?) = context?.path?.let { from ->
+        if (shouldRelocatePath(from)) {
+          val to = prefix + "/" + from
+          if (verbose) println("""path relocate("$from", "$to")""")
+          to
+        } else {
+          if (verbose) println("""leaving path "$from" as-is""")
+          from
+        }
+      }
+
+      override fun canRelocateClass(className: String?) = true
+      fun shouldRelocateClass(className: String?) = shouldRelocatePath(className?.replace('.', '/'))
+
+      override fun relocateClass(context: RelocateClassContext?) =
+        context?.className?.let { from ->
+          if (shouldRelocateClass(from)) {
+            val to = prefix + "." + from
+            if (verbose) println("""class relocate("$from", "$to")""")
+            to
+          } else {
+            if (verbose) println("""leaving class "$from" as-is""")
+            from
+          }
+        }
+
+      override fun applyToSourceContent(sourceContent: String?) = sourceContent
+    })
   }
 }
 
