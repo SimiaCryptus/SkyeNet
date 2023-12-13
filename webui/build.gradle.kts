@@ -47,7 +47,7 @@ dependencies {
 
     implementation(group = "com.vladsch.flexmark", name = "flexmark-all", version = "0.64.8")
 
-    compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
+    compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.0-RC")
 
     compileOnly(kotlin("stdlib"))
     testImplementation(kotlin("stdlib"))

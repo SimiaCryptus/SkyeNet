@@ -32,7 +32,7 @@ dependencies {
 
     implementation(group = "org.apache.groovy", name = "groovy-all", version = "4.0.11")
 
-    compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
+    compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.0-RC")
     compileOnly(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = kotlin_version)
     compileOnly(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version = kotlin_version)
 

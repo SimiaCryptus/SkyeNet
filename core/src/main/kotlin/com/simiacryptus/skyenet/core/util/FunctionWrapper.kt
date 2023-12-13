@@ -2,6 +2,10 @@
 
 package com.simiacryptus.skyenet.core.util
 
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.EmbeddingModels
+import com.simiacryptus.jopenai.models.ImageModels
+import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.JsonUtil
 import java.awt.image.BufferedImage
 import java.io.Closeable
@@ -141,3 +145,12 @@ class JsonFunctionRecorder(baseDir: File) : FunctionInterceptor, Closeable {
         val log = org.slf4j.LoggerFactory.getLogger(JsonFunctionRecorder::class.java)
     }
 }
+
+
+
+
+fun getModel(modelName: String?): OpenAIModel? = ChatModels.values().find { it.modelName == modelName }
+    ?: EmbeddingModels.values().find { it.modelName == modelName }
+    ?: ImageModels.values().find { it.modelName == modelName }
+
+

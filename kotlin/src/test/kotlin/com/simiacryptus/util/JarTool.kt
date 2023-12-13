@@ -4,7 +4,10 @@ package com.simiacryptus.util
 
 import org.objectweb.asm.*
 import java.io.File
+import java.util.*
 import java.util.jar.JarFile
+import java.util.stream.Collectors
+import kotlin.jvm.optionals.getOrNull
 
 
 class JarTool {
@@ -30,7 +33,8 @@ class JarTool {
     fun computeNegativePrefixes(negativeExamples: Set<String>) =
       negativeExamples.flatMap { it.prefixExpand() }.toHashSet()
 
-    private fun String.prefixExpand() = (1..length).map { i -> substring(0, i) }
+    fun String.prefixExpand() = (1..length).map { i -> substring(0, i) }
+    fun String.suffixExpand() = (1..length).map { i -> substring(length - i, length) }
   }
 
   fun main() {
@@ -54,6 +58,15 @@ class JarTool {
         name.contains("JvmScriptingHostConfigurationKt") -> true
         name.contains("JvmScriptCompilationKt") -> true
         name.contains("JvmClasspathUtilKt") -> true
+        name.contains("JvmReplCompilerBase") -> true
+        name.contains("CommonConfigurationKeys") -> true
+        name.contains("CommonCompilerArguments") -> true
+        name.contains("org.jetbrains.kotlin.scripting.compiler") && name.contains("Kt(?![^$.])".toRegex()) -> true
+        name.contains("IgnoredOptionsReportingState") -> true
+        name.contains("AnalysisFlag") -> true
+        name.contains("KotlinJar") -> true
+        name.contains("LanguageVersionSettings") -> true
+
         else -> false
       }
     }
@@ -66,8 +79,7 @@ class JarTool {
       overrides.map { it.classToPath + ".class" },
       ourClasses.filter { !overrides.contains(it) }.map { it.classToPath + ".class" },
       true
-    )
-    )
+    ))
     println("\n\n")
 
     println("// Pruned:")
@@ -113,17 +125,7 @@ class JarTool {
   ): String {
     val sb = StringBuilder()
     sb.append("when {\n")
-
-    val exactMatches = toMatch.filter { a -> doNotMatch.any { b -> b.startsWith(a) } }
-    exactMatches.forEach {
-      sb.append("""  path == "${it.classToPath.escape}" -> $result""" + "\n")
-    }
-
-    val toMatchPrefix = toMatch.filter { !exactMatches.contains(it) }.toSet()
-    val prefixes = calculatePrefixes(toMatchPrefix, doNotMatch.toSet())
-    val dedupedPrefixes = prefixes.filter { a -> prefixes.none { b -> b != a && b.startsWith(a) } }.sorted()
-
-    appendRules(sb, dedupedPrefixes, result)
+    appendRules(sb, toMatch.toSet(), doNotMatch.toSortedSet(), result)
     sb.append("  else -> ${!result}\n")
     sb.append("}")
     return sb.toString()
@@ -131,45 +133,127 @@ class JarTool {
 
   private fun appendRules(
     sb: StringBuilder,
-    prefixes: List<String>,
+    toMatch: Set<String>,
+    doNotMatch: SortedSet<String>,
     result: Boolean
   ) {
-    val bestPrefixes = getSharedPrefixes(prefixes)
-    prefixes.groupBy {
-      bestPrefixes.firstOrNull { prefix -> it.startsWith(prefix) } ?: ""
-    }.forEach { (commonPrefix, items) ->
-      if (commonPrefix.isNotEmpty() && items.size > 3) {
+    if (doNotMatch.isEmpty()) {
+      sb.append("""  true -> $result""" + "\n")
+      return
+    }
+    val remainingItems = toMatch.toMutableSet()
+    fun String.bestPrefix() =
+      possiblePrefixes(setOf(this), doNotMatch).minByOrNull { it.length } ?: this
+    fun String.bestSuffix() =
+      possibleSuffixes(setOf(this), doNotMatch).minByOrNull { it.length } ?: this
+
+    while (remainingItems.isNotEmpty()) {
+
+      var sortedItems = remainingItems.toSortedSet()
+      val bestNextPrefix = possiblePrefixes(remainingItems, doNotMatch).parallelStream().map { prefix ->
+        //val matchingItems = remainingItems.filter { it.startsWith(prefix) }
+        val matchingItems = sortedItems.subSet(prefix, prefix + "\uFFFF")
+        prefix to matchingItems.sumOf { prefix.length } - prefix.length
+      }.collect(Collectors.maxBy(Comparator.comparing { it.second })).getOrNull()
+
+      val bestNextSuffix = possibleSuffixes(
+        remainingItems.map { it.reversed() }.toSet(),
+        doNotMatch.map { it.reversed() }.toSortedSet()
+      ).parallelStream().map { prefix ->
+        //val matchingItems = remainingItems.filter { it.endsWith(prefix) }
+        val matchingItems = sortedItems.subSet(prefix, prefix + "\uFFFF")
+        prefix.reversed() to matchingItems.sumOf { prefix.length } - prefix.length
+      }.collect(Collectors.maxBy(Comparator.comparing { it.second })).getOrNull()
+
+
+      if (bestNextSuffix != null && bestNextSuffix.second > (bestNextPrefix?.second ?: 0)) {
+        val items = remainingItems.filter { it.endsWith(bestNextSuffix.first) }
+        remainingItems.removeAll(items.toSet())
+        val nextBlacklist = doNotMatch.filter { it.endsWith(bestNextSuffix.first) }
+          .map { it.removeSuffix(bestNextSuffix.first) }.toSortedSet()
+        if (items.size == 1 || nextBlacklist.isEmpty()) {
+          sb.append("""  path.endsWith("${items.first().bestSuffix().escape}") -> $result""" + "\n")
+        } else {
+          sb.append(
+            """
+              path.endsWith("${bestNextSuffix.first.escape}") -> {
+            val path = path.removeSuffix("${bestNextSuffix.first.bestSuffix().escape}")
+            when {
+          """.trimIndent() + "\n"
+          )
+          appendRules(
+            sb,
+            items.map { it.removeSuffix(bestNextSuffix.first) }.toSet(),
+            nextBlacklist,
+            result
+          )
+
+          sb.append("    else -> ${!result}\n")
+          sb.append("  }\n}\n")
+        }
+        continue
+      }
+
+      if (bestNextPrefix == null) break
+      if (bestNextPrefix.first.isEmpty()) break
+      val items = remainingItems.filter { it.startsWith(bestNextPrefix.first) }
+      remainingItems.removeAll(items.toSet())
+      val nextBlacklist = doNotMatch.filter { it.startsWith(bestNextPrefix.first) }
+        .map { it.removePrefix(bestNextPrefix.first) }.toSortedSet()
+      if (items.size == 1 || nextBlacklist.isEmpty()) {
+        sb.append("""  path.startsWith("${bestNextPrefix.first.bestPrefix().escape}") -> $result""" + "\n")
+      } else {
         sb.append(
-          """  path.startsWith("${
-            commonPrefix.classToPath.escape
-          }") -> {
-          val path = path.removePrefix("${commonPrefix.classToPath.escape}")
-          when {""" + "\n"
+          """
+              path.startsWith("${bestNextPrefix.first.escape}") -> {
+            val path = path.removePrefix("${bestNextPrefix.first.escape}")
+            when {
+          """.trimIndent() + "\n"
         )
-        val subItems = items.map { it.removePrefix(commonPrefix) }
-        appendRules(sb, subItems, result)
+        appendRules(
+          sb,
+          items.map { it.removePrefix(bestNextPrefix.first) }.toSet(),
+          nextBlacklist,
+          result
+        )
+
         sb.append("    else -> ${!result}\n")
         sb.append("  }\n}\n")
-      } else {
-        items.forEach {
-          sb.append("""  path.startsWith("${it.classToPath.escape}") -> $result""" + "\n")
-        }
       }
+    }
+    remainingItems.forEach {
+      sb.append("""  path.startsWith("${it.bestPrefix().escape}") -> $result""" + "\n")
     }
   }
 
-  private fun getSharedPrefixes(prefixes: List<String>): MutableSet<String> {
-    val allPossiblePrefixes = prefixes.flatMap { it.prefixExpand() }.toHashSet()
-    val bestPrefixes = mutableSetOf<String>()
-    while (true) {
-      val remaining = allPossiblePrefixes.filter { a -> bestPrefixes.none(a::startsWith) }
-      if (remaining.isEmpty()) break
-      val scores = remaining.associate { a -> a to remaining.filter { it.startsWith(a) }.sumOf { a.length } - a.length }
-        .filter { it.value > 32 }
-      bestPrefixes.add(scores.maxByOrNull { it.value }?.key ?: break)
+  fun possiblePrefixes(
+    items: Set<String>,
+    doNotMatch: SortedSet<String>
+  ): Set<String> {
+    val prefixes = HashSet<String>()
+    for (item in items) {
+      for (i in item.length-1 downTo 1) {
+        val prefix = item.substring(0, i)
+        if(prefixes.contains(prefix)) break
+        val tailSet = doNotMatch.tailSet(prefix)
+        if (tailSet.firstOrNull()?.startsWith(prefix) == true) {
+          break
+        } else {
+          prefixes.add(prefix)
+        }
+      }
     }
-    return bestPrefixes
+    return prefixes
   }
+
+  fun possibleSuffixes(
+    items: Set<String>,
+    doNotMatch: SortedSet<String>
+  ) = possiblePrefixes(
+    items.map { it.reversed() }.toSet(),
+    doNotMatch.map { it.reversed() }.toSortedSet()
+  ).map { it.reversed() }.toSet()
+
 
   private fun allRequirementsOf(
     dependencies: MutableMap<String, Set<String>>,
@@ -469,4 +553,4 @@ val String.escape get() = replace("$", "\\$")
 
 val String.classToPath
   get() = replace('.', '/')
-    .removeSuffix(".class")
+    .removeSuffix("/class")
