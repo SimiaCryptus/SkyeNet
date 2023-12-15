@@ -44,8 +44,10 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
+    compileOnly("org.ow2.asm:asm:9.6")
     compileOnly(kotlin("stdlib"))
     compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.0-RC")
+
     testImplementation(kotlin("stdlib"))
     testImplementation(kotlin("script-runtime"))
 
