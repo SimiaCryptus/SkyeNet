@@ -115,9 +115,21 @@ object RuleTreeBuilder {
   fun bestPrefix(
     toMatch: SortedSet<String>,
     doNotMatch: SortedSet<String>
-  ) = prefixExpand(allowedPrefixes(toMatch, doNotMatch))
+  ) = allowedPrefixes(toMatch, doNotMatch)
+//    .flatMap { prefixExpand(listOf(it)) }
     .filter { it.isNotBlank() }
-    .maxByOrNull { prefix -> toMatch.subSet(prefix, prefix + "\uFFFF").sumOf { prefix.length } - prefix.length }
+    .maxByOrNull { prefix ->
+      val good = toMatch.subSet(prefix, prefix + "\uFFFF")
+      val bad = doNotMatch.subSet(prefix, prefix + "\uFFFF")
+      val goodCnt = good.size
+      val badCnt = bad.size
+      if(badCnt == 0) return@maxByOrNull goodCnt.toDouble()
+      if(goodCnt == 0) return@maxByOrNull badCnt.toDouble()
+      val totalCnt = goodCnt + badCnt
+      val goodFactor = goodCnt.toDouble() / totalCnt
+      val badFactor = badCnt.toDouble() / totalCnt
+      goodFactor * Math.log(goodFactor) + badFactor * Math.log(badFactor)
+    }
 
   fun bestNextSuffix(
     remainingItems: MutableSet<String>,
@@ -131,7 +143,9 @@ object RuleTreeBuilder {
 
   fun prefixExpand(allowedPrefixes: Collection<String>) =
     allowedPrefixes.filter { allowedPrefixes.none { prefix -> prefix != it && prefix.startsWith(it) } }
-      .flatMap { (1..it.length).map { i -> it.substring(0, i) } }.toSet()
+      .flatMap { prefixExpand(it) }.toSet()
+
+  fun prefixExpand(it: String) = (1..it.length).map { i -> it.substring(0, i) }
 
   fun allowedPrefixes(
     items: Collection<String>,

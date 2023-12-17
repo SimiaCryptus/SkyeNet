@@ -2,13 +2,18 @@
 
 package com.simiacryptus.skyenet.kotlin
 
-import com.simiacryptus.skyenet.core.util.ClasspathRelationships.allRequirementsOf
 import com.simiacryptus.skyenet.core.util.ClasspathRelationships.analyzeJar
+import com.simiacryptus.skyenet.core.util.ClasspathRelationships.classAccessMap
 import com.simiacryptus.skyenet.core.util.ClasspathRelationships.classToPath
+import com.simiacryptus.skyenet.core.util.ClasspathRelationships.downstream
+import com.simiacryptus.skyenet.core.util.ClasspathRelationships.downstreamMap
 import com.simiacryptus.skyenet.core.util.ClasspathRelationships.jarFiles
+import com.simiacryptus.skyenet.core.util.ClasspathRelationships.readJarClasses
 import com.simiacryptus.skyenet.core.util.ClasspathRelationships.readJarFiles
-import com.simiacryptus.skyenet.core.util.ClasspathRelationships.requirementMap
+import com.simiacryptus.skyenet.core.util.ClasspathRelationships.upstream
+import com.simiacryptus.skyenet.core.util.ClasspathRelationships.upstreamMap
 import com.simiacryptus.skyenet.core.util.RuleTreeBuilder.getRuleExpression
+import org.objectweb.asm.Opcodes
 import java.io.File
 import java.util.*
 
@@ -28,10 +33,10 @@ object JarTool {
     "kotlin.script.experimental.jvmhost.BasicJvmScriptingHostKt",
     "org.jetbrains.kotlin.jsr223.KotlinJsr223JvmScriptEngine4Idea",
 
-    "org.jetbrains.kotlin.scripting.compiler.plugin.impl.ErrorReportingKt",
-    "org.jetbrains.kotlin.daemon.KotlinCompileDaemon",
-    "kotlin.script.experimental.jvmhost.BasicJvmScriptingHost",
-    "org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation",
+//    "org.jetbrains.kotlin.scripting.compiler.plugin.impl.ErrorReportingKt",
+//    "org.jetbrains.kotlin.daemon.KotlinCompileDaemon",
+//    "kotlin.script.experimental.jvmhost.BasicJvmScriptingHost",
+//    "org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation",
   )
 
 
@@ -55,11 +60,22 @@ object JarTool {
     else -> this
   }
 
+  val platformJar by lazy {
+    platformLib.jarFiles?.map {
+      readJarClasses(it.absolutePath)
+    }
+  }
+
   val platformClasspath by lazy {
-    platformLib.jarFiles?.flatMap { analyzeJar(it.absolutePath) }?.apply {
+    platformJar?.flatMap {
+      analyzeJar(it)
+    }?.apply {
       require(isNotEmpty())
     }?.groupBy { it.from } ?: mapOf()
   }
+
+  private fun isPrivate(to: String) = (pluginAccessMap[to] ?: 0).and(Opcodes.ACC_PRIVATE) != 0
+  private fun isPublic(to: String) = (pluginAccessMap[to] ?: 0).and(Opcodes.ACC_PUBLIC) != 0
 
   val kotlinClasspath by lazy {
     kotlinLib.jarFiles?.flatMap { analyzeJar(it.absolutePath) }?.apply {
@@ -67,11 +83,26 @@ object JarTool {
     }?.groupBy { it.from } ?: mapOf()
   }
 
+  val pluginJarClasses = readJarClasses(pluginJar)
   val pluginClasspath by lazy {
-    analyzeJar(pluginJar)
+    analyzeJar(pluginJarClasses)
       .apply {
         require(isNotEmpty())
+      }.flatMap {
+        when {
+          !isPublic(it.to) -> when(it.relation) {
+            // Add back-references for non-public classes to ensure they are relocated if needed
+            else -> listOf(it, it.copy(to = it.from, from = it.to))
+          }
+          else -> listOf(it)
+        }
       }.groupBy { it.from }
+  }
+
+  val pluginAccessMap by lazy {
+    classAccessMap(pluginJarClasses).entries.map {
+      it.key to it.value
+    }.toMap()
   }
 
   val classloadLogClasses by lazy {
@@ -81,23 +112,37 @@ object JarTool {
   }
 
   val requiredClasses: SortedSet<String> by lazy {
-    val requirementMap = requirementMap(pluginClasspath.values.flatten())
+    val requirementMap = downstreamMap(pluginClasspath.values.flatten())
     (((requiredRoots).distinct().flatMap {
-      allRequirementsOf(requirementMap, it, mutableSetOf(it))
+      downstream(requirementMap, it, mutableSetOf(it))
     } + classloadLogClasses).toSet()).toSortedSet()
   }
 
-  val conflicting by lazy {
-    pluginClasspath.keys
-      .filter {
-        when {
-          it.contains("ApplicationManager") -> false
-          platformClasspath.containsKey(it) -> true
-          else -> false
-        }
-      /*|| kotlinDependencyMap.containsKey(it)*/
+  val overrideRoots = platformClasspath.keys
+    .filter {
+      when {
+        it.contains("ApplicationManager") -> true // <-- All this for that one fucking class
+        //it.contains("JavaZipFileDataLoader") -> true
+        else -> false
       }
-      .toSortedSet()
+    }
+
+  val overrideClasses by lazy {
+    val userMap = upstreamMap(pluginClasspath.values.flatten())
+    var allUpstream = overrideRoots.flatMap { upstream(userMap, it) }.toSortedSet()
+    allUpstream = pluginClasspath.keys.filter { classname -> allUpstream.contains(classname.split("$").first()) }.toSortedSet()
+    allUpstream = allUpstream.flatMap { upstream(userMap, it) }.toSortedSet()
+    allUpstream
+  }
+
+  val conflicting by lazy {
+    pluginClasspath.keys.filter {
+      when {
+        overrideClasses.contains(it) -> false
+        platformClasspath.containsKey(it) -> true
+        else -> false
+      }
+    }.toSortedSet()
   }
 
   val deadWeight by lazy {
@@ -116,6 +161,7 @@ object JarTool {
       // Conflicts: ${conflicting.size}
       // Pruned: ${deadWeight.size}
       // Required Classes: ${requiredClasses.size}
+      // Override Classes: ${overrideClasses.size}
       
       // Conflicts:
       fun isConflicting(path: String) = ${
@@ -131,13 +177,24 @@ object JarTool {
       // Pruned:
       fun isPruned(path: String) = ${
       getRuleExpression(
-        (deadWeight+conflicting).map { it.classToPath + ".class" }.toSet(),
+        (deadWeight + conflicting).map { it.classToPath + ".class" }.toSet(),
         (pluginClasspath.keys
           .filter { !deadWeight.contains(it) }
           .filter { !conflicting.contains(it) }
-          .map { it.classToPath + ".class" }
-            + requiredResources
-            ).toSortedSet(),
+          .map { it.classToPath + ".class" } + requiredResources).toSortedSet(),
+        true
+      )
+    }
+    
+      // Overrides:
+      fun isOverride(path: String) = ${
+      getRuleExpression(
+        overrideClasses.map { it.classToPath + ".class" }.toSet(),
+        pluginClasspath.keys
+          .filter { !deadWeight.contains(it) }
+          .filter { !conflicting.contains(it) }
+          .filter { !overrideClasses.contains(it) }
+          .map { it.classToPath + ".class" }.toSortedSet(),
         true
       )
     }

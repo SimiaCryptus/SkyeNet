@@ -28,6 +28,7 @@ object ClasspathRelationships {
   data object METHOD_REFERENCE : Relation() // When a method references another class's method
   data object METHOD_SIGNATURE :
     Relation() // When a method signature references another class
+
   data object FIELD_REFERENCE : Relation() // When a method references another class's field
   data object DYNAMIC_BINDING :
     Relation() // When a class uses dynamic binding (e.g., invoke dynamic) related to another class
@@ -38,7 +39,8 @@ object ClasspathRelationships {
 
 
   class DependencyClassVisitor(
-    val dependencies: MutableMap<String, MutableSet<Relation>> = mutableMapOf()
+    val dependencies: MutableMap<String, MutableSet<Relation>> = mutableMapOf(),
+    var access: Int = 0,
   ) : ClassVisitor(Opcodes.ASM9) {
 
     override fun visit(
@@ -49,6 +51,7 @@ object ClasspathRelationships {
       superName: String?,
       interfaces: Array<out String>?
     ) {
+      this.access = access
       // Add superclass dependency
       superName?.let { addDep(it, INHERITANCE) }
       // Add interface dependencies
@@ -152,10 +155,10 @@ object ClasspathRelationships {
     val dependencies: MutableMap<String, MutableSet<Relation>>
   ) : FieldVisitor(Opcodes.ASM9) {
 
-      override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
-        descriptor?.let { addType(it, ANNOTATION) }
-        return super.visitAnnotation(descriptor, visible)
-      }
+    override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
+      descriptor?.let { addType(it, ANNOTATION) }
+      return super.visitAnnotation(descriptor, visible)
+    }
 
     override fun visitTypeAnnotation(
       typeRef: Int,
@@ -168,13 +171,13 @@ object ClasspathRelationships {
     }
 
     private fun addDep(internalName: String, relationType: Relation) {
-        val typeName = internalName.replace('/', '.')
-        dependencies.getOrPut(typeName) { mutableSetOf() }.add(relationType)
-      }
+      val typeName = internalName.replace('/', '.')
+      dependencies.getOrPut(typeName) { mutableSetOf() }.add(relationType)
+    }
 
-      private fun addType(type: String, relationType: Relation) {
-        addDep(getTypeName(type) ?: return, relationType)
-      }
+    private fun addType(type: String, relationType: Relation) {
+      addDep(getTypeName(type) ?: return, relationType)
+    }
 
   }
 
@@ -334,16 +337,27 @@ object ClasspathRelationships {
     val relation: Relation
   )
 
+  fun analyzeJar(jarPath: String) = analyzeJar(readJarClasses(jarPath))
   fun analyzeJar(
-    jarPath: String,
-  )= readJarClasses(jarPath).flatMap { (className, classData) ->
-      val dependencyClassVisitor = DependencyClassVisitor()
-      ClassReader(classData).accept(dependencyClassVisitor, 0)
-      val dependencies = dependencyClassVisitor.dependencies
-      dependencies.flatMap { (to, dependencies) ->
-        dependencies.map { Reference(className, to, it) }
-      }
+    jar: Map<String, ByteArray?>,
+  ) = jar.flatMap { (className, classData) ->
+    val dependencyClassVisitor = DependencyClassVisitor()
+    ClassReader(classData).accept(dependencyClassVisitor, 0)
+    val dependencies = dependencyClassVisitor.dependencies
+    dependencies.flatMap { (to, dependencies) ->
+      dependencies.map { Reference(className, to, it) }
     }
+  }
+
+  fun classAccessMap(jarPath: String) = classAccessMap(readJarClasses(jarPath))
+
+  fun classAccessMap(
+    jar: Map<String, ByteArray?>,
+  ): Map<String, Int> = jar.map { (className, classData) ->
+    val dependencyClassVisitor = DependencyClassVisitor()
+    ClassReader(classData).accept(dependencyClassVisitor, 0)
+    className to dependencyClassVisitor.access
+  }.toMap()
 
 
   fun readJarClasses(jarPath: String) = JarFile(jarPath).use { jarFile ->
@@ -357,17 +371,16 @@ object ClasspathRelationships {
     jarFile.entries().asSequence().map { it.name }.toList().toTypedArray()
   }
 
-
-  fun allRequirementsOf(
+  fun upstream(
     dependencies: List<Reference>,
     className: String,
     buffer: MutableSet<String> = mutableSetOf(className)
-  ) = allRequirementsOf(requirementMap(dependencies), className, buffer)
+  ) = upstream(upstreamMap(dependencies), className, buffer)
 
-  fun requirementMap(dependencies: List<Reference>) =
+  fun upstreamMap(dependencies: List<Reference>) =
     dependencies.groupBy { it.to }
 
-  fun allRequirementsOf(
+  fun upstream(
     dependencies: Map<String, List<Reference>>,
     className: String,
     buffer: MutableSet<String> = mutableSetOf(className)
@@ -379,11 +392,11 @@ object ClasspathRelationships {
       .filter { it.isNotBlank() }
       .toTypedArray()
     synchronized(buffer) { buffer.addAll(required) }
-    required.toList().parallelStream().forEach { allRequirementsOf(dependencies, it, buffer).stream() }
+    required.toList().parallelStream().forEach { upstream(dependencies, it, buffer).stream() }
     return buffer
   }
 
-  fun allUsersOf(
+  fun downstream(
     dependencies: Map<String, List<Reference>>,
     className: String,
     buffer: MutableSet<String> = mutableSetOf(className)
@@ -395,16 +408,17 @@ object ClasspathRelationships {
       .filter { it.isNotBlank() }
       .toTypedArray()
     synchronized(buffer) { buffer.addAll(required) }
-    required.toList().parallelStream().forEach { allUsersOf(dependencies, it, buffer).stream() }
+    required.toList().parallelStream().forEach { downstream(dependencies, it, buffer).stream() }
     return buffer
   }
-  fun allUsersOf(
+
+  fun downstream(
     dependencies: List<Reference>,
     className: String,
     buffer: MutableSet<String> = mutableSetOf(className)
-  ) = allUsersOf(userMap(dependencies), className, buffer)
+  ) = downstream(downstreamMap(dependencies), className, buffer)
 
-  fun userMap(dependencies: List<Reference>) =
+  fun downstreamMap(dependencies: List<Reference>) =
     dependencies.groupBy { it.from }
 
 }
