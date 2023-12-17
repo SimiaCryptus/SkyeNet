@@ -29,10 +29,9 @@ class RuleTreeBuilderTest {
   fun testBestNextPrefix() {
     val remainingItems = mutableSetOf("apple", "apricot", "banana")
     val doNotMatch = sortedSetOf("appetizer", "application")
-    val sortedItems = remainingItems.toSortedSet()
-    val bestNextPrefix = RuleTreeBuilder.bestNextPrefix(remainingItems, doNotMatch, sortedItems)
+    val bestNextPrefix = RuleTreeBuilder.bestPrefix(remainingItems.toSortedSet(), doNotMatch)
     Assertions.assertNotNull(bestNextPrefix)
-    Assertions.assertEquals("ap", bestNextPrefix?.first)
+    Assertions.assertEquals("ap", bestNextPrefix)
   }
 
   @Test
