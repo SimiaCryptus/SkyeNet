@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 import java.io.File
 import java.util.*
 
-open class StorageInterfaceTest(val storage: StorageInterface) {
+abstract class StorageInterfaceTest(val storage: StorageInterface) {
 
 
     @Test

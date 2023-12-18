@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 
-open class UsageTest(val impl: UsageInterface) {
+abstract class UsageTest(val impl: UsageInterface) {
   private val testUser = User(
     email = "test@example.com",
     name = "Test User",
@@ -22,7 +22,8 @@ open class UsageTest(val impl: UsageInterface) {
     val session = StorageInterface.newGlobalID()
     val usage = ApiModel.Usage(
       prompt_tokens = 10,
-      completion_tokens = 20
+      completion_tokens = 20,
+      cost = 30.0,
     )
     impl.incrementUsage(session, testUser, model, usage)
     val usageSummary = impl.getSessionUsageSummary(session)
