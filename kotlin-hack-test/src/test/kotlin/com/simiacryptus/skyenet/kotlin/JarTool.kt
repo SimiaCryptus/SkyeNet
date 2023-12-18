@@ -74,22 +74,26 @@ object JarTool {
     }?.groupBy { it.from } ?: mapOf()
   }
 
-  private fun isPrivate(to: String) = (pluginAccessMap[to] ?: 0).and(Opcodes.ACC_PRIVATE) != 0
-  private fun isPublic(to: String) = (pluginAccessMap[to] ?: 0).and(Opcodes.ACC_PUBLIC) != 0
-
   val kotlinClasspath by lazy {
     kotlinLib.jarFiles?.flatMap { analyzeJar(it.absolutePath) }?.apply {
       require(isNotEmpty())
     }?.groupBy { it.from } ?: mapOf()
   }
 
-  val pluginJarClasses = readJarClasses(pluginJar)
+  private fun isPrivate(to: String) = (pluginAccessMap[to] ?: throw IllegalStateException(to)).and(Opcodes.ACC_PRIVATE) != 0
+  private fun isPublic(to: String) = (pluginAccessMap[to] ?: throw IllegalStateException(to)).and(Opcodes.ACC_PUBLIC) != 0
+
+  val pluginJarClasses by lazy { readJarClasses(pluginJar) }
   val pluginClasspath by lazy {
     analyzeJar(pluginJarClasses)
       .apply {
         require(isNotEmpty())
       }.flatMap {
         when {
+          !pluginJarClasses.containsKey(it.to) -> listOf(it)
+          pluginAccessMap.containsKey(it.to + "::" + it.relation.to_method)
+              && !isPublic(it.to + "::" + it.relation.to_method) ->
+                listOf(it, it.copy(to = it.from, from = it.to))
           !isPublic(it.to) -> when(it.relation) {
             // Add back-references for non-public classes to ensure they are relocated if needed
             else -> listOf(it, it.copy(to = it.from, from = it.to))
@@ -118,7 +122,8 @@ object JarTool {
     } + classloadLogClasses).toSet()).toSortedSet()
   }
 
-  val overrideRoots = platformClasspath.keys
+  val overrideRoots by lazy {
+    platformClasspath.keys
     .filter {
       when {
         it.contains("ApplicationManager") -> true // <-- All this for that one fucking class
@@ -126,13 +131,15 @@ object JarTool {
         else -> false
       }
     }
+  }
 
   val overrideClasses by lazy {
     val userMap = upstreamMap(pluginClasspath.values.flatten())
-    var allUpstream = overrideRoots.flatMap { upstream(userMap, it) }.toSortedSet()
-    allUpstream = pluginClasspath.keys.filter { classname -> allUpstream.contains(classname.split("$").first()) }.toSortedSet()
-    allUpstream = allUpstream.flatMap { upstream(userMap, it) }.toSortedSet()
-    allUpstream
+    val allUpstream = overrideRoots.flatMap { upstream(userMap, it) }.toSortedSet()
+    val parentClasses = pluginClasspath.keys.filter { classname ->
+      !allUpstream.contains(classname) && allUpstream.contains(classname.split("$").first())
+    }.toSet().toSortedSet()
+    (allUpstream + parentClasses.flatMap { upstream(userMap, it) }).toSortedSet()
   }
 
   val conflicting by lazy {
