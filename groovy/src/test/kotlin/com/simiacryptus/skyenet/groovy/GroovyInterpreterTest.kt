@@ -5,7 +5,10 @@ package com.simiacryptus.skyenet.groovy
 import com.simiacryptus.skyenet.core.util.InterpreterTestBase
 
 class GroovyInterpreterTest : InterpreterTestBase() {
-    override fun newInterpreter(map: java.util.Map<String,Object>) = GroovyInterpreter(map)
+    override fun newInterpreter(map: Map<String,Any>) = GroovyInterpreter(map.map { it.key to it.value as Object }.toMap().toJavaMap())
 
 }
+
+@Suppress("UNCHECKED_CAST")
+private fun <K, V> Map<K, V>.toJavaMap() = HashMap(this) as java.util.Map<K, V>
 
