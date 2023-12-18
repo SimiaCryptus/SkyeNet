@@ -13,7 +13,7 @@ import com.simiacryptus.skyenet.core.util.JsonFunctionRecorder
 import java.io.File
 
 open class ActorSystem<T:Enum<*>>(
-    private val actors: Map<T, BaseActor<*,*>>,
+    val actors: Map<T, BaseActor<*,*>>,
     val dataStorage: StorageInterface,
     val user: User?,
     val session: Session

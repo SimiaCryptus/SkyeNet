@@ -1,5 +1,3 @@
-@file:Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
-
 package com.simiacryptus.skyenet.kotlin
 
 import com.simiacryptus.skyenet.core.actors.CodingActor
@@ -8,7 +6,7 @@ import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
-class KotlinInterpreterTest : InterpreterTestBase() {
+class KotlinPluginInterpreterTest : InterpreterTestBase() {
 
     override fun newInterpreter(map: Map<String, Any>) = KotlinInterpreter(map)
 

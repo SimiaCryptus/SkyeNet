@@ -27,7 +27,7 @@ open class AuthenticationInterfaceTest(
   @Test
   fun `getUser should return User after putUser is called`() {
     authInterface.putUser(validAccessToken, newUser)
-    val user = authInterface.getUser(validAccessToken)
+    val user: User? = authInterface.getUser(validAccessToken)
     assertNotNull(user)
     assertEquals(newUser, user)
   }

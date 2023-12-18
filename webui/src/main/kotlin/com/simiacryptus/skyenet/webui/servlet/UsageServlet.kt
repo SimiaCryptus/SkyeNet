@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.jopenai.models.OpenAIModel
-import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
@@ -34,9 +33,7 @@ class UsageServlet : HttpServlet() {
     ) {
         val totalPromptTokens = usage.values.sumOf { it.prompt_tokens }
         val totalCompletionTokens = usage.values.sumOf { it.completion_tokens }
-        val totalCost = usage.entries.sumOf { (model, count) ->
-            if (model is OpenAITextModel) model.pricing(count) else 0.0
-        }
+        val totalCost = usage.entries.sumOf { (_, count) -> count.cost ?: 0.0 }
 
         resp.writer.write(
             """
@@ -66,7 +63,7 @@ class UsageServlet : HttpServlet() {
                             <td class="model-cell">$model</td>
                             <td class="prompt-cell">${count.prompt_tokens}</td>
                             <td class="completion-cell">${count.completion_tokens}</td>
-                            <td class="cost-cell">${if (model is OpenAITextModel) "%.4f".format(model.pricing(count)) else ""}</td>
+                            <td class="cost-cell">${"%.4f".format(count.cost ?: 0.0)}</td>
                         </tr>
                         """.trimIndent()
                     }

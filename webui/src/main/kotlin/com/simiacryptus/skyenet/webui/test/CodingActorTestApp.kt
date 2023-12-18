@@ -17,10 +17,9 @@ open class CodingActorTestApp(
     applicationName: String = "CodingActorTest_" + actor.name,
     temperature: Double = 0.3,
 ) : ApplicationServer(
-    applicationName = applicationName,
-    temperature = temperature,
+  applicationName = applicationName,
 ) {
-    override fun newSession(
+    override fun userMessage(
         session: Session,
         user: User?,
         userMessage: String,

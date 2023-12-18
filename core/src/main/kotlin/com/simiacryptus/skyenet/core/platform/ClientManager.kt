@@ -125,5 +125,7 @@ open class ClientManager {
     }
   }
 
-  private val log = LoggerFactory.getLogger(ClientManager::class.java)
+  companion object {
+    private val log = LoggerFactory.getLogger(ClientManager::class.java)
+  }
 }

@@ -14,8 +14,7 @@ open class ImageActorTestApp(
     applicationName: String = "ImageActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
 ) : ApplicationServer(
-    applicationName = applicationName,
-    temperature = temperature,
+  applicationName = applicationName,
 ) {
 
     data class Settings(
@@ -24,7 +23,7 @@ open class ImageActorTestApp(
     override val settingsClass: Class<*> get() = Settings::class.java
     @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(session: Session): T? = Settings(actor=actor) as T
 
-    override fun newSession(
+    override fun userMessage(
         session: Session,
         user: User?,
         userMessage: String,

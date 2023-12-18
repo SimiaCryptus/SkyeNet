@@ -29,7 +29,7 @@ abstract class ApplicationSocketManager(
     val operationID = randomID()
     threads[operationID] = Thread.currentThread()
       socket.session
-    newSession(
+    userMessage(
       session = session,
       user = socket.user,
       userMessage = userMessage,
@@ -76,7 +76,7 @@ abstract class ApplicationSocketManager(
                </form>""".trimIndent()
   }
 
-  abstract fun newSession(
+  abstract fun userMessage(
     session: Session,
     user: User?,
     userMessage: String,

@@ -7,3 +7,5 @@ build/
 .idea/
 .*
 openai.key
+*.log
+*.log.*

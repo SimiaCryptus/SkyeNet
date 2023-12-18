@@ -1,7 +1,10 @@
 package com.simiacryptus.skyenet.webui.chat
 
-import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
+import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
+import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.servlet.NewSessionServlet
 import com.simiacryptus.skyenet.webui.session.SocketManager
 import org.eclipse.jetty.servlet.DefaultServlet
@@ -16,9 +19,9 @@ abstract class ChatServer(val resourceBase: String) {
 
     abstract val applicationName: String
     open val dataStorage: StorageInterface? = null
+    val sessions: MutableMap<Session, SocketManager> = mutableMapOf()
 
     inner class WebSocketHandler : JettyWebSocketServlet() {
-        private val stateCache: MutableMap<Session, SocketManager> = mutableMapOf()
         override fun configure(factory: JettyWebSocketServletFactory) {
             factory.setCreator { req, resp ->
                 try {
@@ -27,12 +30,12 @@ abstract class ChatServer(val resourceBase: String) {
                     } else {
                         val session = Session(req.parameterMap["sessionId"]?.first()!!)
                         ChatSocket(
-                            if (stateCache.containsKey(session)) {
-                                stateCache[session]!!
+                            if (sessions.containsKey(session)) {
+                                sessions[session]!!
                             } else {
                                 val user = authenticationManager.getUser(req.getCookie(AuthenticationInterface.AUTH_COOKIE))
                                 val sessionState = newSession(user, session)
-                                stateCache[session] = sessionState
+                                sessions[session] = sessionState
                                 sessionState
                             }
                         )

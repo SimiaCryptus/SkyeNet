@@ -33,7 +33,7 @@ open class UsageManager(val root : File = File(".skyenet/usage")) : UsageInterfa
         if (file.exists()) {
             try {
                 file.readLines().forEach { line ->
-                    val (sessionId, user, model, tokens, direction) = line.split(",")
+                    val (sessionId, user, model, value, direction) = line.split(",")
                     val modelEnum = listOf(
                         ChatModels.values(),
                         CompletionModels.values(),
@@ -46,14 +46,21 @@ open class UsageManager(val root : File = File(".skyenet/usage")) : UsageInterfa
                             Session(sessionId),
                             User(email=user),
                             modelEnum,
-                            com.simiacryptus.jopenai.ApiModel.Usage(prompt_tokens = tokens.toInt())
+                            com.simiacryptus.jopenai.ApiModel.Usage(prompt_tokens = value.toInt())
                         )
 
                         "output" -> incrementUsage(
                             Session(sessionId),
                             User(email=user),
                             modelEnum,
-                            com.simiacryptus.jopenai.ApiModel.Usage(completion_tokens = tokens.toInt())
+                            com.simiacryptus.jopenai.ApiModel.Usage(completion_tokens = value.toInt())
+                        )
+
+                        "cost" -> incrementUsage(
+                            Session(sessionId),
+                            User(email=user),
+                            modelEnum,
+                            com.simiacryptus.jopenai.ApiModel.Usage(cost = value.toDouble())
                         )
 
                         else -> throw RuntimeException("Unknown direction $direction")
@@ -73,6 +80,7 @@ open class UsageManager(val root : File = File(".skyenet/usage")) : UsageInterfa
                 usage.tokensPerModel.forEach { (model, counter) ->
                     writer.write("$sessionId,${user?.email},${model.model.modelName},${counter.inputTokens.get()},input\n")
                     writer.write("$sessionId,${user?.email},${model.model.modelName},${counter.outputTokens.get()},output\n")
+                    writer.write("$sessionId,${user?.email},${model.model.modelName},${counter.cost.get()},cost\n")
                 }
             }
             writer.flush()
@@ -124,6 +132,7 @@ open class UsageManager(val root : File = File(".skyenet/usage")) : UsageInterfa
                 synchronized(txLogFile) {
                     txLogFileWriter.write("$session,${user?.email},${model.modelName},${tokens.prompt_tokens},input\n")
                     txLogFileWriter.write("$session,${user?.email},${model.modelName},${tokens.completion_tokens},output\n")
+                    txLogFileWriter.write("$session,${user?.email},${model.modelName},${tokens.completion_tokens},cost\n")
                     txLogFileWriter.flush()
                 }
             }
@@ -143,7 +152,8 @@ open class UsageManager(val root : File = File(".skyenet/usage")) : UsageInterfa
             it.value.map { it.second }.reduce { a, b ->
                 com.simiacryptus.jopenai.ApiModel.Usage(
                     prompt_tokens = a.prompt_tokens + b.prompt_tokens,
-                    completion_tokens = a.completion_tokens + b.completion_tokens
+                    completion_tokens = a.completion_tokens + b.completion_tokens,
+                    cost = (a.cost ?: 0.0) + (b.cost ?: 0.0)
                 )
             }
         } ?: emptyMap()
@@ -155,7 +165,8 @@ open class UsageManager(val root : File = File(".skyenet/usage")) : UsageInterfa
         }?.groupBy { it.first }?.mapValues { it.value.map { it.second }.reduce { a, b ->
             com.simiacryptus.jopenai.ApiModel.Usage(
                 prompt_tokens = a.prompt_tokens + b.prompt_tokens,
-                completion_tokens = a.completion_tokens + b.completion_tokens
+                completion_tokens = a.completion_tokens + b.completion_tokens,
+                cost = (a.cost ?: 0.0) + (b.cost ?: 0.0)
             )
         } } ?: emptyMap()
 

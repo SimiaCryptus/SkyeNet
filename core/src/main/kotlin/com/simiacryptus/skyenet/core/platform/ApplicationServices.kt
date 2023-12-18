@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.core.platform
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.common.util.concurrent.AtomicDouble
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.file.*
@@ -180,15 +181,18 @@ interface UsageInterface {
     class UsageValues(
         val inputTokens: AtomicInteger = AtomicInteger(),
         val outputTokens: AtomicInteger = AtomicInteger(),
+        val cost: AtomicDouble = AtomicDouble(),
     ) {
         fun addAndGet(tokens: ApiModel.Usage) {
             inputTokens.addAndGet(tokens.prompt_tokens)
             outputTokens.addAndGet(tokens.completion_tokens)
+            cost.addAndGet(tokens.cost ?: 0.0)
         }
 
         fun toUsage() = ApiModel.Usage(
             prompt_tokens = inputTokens.get(),
-            completion_tokens = outputTokens.get()
+            completion_tokens = outputTokens.get(),
+            cost = cost.get()
         )
     }
 

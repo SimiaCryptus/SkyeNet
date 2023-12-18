@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.core
 interface Interpreter {
 
     fun getLanguage(): String
-    fun symbols() : Map<String, Any>
+    fun getSymbols(): Map<String, Any>
     fun run(code: String): Any?
     fun validate(code: String): Throwable?
 

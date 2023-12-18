@@ -30,7 +30,7 @@ dependencies {
 
     implementation(project(":core"))
 
-    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.7.3")
+    compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.0-RC")
 
     implementation(kotlin("stdlib"))
     implementation(kotlin("scripting-jsr223"))
@@ -48,6 +48,8 @@ dependencies {
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
     testImplementation(group = "ch.qos.logback", name = "logback-classic", version = "1.4.11")
     testImplementation(group = "ch.qos.logback", name = "logback-core", version = "1.4.11")
+    testImplementation("org.ow2.asm:asm:9.6")
+
 
 }
 
@@ -71,6 +73,7 @@ tasks {
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
         jvmArgs(
+            "-Xlog:class+load=info:classloader.log",
             "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
             "--add-opens", "java.base/java.util=ALL-UNNAMED",
             "--add-opens", "java.base/java.lang=ALL-UNNAMED"

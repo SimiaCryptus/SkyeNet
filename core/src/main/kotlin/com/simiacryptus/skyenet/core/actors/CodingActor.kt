@@ -224,7 +224,8 @@ open class CodingActor(
               _status = CodeResult.Status.Success
               return workingCode
             } catch (ex: Throwable) {
-              if (fixAttempt == input.fixIterations) throw FailedToImplementException(
+              if (fixAttempt == input.fixIterations)
+                throw if(ex is FailedToImplementException) ex else FailedToImplementException(
                 cause = ex,
                 message = """
                   |**ERROR**
@@ -305,6 +306,19 @@ open class CodingActor(
   private fun chat(api: OpenAIClient, request: ChatRequest, model: ChatModels) =
     api.chat(request.copy(model = model.modelName, temperature = temperature), model)
       .choices.first().message?.content.orEmpty().trim()
+
+
+  override fun withModel(model: ChatModels): CodingActor = CodingActor(
+    interpreterClass = interpreterClass,
+    symbols = symbols,
+    describer = describer,
+    name = name,
+    details = details,
+    model = model,
+    fallbackModel = fallbackModel,
+    temperature = temperature,
+    runtimeSymbols = runtimeSymbols
+  )
 
   companion object {
     private val log = org.slf4j.LoggerFactory.getLogger(CodingActor::class.java)
@@ -446,7 +460,6 @@ open class CodingActor(
     } catch (_: Exception) {
       ex.message ?: ""
     }
-
   }
 
   class FailedToImplementException(

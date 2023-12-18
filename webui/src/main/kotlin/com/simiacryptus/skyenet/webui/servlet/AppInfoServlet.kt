@@ -5,16 +5,10 @@ import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 
-class AppInfoServlet(val applicationName:String) : HttpServlet() {
+class AppInfoServlet<T>(val info: T) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/json"
         resp.status = HttpServletResponse.SC_OK
-        resp.writer.write(
-            JsonUtil.objectMapper().writeValueAsString(
-                mapOf(
-                    "applicationName" to applicationName
-                )
-            )
-        )
+        resp.writer.write(JsonUtil.objectMapper().writeValueAsString(info))
     }
 }

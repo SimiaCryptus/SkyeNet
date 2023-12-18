@@ -18,11 +18,11 @@ open class GroovyInterpreter(val defs: java.util.Map<String, Object>) : Interpre
         }
     }
 
-    override fun getLanguage(): String {
-        return "groovy"
-    }
+  override fun getLanguage(): String {
+    return "groovy"
+  }
 
-    override fun symbols() = defs as Map<String, Any>
+    override fun getSymbols() = defs as Map<String, Any>
 
 
     override fun run(code: String): Any? {

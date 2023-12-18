@@ -26,6 +26,7 @@ async function fetchData(endpoint, useSession = true) {
 }
 
 let messageVersions = {};
+let singleInput = false;
 
 function onWebSocketText(event) {
     console.log('WebSocket message:', event);
@@ -52,11 +53,13 @@ function onWebSocketText(event) {
         messageDiv.id = messageId;
         messageDiv.innerHTML = messageContent;
         messagesDiv.appendChild(messageDiv);
-        const mainInput = document.getElementById('main-input');
-        if (mainInput) {
-            mainInput.style.display = 'none';
-        } else {
-            console.log("Error: Could not find .main-input");
+        if(singleInput) {
+            const mainInput = document.getElementById('main-input');
+            if (mainInput) {
+                mainInput.style.display = 'none';
+            } else {
+                console.log("Error: Could not find .main-input");
+            }
         }
     }
 
@@ -109,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('usage').addEventListener('click', () => showModal('usage'));
     document.getElementById('verbose').addEventListener('click', () => toggleVerbose());
     document.getElementById('delete').addEventListener('click', () => showModal('delete'));
+    document.getElementById('cancel').addEventListener('click', () => showModal('cancel'));
     document.getElementById('threads').addEventListener('click', () => showModal('threads'));
     document.querySelector('.close').addEventListener('click', closeModal);
 
@@ -213,6 +217,9 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data.applicationName) {
                 document.title = data.applicationName;
+            }
+            if (data.singleInput) {
+                singleInput = data.singleInput;
             }
         })
         .catch(error => {

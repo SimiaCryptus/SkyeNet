@@ -22,7 +22,7 @@ class SessionListServlet(
         val sessions = dataStorage.listSessions(user)
         val sessionRows = sessions.joinToString("") { session ->
             val sessionName = dataStorage.getSessionName(user, session)
-            val sessionTime = dataStorage.getSessionTime(user, session)
+            val sessionTime = dataStorage.getSessionTime(user, session) ?: return@joinToString ""
             val sessionTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(sessionTime)
             """
             <tr class="session-row" onclick="window.location.href='$prefix#$session'">                

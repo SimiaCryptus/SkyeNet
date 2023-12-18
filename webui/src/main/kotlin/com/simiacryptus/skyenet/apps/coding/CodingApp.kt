@@ -2,7 +2,8 @@ package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.core.Interpreter
-import com.simiacryptus.skyenet.core.platform.*
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import kotlin.reflect.KClass
@@ -11,12 +12,11 @@ open class CodingApp<T:Interpreter>(
         applicationName: String,
         private val interpreter: KClass<T>,
         private val symbols: Map<String, Any>,
-        temperature: Double = 0.1,
+        val temperature: Double = 0.1,
 ) : ApplicationServer(
     applicationName = applicationName,
-    temperature = temperature,
 ) {
-    override fun newSession(
+    override fun userMessage(
         session: Session,
         user: User?,
         userMessage: String,
@@ -31,6 +31,7 @@ open class CodingApp<T:Interpreter>(
             ui = ui,
             interpreter = interpreter,
             symbols = symbols,
+            temperature = temperature,
         ).start(
             userMessage = userMessage,
         )

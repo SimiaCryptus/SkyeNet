@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.core.actors
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ClientUtil.toContentList
@@ -52,4 +51,13 @@ open class ParsedActor<T>(
   override fun answer(vararg messages: ApiModel.ChatMessage, input: List<String>, api: API): ParsedResponse<T> {
     return ParsedResponseImpl(*messages, api = api)
   }
+
+  override fun withModel(model: ChatModels): ParsedActor<T> = ParsedActor(
+    parserClass = parserClass,
+    prompt = prompt,
+    name = name,
+    model = model,
+    temperature = temperature,
+    parsingModel = parsingModel,
+  )
 }

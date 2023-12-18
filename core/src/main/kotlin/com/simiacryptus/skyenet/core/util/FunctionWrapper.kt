@@ -2,10 +2,16 @@
 
 package com.simiacryptus.skyenet.core.util
 
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.EmbeddingModels
+import com.simiacryptus.jopenai.models.ImageModels
+import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.JsonUtil
+import java.awt.image.BufferedImage
 import java.io.Closeable
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+import javax.imageio.ImageIO
 
 class FunctionWrapper(val inner: FunctionInterceptor) : FunctionInterceptor {
     inline fun <reified T:Any> wrap(crossinline fn: () -> T) = inner.intercept(T::class.java) { fn() }
@@ -74,10 +80,18 @@ class JsonFunctionRecorder(baseDir: File) : FunctionInterceptor, Closeable {
         val dir = operationDir()
         try {
             val result = fn()
-            File(dir, "output.json").writeText(JsonUtil.toJson(result))
+            if(result is BufferedImage) {
+                ImageIO.write(result, "png", File(dir, "output.png"))
+            } else {
+                File(dir, "output.json").writeText(JsonUtil.toJson(result))
+            }
             return result
         } catch (e: Throwable) {
-            File(dir, "error.json").writeText(JsonUtil.toJson(e))
+            try {
+                File(dir, "error.json").writeText(JsonUtil.toJson(e))
+            } catch (e: Throwable) {
+                log.warn("Error writing error file", e)
+            }
             throw e
         }
     }
@@ -87,10 +101,18 @@ class JsonFunctionRecorder(baseDir: File) : FunctionInterceptor, Closeable {
         File(dir, "input.json").writeText(JsonUtil.toJson(params))
         try {
             val result = fn(params)
-            File(dir, "output.json").writeText(JsonUtil.toJson(result))
+            if(result is BufferedImage) {
+                ImageIO.write(result, "png", File(dir, "output.png"))
+            } else {
+                File(dir, "output.json").writeText(JsonUtil.toJson(result))
+            }
             return result
         } catch (e: Throwable) {
-            File(dir, "error.json").writeText(JsonUtil.toJson(e))
+            try {
+                File(dir, "error.json").writeText(JsonUtil.toJson(e))
+            } catch (e: Throwable) {
+                log.warn("Error writing error file", e)
+            }
             throw e
         }
     }
@@ -118,4 +140,17 @@ class JsonFunctionRecorder(baseDir: File) : FunctionInterceptor, Closeable {
         file.mkdirs()
         return file
     }
+
+    companion object {
+        val log = org.slf4j.LoggerFactory.getLogger(JsonFunctionRecorder::class.java)
+    }
 }
+
+
+
+
+fun getModel(modelName: String?): OpenAIModel? = ChatModels.values().find { it.modelName == modelName }
+    ?: EmbeddingModels.values().find { it.modelName == modelName }
+    ?: ImageModels.values().find { it.modelName == modelName }
+
+
