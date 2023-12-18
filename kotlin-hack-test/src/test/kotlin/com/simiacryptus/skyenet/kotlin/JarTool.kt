@@ -75,24 +75,39 @@ object JarTool {
     }?.groupBy { it.from } ?: mapOf()
   }
 
-  private fun isPrivate(to: String) = (pluginAccessMap[to] ?: throw IllegalStateException(to)).and(Opcodes.ACC_PRIVATE) != 0
-  private fun isPublic(to: String) = (pluginAccessMap[to] ?: throw IllegalStateException(to)).and(Opcodes.ACC_PUBLIC) != 0
+  private fun isPrivate(to: String) =
+    (pluginAccessMap[to] ?: throw IllegalStateException(to)).and(Opcodes.ACC_PRIVATE) != 0
+
+  private fun isPublic(to: String) =
+    (pluginAccessMap[to] ?: throw IllegalStateException(to)).and(Opcodes.ACC_PUBLIC) != 0
 
   val pluginJarClasses by lazy { readJarClasses(pluginJar) }
   val pluginClasspath by lazy {
     analyzeJar(pluginJarClasses)
-      .apply {
-        require(isNotEmpty())
-      }.flatMap {
+      .filter {
+        when {
+          !pluginJarClasses.containsKey(it.to) -> false
+          !pluginJarClasses.containsKey(it.from) -> false
+          else -> true
+        }
+      }
+      .apply { require(isNotEmpty()) }.groupBy { it.from }
+  }
+  val pluginClasspathWithPrivateBackrefs by lazy {
+    pluginClasspath.values.flatten()
+      .flatMap {
         when {
           !pluginJarClasses.containsKey(it.to) -> listOf(it)
+
           pluginAccessMap.containsKey(it.to + "::" + it.relation.to_method)
               && !isPublic(it.to + "::" + it.relation.to_method) ->
-                listOf(it, it.copy(to = it.from, from = it.to))
-          !isPublic(it.to) -> when(it.relation) {
+            listOf(it, it.copy(to = it.from, from = it.to))
+
+          !isPublic(it.to) -> when (it.relation) {
             // Add back-references for non-public classes to ensure they are relocated if needed
             else -> listOf(it, it.copy(to = it.from, from = it.to))
           }
+
           else -> listOf(it)
         }
       }.groupBy { it.from }
@@ -119,25 +134,42 @@ object JarTool {
 
   val overrideRoots by lazy {
     platformClasspath.keys
-    .filter {
+      .filter {
+        when {
+          // org.jetbrains.kotlin.psi.KtFile is provided by the Kotlin plugin and is used by instances we need to support
+          // ApplicationManager throws an exception if we don't override it
+          // org.jetbrains.kotlin.psi.KtFile uses ApplicationManager
+          //it.contains("ApplicationManager") -> true // <-- All this for that one fucking class
+          else -> false
+        }
+      }
+  }
+
+  val protectedClasses by lazy {
+    val requirementMap = downstreamMap(pluginClasspath.values.flatten())
+    pluginClasspath.keys.filter {
       when {
-        it.contains("ApplicationManager") -> true // <-- All this for that one fucking class
+        it.startsWith("org.jetbrains.kotlin.psi.KtFile") -> true
         else -> false
       }
-    }
+    }.flatMap {
+      downstream(requirementMap, it, mutableSetOf(it))
+    }.toSortedSet()
   }
 
   val overrideClasses by lazy {
-    val userMap = upstreamMap(pluginClasspath.values.flatten())
+    val userMap = upstreamMap(pluginClasspathWithPrivateBackrefs.values.flatten())
     val allUpstream = overrideRoots.flatMap { upstream(userMap, it) }.toSortedSet()
     val parentClasses = pluginClasspath.keys.filter { classname ->
       !allUpstream.contains(classname) && allUpstream.contains(classname.split("$").first())
     }.toSet().toSortedSet()
-    (allUpstream + parentClasses.flatMap { upstream(userMap, it) }).filter { when {
-      it.startsWith("org.jetbrains.kotlin.psi.") -> false
-      //kotlinClasspath.containsKey(it) -> false
-      else -> true
-    } }.toSortedSet()
+    (allUpstream + parentClasses.flatMap { upstream(userMap, it) }).filter {
+      when {
+        protectedClasses.contains(it) -> false
+        //kotlinClasspath.containsKey(it) -> false
+        else -> true
+      }
+    }.toSortedSet()
   }
 
   val conflicting by lazy {
@@ -145,7 +177,7 @@ object JarTool {
       when {
         overrideClasses.contains(it) -> false
         platformClasspath.containsKey(it) -> true
-        //kotlinClasspath.containsKey(it) -> true
+        kotlinClasspath.containsKey(it) -> true
         else -> false
       }
     }.toSortedSet()
@@ -155,7 +187,7 @@ object JarTool {
     pluginClasspath.keys
       .filter { !requiredClasses.contains(it) }
       .filter { !classloadLogClasses.contains(it) }
-      .filter { !kotlinClasspath.contains(it) }
+      //.filter { !kotlinClasspath.contains(it) }
       .toSortedSet()
   }
 
@@ -172,7 +204,7 @@ object JarTool {
       // Conflicts:
       fun isConflicting(path: String) = ${
       getRuleExpression(
-        conflicting.map { it.classToPath + ".class" }.toSet(),
+        (conflicting.map { it.classToPath + ".class" } + requiredResources).toSet(),
         pluginClasspath.keys
           .filter { !conflicting.contains(it) }
           .map { it.classToPath + ".class" }.toSortedSet(),
@@ -187,7 +219,7 @@ object JarTool {
         (pluginClasspath.keys
           .filter { !deadWeight.contains(it) }
           .filter { !conflicting.contains(it) }
-          .map { it.classToPath + ".class" } + requiredResources).toSortedSet(),
+          .map { it.classToPath + ".class" }).toSortedSet(),
         true
       )
     }
