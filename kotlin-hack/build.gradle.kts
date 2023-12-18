@@ -27,12 +27,7 @@ repositories {
   maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/kotlin-ide-plugin-dependencies")
 }
 
-//val kVersion = "1.9.21"
-//val kGroup = "org.jetbrains.kotlin"
 dependencies {
-//  implementation(kGroup, name = "kotlin-compiler-cli-for-ide", version = "1.9.21-631") { isTransitive = false }
-
-
   implementation(kotlin("stdlib"))
   implementation(kotlin("scripting-jsr223"))
   implementation(kotlin("scripting-jvm"))
@@ -40,14 +35,6 @@ dependencies {
   implementation(kotlin("script-runtime"))
   implementation(kotlin("scripting-compiler-embeddable"))
   implementation(kotlin("compiler-embeddable"))
-
-//  implementation(kGroup, name = "kotlin-compiler-embeddable", version = kVersion)
-//  implementation(kGroup, name = "kotlin-scripting-compiler-embeddable", version = kVersion)
-//  implementation(kGroup, name = "kotlin-scripting-compiler-impl-embeddable", version = kVersion)
-//  implementation(kGroup, name = "kotlin-scripting-jsr223", version = kVersion)
-//  implementation(kGroup, name = "kotlin-scripting-jvm", version = kVersion)
-//  implementation(kGroup, name = "kotlin-scripting-jvm-host", version = kVersion)
-//  implementation(kGroup, name = "kotlin-scripting-common", version = kVersion)
 }
 
 val outputPackagePrefix = "aicoder"
@@ -57,6 +44,7 @@ val verbose = false
 fun shouldRelocate(path: String) = when {
   path.startsWith("META-INF/") -> false
   path.startsWith("kotlin/") -> false
+  //path.startsWith("org/jetbrains/kotlin/psi/") -> false
 
   // We want to maintain this interface:
   path.contains("/KotlinJsr223") -> false
@@ -110,7 +98,7 @@ val shadowJarStage1 by tasks.registering(ShadowJar::class) {
           if (this.isDirectory) return@visit
           // Adjust the path so we can express rules based on the desired final paths
           val path = relocations()
-          if(path.startsWith("META-INF/")) {
+          if (path.startsWith("META-INF/")) {
             if (verbose) println("${this.path} excluded from plugin: ${file.name} as $path")
             exclude(this.path)
           } else if (isConflicting(path)) {
@@ -368,7 +356,7 @@ fun isOverride(path: String) = false
 // Conflicts: 361
 // Pruned: 406
 // Required Classes: 37575
-// Override Classes: 31543
+// Override Classes: 30977
 
 // Conflicts:
 fun isConflicting(path: String) = when {
@@ -1040,6 +1028,7 @@ fun isPruned(path: String) = when {
 
 // Overrides:
 fun isOverride(path: String) = when {
+  path.startsWith("org/jetbrains/kotlin/psi/") -> false
   path.startsWith("org/jd") -> false
   path.startsWith("javaslang/m") -> false
   path.startsWith("org/picocontainer/P") -> false
@@ -1106,8 +1095,6 @@ fun isOverride(path: String) = when {
   path.startsWith("org/jetbrains/kotlin/net/jpountz/lz4/LZ4E") -> false
   path.startsWith("org/jetbrains/kotlin/net/jpountz/lz4/LZ4Unk") -> false
   path.startsWith("org/jetbrains/kotlin/protobuf/ServiceE") -> false
-  path.startsWith("org/jetbrains/kotlin/psi/I") -> false
-  path.startsWith("org/jetbrains/kotlin/psi/KtSta") -> false
   path.startsWith("org/jetbrains/kotlin/renderer/K") -> false
   path.startsWith("org/jetbrains/kotlin/resolve/calls/context/Can") -> false
   path.startsWith("org/jetbrains/kotlin/resolve/calls/context/Co") -> false

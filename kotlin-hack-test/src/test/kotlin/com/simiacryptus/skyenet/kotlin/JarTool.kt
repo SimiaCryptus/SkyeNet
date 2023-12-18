@@ -32,11 +32,6 @@ object JarTool {
     "org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineBase",
     "kotlin.script.experimental.jvmhost.BasicJvmScriptingHostKt",
     "org.jetbrains.kotlin.jsr223.KotlinJsr223JvmScriptEngine4Idea",
-
-//    "org.jetbrains.kotlin.scripting.compiler.plugin.impl.ErrorReportingKt",
-//    "org.jetbrains.kotlin.daemon.KotlinCompileDaemon",
-//    "kotlin.script.experimental.jvmhost.BasicJvmScriptingHost",
-//    "org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation",
   )
 
 
@@ -127,7 +122,6 @@ object JarTool {
     .filter {
       when {
         it.contains("ApplicationManager") -> true // <-- All this for that one fucking class
-        //it.contains("JavaZipFileDataLoader") -> true
         else -> false
       }
     }
@@ -139,7 +133,11 @@ object JarTool {
     val parentClasses = pluginClasspath.keys.filter { classname ->
       !allUpstream.contains(classname) && allUpstream.contains(classname.split("$").first())
     }.toSet().toSortedSet()
-    (allUpstream + parentClasses.flatMap { upstream(userMap, it) }).toSortedSet()
+    (allUpstream + parentClasses.flatMap { upstream(userMap, it) }).filter { when {
+      it.startsWith("org.jetbrains.kotlin.psi.") -> false
+      //kotlinClasspath.containsKey(it) -> false
+      else -> true
+    } }.toSortedSet()
   }
 
   val conflicting by lazy {
@@ -147,6 +145,7 @@ object JarTool {
       when {
         overrideClasses.contains(it) -> false
         platformClasspath.containsKey(it) -> true
+        //kotlinClasspath.containsKey(it) -> true
         else -> false
       }
     }.toSortedSet()
