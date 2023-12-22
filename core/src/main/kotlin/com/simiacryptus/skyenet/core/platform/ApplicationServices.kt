@@ -171,6 +171,7 @@ interface UsageInterface {
     fun getUserUsageSummary(user: User): Map<OpenAIModel, ApiModel.Usage>
 
     fun getSessionUsageSummary(session: Session): Map<OpenAIModel, ApiModel.Usage>
+    fun clear()
 
     data class UsageKey(
         val session: Session,

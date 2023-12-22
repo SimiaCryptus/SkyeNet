@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.test
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
@@ -29,7 +30,7 @@ open class CodingActorTestApp(
         val message = ui.newTask()
         try {
             message.echo(renderMarkdown(userMessage))
-            val response = actor.answer(CodingActor.CodeRequest(listOf(userMessage)), api = api)
+            val response = actor.answer(CodingActor.CodeRequest(listOf(userMessage to ApiModel.Role.user)), api = api)
             val canPlay = ApplicationServices.authorizationManager.isAuthorized(
                 this::class.java,
                 user,
