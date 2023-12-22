@@ -27,6 +27,7 @@ async function fetchData(endpoint, useSession = true) {
 
 let messageVersions = {};
 let singleInput = false;
+let stickyInput = false;
 
 function onWebSocketText(event) {
     console.log('WebSocket message:', event);
@@ -61,11 +62,23 @@ function onWebSocketText(event) {
                 console.log("Error: Could not find .main-input");
             }
         }
+        if(stickyInput) {
+            const mainInput = document.getElementById('main-input');
+            if (mainInput) {
+                // Keep at top of screen
+                mainInput.style.position = 'sticky';
+                mainInput.style.zIndex = '1';
+                mainInput.style.top = '30px';
+            } else {
+                console.log("Error: Could not find .main-input");
+            }
+        }
     }
 
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
     Prism.highlightAll();
     refreshVerbose();
+    refreshReplyForms()
 }
 
 function toggleVerbose() {
@@ -85,6 +98,25 @@ function toggleVerbose() {
     } else {
         console.log("Error: Unknown state for verbose button");
     }
+}
+
+function refreshReplyForms() {
+    document.querySelectorAll('.reply-input').forEach(messageInput => {
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                let form = messageInput.closest('form');
+                if (form) {
+                    let textSubmitButton = form.querySelector('.text-submit-button');
+                    if (textSubmitButton) {
+                        textSubmitButton.click();
+                    } else {
+                        form.dispatchEvent(new Event('submit', { cancelable: true }));
+                    }
+                }
+            }
+        });
+    });
 }
 
 
@@ -220,6 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (data.singleInput) {
                 singleInput = data.singleInput;
+            }
+            if (data.stickyInput) {
+                stickyInput = data.stickyInput;
             }
         })
         .catch(error => {

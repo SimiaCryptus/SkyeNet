@@ -60,7 +60,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    padding-top: 40px;
+    padding-top: 20px;
 }
 
 .reply-form {
@@ -69,7 +69,7 @@ body {
     left: 0;
     right: 0;
     top: 0;
-    display: flex;
+    display: contents;
     margin: 0;
     padding: 5px;
     flex-shrink: 0;
@@ -282,7 +282,7 @@ pre {
     }
 }
 
-.user-message, .response-message {
+.user-message, .response-message .reply-message {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 4px;
@@ -293,9 +293,16 @@ pre {
     border: 1px solid #d0eaff;
 }
 
+.reply-message {
+    background-color: #fff;
+    border: 1px solid #eee;
+    display: flex;
+}
+
 .response-message {
     background-color: #fff;
     border: 1px solid #eee;
+    display: block;
 }
 
 pre.verbose, pre.response-message {

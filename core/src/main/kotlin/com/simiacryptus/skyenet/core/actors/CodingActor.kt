@@ -36,7 +36,7 @@ open class CodingActor(
     get() = interpreterClass.java.getConstructor(Map::class.java).newInstance(symbols + runtimeSymbols)
 
   data class CodeRequest(
-    val messages: List<String>,
+    val messages: List<Pair<String, Role>>,
     val codePrefix: String = "",
     val autoEvaluate: Boolean = false,
     val fixIterations: Int = 4,
@@ -99,8 +99,8 @@ open class CodingActor(
       ),
     ) + questions.messages.map {
       ChatMessage(
-        role = Role.user,
-        content = it.toContentList()
+        role = it.second,
+        content = it.first.toContentList()
       )
     }
     if (questions.codePrefix.isNotBlank()) {
@@ -170,8 +170,8 @@ open class CodingActor(
     }
     log.info("Result: $result")
     //language=HTML
-    val executionResult = ExecutionResult(result.toString(), OutputInterceptor.getGlobalOutput())
-    OutputInterceptor.clearGlobalOutput()
+    val executionResult = ExecutionResult(result.toString(), OutputInterceptor.getThreadOutput())
+    OutputInterceptor.clearThreadOutput()
     return executionResult
   }
 
@@ -280,22 +280,22 @@ open class CodingActor(
           ChatMessage(
             Role.assistant,
             """
-                        |```${language.lowercase()}
-                        |${previousCode}
-                        |```
-                        |""".trimMargin().trim().toContentList()
+            |```${language.lowercase()}
+            |${previousCode}
+            |```
+            |""".trimMargin().trim().toContentList()
           ),
           ChatMessage(
             Role.system,
             """
-                        |The previous code failed with the following error:
-                        |
-                        |```
-                        |${error.message?.trim() ?: ""}
-                        |```
-                        |
-                        |Correct the code and try again.
-                        |""".trimMargin().trim().toContentList()
+            |The previous code failed with the following error:
+            |
+            |```
+            |${error.message?.trim() ?: ""}
+            |```
+            |
+            |Correct the code and try again.
+            |""".trimMargin().trim().toContentList()
           )
         )
       )

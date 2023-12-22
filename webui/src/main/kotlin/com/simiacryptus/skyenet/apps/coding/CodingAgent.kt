@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.Interpreter
 import com.simiacryptus.skyenet.core.actors.ActorSystem
@@ -27,8 +28,9 @@ open class CodingAgent<T : Interpreter>(
   val interpreter: KClass<T>,
   val symbols: Map<String, Any>,
   temperature: Double = 0.1,
+  val details: String? = null,
   val actorMap: Map<ActorTypes, CodingActor> = mapOf(
-    ActorTypes.CodingActor to CodingActor(interpreter, symbols = symbols, temperature = temperature)
+    ActorTypes.CodingActor to CodingActor(interpreter, symbols = symbols, temperature = temperature, details = details)
   ),
 ) : ActorSystem<CodingAgent.ActorTypes>(actorMap, dataStorage, user, session) {
   enum class ActorTypes {
@@ -53,7 +55,7 @@ open class CodingAgent<T : Interpreter>(
     val message = ui.newTask()
     try {
       message.echo(renderMarkdown(userMessage))
-      val codeRequest = CodingActor.CodeRequest(listOf(userMessage))
+      val codeRequest = CodingActor.CodeRequest(listOf(userMessage to ApiModel.Role.user))
       displayCode(message, codeRequest)
     } catch (e: Throwable) {
       log.warn("Error", e)
@@ -90,15 +92,20 @@ open class CodingAgent<T : Interpreter>(
     response: CodeResult
   ) {
     var formHandle: StringBuilder? = null
-    var playLink: StringBuilder? = null
-    playLink = task.add(if (!canPlay) "" else {
-      ui.hrefLink("▶", "href-link play-button") {
-        formHandle?.clear()
-        playLink?.clear()
-        val header = task.header("Running...")
-        try {
-          val result = response.result
-          val feedback = """
+    val playHandler: (t: Unit) -> Unit = {
+      formHandle?.clear()
+      val header = task.header("Running...")
+      try {
+        val result = response.result
+        val feedback = when {
+          result.resultValue.isBlank() || result.resultValue.trim().lowercase() == "null" -> """
+            |# Output
+            |```text
+            |${result.resultOutput}
+            |```
+            """.trimMargin()
+
+          else -> """
             |# Result
             |```
             |${result.resultValue}
@@ -108,63 +115,74 @@ open class CodingAgent<T : Interpreter>(
             |```text
             |${result.resultOutput}
             |```
-          """.trimMargin()
-          header?.clear()
-          task.add(renderMarkdown(feedback))
-          displayFeedback(task, revise(request, response, feedback), response)
-        } catch (e: Throwable) {
-          header?.clear()
-          val message = when {
-            e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
-            e is CodingActor.FailedToImplementException -> renderMarkdown(
-              """
-                |**Failed to Implement** 
-                |
-                |${e.message}
-                |
-                |""".trimMargin()
-            )
-
-            else -> renderMarkdown(
-              """
-                |**Error `${e.javaClass.name}`**
-                |
-                |```text
-                |${e.message}
-                |```
-                |""".trimMargin()
-            )
-          }
-          task.add(message, true, "div", "error")
-          displayCode(task, revise(request, response, message))
+            """.trimMargin()
         }
+        header?.clear()
+        task.add(renderMarkdown(feedback))
+        displayFeedback(task, CodingActor.CodeRequest(
+          messages = request.messages +
+              listOf(
+                response.code to ApiModel.Role.assistant,
+                feedback to ApiModel.Role.system,
+              ).filter { it.first.isNotBlank() }
+        ), response)
+      } catch (e: Throwable) {
+        header?.clear()
+        val message = when {
+          e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
+          e is CodingActor.FailedToImplementException -> renderMarkdown(
+            """
+              |**Failed to Implement** 
+              |
+              |${e.message}
+              |
+              |""".trimMargin()
+          )
+
+          else -> renderMarkdown(
+            """
+              |**Error `${e.javaClass.name}`**
+              |
+              |```text
+              |${e.message}
+              |```
+              |""".trimMargin()
+          )
+        }
+        task.add(message, true, "div", "error")
+        displayCode(task, CodingActor.CodeRequest(
+          messages = request.messages +
+              listOf(
+                response.code to ApiModel.Role.assistant,
+                message to ApiModel.Role.system,
+              ).filter { it.first.isNotBlank() }
+        ))
       }
-    })
-    formHandle = task.add(ui.textInput { feedback ->
+    }
+    val feedbackHandler: (t: String) -> Unit = { feedback ->
       try {
         formHandle?.clear()
-        playLink?.clear()
         task.echo(renderMarkdown(feedback))
-        displayCode(task, revise(request, response, feedback))
+        displayCode(task, CodingActor.CodeRequest(
+          messages = request.messages +
+              listOf(
+                response?.code to ApiModel.Role.assistant,
+                feedback to ApiModel.Role.user,
+              ).filter { it.first?.isNotBlank() == true }.map { it.first!! to it.second }
+        ))
       } catch (e: Throwable) {
         log.warn("Error", e)
         task.error(e)
       }
-    })
+    }
+    formHandle = task.add(
+      """
+      |${if (canPlay) ui.hrefLink("▶", "href-link play-button", playHandler) else ""}
+      |${ui.textInput(feedbackHandler)}
+    """.trimMargin(), className = "reply-message"
+    )
     task.complete()
   }
-
-  open fun revise(
-    request: CodingActor.CodeRequest,
-    response: CodeResult?,
-    feedback: String
-  ) = CodingActor.CodeRequest(
-    messages = request.messages +
-        listOf(
-          response?.code,
-          feedback
-        ).filterNotNull().filter { it.isNotBlank() }
-  )
 
   companion object {
     private val log = LoggerFactory.getLogger(CodingAgent::class.java)

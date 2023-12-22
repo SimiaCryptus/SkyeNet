@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class OutputInterceptor {
+public final class OutputInterceptor {
 
     private OutputInterceptor() {
         // Prevent instantiation of the utility class
