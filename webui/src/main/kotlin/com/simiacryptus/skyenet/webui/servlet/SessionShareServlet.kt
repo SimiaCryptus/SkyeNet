@@ -177,6 +177,8 @@ class SessionShareServlet(
     private fun editPage(html: String): String {
       val doc = org.jsoup.Jsoup.parse(html)
       doc.select("#toolbar").remove()
+      doc.select("#namebar").remove()
+      doc.select("#main-input").remove()
       return doc.toString()
     }
 
