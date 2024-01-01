@@ -21,6 +21,7 @@ import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.net.URI
 import java.util.*
 
 class SessionShareServlet(
@@ -43,17 +44,19 @@ class SessionShareServlet(
       return
     }
     val url = req.getParameter("url")
+    val host = URI(url).host
     require(
-      when {
-        url.startsWith("http://localhost:") -> true
-        url.startsWith("https://apps.simiacrypt.us/") -> true
+      when(host) {
+        "localhost" -> true
+        "apps.simiacrypt.us" -> true
         else -> false
       }
     ) { "Invalid url: $url" }
 
+
     val appName = url.split("/").dropLast(1).last()
     val urlbase = url.split("/").dropLast(1).joinToString("/")
-    val driver: WebDriver = open(url, req.cookies)
+    val driver: WebDriver = open(url = url, cookies = req.cookies, host = host)
     Thread.sleep(5000)
     val shareId = UUID.randomUUID().toString()
     save(
@@ -179,6 +182,7 @@ class SessionShareServlet(
     fun open(
       url: String?,
       cookies: Array<out jakarta.servlet.http.Cookie>?,
+      host: String? = null,
       driver: WebDriver = driver()
     ): WebDriver {
       cookies?.forEach { cookie ->
@@ -186,7 +190,7 @@ class SessionShareServlet(
           log.info("""Setting cookie:
             |  name: ${cookie.name}
             |  value: ${cookie.value}
-            |  domain: ${cookie.domain}
+            |  domain: ${cookie.domain ?: host}
             |  path: ${cookie.path}
             |  maxAge: ${cookie.maxAge}
             |  secure: ${cookie.secure}
