@@ -45,6 +45,7 @@ abstract class ApplicationServer(
     protected open val fileZip by lazy { ServletHolder("fileZip", ZipServlet(dataStorage)) }
     protected open val fileIndex by lazy { ServletHolder("fileIndex", FileServlet(dataStorage)) }
     protected open val sessionSettingsServlet by lazy { ServletHolder("settings", SessionSettingsServlet(this)) }
+    protected open val sessionShareServlet by lazy { ServletHolder("share", SessionShareServlet(this)) }
     protected open val sessionThreadsServlet by lazy { ServletHolder("threads", SessionThreadsServlet(this)) }
     protected open val deleteSessionServlet by lazy { ServletHolder("delete", DeleteSessionServlet(this)) }
     protected open val cancelSessionServlet by lazy { ServletHolder("cancel", DeleteSessionServlet(this)) }
@@ -138,6 +139,7 @@ abstract class ApplicationServer(
         webAppContext.addServlet(sessionsServlet(path), "/sessions")
         webAppContext.addServlet(sessionSettingsServlet, "/settings")
         webAppContext.addServlet(sessionThreadsServlet, "/threads")
+        webAppContext.addServlet(sessionShareServlet, "/share")
         webAppContext.addServlet(deleteSessionServlet, "/delete")
         webAppContext.addServlet(cancelSessionServlet, "/cancel")
     }

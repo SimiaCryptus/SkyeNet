@@ -146,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('delete').addEventListener('click', () => showModal('delete'));
     document.getElementById('cancel').addEventListener('click', () => showModal('cancel'));
     document.getElementById('threads').addEventListener('click', () => showModal('threads'));
+    document.getElementById('share').addEventListener('click', () => showModal('share?url=' + encodeURIComponent(window.location.href), false));
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {
