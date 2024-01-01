@@ -175,17 +175,32 @@ class SessionShareServlet(
       driver: WebDriver = driver()
     ): WebDriver {
       cookies?.forEach { cookie ->
-        driver.manage().addCookie(
-          Cookie(
-            /* name = */ cookie.name,
-            /* value = */ cookie.value,
-            /* domain = */ cookie.domain,
-            /* path = */ cookie.path,
-            /* expiry = */ Date(cookie.maxAge * 1000L),
-            /* isSecure = */ cookie.secure,
-            /* isHttpOnly = */ cookie.isHttpOnly
+        try {
+          log.info("""Setting cookie:
+            |  name: ${cookie.name}
+            |  value: ${cookie.value}
+            |  domain: ${cookie.domain}
+            |  path: ${cookie.path}
+            |  maxAge: ${cookie.maxAge}
+            |  secure: ${cookie.secure}
+            |  isHttpOnly: ${cookie.isHttpOnly}
+            |  version: ${cookie.version}
+            |  comment: ${cookie.comment}
+          """.trimMargin())
+          driver.manage().addCookie(
+            Cookie(
+              /* name = */ cookie.name,
+              /* value = */ cookie.value,
+              /* domain = */ cookie.domain,
+              /* path = */ cookie.path,
+              /* expiry = */ Date(cookie.maxAge * 1000L),
+              /* isSecure = */ cookie.secure,
+              /* isHttpOnly = */ cookie.isHttpOnly
+            )
           )
-        )
+        } catch (e: Exception) {
+          log.warn("Error setting cookie: $cookie", e)
+        }
       }
       driver.get(url)
       return driver
