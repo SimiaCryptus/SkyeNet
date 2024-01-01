@@ -56,7 +56,8 @@ class SessionShareServlet(
 
     val appName = url.split("/").dropLast(1).last()
     val urlbase = url.split("/").dropLast(1).joinToString("/")
-    val driver: WebDriver = open(url = url, cookies = req.cookies, host = host)
+    val domain = host.split(".").takeLast(2).joinToString(".")
+    val driver: WebDriver = open(url = url, cookies = req.cookies, domain = domain)
     Thread.sleep(5000)
     val shareId = UUID.randomUUID().toString()
     save(
@@ -182,7 +183,7 @@ class SessionShareServlet(
     fun open(
       url: String?,
       cookies: Array<out jakarta.servlet.http.Cookie>?,
-      host: String? = null,
+      domain: String? = null,
       driver: WebDriver = driver()
     ): WebDriver {
       cookies?.forEach { cookie ->
@@ -190,7 +191,7 @@ class SessionShareServlet(
           log.info("""Setting cookie:
             |  name: ${cookie.name}
             |  value: ${cookie.value}
-            |  domain: ${cookie.domain ?: host}
+            |  domain: ${cookie.domain ?: domain}
             |  path: ${cookie.path}
             |  maxAge: ${cookie.maxAge}
             |  secure: ${cookie.secure}
@@ -202,7 +203,7 @@ class SessionShareServlet(
             Cookie(
               /* name = */ cookie.name,
               /* value = */ cookie.value,
-              /* domain = */ cookie.domain ?: host,
+              /* domain = */ cookie.domain ?: domain,
               /* path = */ cookie.path,
               /* expiry = */ Date(cookie.maxAge * 1000L),
               /* isSecure = */ cookie.secure,
