@@ -38,6 +38,7 @@ dependencies {
 
     implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
     compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+    compileOnly("org.jsoup:jsoup:1.17.2")
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)

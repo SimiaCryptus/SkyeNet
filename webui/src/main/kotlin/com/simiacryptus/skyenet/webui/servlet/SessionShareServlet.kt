@@ -46,7 +46,8 @@ class SessionShareServlet(
     require(
       when {
         url.startsWith("http://localhost:") -> true
-        else -> true
+        url.startsWith("https://apps.simiacrypt.us/") -> true
+        else -> false
       }
     ) { "Invalid url: $url" }
 
@@ -120,8 +121,8 @@ class SessionShareServlet(
       cookies: Array<out jakarta.servlet.http.Cookie>?,
       currentFilename: String
     ) {
+      var html = editPage(driver.pageSource)
 
-      var html = driver.pageSource
       HttpClients.createSystem().use { httpClient: HttpClient ->
         listOf(
           driver.findElements(By.xpath("//a[@href]")).map<WebElement?, String?> { it?.getAttribute("href") }.toSet(),
@@ -167,6 +168,12 @@ class SessionShareServlet(
       }
 
       uploadToS3(bucket, shareRoot + currentFilename, html, "text/html")
+    }
+
+    private fun editPage(html: String): String {
+      val doc = org.jsoup.Jsoup.parse(html)
+      doc.select("#toolbar").remove()
+      return doc.toString()
     }
 
     fun open(
