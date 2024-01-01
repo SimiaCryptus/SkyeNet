@@ -202,7 +202,7 @@ class SessionShareServlet(
             Cookie(
               /* name = */ cookie.name,
               /* value = */ cookie.value,
-              /* domain = */ cookie.domain,
+              /* domain = */ cookie.domain ?: host,
               /* path = */ cookie.path,
               /* expiry = */ Date(cookie.maxAge * 1000L),
               /* isSecure = */ cookie.secure,
