@@ -63,6 +63,7 @@ interface AuthorizationInterface {
     enum class OperationType {
         Read,
         Write,
+        Public,
         Share,
         Execute,
         Delete,

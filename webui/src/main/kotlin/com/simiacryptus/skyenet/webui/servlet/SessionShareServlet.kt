@@ -1,6 +1,8 @@
 package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
+import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
@@ -29,6 +31,11 @@ class SessionShareServlet(
     resp.status = HttpServletResponse.SC_OK
 
     val user = authenticationManager.getUser(req.getCookie())
+    if(!authorizationManager.isAuthorized(server.javaClass, user, OperationType.Share)) {
+      resp.status = HttpServletResponse.SC_FORBIDDEN
+      resp.writer.write("Forbidden")
+      return
+    }
 
     if (!req.parameterMap.containsKey("url")) {
       resp.status = HttpServletResponse.SC_BAD_REQUEST

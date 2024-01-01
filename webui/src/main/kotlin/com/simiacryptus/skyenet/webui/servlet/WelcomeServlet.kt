@@ -102,14 +102,14 @@ open class WelcomeServlet(private val parent : com.simiacryptus.skyenet.webui.ap
                     user = user,
                     operationType = OperationType.Read
                 )
-                val canShare = ApplicationServices.authorizationManager.isAuthorized(
+                val canCreatePublic = ApplicationServices.authorizationManager.isAuthorized(
                     applicationClass = app.server.javaClass,
                     user = user,
-                    operationType = OperationType.Share
+                    operationType = OperationType.Public
                 )
                 if (!canRead) return@joinToString ""
                 val newGlobalSessionLink =
-                    if (canShare) """<a class="new-session-link" href="${app.path}/#${StorageInterface.newGlobalID()}">New Shared Session</a>""" else ""
+                    if (canCreatePublic) """<a class="new-session-link" href="${app.path}/#${StorageInterface.newGlobalID()}">New Public Session</a>""" else ""
                 val newUserSessionLink =
                     if (canRun) """<a class="new-session-link" href="${app.path}/#${StorageInterface.newUserID()}">New Private Session</a>""" else ""
                 """
