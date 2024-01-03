@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.webui.util
 
+import org.apache.http.HttpEntity
 import org.apache.http.client.HttpClient
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.HttpClients
@@ -16,8 +17,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.util.*
 
 open class Selenium2S3 {
+  // TODO: This should be configurable without code edits
   open val bucket = "share.simiacrypt.us"
-  open val shareBase = "https://s3.us-east-1.amazonaws.com/share.simiacrypt.us/share"
+  open val shareBase = "https://share.simiacrypt.us"
 
   protected open fun uploadToS3(
     bucket: String,
@@ -25,21 +27,15 @@ open class Selenium2S3 {
     contentType: String,
     requestBody: RequestBody?
   ) {
-    val s3 = S3Client.builder()
+    S3Client.builder()
       .region(Region.US_EAST_1)
-      .build()
-    val response = s3.putObject(
-      PutObjectRequest.builder()
-        .bucket(bucket).key(path.replace("/{2,}".toRegex(), "/").removePrefix("/"))
-        .contentType(contentType)
-        //.acl(ObjectCannedACL.PUBLIC_READ)
-        .build(),
-      requestBody
-    )
-  }
-
-  protected open fun uploadToS3(bucket: String, path: String, source: String, contentType: String) {
-    uploadToS3(bucket, path, contentType, RequestBody.fromString(source))
+      .build().putObject(
+        PutObjectRequest.builder()
+          .bucket(bucket).key(path.replace("/{2,}".toRegex(), "/").removePrefix("/"))
+          .contentType(contentType)
+          .build(),
+        requestBody
+      )
   }
 
   open fun save(
@@ -48,56 +44,147 @@ open class Selenium2S3 {
     bucket: String,
     shareRoot: String,
     cookies: Array<out jakarta.servlet.http.Cookie>?,
-    currentFilename: String
+    currentFilename: String,
+    startUrl: String
   ) {
-    var html = editPage(driver.pageSource)
 
     HttpClients.createSystem().use { httpClient: HttpClient ->
-      listOf(
-        driver.findElements(By.xpath("//a[@href]")).map<WebElement?, String?> { it?.getAttribute("href") }.toSet(),
-        driver.findElements(By.xpath("//img[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
-        driver.findElements(By.xpath("//link[@href]")).map<WebElement?, String?> { it?.getAttribute("href") }.toSet(),
-        driver.findElements(By.xpath("//script[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
-      ).flatten().filterNotNull().forEach { href ->
-        val relative = when {
-          href.startsWith(urlbase) -> href.removePrefix(urlbase) // relativize
-          href.startsWith("http") -> null // absolute
-          else -> href // relative
-        }?.replace("/{2,}".toRegex(), "/")?.removePrefix("/")
-        if (relative == null) return@forEach
-        val extension = relative.split(".").last().split("?").first()
-        val contentType = when (extension) {
-          "css" -> "text/css"
-          "js" -> "text/javascript"
-          "svg" -> "image/svg+xml"
-          "png" -> "image/png"
-          "jpg" -> "image/jpeg"
-          "jpeg" -> "image/jpeg"
-          "gif" -> "image/gif"
-          "html" -> "text/html"
-          else -> "text/plain"
-        }
 
-        val get = HttpGet(href)
-        cookies?.forEach { cookie -> get.addHeader("Cookie", "${cookie.name}=${cookie.value}") }
-        val response = httpClient.execute(get)
-        val bytes = response.entity.content.readAllBytes()
-        val requestBody = RequestBody.fromBytes(bytes)
-        val responseType = response.entity.contentType.value
-        if (!responseType.startsWith(contentType)) {
-          log.warn("Content type mismatch: $responseType != $contentType")
-          if (responseType.startsWith("text/html")) {
-            log.warn("Response Error: ${String(bytes)}")
+      driver.get(startUrl)
+      Thread.sleep(5000)
+      val linkReplacements = mutableMapOf<String, String>()
+      val htmlPages = mutableMapOf(currentFilename to editPage(driver.pageSource))
+      val jsonPages = mutableMapOf<String,String>()
+      val links = currentPageLinks(driver).toMutableList()
+
+      while (links.isNotEmpty()) {
+        val href = links.removeFirst()
+        try {
+          if (linkReplacements.containsKey(href)) continue
+          val relative = relativize(urlbase, href) ?: continue
+          linkReplacements[href] = "$shareBase/$shareRoot/$relative"
+          val contentType = contentType(relative)
+          when (contentType) {
+            "text/html" -> {
+              if (htmlPages.containsKey(relative)) continue
+              log.info("Fetching $href")
+              driver.get(href)
+              Thread.sleep(5000)
+              htmlPages[relative] = editPage(driver.pageSource)
+              links += currentPageLinks(driver)
+            }
+            "application/json" -> {
+              if (jsonPages.containsKey(relative)) continue
+              log.info("Fetching $href")
+              val responseEntity = get(href, cookies, httpClient) ?: continue
+              jsonPages[relative] = responseEntity.content.buffered().reader().readText()
+            }
+            else -> {
+              val responseEntity = get(href, cookies, httpClient) ?: continue
+              val bytes = responseEntity.content.readAllBytes()
+              if (!validate(responseEntity, contentType, bytes)) {
+                log.warn("Content type mismatch: $href -> $contentType != ${responseEntity.contentType.value}")
+              }
+              uploadToS3(
+                bucket = bucket,
+                path = "/$shareRoot/$relative",
+                contentType = contentType,
+                requestBody = RequestBody.fromBytes(bytes)
+              )
+            }
           }
-          return@forEach
+        } catch (e: Exception) {
+          log.warn("Error processing $href", e)
         }
-        uploadToS3(bucket = bucket, path = shareRoot + relative, contentType = contentType, requestBody = requestBody)
-        if (href != relative) html = html.replace(href, relative)
+      }
+
+      htmlPages.forEach { (filename, html) ->
+        val finalHtml = linkReplacements.toList().fold(html) { acc, (href, relative) -> acc.replace(href, relative) }
+        uploadToS3(
+          bucket = bucket,
+          path = "/$shareRoot/$filename",
+          contentType = "text/html",
+          requestBody = RequestBody.fromString(finalHtml)
+        )
+      }
+      jsonPages.forEach { (filename, js) ->
+        val finalJs = linkReplacements.toList().fold(js) { acc, (href, relative) -> acc.replace(href, relative) }
+        uploadToS3(
+          bucket = bucket,
+          path = "/$shareRoot/$filename",
+          contentType = "application/json",
+          requestBody = RequestBody.fromString(finalJs)
+        )
       }
     }
 
-    uploadToS3(bucket, shareRoot + currentFilename, html, "text/html")
   }
+
+  protected open fun currentPageLinks(driver: WebDriver) = listOf(
+    driver.findElements(By.xpath("//a[@href]")).map<WebElement?, String?> { it?.getAttribute("href") }.toSet(),
+    driver.findElements(By.xpath("//img[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
+    driver.findElements(By.xpath("//link[@href]")).map<WebElement?, String?> { it?.getAttribute("href") }.toSet(),
+    driver.findElements(By.xpath("//script[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
+  ).flatten().filterNotNull()
+
+  protected open fun validate(
+    responseEntity: HttpEntity,
+    contentType: String,
+    bytes: ByteArray
+  ): Boolean {
+    val responseType = responseEntity.contentType.value
+    if (!responseType.startsWith(contentType)) {
+      log.warn("Content type mismatch: $responseType != $contentType")
+      if (responseType.startsWith("text/html")) {
+        log.warn("Response Error: ${String(bytes)}")
+      }
+      return false
+    }
+    return true
+  }
+
+  protected open fun get(
+    href: String,
+    cookies: Array<out jakarta.servlet.http.Cookie>?,
+    httpClient: HttpClient
+  ): HttpEntity? {
+    val get = HttpGet(href)
+    cookies?.forEach { cookie -> get.addHeader("Cookie", "${cookie.name}=${cookie.value}") }
+    return httpClient.execute(get).entity
+  }
+
+  protected open fun contentType(relative: String): String {
+    val extension = relative.split(".").last().split("?").first()
+    val contentType = when (extension) {
+      "css" -> "text/css"
+      "js" -> "text/javascript"
+      "json" -> "application/json"
+      "pdf" -> "application/pdf"
+      "zip" -> "application/zip"
+      "tar" -> "application/x-tar"
+      "gz" -> "application/gzip"
+      "bz2" -> "application/bzip2"
+      //"tsv" -> "text/tab-separated-values"
+      "csv" -> "text/csv"
+      "txt" -> "text/plain"
+      "xml" -> "text/xml"
+      "svg" -> "image/svg+xml"
+      "png" -> "image/png"
+      "jpg" -> "image/jpeg"
+      "jpeg" -> "image/jpeg"
+      "gif" -> "image/gif"
+      "ico" -> "image/x-icon"
+      "html" -> "text/html"
+      else -> "text/plain"
+    }
+    return contentType
+  }
+
+  protected open fun relativize(base: String, href: String) = when {
+    href.startsWith(base) -> href.removePrefix(base) // relativize
+    href.startsWith("http") -> null // absolute
+    else -> href // relative
+  }?.replace("/{2,}".toRegex(), "/")?.removePrefix("/")
 
   protected open fun editPage(html: String): String {
     val doc = org.jsoup.Jsoup.parse(html)
@@ -107,26 +194,25 @@ open class Selenium2S3 {
     return doc.toString()
   }
 
-  open fun open(
-    url: String?,
+  open fun setCookies(
     cookies: Array<out jakarta.servlet.http.Cookie>?,
-    domain: String? = null,
-    driver: WebDriver = driver()
-  ): WebDriver {
+    domain: String?,
+    driver: WebDriver
+  ) {
     cookies?.forEach { cookie ->
       try {
         log.info(
           """Setting cookie:
-            |  name: ${cookie.name}
-            |  value: ${cookie.value}
-            |  domain: ${cookie.domain ?: domain}
-            |  path: ${cookie.path}
-            |  maxAge: ${cookie.maxAge}
-            |  secure: ${cookie.secure}
-            |  isHttpOnly: ${cookie.isHttpOnly}
-            |  version: ${cookie.version}
-            |  comment: ${cookie.comment}
-          """.trimMargin()
+              |  name: ${cookie.name}
+              |  value: ${cookie.value}
+              |  domain: ${cookie.domain ?: domain}
+              |  path: ${cookie.path}
+              |  maxAge: ${cookie.maxAge}
+              |  secure: ${cookie.secure}
+              |  isHttpOnly: ${cookie.isHttpOnly}
+              |  version: ${cookie.version}
+              |  comment: ${cookie.comment}
+            """.trimMargin()
         )
         driver.manage().addCookie(
           Cookie(
@@ -143,8 +229,6 @@ open class Selenium2S3 {
         log.warn("Error setting cookie: $cookie", e)
       }
     }
-    driver.get(url)
-    return driver
   }
 
   open fun driver(): WebDriver {

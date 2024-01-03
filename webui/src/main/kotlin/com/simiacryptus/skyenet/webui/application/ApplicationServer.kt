@@ -97,14 +97,18 @@ abstract class ApplicationServer(
 
     open fun <T : Any> initSettings(session: Session): T? = null
 
-    fun <T : Any> getSettings(session: Session, userId: User?): T? {
-        @Suppress("UNCHECKED_CAST")
-        var settings: T? = dataStorage.getJson(userId, session, "settings.json", settingsClass as Class<T>)
+    fun <T : Any> getSettings(
+        session: Session,
+        userId: User?,
+        @Suppress("UNCHECKED_CAST") clazz: Class<T> = settingsClass as Class<T>
+    ): T? {
+        var settings: T? = dataStorage.getJson(userId, session, "settings.json", clazz)
         if (null == settings) {
-            settings = initSettings(session)
-            if (null != settings) {
-                dataStorage.setJson(userId, session, "settings.json", settings)
+            val initSettings = initSettings<T>(session)
+            if (null != initSettings) {
+                dataStorage.setJson(userId, session, "settings.json", initSettings)
             }
+            settings = dataStorage.getJson(userId, session, "settings.json", clazz)
         }
         return settings
     }

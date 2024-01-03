@@ -10,6 +10,7 @@ function closeModal() {
 async function fetchData(endpoint) {
     try {
         // Add session id to the endpoint as a path parameter
+        document.getElementById('modal-content').innerHTML = "<div>Loading...</div>";
         const response = await fetch(endpoint);
         const text = await response.text();
         document.getElementById('modal-content').innerHTML = "<div>" + text + "</div>";

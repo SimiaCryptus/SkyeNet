@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
@@ -12,14 +12,14 @@ import jakarta.servlet.http.HttpServletResponse
 class SessionSettingsServlet(
     private val server: ApplicationServer,
 ) : HttpServlet() {
+    val settingsClass = Map::class.java // server.settingsClass
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
         if (req.parameterMap.containsKey("sessionId")) {
             val session = Session(req.getParameter("sessionId"))
-            val settings = server.getSettings<Any>(session, ApplicationServices.authenticationManager.getUser(
-                req.getCookie()
-            ))
+            val user = authenticationManager.getUser(req.getCookie())
+            val settings = server.getSettings(session, user, settingsClass)
             val json = if(settings != null) JsonUtil.toJson(settings) else ""
             //language=HTML
             resp.writer.write(
@@ -54,9 +54,9 @@ class SessionSettingsServlet(
             resp.writer.write("Session ID is required")
         } else {
             val session = Session(req.getParameter("sessionId"))
-            val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), server.settingsClass)
+            val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), settingsClass)
             server.dataStorage.setJson(
-                ApplicationServices.authenticationManager.getUser(req.getCookie()),
+                authenticationManager.getUser(req.getCookie()),
                 session, "settings.json", settings
             )
             resp.sendRedirect("${req.contextPath}/#$session")

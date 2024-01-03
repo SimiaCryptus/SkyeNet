@@ -152,6 +152,12 @@ interface StorageInterface {
             return Session("U-$yyyyMMdd-$uuid")
         }
 
+        fun parseSessionID(sessionID: String): Session {
+            val session = Session(sessionID)
+            validateSessionId(session)
+            return session
+        }
+
     }
 }
 
@@ -235,6 +241,7 @@ data class Session(
     }
 
     override fun toString() = sessionId
+    fun isGlobal(): Boolean = sessionId.startsWith("G-")
 }
 
 

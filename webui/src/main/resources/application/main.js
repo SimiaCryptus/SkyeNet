@@ -16,6 +16,7 @@ async function fetchData(endpoint, useSession = true) {
                 endpoint = endpoint + "?sessionId=" + sessionId;
             }
         }
+        document.getElementById('modal-content').innerHTML = "<div>Loading...</div>";
         const response = await fetch(endpoint);
         const text = await response.text();
         document.getElementById('modal-content').innerHTML = "<div>" + text + "</div>";
