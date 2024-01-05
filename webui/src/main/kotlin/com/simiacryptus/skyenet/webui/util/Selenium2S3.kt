@@ -11,6 +11,11 @@ import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeDriverService
 import org.openqa.selenium.chrome.ChromeOptions
 import java.net.URL
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.io.File
 import java.util.*
 
 open class Selenium2S3 : AutoCloseable {
@@ -204,12 +209,16 @@ open class Selenium2S3 : AutoCloseable {
     val osname = System.getProperty("os.name")
     val chromePath = when {
       // Windows
-      osname.contains("Windows") -> "C:\\Program Files\\Google\\Chrome\\Application\\chromedriver.exe"
+      osname.contains("Windows") -> listOf(
+        "C:\\Program Files\\Google\\Chrome\\Application\\chromedriver.exe",
+        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chromedriver.exe"
+      )
       // Ubuntu
-      osname.contains("Linux") -> "/usr/bin/chromedriver"
+      osname.contains("Linux") -> listOf("/usr/bin/chromedriver")
       else -> throw RuntimeException("Not implemented for $osname")
     }
-    System.setProperty("webdriver.chrome.driver", chromePath)
+    System.setProperty("webdriver.chrome.driver",
+      chromePath.find { File(it).exists() } ?: throw RuntimeException("Chrome not found"))
     val options = ChromeOptions()
     options.addArguments("--headless")
     ChromeDriver(chromeDriverService, options)
