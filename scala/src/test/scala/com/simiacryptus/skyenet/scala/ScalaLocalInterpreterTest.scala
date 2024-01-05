@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.scala
 
-import com.simiacryptus.skyenet.core.Interpreter
-import com.simiacryptus.skyenet.core.util.InterpreterTestBase
+import com.simiacryptus.skyenet.interpreter.{Interpreter, InterpreterTestBase}
 
 import java.util
 

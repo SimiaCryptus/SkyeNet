@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.core
+package com.simiacryptus.skyenet.core.util
 
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.audio.AudioRecorder

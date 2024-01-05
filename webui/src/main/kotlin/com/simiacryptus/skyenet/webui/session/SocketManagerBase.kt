@@ -8,6 +8,7 @@ import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Consumer
 
 abstract class SocketManagerBase(
   protected val session: Session,
@@ -111,7 +112,7 @@ abstract class SocketManagerBase(
         if (opCmdPattern.matches(message)) {
           val id = message.substring(1, message.indexOf(","))
           val code = message.substring(id.length + 2)
-          onCmd(id, code, socket)
+          onCmd(id, code)
         } else {
           onRun(message, socket)
         }
@@ -131,12 +132,41 @@ abstract class SocketManagerBase(
     operationType = OperationType.Write
   )
 
-  protected open fun onCmd(
-    id: String,
-    code: String,
-    socket: ChatSocket
-  ) {
+  protected val threads = mutableMapOf<String, Thread>()
+  private val linkTriggers = mutableMapOf<String, Consumer<Unit>>()
+  private val txtTriggers = mutableMapOf<String, Consumer<String>>()
+  private fun onCmd(id: String, code: String) {
+    if (code == "cancel") {
+      threads[id]?.interrupt()
+    } else if (code == "link") {
+      val consumer = linkTriggers[id]
+      consumer ?: throw IllegalArgumentException("No link handler found")
+      consumer.accept(Unit)
+    } else if (code.startsWith("userTxt,")) {
+      val consumer = txtTriggers[id]
+      consumer ?: throw IllegalArgumentException("No input handler found")
+      consumer.accept(code.removePrefix("userTxt,"))
+    } else {
+      throw IllegalArgumentException("Unknown command: $code")
+    }
   }
+
+  fun hrefLink(linkText: String, classname: String = """href-link""", handler: Consumer<Unit>): String {
+    val operationID = randomID()
+    linkTriggers[operationID] = handler
+    return """<a class="$classname" data-id="$operationID">$linkText</a>"""
+  }
+
+  fun textInput(handler: Consumer<String>): String {
+    val operationID = randomID()
+    txtTriggers[operationID] = handler
+    //language=HTML
+    return """<form class="reply-form">
+                   <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
+                   <button class="text-submit-button" data-id="$operationID">Send</button>
+               </form>""".trimIndent()
+  }
+
 
   protected abstract fun onRun(
     userMessage: String,

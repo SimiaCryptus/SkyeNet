@@ -7,7 +7,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.skyenet.core.Interpreter
+import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import java.util.*
 import javax.script.ScriptException

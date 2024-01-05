@@ -46,6 +46,12 @@ object ApplicationServices {
             field = value
         }
 
+    var uploader: UploaderInterface = S3Uploader()
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
+
 }
 
 interface AuthenticationInterface {
@@ -245,3 +251,18 @@ data class Session(
 }
 
 
+interface UploaderInterface {
+    val shareBase: String
+
+    fun upload(
+        path: String,
+        contentType: String,
+        bytes: ByteArray
+    ) : String
+
+    fun upload(
+        path: String,
+        contentType: String,
+        request: String
+    ) : String
+}

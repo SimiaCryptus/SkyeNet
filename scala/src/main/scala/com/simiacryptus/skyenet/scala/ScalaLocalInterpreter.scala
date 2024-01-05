@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.scala
 
-import com.simiacryptus.skyenet.core.Interpreter
+import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.scala.ScalaLocalInterpreter.log
 
 import java.nio.file.Paths

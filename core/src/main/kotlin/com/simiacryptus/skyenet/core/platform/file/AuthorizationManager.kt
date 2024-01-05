@@ -43,6 +43,7 @@ open class AuthorizationManager : AuthorizationInterface {
 
     open fun matches(user: User?, line: String) = when {
         line.equals(user?.email, ignoreCase = true) -> true // Exact match
+        line.startsWith("@") && user?.email?.endsWith(line.substring(1)) == true -> true // Domain match
         line == "." && user != null -> true // Any user
         line == "*" -> true // Any user including anonymous
         else -> false

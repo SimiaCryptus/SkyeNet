@@ -49,6 +49,7 @@ abstract class ApplicationDirectory(
     open val usageServlet = UsageServlet()
     open val proxyHttpServlet = ProxyHttpServlet()
     open val welcomeServlet = WelcomeServlet(this)
+
     open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(
         redirectUri = "$domainName/oauth2callback",
         applicationName = "Demo",

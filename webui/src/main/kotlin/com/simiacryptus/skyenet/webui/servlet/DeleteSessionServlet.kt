@@ -59,6 +59,10 @@ class DeleteSessionServlet(
             val user = ApplicationServices.authenticationManager.getUser(req.getCookie())
             require(authorizationManager.isAuthorized(javaClass, user, OperationType.Delete))
                 { "User $user is not authorized to delete sessions" }
+            if(session.isGlobal()) {
+                require(authorizationManager.isAuthorized(javaClass, user, OperationType.Public))
+                { "User $user is not authorized to delete global sessions" }
+            }
             server.dataStorage.deleteSession(user, session)
             resp.sendRedirect("/")
         }

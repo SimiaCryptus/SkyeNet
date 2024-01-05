@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.core
+package com.simiacryptus.skyenet.interpreter
 
 interface Interpreter {
 

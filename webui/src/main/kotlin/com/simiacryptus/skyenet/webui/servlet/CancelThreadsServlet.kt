@@ -153,9 +153,13 @@ class CancelThreadsServlet(
       resp.writer.write("Session ID is required")
     } else {
       val session = Session(req.getParameter("sessionId"))
-      val user = ApplicationServices.authenticationManager.getUser(req.getCookie())
+      val user = authenticationManager.getUser(req.getCookie())
       require(ApplicationServices.authorizationManager.isAuthorized(javaClass, user, AuthorizationInterface.OperationType.Delete))
       { "User $user is not authorized to cancel sessions" }
+      if(session.isGlobal()) {
+        require(ApplicationServices.authorizationManager.isAuthorized(javaClass, user, AuthorizationInterface.OperationType.Public))
+        { "User $user is not authorized to cancel global sessions" }
+      }
       val pool = clientManager.getPool(session, user, server.dataStorage)
       pool.shutdownNow()
       resp.sendRedirect("/")

@@ -1,5 +1,4 @@
-package com.simiacryptus.skyenet.webui.util
-
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.uploader
 import org.apache.http.HttpEntity
 import org.apache.http.client.HttpClient
 import org.apache.http.client.methods.HttpGet
@@ -9,52 +8,37 @@ import org.openqa.selenium.Cookie
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.WebElement
 import org.openqa.selenium.chrome.ChromeDriver
+import org.openqa.selenium.chrome.ChromeDriverService
 import org.openqa.selenium.chrome.ChromeOptions
-import software.amazon.awssdk.core.sync.RequestBody
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.net.URL
 import java.util.*
 
-open class Selenium2S3 {
-  // TODO: This should be configurable without code edits
-  open val bucket = "share.simiacrypt.us"
-  open val shareBase = "https://share.simiacrypt.us"
-
-  protected open fun uploadToS3(
-    bucket: String,
-    path: String,
-    contentType: String,
-    requestBody: RequestBody?
-  ) {
-    S3Client.builder()
-      .region(Region.US_EAST_1)
-      .build().putObject(
-        PutObjectRequest.builder()
-          .bucket(bucket).key(path.replace("/{2,}".toRegex(), "/").removePrefix("/"))
-          .contentType(contentType)
-          .build(),
-        requestBody
-      )
-  }
+open class Selenium2S3 : AutoCloseable {
 
   open fun save(
-    driver: WebDriver,
-    urlbase: String,
-    bucket: String,
-    shareRoot: String,
-    cookies: Array<out jakarta.servlet.http.Cookie>?,
-    currentFilename: String,
-    startUrl: String
+    url: URL,
+    saveRoot: String,
+    currentFilename: String? = null,
+    cookies: Array<out jakarta.servlet.http.Cookie>? = null
   ) {
+    val urlbase = url.toString().split("/").dropLast(1).joinToString("/")
+    val domain = url.host.split(".").takeLast(2).joinToString(".")
+
+    if (domain == "localhost") {
+      driver.navigate().to(url)
+      setCookies(driver, cookies)
+      driver.navigate().refresh()
+    } else {
+      setCookies(driver, cookies, domain)
+      driver.navigate().to(url)
+    }
 
     HttpClients.createSystem().use { httpClient: HttpClient ->
 
-      driver.get(startUrl)
       Thread.sleep(5000)
       val linkReplacements = mutableMapOf<String, String>()
-      val htmlPages = mutableMapOf(currentFilename to editPage(driver.pageSource))
-      val jsonPages = mutableMapOf<String,String>()
+      val htmlPages = mutableMapOf((currentFilename ?: url.file.split("/").last()) to editPage(driver.pageSource))
+      val jsonPages = mutableMapOf<String, String>()
       val links = currentPageLinks(driver).toMutableList()
 
       while (links.isNotEmpty()) {
@@ -62,34 +46,34 @@ open class Selenium2S3 {
         try {
           if (linkReplacements.containsKey(href)) continue
           val relative = relativize(urlbase, href) ?: continue
-          linkReplacements[href] = "$shareBase/$shareRoot/$relative"
-          val contentType = contentType(relative)
-          when (contentType) {
+          linkReplacements[href] = "${uploader.shareBase}/$saveRoot/$relative"
+          when (val contentType = contentType(relative)) {
             "text/html" -> {
               if (htmlPages.containsKey(relative)) continue
               log.info("Fetching $href")
-              driver.get(href)
+              driver.navigate().to(href)
               Thread.sleep(5000)
               htmlPages[relative] = editPage(driver.pageSource)
               links += currentPageLinks(driver)
             }
+
             "application/json" -> {
               if (jsonPages.containsKey(relative)) continue
               log.info("Fetching $href")
               val responseEntity = get(href, cookies, httpClient) ?: continue
               jsonPages[relative] = responseEntity.content.buffered().reader().readText()
             }
+
             else -> {
               val responseEntity = get(href, cookies, httpClient) ?: continue
               val bytes = responseEntity.content.readAllBytes()
               if (!validate(responseEntity, contentType, bytes)) {
                 log.warn("Content type mismatch: $href -> $contentType != ${responseEntity.contentType.value}")
               }
-              uploadToS3(
-                bucket = bucket,
-                path = "/$shareRoot/$relative",
+              uploader.upload(
+                path = "/$saveRoot/$relative",
                 contentType = contentType,
-                requestBody = RequestBody.fromBytes(bytes)
+                bytes = bytes
               )
             }
           }
@@ -100,20 +84,18 @@ open class Selenium2S3 {
 
       htmlPages.forEach { (filename, html) ->
         val finalHtml = linkReplacements.toList().fold(html) { acc, (href, relative) -> acc.replace(href, relative) }
-        uploadToS3(
-          bucket = bucket,
-          path = "/$shareRoot/$filename",
+        uploader.upload(
+          path = "/$saveRoot/$filename",
           contentType = "text/html",
-          requestBody = RequestBody.fromString(finalHtml)
+          request = finalHtml
         )
       }
       jsonPages.forEach { (filename, js) ->
         val finalJs = linkReplacements.toList().fold(js) { acc, (href, relative) -> acc.replace(href, relative) }
-        uploadToS3(
-          bucket = bucket,
-          path = "/$shareRoot/$filename",
+        uploader.upload(
+          path = "/$saveRoot/$filename",
           contentType = "application/json",
-          requestBody = RequestBody.fromString(finalJs)
+          request = finalJs
         )
       }
     }
@@ -195,32 +177,19 @@ open class Selenium2S3 {
   }
 
   open fun setCookies(
+    driver: WebDriver,
     cookies: Array<out jakarta.servlet.http.Cookie>?,
-    domain: String?,
-    driver: WebDriver
+    domain: String? = null
   ) {
     cookies?.forEach { cookie ->
       try {
-        log.info(
-          """Setting cookie:
-              |  name: ${cookie.name}
-              |  value: ${cookie.value}
-              |  domain: ${cookie.domain ?: domain}
-              |  path: ${cookie.path}
-              |  maxAge: ${cookie.maxAge}
-              |  secure: ${cookie.secure}
-              |  isHttpOnly: ${cookie.isHttpOnly}
-              |  version: ${cookie.version}
-              |  comment: ${cookie.comment}
-            """.trimMargin()
-        )
         driver.manage().addCookie(
           Cookie(
             /* name = */ cookie.name,
             /* value = */ cookie.value,
             /* domain = */ cookie.domain ?: domain,
             /* path = */ cookie.path,
-            /* expiry = */ Date(cookie.maxAge * 1000L),
+            /* expiry = */ if (cookie.maxAge <= 0) null else Date(cookie.maxAge * 1000L),
             /* isSecure = */ cookie.secure,
             /* isHttpOnly = */ cookie.isHttpOnly
           )
@@ -231,7 +200,7 @@ open class Selenium2S3 {
     }
   }
 
-  open fun driver(): WebDriver {
+  private val driver: WebDriver by lazy {
     val osname = System.getProperty("os.name")
     val chromePath = when {
       // Windows
@@ -243,11 +212,27 @@ open class Selenium2S3 {
     System.setProperty("webdriver.chrome.driver", chromePath)
     val options = ChromeOptions()
     options.addArguments("--headless")
-    val driver: WebDriver = ChromeDriver(options)
-    return driver
+    ChromeDriver(chromeDriverService, options)
   }
+
+  override fun close() {
+    driver.close()
+    chromeDriverService.close()
+  }
+
+  private val chromeDriverService by lazy { ChromeDriverService.createDefaultService() }
 
   companion object {
     private val log = org.slf4j.LoggerFactory.getLogger(Selenium2S3::class.java)
+
+    init {
+      Runtime.getRuntime().addShutdownHook(Thread {
+        try {
+        } catch (e: Exception) {
+          log.warn("Error closing Selenium2S3", e)
+        }
+      })
+    }
   }
+
 }

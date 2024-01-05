@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.kotlin
 
-import com.simiacryptus.skyenet.core.Interpreter
+import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineBase
 import org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineFactoryBase

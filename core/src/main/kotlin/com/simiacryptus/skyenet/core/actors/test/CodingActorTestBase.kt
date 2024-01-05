@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.core.actors.test
 
-import com.simiacryptus.skyenet.core.Interpreter
+import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult

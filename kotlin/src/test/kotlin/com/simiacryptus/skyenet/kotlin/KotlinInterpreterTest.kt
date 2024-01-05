@@ -3,7 +3,7 @@
 package com.simiacryptus.skyenet.kotlin
 
 import com.simiacryptus.skyenet.core.actors.CodingActor
-import com.simiacryptus.skyenet.core.util.InterpreterTestBase
+import com.simiacryptus.skyenet.interpreter.InterpreterTestBase
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
