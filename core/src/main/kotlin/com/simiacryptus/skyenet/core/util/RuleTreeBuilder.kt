@@ -84,7 +84,8 @@ object RuleTreeBuilder {
           val matchedBlacklist = doNotMatch.filter { it.startsWith(bestNextPrefix) }
           when {
             matchedBlacklist.isEmpty() -> sb.append("""path.startsWith("${bestNextPrefix.bestPrefix().escape}") -> $result""" + "\n")
-            matchedItems.map { it.bestPrefix() }.toSet().size < 3 -> break
+            matchedItems.isEmpty() -> sb.append("""path.startsWith("${bestNextPrefix.bestPrefix().escape}") -> ${!result}""" + "\n")
+            (matchedItems + matchedBlacklist).map { it.bestPrefix() }.distinct().size < 3 -> break
             else -> {
               val subRules = getRuleExpression(
                 matchedItems.map { it.removePrefix(bestNextPrefix) }.toSet(),
@@ -116,19 +117,20 @@ object RuleTreeBuilder {
     toMatch: SortedSet<String>,
     doNotMatch: SortedSet<String>
   ) = allowedPrefixes(toMatch, doNotMatch)
-//    .flatMap { prefixExpand(listOf(it)) }
+    .flatMap { prefixExpand(listOf(it)) }
     .filter { it.isNotBlank() }
     .maxByOrNull { prefix ->
       val good = toMatch.subSet(prefix, prefix + "\uFFFF")
       val bad = doNotMatch.subSet(prefix, prefix + "\uFFFF")
       val goodCnt = good.size
       val badCnt = bad.size
-      if(badCnt == 0) return@maxByOrNull goodCnt.toDouble()
-      if(goodCnt == 0) return@maxByOrNull badCnt.toDouble()
+      if(badCnt == 0) return@maxByOrNull (goodCnt-1).toDouble() * prefix.length
+      if(goodCnt == 0) return@maxByOrNull (badCnt-1).toDouble() * prefix.length
       val totalCnt = goodCnt + badCnt
       val goodFactor = goodCnt.toDouble() / totalCnt
       val badFactor = badCnt.toDouble() / totalCnt
-      goodFactor * Math.log(goodFactor) + badFactor * Math.log(badFactor)
+      val entropy = goodFactor * Math.log(goodFactor) + badFactor * Math.log(badFactor)
+      Math.pow(entropy, totalCnt.toDouble())
     }
 
   fun bestNextSuffix(

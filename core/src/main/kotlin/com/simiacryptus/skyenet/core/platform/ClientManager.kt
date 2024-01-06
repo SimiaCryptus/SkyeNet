@@ -119,9 +119,9 @@ open class ClientManager {
     workPool = workPool,
     client = client,
   ) {
-    override fun incrementTokens(model: OpenAIModel?, tokens: ApiModel.Usage) {
+    override fun onUsage(model: OpenAIModel?, tokens: ApiModel.Usage) {
       ApplicationServices.usageManager.incrementUsage(session, user, model!!, tokens)
-      super.incrementTokens(model, tokens)
+      super.onUsage(model, tokens)
     }
   }
 
