@@ -162,6 +162,7 @@ abstract class ApplicationServer(
                 filename.endsWith(".gif") -> "image/gif"
                 filename.endsWith(".svg") -> "image/svg+xml"
                 filename.endsWith(".css") -> "text/css"
+                filename.endsWith(".mp3") -> "audio/mpeg"
                 else -> "text/plain"
             }
         fun HttpServletRequest.getCookie(name: String = AuthenticationInterface.AUTH_COOKIE) =

@@ -29,7 +29,7 @@ open class Selenium2S3 : AutoCloseable {
     val urlbase = url.toString().split("/").dropLast(1).joinToString("/")
     val domain = url.host.split(".").takeLast(2).joinToString(".")
 
-    if (domain == "localhost") {
+    if (domain == "localhost" || true) {
       driver.navigate().to(url)
       setCookies(driver, cookies)
       driver.navigate().refresh()
@@ -112,6 +112,7 @@ open class Selenium2S3 : AutoCloseable {
     driver.findElements(By.xpath("//img[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
     driver.findElements(By.xpath("//link[@href]")).map<WebElement?, String?> { it?.getAttribute("href") }.toSet(),
     driver.findElements(By.xpath("//script[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
+    driver.findElements(By.xpath("//source[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
   ).flatten().filterNotNull()
 
   protected open fun validate(
@@ -151,6 +152,7 @@ open class Selenium2S3 : AutoCloseable {
       "tar" -> "application/x-tar"
       "gz" -> "application/gzip"
       "bz2" -> "application/bzip2"
+      "mp3" -> "audio/mpeg"
       //"tsv" -> "text/tab-separated-values"
       "csv" -> "text/csv"
       "txt" -> "text/plain"
@@ -162,6 +164,7 @@ open class Selenium2S3 : AutoCloseable {
       "gif" -> "image/gif"
       "ico" -> "image/x-icon"
       "html" -> "text/html"
+      "htm" -> "text/html"
       else -> "text/plain"
     }
     return contentType
