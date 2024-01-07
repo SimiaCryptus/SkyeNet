@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel.*
-import com.simiacryptus.jopenai.ClientUtil.toContentList
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
@@ -51,6 +51,7 @@ open class CodingActor(
     val code: String
     val status: Status
     val result: ExecutionResult
+    val renderedResponse: String?
   }
 
   data class ExecutionResult(
@@ -60,9 +61,10 @@ open class CodingActor(
 
   override val prompt: String
     get() = if (symbols.isNotEmpty()) """
-            |You will translate natural language instructions into 
-            |an implementation using ${language} and the script context.
-            |Use ``` code blocks labeled with ${language} where appropriate.
+            |You are a coding assistant allows users actions to be enacted using $language and the script context.
+            |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
+            |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
+            |Each response should have EXACTLY ONE code block. Do not use inline blocks.
             |
             |Defined symbols include {${symbols.keys.joinToString(", ")}} described below:
             |
@@ -73,9 +75,10 @@ open class CodingActor(
             |${details ?: ""}
             |""".trimMargin().trim()
     else """
-            |You will translate natural language instructions into 
-            |an implementation using ${language} and the script context.
-            |Use ``` code blocks labeled with ${language} where appropriate.
+            |You are a coding assistant allows users actions to be enacted using $language and the script context.
+            |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
+            |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
+            |Each response should have EXACTLY ONE code block. Do not use inline blocks.
             |
             |${details ?: ""}
             |""".trimMargin().trim()
@@ -117,7 +120,11 @@ open class CodingActor(
     input: CodeRequest,
     api: API,
   ): CodeResult {
-    var result = CodeResultImpl(*messages, api = (api as OpenAIClient), input = input)
+    var result = CodeResultImpl(
+      *messages,
+      input = input,
+      api = (api as OpenAIClient)
+    )
     if (!input.autoEvaluate) return result
     for (i in 0..input.fixIterations) try {
       require(result.result.resultValue.length > -1)
@@ -132,19 +139,25 @@ open class CodingActor(
         throw ex
       }
       val respondWithCode = fixCommand(api, result.code, ex, *messages, model = model)
-      val codeBlocks = extractCodeBlocks(respondWithCode)
-      val renderedResponse = getRenderedResponse(codeBlocks)
-      val codedInstruction = getCode(language, codeBlocks)
-      log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
-      log.info("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
-      result = CodeResultImpl(*messages, input = input, api = api, givenCode = codedInstruction)
+      val blocks = extractTextBlocks(respondWithCode)
+      val renderedResponse = getRenderedResponse(blocks)
+      val codedInstruction = getCode(language, blocks)
+      log.debug("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
+      log.debug("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
+      result = CodeResultImpl(
+        *messages,
+        input = input,
+        api = api,
+        givenCode = codedInstruction,
+        givenResponse = renderedResponse
+      )
     }
     throw IllegalStateException()
   }
 
   open fun execute(prefix: String, code: String): ExecutionResult {
     //language=HTML
-    log.info("Running $code")
+    log.debug("Running $code")
     OutputInterceptor.clearGlobalOutput()
     val result = try {
       interpreter.run((prefix + code).sortCode())
@@ -156,19 +169,21 @@ open class CodingActor(
           message = errorMessage(e, code),
           language = language,
           code = code,
-          prefix = prefix
+          prefix = prefix,
         )
+
         e.cause is ScriptException -> throw FailedToImplementException(
           cause = e,
           message = errorMessage(e.cause!! as ScriptException, code),
           language = language,
           code = code,
-          prefix = prefix
+          prefix = prefix,
         )
+
         else -> throw e
       }
     }
-    log.info("Result: $result")
+    log.debug("Result: $result")
     //language=HTML
     val executionResult = ExecutionResult(result.toString(), OutputInterceptor.getThreadOutput())
     OutputInterceptor.clearThreadOutput()
@@ -180,80 +195,87 @@ open class CodingActor(
     private val input: CodeRequest,
     private val api: OpenAIClient,
     private val givenCode: String? = null,
+    private val givenResponse: String? = null,
   ) : CodeResult {
-    var _status = CodeResult.Status.Coding
-
-    override val status get() = _status
-
-    override val code: String = givenCode ?: try {
+    private val implementation by lazy {
+      if (!givenCode.isNullOrBlank() && !givenResponse.isNullOrBlank()) (givenCode to givenResponse) else try {
         implement(model)
       } catch (ex: FailedToImplementException) {
         if (fallbackModel != model) {
           try {
             implement(fallbackModel)
           } catch (ex: FailedToImplementException) {
-            log.info("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
+            log.debug("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
             _status = CodeResult.Status.Failure
             throw ex
           }
         } else {
-          log.info("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
+          log.debug("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
           _status = CodeResult.Status.Failure
           throw ex
         }
       }
+    }
 
+    var _status = CodeResult.Status.Coding
+
+    override val status get() = _status
+
+    override val renderedResponse: String = givenResponse ?: implementation.second
+    override val code: String = givenCode ?: implementation.first
 
     private fun implement(
       model: ChatModels,
-    ): String {
+    ): Pair<String, String> {
       val request = ChatRequest(messages = ArrayList(this.messages.toList()))
       for (codingAttempt in 0..input.fixRetries) {
         try {
-          val codeBlocks = extractCodeBlocks(chat(api, request, model))
+          val codeBlocks = extractTextBlocks(chat(api, request, model))
           val renderedResponse = getRenderedResponse(codeBlocks)
           val codedInstruction = getCode(language, codeBlocks)
-          log.info("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
-          log.info("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
+          log.debug("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
+          log.debug("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
           var workingCode = codedInstruction
+          var workingRenderedResponse = renderedResponse
           for (fixAttempt in 0..input.fixIterations) {
             try {
               val validate = interpreter.validate((input.codePrefix + "\n" + workingCode).sortCode())
               if (validate != null) throw validate
-              log.info("Validation succeeded")
+              log.debug("Validation succeeded")
               _status = CodeResult.Status.Success
-              return workingCode
+              return workingCode to workingRenderedResponse
             } catch (ex: Throwable) {
               if (fixAttempt == input.fixIterations)
-                throw if(ex is FailedToImplementException) ex else FailedToImplementException(
-                cause = ex,
-                message = """
+                throw if (ex is FailedToImplementException) ex else FailedToImplementException(
+                  cause = ex,
+                  message = """
                   |**ERROR**
                   |
                   |```text
                   |${ex.message}
                   |```
                   |""".trimMargin().trim(),
-                language = language,
-                code = workingCode,
-                prefix = input.codePrefix
-              )
-              log.info("Validation failed - ${ex.message}")
+                  language = language,
+                  code = workingCode,
+                  renderedResponse = workingRenderedResponse,
+                  prefix = input.codePrefix
+                )
+              log.debug("Validation failed - ${ex.message}")
               _status = CodeResult.Status.Correcting
               val respondWithCode = fixCommand(api, workingCode, ex, *messages, model = model)
-              val codeBlocks = extractCodeBlocks(respondWithCode)
-              val response = getRenderedResponse(codeBlocks)
+              val codeBlocks = extractTextBlocks(respondWithCode)
+              workingRenderedResponse = getRenderedResponse(codeBlocks)
               workingCode = getCode(language, codeBlocks)
-              log.info("Response: \n\t${response.replace("\n", "\n\t", false)}".trimMargin())
-              log.info("New Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
+              log.debug("Response: \n\t${workingRenderedResponse.replace("\n", "\n\t", false)}".trimMargin())
+              log.debug("New Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
             }
           }
         } catch (ex: FailedToImplementException) {
           if (codingAttempt == input.fixRetries) {
-            log.info("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
+            log.debug("Failed to implement ${messages.map { it.content }.joinToString("\n")}")
             throw ex
           }
-          log.info("Retry failed to implement ${messages.map { it.content }.joinToString("\n")}")
+          log.debug("Retry failed to implement ${messages.map { it.content }.joinToString("\n")}")
           _status = CodeResult.Status.Correcting
         }
       }
@@ -325,7 +347,7 @@ open class CodingActor(
 
     fun String.indent(indent: String = "  ") = this.replace("\n", "\n$indent")
 
-    fun extractCodeBlocks(response: String): List<Pair<String, String>> {
+    fun extractTextBlocks(response: String): List<Pair<String, String>> {
       val codeBlockRegex = Regex("(?s)```(.*?)\\n(.*?)```")
       val languageRegex = Regex("([a-zA-Z0-9-_]+)")
 
@@ -360,24 +382,12 @@ open class CodingActor(
       return result
     }
 
-    fun getRenderedResponse(respondWithCode: List<Pair<String, String>>) =
+    fun getRenderedResponse(respondWithCode: List<Pair<String, String>>, defaultLanguage: String = "") =
       respondWithCode.joinToString("\n") {
-        var language = it.first
-        if (language == "code") language = "groovy"
-        if (language == "text") {
-          //language=HTML
-          """
-                    |<div>
-                    |${it.second}
-                    |</div>
-                    |""".trimMargin().trim()
-        } else {
-          //language=HTML
-          """
-                    |<pre><code class="language-$language">
-                    |${it.second}
-                    |</code></pre>
-                    |""".trimMargin().trim()
+        when (it.first) {
+          "code" -> "```$defaultLanguage\n${it.second}\n```"
+          "text" -> it.second
+          else -> "```${it.first}\n${it.second}\n```"
         }
       }
 
@@ -385,9 +395,7 @@ open class CodingActor(
       if (textSegments.size == 1) return textSegments.joinToString("\n") { it.second }
       return textSegments.joinToString("\n") {
         if (it.first.lowercase() == "code" || it.first.lowercase() == language.lowercase()) {
-          """
-                            |${it.second}
-                            |""".trimMargin().trim()
+          it.second.trimMargin().trim()
         } else {
           ""
         }
@@ -468,5 +476,6 @@ open class CodingActor(
     val language: String? = null,
     val code: String? = null,
     val prefix: String? = null,
+    val renderedResponse: String? = null,
   ) : RuntimeException(message, cause)
 }

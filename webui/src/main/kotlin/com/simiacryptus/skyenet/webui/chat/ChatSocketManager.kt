@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.webui.chat
 
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.ClientUtil.toContentList
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAITextModel

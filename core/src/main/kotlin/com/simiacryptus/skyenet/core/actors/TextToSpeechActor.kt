@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.core.actors
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ApiModel.ChatMessage
-import com.simiacryptus.jopenai.ClientUtil.toContentList
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.GPT4Tokenizer
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.AudioModels

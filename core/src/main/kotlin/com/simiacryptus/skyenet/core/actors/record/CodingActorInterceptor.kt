@@ -33,10 +33,10 @@ class CodingActorInterceptor(
 
 
     override fun answer(vararg messages: ChatMessage, input: CodeRequest, api: API) = inner.CodeResultImpl(
-        messages = messages,
-        input = input,
-        api = api as com.simiacryptus.jopenai.OpenAIClient,
-        givenCode = super.answer(*messages, input = input, api = api).code
+      messages = messages,
+      input = input,
+      api = api as com.simiacryptus.jopenai.OpenAIClient,
+      givenCode = super.answer(*messages, input = input, api = api).code,
     )
 
     override fun execute(prefix: String, code: String) =

@@ -1,21 +1,25 @@
 package com.simiacryptus.skyenet.interpreter
 
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
-open class BashInterpreter(
+open class ProcessInterpreter(
   val defs: Map<String, Any> = mapOf(),
 ) : Interpreter {
-  init {
-    require(defs.isEmpty()) { "BashInterpreter does not support symbols" }
-  }
 
-  final override fun getLanguage(): String = "bash"
+  val command: List<String> = defs["command"]?.let { command ->
+    when (command) {
+      is String -> command.split(" ")
+      is List<*> -> command.map { it.toString() }
+      else -> throw IllegalArgumentException("Invalid command: $command")
+    }
+  } ?: listOf("bash")
+  final override fun getLanguage(): String = defs["language"]?.toString() ?: "bash"
   override fun getSymbols() = defs
 
 
   override fun validate(code: String): Throwable? {
+    // Always valid
     return null
   }
 
@@ -38,7 +42,7 @@ open class BashInterpreter(
       throw RuntimeException("Timeout; output: $output; error: $error")
     } else if (error.isNotEmpty()) {
       //throw RuntimeException(error)
-      return renderMarkdown(
+      return (
         """
         |ERROR:
         |```text
@@ -57,6 +61,6 @@ open class BashInterpreter(
   }
 
   companion object {
-    private val log = LoggerFactory.getLogger(BashInterpreter::class.java)
+    private val log = LoggerFactory.getLogger(ProcessInterpreter::class.java)
   }
 }

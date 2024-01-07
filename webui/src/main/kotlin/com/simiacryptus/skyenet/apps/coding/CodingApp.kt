@@ -11,7 +11,7 @@ import kotlin.reflect.KClass
 open class CodingApp<T: Interpreter>(
         applicationName: String,
         private val interpreter: KClass<T>,
-        private val symbols: Map<String, Any>,
+        open val symbols: Map<String, Any> = mapOf(),
         val temperature: Double = 0.1,
 ) : ApplicationServer(
     applicationName = applicationName,

@@ -59,13 +59,17 @@ open class KotlinInterpreter(
     } catch (ex: ScriptException) {
       wrapException(ex, wrappedCode, code)
     } catch (ex: Throwable) {
-      CodingActor.FailedToImplementException(cause = ex, language = "Kotlin", code = code)
+      CodingActor.FailedToImplementException(
+        cause = ex,
+        language = "Kotlin",
+        code = code,
+      )
     }
   }
 
   override fun run(code: String): Any? {
     val wrappedCode = wrapCode(code)
-    log.info(
+    log.debug(
       """
       |Running:
       |   ${wrappedCode.trimIndent().replace("\n", "\n\t")}
@@ -79,7 +83,11 @@ open class KotlinInterpreter(
     } catch (ex: ScriptException) {
       throw wrapException(ex, wrappedCode, code)
     } catch (ex: Throwable) {
-      throw CodingActor.FailedToImplementException(cause = ex, language = "Kotlin", code = code)
+      throw CodingActor.FailedToImplementException(
+        cause = ex,
+        language = "Kotlin",
+        code = code,
+      )
     }
   }
 
@@ -106,7 +114,7 @@ open class KotlinInterpreter(
         message = cause.message ?: ""
       ),
       language = "Kotlin",
-      code = code
+      code = code,
     )
   }
 

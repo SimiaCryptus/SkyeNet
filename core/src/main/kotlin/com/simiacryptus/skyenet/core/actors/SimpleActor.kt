@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.ClientUtil.toContentList
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.models.ChatModels
 
 open class SimpleActor(

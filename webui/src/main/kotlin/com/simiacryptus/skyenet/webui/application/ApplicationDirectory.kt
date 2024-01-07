@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.webui.application
 
 
-import com.simiacryptus.jopenai.ClientUtil
+import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.util.AwsUtil.decryptResource

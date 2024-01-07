@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.core.actors.ActorSystem
@@ -29,8 +30,9 @@ open class CodingAgent<T : Interpreter>(
   val symbols: Map<String, Any>,
   temperature: Double = 0.1,
   val details: String? = null,
+  val model: ChatModels = ChatModels.GPT35Turbo,
   val actorMap: Map<ActorTypes, CodingActor> = mapOf(
-    ActorTypes.CodingActor to CodingActor(interpreter, symbols = symbols, temperature = temperature, details = details)
+    ActorTypes.CodingActor to CodingActor(interpreter, symbols = symbols, temperature = temperature, details = details, model = model)
   ),
 ) : ActorSystem<CodingAgent.ActorTypes>(actorMap, dataStorage, user, session) {
   enum class ActorTypes {
@@ -70,16 +72,17 @@ open class CodingAgent<T : Interpreter>(
   ) {
     try {
       task.add(
-        renderMarkdown(
+        renderMarkdown(response.renderedResponse ?:
           //language=Markdown
-          """
-          |```${actor.language.lowercase(Locale.getDefault())}
-          |${response.code}
-          |```
-          """.trimMargin().trim()
+          "```${actor.language.lowercase(Locale.getDefault())}\n${response.code.trim()}\n```"
         )
       )
-      displayFeedback(task, codeRequest, response)
+      displayFeedback(task, CodingActor.CodeRequest(
+        messages = codeRequest.messages +
+            listOf(
+              response.code to ApiModel.Role.assistant,
+            ).filter { it.first.isNotBlank() }
+      ), response)
     } catch (e: Throwable) {
       log.warn("Error", e)
       task.error(e)
@@ -96,34 +99,33 @@ open class CodingAgent<T : Interpreter>(
       formHandle?.clear()
       val header = task.header("Running...")
       try {
-        val result = response.result
-        val feedback = when {
-          result.resultValue.isBlank() || result.resultValue.trim().lowercase() == "null" -> """
+        val resultValue = response.result.resultValue
+        val result = when {
+          resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
             |# Output
             |```text
-            |${result.resultOutput}
+            |${response.result.resultOutput}
             |```
             """.trimMargin()
 
           else -> """
             |# Result
             |```
-            |${result.resultValue}
+            |$resultValue
             |```
             |
             |# Output
             |```text
-            |${result.resultOutput}
+            |${response.result.resultOutput}
             |```
             """.trimMargin()
         }
         header?.clear()
-        task.add(renderMarkdown(feedback))
+        task.add(renderMarkdown(result))
         displayFeedback(task, CodingActor.CodeRequest(
           messages = request.messages +
               listOf(
-                response.code to ApiModel.Role.assistant,
-                feedback to ApiModel.Role.system,
+                "Running...\n\n$resultValue" to ApiModel.Role.assistant,
               ).filter { it.first.isNotBlank() }
         ), response)
       } catch (e: Throwable) {
