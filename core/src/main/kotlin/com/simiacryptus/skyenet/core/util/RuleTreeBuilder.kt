@@ -41,7 +41,7 @@ object RuleTreeBuilder {
     fun String.bestPrefix(): String {
       val pfx = allowedPrefixes(setOf(this), doNotMatch).firstOrNull() ?: this
       require(pfx.isNotBlank())
-      require(doNotMatch.none { it.startsWith(pfx) })
+      //require(doNotMatch.none { it.startsWith(pfx) })
       return pfx
     }
     while (remainingItems.isNotEmpty()) {
@@ -114,24 +114,23 @@ object RuleTreeBuilder {
   }
 
   fun bestPrefix(
-    toMatch: SortedSet<String>,
-    doNotMatch: SortedSet<String>
-  ) = allowedPrefixes(toMatch, doNotMatch)
-    .flatMap { prefixExpand(listOf(it)) }
+    positiveSet: SortedSet<String>,
+    negativeSet: SortedSet<String>
+  ) = allowedPrefixes(positiveSet, negativeSet)
+    .parallelStream()
+    .flatMap { prefixExpand(listOf(it)).stream() }
     .filter { it.isNotBlank() }
-    .maxByOrNull { prefix ->
-      val good = toMatch.subSet(prefix, prefix + "\uFFFF")
-      val bad = doNotMatch.subSet(prefix, prefix + "\uFFFF")
-      val goodCnt = good.size
-      val badCnt = bad.size
-      if(badCnt == 0) return@maxByOrNull (goodCnt-1).toDouble() * prefix.length
-      if(goodCnt == 0) return@maxByOrNull (badCnt-1).toDouble() * prefix.length
+    .map { prefix ->
+      val goodCnt = positiveSet.subSet(prefix, prefix + "\uFFFF").size
+      val badCnt = negativeSet.subSet(prefix, prefix + "\uFFFF").size
+      if (badCnt == 0) return@map prefix to (goodCnt - 1).toDouble() * prefix.length
+      //if (goodCnt == 0) return@map prefix to (badCnt - 1).toDouble() * prefix.length
       val totalCnt = goodCnt + badCnt
       val goodFactor = goodCnt.toDouble() / totalCnt
       val badFactor = badCnt.toDouble() / totalCnt
       val entropy = goodFactor * Math.log(goodFactor) + badFactor * Math.log(badFactor)
-      Math.pow(entropy, totalCnt.toDouble())
-    }
+      prefix to entropy
+    }.reduce({ a, b -> if (a.second >= b.second) a else b }).orElse(null)?.first
 
   fun bestNextSuffix(
     remainingItems: MutableSet<String>,

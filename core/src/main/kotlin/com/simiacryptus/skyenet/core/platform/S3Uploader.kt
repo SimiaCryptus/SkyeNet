@@ -6,8 +6,8 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 
 open class S3Uploader(
-  private val bucket: String = "share.simiacrypt.us",
-  override val shareBase: String = "https://share.simiacrypt.us"
+  private val bucket: String = System.getProperty("share_bucket", "share.simiacrypt.us"),
+  override val shareBase: String = System.getProperty("share_base", "https://share.simiacrypt.us")
 ) : UploaderInterface {
   override fun upload(
     path: String,

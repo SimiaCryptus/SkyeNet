@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices.authentication
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.uploader
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
@@ -13,6 +14,8 @@ import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.ge
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.apache.http.client.HttpClient
+import org.apache.http.impl.client.HttpClients
 import java.io.File
 import java.net.URI
 import java.net.URL
@@ -45,30 +48,17 @@ class SessionShareServlet(
     val session = StorageInterface.parseSessionID(sessionID)
     val json = storageInterface.getJson(if (session.isGlobal()) null else user, session, "info.json", Map::class.java)
     val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
-    val shareId = if (sessionSettings.containsKey("shareId")) {
-      log.info("Reusing shareId: ${sessionSettings["shareId"]}")
-      sessionSettings["shareId"]
+    val previousShare = sessionSettings["shareId"]
+    val shareId = if (null != previousShare && validateUrl(url(appName, previousShare))) {
+      log.info("Reusing shareId: $previousShare")
+      previousShare
     } else {
       if (!authorizationManager.isAuthorized(server.javaClass, user, OperationType.Share)) {
         resp.status = HttpServletResponse.SC_FORBIDDEN
         resp.writer.write("Forbidden")
         return
       }
-      val shareId = UUID.randomUUID().toString()
-      log.info("Generating shareId: $shareId")
-      sessionSettings["shareId"] = shareId
-      // Be optimistic to prevent duplicate work - TODO: Need way to explicitly regenerate
-      storageInterface.setJson(if (session.isGlobal()) null else user, session, "info.json", sessionSettings)
-      Selenium2S3().use {
-        it.save(
-          url = URL(url),
-          saveRoot = "$appName/$shareId",
-          currentFilename = "index.html",
-          cookies = req.cookies
-        )
-      }
-      log.info("Saved session $sessionID to $appName/$shareId")
-      shareId
+      save(sessionSettings, storageInterface, session, user, url, appName, req, sessionID)
     }
 
     resp.contentType = "text/html"
@@ -86,22 +76,60 @@ class SessionShareServlet(
       |<body>
       |    <h1>Save Session</h1>
       |    <p>Share this link with your friends:</p>
-      |    <p><a href="${uploader.shareBase}/$appName/$shareId/index.html" target='_blank'>https://share.simiacrypt.us/$appName/$shareId/index.html</a></p>
+      |    <p><a href="${url(appName, shareId)}" target='_blank'>${url(appName, shareId)}</a></p>
       |</body>
       |</html>
       """.trimMargin()
     )
   }
 
-  private fun acceptHost(user: User?, host: String?) = when (host) {
-    // TODO: This should be configurable without code edits
-    "localhost" -> true
-    "apps.simiacrypt.us" -> true
-    else -> authorizationManager.isAuthorized(server.javaClass, user, OperationType.Admin)
+  fun url(appName: String, shareId: String) =
+    """${uploader.shareBase}/$appName/$shareId/index.html"""
+
+  private fun save(
+    sessionSettings: MutableMap<String, String>,
+    storageInterface: StorageInterface,
+    session: Session,
+    user: User?,
+    url: String?,
+    appName: String,
+    req: HttpServletRequest,
+    sessionID: String
+  ): String {
+    val shareId = UUID.randomUUID().toString()
+    log.info("Generating shareId: $shareId")
+    sessionSettings["shareId"] = shareId
+    // Be optimistic to prevent duplicate work - TODO: Need way to explicitly regenerate
+    storageInterface.setJson(if (session.isGlobal()) null else user, session, "info.json", sessionSettings)
+    Selenium2S3().use {
+      it.save(
+        url = URL(url),
+        saveRoot = "$appName/$shareId",
+        currentFilename = "index.html",
+        cookies = req.cookies
+      )
+    }
+    log.info("Saved session $sessionID to $appName/$shareId")
+    return shareId
+  }
+
+  private fun acceptHost(user: User?, host: String?): Boolean {
+    return when (host) {
+      // TODO: This should be configurable without code edits
+      "localhost" -> true
+      domain -> true
+      else -> authorizationManager.isAuthorized(server.javaClass, user, OperationType.Admin)
+    }
   }
 
   companion object {
     private val log = org.slf4j.LoggerFactory.getLogger(SessionShareServlet::class.java)
+    fun validateUrl(previousShare: String): Boolean = HttpClients.createSystem().use { httpClient: HttpClient ->
+      val responseEntity = httpClient.execute(org.apache.http.client.methods.HttpGet(previousShare))
+      return responseEntity.statusLine.statusCode == 200
+    }
+
+    var domain = System.getProperty("domain", "apps.simiacrypt.us")
   }
 }
 
