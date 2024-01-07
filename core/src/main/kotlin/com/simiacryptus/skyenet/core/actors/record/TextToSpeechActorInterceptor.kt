@@ -11,6 +11,8 @@ class TextToSpeechActorInterceptor(
 ) : TextToSpeechActor(
     name = inner.name,
     audioModel = inner.audioModel,
+    "alloy",
+    1.0,
 ) {
     override fun response(
         vararg input: com.simiacryptus.jopenai.ApiModel.ChatMessage,

@@ -12,6 +12,8 @@ import com.simiacryptus.jopenai.models.ChatModels
 open class TextToSpeechActor(
   name: String? = null,
   val audioModel: AudioModels = AudioModels.TTS_HD,
+  val voice: String = "alloy",
+  val speed: Double = 1.0,
 ) : BaseActor<List<String>, SpeechResponse>(
   prompt = "",
   name = name,
@@ -38,6 +40,8 @@ open class TextToSpeechActor(
     ApiModel.SpeechRequest(
       input = text,
       model = audioModel.modelName,
+      voice = voice,
+      speed = speed,
     )
   ) ?: throw RuntimeException("No response")
 
@@ -53,6 +57,8 @@ open class TextToSpeechActor(
   fun withModel(model: AudioModels): TextToSpeechActor = TextToSpeechActor(
     name = name,
     audioModel = model,
+    voice = "alloy",
+    speed = 1.0,
   )
 
   override fun withModel(model: ChatModels) = this
