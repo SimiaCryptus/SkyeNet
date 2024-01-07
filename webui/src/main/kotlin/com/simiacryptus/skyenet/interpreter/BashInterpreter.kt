@@ -36,7 +36,7 @@ open class BashInterpreter(
     if (!waitFor) {
       process.destroy()
       throw RuntimeException("Timeout; output: $output; error: $error")
-    } else if (error.isNotEmpty()) {  
+    } else if (error.isNotEmpty()) {
       //throw RuntimeException(error)
       return renderMarkdown(
         """
