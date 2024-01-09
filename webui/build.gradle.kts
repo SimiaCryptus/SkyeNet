@@ -1,3 +1,4 @@
+import com.sass_lang.embedded_protocol.OutputStyle
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import java.net.URI
 
@@ -11,6 +12,8 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.21"
     `maven-publish`
     id("signing")
+    id("io.freefair.sass-base") version "8.4"
+    id("io.freefair.sass-java") version "8.4"
 }
 
 repositories {
@@ -78,6 +81,14 @@ dependencies {
     testImplementation(kotlin("script-runtime"))
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.10.1")
+}
+
+sass {
+    omitSourceMapUrl = false
+    outputStyle = OutputStyle.EXPANDED
+    sourceMapContents = false
+    sourceMapEmbed = false
+    sourceMapEnabled = true
 }
 
 
