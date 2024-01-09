@@ -7,6 +7,8 @@ import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
+import java.util.Deque
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
@@ -20,6 +22,7 @@ abstract class SocketManagerBase(
   private val applicationClass: Class<*>,
 ) : SocketManager {
   private val sockets: MutableMap<ChatSocket, org.eclipse.jetty.websocket.api.Session> = mutableMapOf()
+  private val sendQueues: MutableMap<ChatSocket, Deque<String>> = mutableMapOf()
   private val messageVersions = HashMap<String, AtomicInteger>()
   protected val pool get() = clientManager.getPool(session, owner, dataStorage)
 
@@ -46,12 +49,25 @@ abstract class SocketManagerBase(
     out: String,
   ) {
     synchronized(sockets) {
-      sockets.keys.forEach {
+      sockets.keys.forEach { chatSocket ->
         try {
-          it.remote.sendString(out)
-          it.remote.flush()
+          sendQueues.computeIfAbsent(chatSocket) { ConcurrentLinkedDeque() }.add(out)
         } catch (e: Exception) {
           log.info("Error sending message", e)
+        }
+        pool.submit {
+          try {
+            val deque = sendQueues[chatSocket]!!
+            synchronized(deque) {
+              while (true) {
+                val msg = deque.poll() ?: break
+                chatSocket.remote.sendString(msg)
+              }
+              chatSocket.remote.flush()
+            }
+          } catch (e: Exception) {
+            log.info("Error sending message", e)
+          }
         }
       }
     }
@@ -106,7 +122,7 @@ abstract class SocketManagerBase(
 
   final override fun onWebSocketText(socket: ChatSocket, message: String) {
     if (canWrite(socket.user)) pool.submit {
-      log.debug("$session - Received message: $message")
+      log.debug("{} - Received message: {}", session, message)
       try {
         val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
         if (opCmdPattern.matches(message)) {
@@ -132,13 +148,10 @@ abstract class SocketManagerBase(
     operationType = OperationType.Write
   )
 
-  protected val threads = mutableMapOf<String, Thread>()
   private val linkTriggers = mutableMapOf<String, Consumer<Unit>>()
   private val txtTriggers = mutableMapOf<String, Consumer<String>>()
   private fun onCmd(id: String, code: String) {
-    if (code == "cancel") {
-      threads[id]?.interrupt()
-    } else if (code == "link") {
+    if (code == "link") {
       val consumer = linkTriggers[id]
       consumer ?: throw IllegalArgumentException("No link handler found")
       consumer.accept(Unit)
@@ -189,7 +202,5 @@ abstract class SocketManagerBase(
       session.upgradeRequest.cookies?.find { it.name == AuthenticationInterface.AUTH_COOKIE }?.value?.let {
         ApplicationServices.authenticationManager.getUser(it)
       }
-
   }
-
 }

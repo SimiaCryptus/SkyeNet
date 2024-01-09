@@ -59,6 +59,8 @@ dependencies {
     testImplementation(project(":kotlin"))
     testImplementation(project(":scala"))
 
+    implementation(group = "org.apache.httpcomponents.client5", name = "httpclient5", version = "5.2.3")
+
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-core", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)

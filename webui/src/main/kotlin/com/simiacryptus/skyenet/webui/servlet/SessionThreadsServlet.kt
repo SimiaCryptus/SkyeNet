@@ -112,7 +112,7 @@ class SessionThreadsServlet(
                     |<div class='pool-threads'>
                     |<h1>Thread Stacks</h1>
                     |${
-                    (pool.threadFactory as RecordingThreadFactory).threads.joinToString("""<br/>""") { 
+                    (pool.threadFactory as RecordingThreadFactory).threads.filter { it.isAlive }.joinToString("""<br/>""") { 
                         thread ->
                         """
                         <div class='thread'>
@@ -130,6 +130,7 @@ class SessionThreadsServlet(
                     |</html>
                     """.trimMargin()
             )
+          // (pool.threadFactory as RecordingThreadFactory).threads
         } else {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
             resp.writer.write("Session ID is required")

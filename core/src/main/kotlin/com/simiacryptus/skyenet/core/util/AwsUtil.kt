@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.core.util
 
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.kms.KmsClient
@@ -10,9 +11,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
 
-object AwsUtil {
-
-    private val kmsClient: KmsClient by lazy {
+open class AwsUtil {
+    open val kmsClient: KmsClient by lazy {
         KmsClient.builder()
                 .region(Region.US_EAST_1) // Specify the region or use the default region provider chain
                 .build()
@@ -49,4 +49,8 @@ object AwsUtil {
         val decryptedData = decryptResult.plaintext().asByteArray()
         return String(decryptedData, StandardCharsets.UTF_8)
     }
+
+  companion object : AwsUtil() {
+    val log = LoggerFactory.getLogger(AwsUtil::class.java)
+  }
 }

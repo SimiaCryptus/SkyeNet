@@ -56,7 +56,7 @@ class UserSettingsServlet : HttpServlet() {
             val prevSettings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
             val reconstructedSettings = prevSettings.copy(
                 apiKey = when(settings.apiKey) {
-                    "" -> prevSettings.apiKey
+                    "" -> ""
                     mask -> prevSettings.apiKey
                     else -> settings.apiKey
                 }

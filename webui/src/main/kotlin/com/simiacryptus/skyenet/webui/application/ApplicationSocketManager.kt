@@ -21,9 +21,6 @@ abstract class ApplicationSocketManager(
   applicationClass = applicationClass,
 ) {
   override fun onRun(userMessage: String, socket: ChatSocket) {
-    val operationID = randomID()
-    threads[operationID] = Thread.currentThread()
-      socket.session
     userMessage(
       session = session,
       user = socket.user,
@@ -31,13 +28,13 @@ abstract class ApplicationSocketManager(
       socketManager = this,
       api = ApplicationServices.clientManager.getClient(
         session,
-          socket.user,
+        socket.user,
         dataStorage ?: throw IllegalStateException("No data storage")
       )
     )
   }
 
-  val applicationInterface by lazy { ApplicationInterface(this) }
+  open val applicationInterface by lazy { ApplicationInterface(this) }
 
 
   abstract fun userMessage(

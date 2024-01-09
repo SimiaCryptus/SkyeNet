@@ -4,9 +4,9 @@ import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import java.util.function.Consumer
 
-class ApplicationInterface(private val inner: ApplicationSocketManager) {
+open class ApplicationInterface(private val inner: ApplicationSocketManager) {
   @Description("Returns html for a link that will trigger the given handler when clicked.")
-  fun hrefLink(
+  open fun hrefLink(
     @Description("The text to display in the link")
     linkText: String,
     @Description("The css class to apply to the link")
@@ -16,13 +16,13 @@ class ApplicationInterface(private val inner: ApplicationSocketManager) {
   ) = inner.hrefLink(linkText, classname, handler)
 
   @Description("Returns html for a text input form that will trigger the given handler when submitted.")
-  fun textInput(
+  open fun textInput(
     @Description("The handler to trigger when the form is submitted")
     handler: Consumer<String>
   ): String = inner.textInput(handler)
 
   @Description("Creates a new 'task' that can be used to display the progress of a long-running operation.")
-  fun newTask(
+  open fun newTask(
     //cancelable: Boolean = false
   ): SessionTask = inner.newTask(false)
 

@@ -48,7 +48,7 @@ abstract class ApplicationServer(
     protected open val sessionShareServlet by lazy { ServletHolder("share", SessionShareServlet(this)) }
     protected open val sessionThreadsServlet by lazy { ServletHolder("threads", SessionThreadsServlet(this)) }
     protected open val deleteSessionServlet by lazy { ServletHolder("delete", DeleteSessionServlet(this)) }
-    protected open val cancelSessionServlet by lazy { ServletHolder("cancel", DeleteSessionServlet(this)) }
+    protected open val cancelSessionServlet by lazy { ServletHolder("cancel", CancelThreadsServlet(this)) }
 
     override fun newSession(user: User?, session: Session): SocketManager =
         object : ApplicationSocketManager(
@@ -72,19 +72,6 @@ abstract class ApplicationServer(
             )
         }
 
-    open fun userMessage(
-        session: Session,
-        user: User?,
-        userMessage: String,
-        socketManager: ApplicationSocketManager,
-        api: API
-    ) : Unit = this@ApplicationServer.userMessage(
-        session = session,
-        user = user,
-        userMessage = userMessage,
-        ui = socketManager.applicationInterface,
-        api = api
-    )
     open fun userMessage(
         session: Session,
         user: User?,

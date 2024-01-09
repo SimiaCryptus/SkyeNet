@@ -4,7 +4,7 @@ package com.simiacryptus.skyenet.webui.application
 import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.util.AwsUtil.decryptResource
+import com.simiacryptus.skyenet.core.util.AwsUtil
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import jakarta.servlet.DispatcherType
@@ -53,7 +53,7 @@ abstract class ApplicationDirectory(
     open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(
         redirectUri = "$domainName/oauth2callback",
         applicationName = "Demo",
-        key = { decryptResource("client_secret_google_oauth.json.kms").byteInputStream() }
+        key = { AwsUtil.decryptResource("client_secret_google_oauth.json.kms").byteInputStream() }
     )
     open fun setupPlatform() {}
 
@@ -61,7 +61,7 @@ abstract class ApplicationDirectory(
         try {
             setupPlatform()
             init(args.contains("--server"))
-            ClientUtil.keyTxt = decryptResource("openai.key.kms", javaClass.classLoader)
+            ClientUtil.keyTxt = AwsUtil.decryptResource("openai.key.kms", javaClass.classLoader)
             ApplicationServices.isLocked = true
             val welcomeContext = newWebAppContext("/", welcomeResources, welcomeServlet)
             val server = start(
