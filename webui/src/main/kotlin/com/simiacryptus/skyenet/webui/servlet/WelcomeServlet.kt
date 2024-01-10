@@ -65,7 +65,7 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
         <meta charset="UTF-8">
         <title>SimiaCryptus Skyenet Apps</title>
         <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-        <link href="main.css" rel="stylesheet"/>
+        <link id="theme_style" href="main.css" rel="stylesheet"/>
         <script src="main.js"></script>
     </head>
     <body>
@@ -77,12 +77,19 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
         </div>
     </div>
     
-    <div id="toolbar">
+    <div id="toolbar"> 
         <div class="dropdown">
             <a class="dropbtn">About</a>
             <div class="dropdown-content">
                 <a id="privacy">Privacy Policy</a>
                 <a id="tos">Terms of Service</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <a class="dropbtn">Themes</a>
+            <div class="dropdown-content">
+                <a id="theme_normal">Normal</a>
+                <a id="theme_night">Night</a>
             </div>
         </div>
     </div>

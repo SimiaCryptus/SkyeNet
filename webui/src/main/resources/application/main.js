@@ -140,6 +140,25 @@ function refreshVerbose() {
 
 document.addEventListener('DOMContentLoaded', () => {
 
+
+    function setTheme(theme) {
+        document.getElementById('theme_style').href = theme + '.css';
+        localStorage.setItem('theme', theme);
+    }
+    const theme_normal = document.getElementById('theme_normal');
+    if (theme_normal) {
+        theme_normal.addEventListener('click', () => setTheme('main'));
+    }
+    const theme_dark = document.getElementById('theme_night');
+    if (theme_dark) {
+        theme_dark.addEventListener('click', () => setTheme('night'));
+    }
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme != null) {
+        document.getElementById('theme_style').href = savedTheme + '.css';
+    }
+
+
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));
     document.getElementById('settings').addEventListener('click', () => showModal('settings'));
     document.getElementById('usage').addEventListener('click', () => showModal('usage'));

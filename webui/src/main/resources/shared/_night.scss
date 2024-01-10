@@ -1,0 +1,50 @@
+// Base colors for nighttime scheme
+$base-white: #bdc3c7; // Lighter grey instead of pure white
+$base-grey: #34495e; // Darker grey
+$base-dark-blue: #2c3e50; // Even darker blue
+$base-light-grey: #95a5a6; // Darker shade of grey
+$base-blue: #2980b9; // Darker blue
+$base-yellow: #f1c40f; // More subdued yellow
+$base-red: #c0392b; // Darker red
+$base-dark-grey: #7f8c8d; // Darker grey
+
+// Derived colors for nighttime scheme
+$secondary-bg-color: $base-dark-grey;
+$secondary-text-color: $base-light-grey;
+$applist-header-bg: $base-dark-blue;
+$applist-header-text: $base-white;
+$applist-link-color: $base-blue;
+$applist-row-even-bg: lighten($base-dark-grey, 4%);
+$applist-row-hover-bg: darken($base-dark-grey, 8%);
+$border-color: darken($base-dark-grey, 8%);
+$border-radius: 3px;
+$box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); // Stronger shadow for contrast
+$close-color: $secondary-text-color;
+$close-hover-color: darken($secondary-text-color, 20%);
+$dropdown-btn-bg: darken($base-dark-blue, 10%);
+$dropdown-content-bg: $base-grey;
+$dropdown-content-hover-bg: lighten($base-grey, 2%);
+$error-color: $base-red;
+$footer-link-color: $base-white;
+$footer-link-hover-color: darken($footer-link-color, 10%);
+$link-color: $base-yellow;
+$link-hover-color: darken($link-color, 20%);
+$modal-overlay-color: rgba(0, 0, 0, 0.7); // Darker overlay
+$new-session-link-bg: $base-yellow;
+$new-session-link-hover-bg: darken($new-session-link-bg, 20%);
+$primary-bg-color: darken($base-dark-blue, 60%);
+$primary-text-color: lighten($base-dark-blue, 10%);
+$reply-message-bg: $secondary-bg-color;
+$reply-message-border: darken($base-dark-blue, 50%);
+$response-message-bg: $secondary-bg-color;
+$response-message-border: darken($base-dark-blue, 50%);
+$spinner-border-color: rgba(0, 0, 0, 0.2);
+$toolbar-bg-color: $secondary-bg-color;
+$toolbar-hover-bg-color: darken($secondary-text-color, 5%);
+$toolbar-hover-text-color: $secondary-bg-color;
+$toolbar-text-color: $primary-text-color;
+$transition-speed: 0.25s;
+$user-message-bg: darken($base-blue, 40%);
+$user-message-border: darken($base-blue, 30%);
+$verbose-pre-bg: darken($base-dark-grey, 10%);
+$verbose-pre-border: darken($base-light-grey, 5%);
