@@ -46,7 +46,7 @@ object ApplicationServices {
             field = value
         }
 
-    var uploader: UploaderInterface = S3Uploader()
+    var cloud: CloudPlatformInterface? = AwsPlatform.get()
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
@@ -251,7 +251,7 @@ data class Session(
 }
 
 
-interface UploaderInterface {
+interface CloudPlatformInterface {
     val shareBase: String
 
     fun upload(
@@ -265,4 +265,7 @@ interface UploaderInterface {
         contentType: String,
         request: String
     ) : String
+
+    fun encrypt(fileBytes: ByteArray, keyId: String): String?
+    fun decrypt(encryptedData: ByteArray): String
 }

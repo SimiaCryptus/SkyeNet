@@ -1,15 +1,15 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.skyenet.webui.util.Selenium2S3
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
-import com.simiacryptus.skyenet.core.platform.ApplicationServices.uploader
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
+import com.simiacryptus.skyenet.webui.util.Selenium2S3
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -132,7 +132,7 @@ class SessionShareServlet(
   }
 
   private fun url(appName: String, shareId: String) =
-    """${uploader.shareBase}/$appName/$shareId/index.html"""
+    """${cloud!!.shareBase}/$appName/$shareId/index.html"""
 
   private fun acceptHost(user: User?, host: String?): Boolean {
     return when (host) {

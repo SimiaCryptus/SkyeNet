@@ -4,7 +4,6 @@ package com.simiacryptus.skyenet.webui.application
 import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.util.AwsUtil
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import jakarta.servlet.DispatcherType
@@ -53,7 +52,12 @@ abstract class ApplicationDirectory(
     open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(
         redirectUri = "$domainName/oauth2callback",
         applicationName = "Demo",
-        key = { AwsUtil.decryptResource("client_secret_google_oauth.json.kms").byteInputStream() }
+        key = {
+            val encryptedData =
+                javaClass.classLoader!!.getResourceAsStream("client_secret_google_oauth.json.kms")?.readAllBytes()
+                    ?: throw RuntimeException("Unable to load resource: ${"client_secret_google_oauth.json.kms"}")
+            ApplicationServices.cloud!!.decrypt(encryptedData).byteInputStream()
+        }
     )
     open fun setupPlatform() {}
 
@@ -61,7 +65,11 @@ abstract class ApplicationDirectory(
         try {
             setupPlatform()
             init(args.contains("--server"))
-            ClientUtil.keyTxt = AwsUtil.decryptResource("openai.key.kms", javaClass.classLoader)
+            ClientUtil.keyTxt = run {
+                val encryptedData = javaClass.classLoader.getResourceAsStream("openai.key.kms")?.readAllBytes()
+                    ?: throw RuntimeException("Unable to load resource: ${"openai.key.kms"}")
+                ApplicationServices.cloud!!.decrypt(encryptedData)
+            }
             ApplicationServices.isLocked = true
             val welcomeContext = newWebAppContext("/", welcomeResources, welcomeServlet)
             val server = start(

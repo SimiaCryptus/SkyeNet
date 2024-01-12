@@ -4,7 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.core.platform.ApplicationServices.uploader
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
@@ -51,9 +51,9 @@ class TensorflowProjector(
         sessionDir.resolve(vectorFileName).writeText(vectorTsv)
         sessionDir.resolve(metadataFileName).writeText(metadataTsv)
         //val vectorURL = """$host/$appPath/fileIndex/$sessionID/$vectorFileName"""
-        val vectorURL = uploader.upload("projector/$sessionID/$vectorFileName", "text/plain", vectorTsv)
+        val vectorURL = cloud!!.upload("projector/$sessionID/$vectorFileName", "text/plain", vectorTsv)
         //var metadataURL = """$host/$appPath/fileIndex/$sessionID/$metadataFileName"""
-        val metadataURL = uploader.upload("projector/$sessionID/$metadataFileName", "text/plain", metadataTsv)
+        val metadataURL = cloud!!.upload("projector/$sessionID/$metadataFileName", "text/plain", metadataTsv)
         val projectorConfig = JsonUtil.toJson(
             mapOf(
                 "embeddings" to listOf(
@@ -68,7 +68,7 @@ class TensorflowProjector(
         )
         sessionDir.resolve(configFileName).writeText(projectorConfig)
         //val configURL = """$host/$appPath/fileIndex/$sessionID/projector-config.json"""
-        val configURL = uploader.upload("projector/$sessionID/$configFileName", "application/json", projectorConfig)
+        val configURL = cloud!!.upload("projector/$sessionID/$configFileName", "application/json", projectorConfig)
         return """
             <a href="$configURL">Projector Config</a>
             <a href="$vectorURL">Vectors</a>

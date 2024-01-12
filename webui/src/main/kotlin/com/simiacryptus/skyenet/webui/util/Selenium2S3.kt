@@ -1,17 +1,13 @@
 package com.simiacryptus.skyenet.webui.util
 
-import com.simiacryptus.skyenet.core.platform.ApplicationServices.uploader
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse
-import org.apache.hc.client5.http.config.RequestConfig
 import org.apache.hc.client5.http.cookie.BasicCookieStore
-import org.apache.hc.client5.http.cookie.StandardCookieSpec
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder
 import org.apache.hc.client5.http.impl.cookie.BasicClientCookie
 import org.apache.hc.core5.concurrent.FutureCallback
 import org.apache.hc.core5.http.Method
-import org.apache.hc.core5.http.config.Http1Config
-import org.apache.hc.core5.util.TimeValue
 import org.openqa.selenium.By
 import org.openqa.selenium.Cookie
 import org.openqa.selenium.WebDriver
@@ -27,7 +23,6 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 open class Selenium2S3(
   val pool: ThreadPoolExecutor = Executors.newCachedThreadPool() as ThreadPoolExecutor,
@@ -93,7 +88,7 @@ open class Selenium2S3(
       try {
         if (linkReplacements.containsKey(href)) continue
         val relative = relativize(url.toString().split("/").dropLast(1).joinToString("/"), href) ?: continue
-        linkReplacements[href] = "${uploader.shareBase}/$saveRoot/$relative"
+        linkReplacements[href] = "${cloud!!.shareBase}/$saveRoot/$relative"
         when (val mimeType = mimeType(relative)) {
 
           "text/html" -> {
@@ -157,7 +152,7 @@ open class Selenium2S3(
                   log.debug("Fetched $href")
                   val bytes = p0?.body?.bodyBytes ?: return
                   validate(mimeType, p0.body.contentType.mimeType, bytes)
-                  uploader.upload(
+                  cloud!!.upload(
                     path = "/$saveRoot/$relative",
                     contentType = mimeType,
                     bytes = bytes
@@ -193,7 +188,7 @@ open class Selenium2S3(
       pool.submit {
         try {
           val finalHtml = linkReplacements.toList().fold(html) { acc, (href, relative) -> acc.replace(href, relative) }
-          uploader.upload(
+          cloud!!.upload(
             path = "/$saveRoot/$filename",
             contentType = "text/html",
             request = finalHtml
@@ -206,7 +201,7 @@ open class Selenium2S3(
       pool.submit {
         try {
           val finalJs = linkReplacements.toList().fold(js) { acc, (href, relative) -> acc.replace(href, relative) }
-          uploader.upload(
+          cloud!!.upload(
             path = "/$saveRoot/$filename",
             contentType = "application/json",
             request = finalJs
