@@ -16,6 +16,7 @@ async function fetchData(endpoint, useSession = true) {
                 endpoint = endpoint + "?sessionId=" + sessionId;
             }
         }
+        document.getElementById('modal-content').innerHTML = "<div>Loading...</div>";
         const response = await fetch(endpoint);
         const text = await response.text();
         document.getElementById('modal-content').innerHTML = "<div>" + text + "</div>";
@@ -139,6 +140,25 @@ function refreshVerbose() {
 
 document.addEventListener('DOMContentLoaded', () => {
 
+
+    function setTheme(theme) {
+        document.getElementById('theme_style').href = theme + '.css';
+        localStorage.setItem('theme', theme);
+    }
+    const theme_normal = document.getElementById('theme_normal');
+    if (theme_normal) {
+        theme_normal.addEventListener('click', () => setTheme('main'));
+    }
+    const theme_dark = document.getElementById('theme_night');
+    if (theme_dark) {
+        theme_dark.addEventListener('click', () => setTheme('night'));
+    }
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme != null) {
+        document.getElementById('theme_style').href = savedTheme + '.css';
+    }
+
+
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));
     document.getElementById('settings').addEventListener('click', () => showModal('settings'));
     document.getElementById('usage').addEventListener('click', () => showModal('usage'));
@@ -146,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('delete').addEventListener('click', () => showModal('delete'));
     document.getElementById('cancel').addEventListener('click', () => showModal('cancel'));
     document.getElementById('threads').addEventListener('click', () => showModal('threads'));
+    document.getElementById('share').addEventListener('click', () => showModal('share?url=' + encodeURIComponent(window.location.href), false));
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {

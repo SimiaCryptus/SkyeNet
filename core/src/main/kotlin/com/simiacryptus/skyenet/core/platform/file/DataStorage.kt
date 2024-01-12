@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.validateSessionId
 import com.simiacryptus.skyenet.core.platform.User
 import java.io.File
+import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -18,9 +19,10 @@ open class DataStorage(
         session: Session,
         filename: String,
         clazz: Class<T>
-    ): T? {
-        validateSessionId(session)
-        val settingsFile = File(this.getSessionDir(user, session), filename)
+    ) = getJson(getSessionDir(user, session), filename, clazz)
+
+    private fun <T> getJson(sessionDir: File, filename: String, clazz: Class<T>): T? {
+        val settingsFile = File(sessionDir, filename)
         return if (!settingsFile.exists()) null else {
             JsonUtil.objectMapper().readValue(settingsFile, clazz) as T
         }
@@ -81,8 +83,13 @@ open class DataStorage(
         session: Session
     ): String {
         validateSessionId(session)
-        val userMessage = messageFiles(user, session).entries.minByOrNull { it.key.lastModified() }?.value
+        val sessionDir = getSessionDir(user, session)
+        val settings = getJson(sessionDir, "settings.json", Map::class.java) ?: mapOf<String,String>()
+        if(settings.containsKey("name")) return settings["name"] as String
+        val userMessage =
+            messageFiles(sessionDir).entries.minByOrNull { it.key.lastModified() }?.value
         return if (null != userMessage) {
+            setJson(sessionDir, "settings.json", settings.plus("name" to userMessage))
             //log.debug("Session {}: {}", session, userMessage)
             userMessage
         } else {
@@ -96,19 +103,22 @@ open class DataStorage(
         session: Session
     ): Date? {
         validateSessionId(session)
-        val file = messageFiles(user, session).entries.minByOrNull { it.key.lastModified() }?.key
+        val sessionDir = getSessionDir(user, session)
+        val settings = getJson(sessionDir, "settings.json", Map::class.java) ?: mapOf<String,String>()
+        val dateFormat = SimpleDateFormat.getDateTimeInstance()
+        if(settings.containsKey("time")) return dateFormat.parse(settings["time"] as String)
+        val file = messageFiles(sessionDir).entries.minByOrNull { it.key.lastModified() }?.key
         return if (null != file) {
-            Date(file.lastModified())
+            val date = Date(file.lastModified())
+            setJson(sessionDir, "settings.json", settings.plus("time" to dateFormat.format(date)))
+            date
         } else {
             //log.debug("Session {}: No messages", session)
             null
         }
     }
 
-    fun messageFiles(
-        user: User?,
-        session: Session
-    ) = File(this.getSessionDir(user, session), MESSAGE_DIR).listFiles()
+    private fun messageFiles(sessionDir: File) = File(sessionDir, MESSAGE_DIR).listFiles()
         ?.filter { file -> file.isFile }
         ?.map { messageFile ->
             val fileText = messageFile.readText()
@@ -140,9 +150,10 @@ open class DataStorage(
         session: Session,
         filename: String,
         settings: T
-    ): T {
-        validateSessionId(session)
-        val settingsFile = File(this.getSessionDir(user, session), filename)
+    ) = setJson(getSessionDir(user, session), filename, settings)
+
+    private fun <T : Any> setJson(sessionDir: File, filename: String, settings: T): T {
+        val settingsFile = File(sessionDir, filename)
         settingsFile.parentFile.mkdirs()
         JsonUtil.objectMapper().writeValue(settingsFile, settings)
         return settings

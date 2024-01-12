@@ -1,9 +1,6 @@
 package com.simiacryptus.skyenet.core.actors
 
-import com.simiacryptus.skyenet.core.actors.record.CodingActorInterceptor
-import com.simiacryptus.skyenet.core.actors.record.ImageActorInterceptor
-import com.simiacryptus.skyenet.core.actors.record.ParsedActorInterceptor
-import com.simiacryptus.skyenet.core.actors.record.SimpleActorInterceptor
+import com.simiacryptus.skyenet.core.actors.record.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
@@ -28,6 +25,7 @@ open class ActorSystem<T:Enum<*>>(
             is ParsedActor<*> -> ParsedActorInterceptor(baseActor, wrapper)
             is CodingActor -> CodingActorInterceptor(baseActor, wrapper)
             is ImageActor -> ImageActorInterceptor(baseActor, wrapper)
+            is TextToSpeechActor -> TextToSpeechActorInterceptor(baseActor, wrapper)
             else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
         }
     }

@@ -28,6 +28,10 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
                 }
             }
         } else {
+            if(req.pathInfo?.endsWith("/") == false) {
+                resp.sendRedirect(req.requestURI + "/")
+                return
+            }
             resp.contentType = "text/html"
             resp.status = HttpServletResponse.SC_OK
             val files = file.listFiles()?.filter { it.isFile && !it.name.startsWith(".") }?.sortedBy { it.name }?.joinToString("<br/>\n") {

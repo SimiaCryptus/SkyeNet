@@ -1,17 +1,17 @@
 package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.skyenet.core.Interpreter
+import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import kotlin.reflect.KClass
 
-open class CodingApp<T:Interpreter>(
+open class CodingApp<T: Interpreter>(
         applicationName: String,
         private val interpreter: KClass<T>,
-        private val symbols: Map<String, Any>,
+        open val symbols: Map<String, Any> = mapOf(),
         val temperature: Double = 0.1,
 ) : ApplicationServer(
     applicationName = applicationName,

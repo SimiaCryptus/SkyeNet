@@ -71,8 +71,9 @@ abstract class SessionTask(
     @Description("Whether to show the spinner for the task (default: true)")
     showSpinner: Boolean = true,
     @Description("The html tag to wrap the message in (default: div)")
-    tag: String = "div"
-  ) = add(message, showSpinner, tag, "response-header")
+    tag: String = "div",
+    classname: String = "response-header"
+  ) = add(message, showSpinner, tag, classname)
 
   @Description("Adds a verbose message to the task output; verbose messages are hidden by default.")
   fun verbose(

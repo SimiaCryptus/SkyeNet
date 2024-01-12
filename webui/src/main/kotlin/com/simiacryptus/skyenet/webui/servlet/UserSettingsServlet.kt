@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 
+private const val mask = "********"
+
 class UserSettingsServlet : HttpServlet() {
     public override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
@@ -17,7 +19,13 @@ class UserSettingsServlet : HttpServlet() {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {
             val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
-            val json = JsonUtil.toJson(settings)
+            val visibleSettings = settings.copy(
+                apiKey = when(settings.apiKey) {
+                    "" -> ""
+                    else -> mask
+                }
+            )
+            val json = JsonUtil.toJson(visibleSettings)
             //language=HTML
             resp.writer.write(
                 """
@@ -45,7 +53,15 @@ class UserSettingsServlet : HttpServlet() {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {
             val settings = JsonUtil.fromJson<UserSettings>(req.getParameter("settings"), UserSettings::class.java)
-            ApplicationServices.userSettingsManager.updateUserSettings(userinfo, settings)
+            val prevSettings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
+            val reconstructedSettings = prevSettings.copy(
+                apiKey = when(settings.apiKey) {
+                    "" -> ""
+                    mask -> prevSettings.apiKey
+                    else -> settings.apiKey
+                }
+            )
+            ApplicationServices.userSettingsManager.updateUserSettings(userinfo, reconstructedSettings)
             resp.sendRedirect("/")
         }
     }

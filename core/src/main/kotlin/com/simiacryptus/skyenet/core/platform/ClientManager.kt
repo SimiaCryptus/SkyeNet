@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.core.platform
 import com.google.common.util.concurrent.ListeningScheduledExecutorService
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.ClientUtil
+import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.jopenai.HttpClientManager
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.OpenAIModel
@@ -119,9 +119,9 @@ open class ClientManager {
     workPool = workPool,
     client = client,
   ) {
-    override fun incrementTokens(model: OpenAIModel?, tokens: ApiModel.Usage) {
+    override fun onUsage(model: OpenAIModel?, tokens: ApiModel.Usage) {
       ApplicationServices.usageManager.incrementUsage(session, user, model!!, tokens)
-      super.incrementTokens(model, tokens)
+      super.onUsage(model, tokens)
     }
   }
 

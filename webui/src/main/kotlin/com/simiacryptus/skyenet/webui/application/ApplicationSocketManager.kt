@@ -8,7 +8,6 @@ import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
-import java.util.function.Consumer
 
 abstract class ApplicationSocketManager(
   session: Session,
@@ -21,14 +20,7 @@ abstract class ApplicationSocketManager(
   owner = owner,
   applicationClass = applicationClass,
 ) {
-  private val threads = mutableMapOf<String, Thread>()
-  private val linkTriggers = mutableMapOf<String, Consumer<Unit>>()
-  private val txtTriggers = mutableMapOf<String, Consumer<String>>()
-
   override fun onRun(userMessage: String, socket: ChatSocket) {
-    val operationID = randomID()
-    threads[operationID] = Thread.currentThread()
-      socket.session
     userMessage(
       session = session,
       user = socket.user,
@@ -36,45 +28,14 @@ abstract class ApplicationSocketManager(
       socketManager = this,
       api = ApplicationServices.clientManager.getClient(
         session,
-          socket.user,
+        socket.user,
         dataStorage ?: throw IllegalStateException("No data storage")
       )
     )
   }
 
-  val applicationInterface by lazy { ApplicationInterface(this) }
+  open val applicationInterface by lazy { ApplicationInterface(this) }
 
-  override fun onCmd(id: String, code: String, socket: ChatSocket) {
-    if (code == "cancel") {
-      threads[id]?.interrupt()
-    } else if (code == "link") {
-      val consumer = linkTriggers[id]
-      consumer ?: throw IllegalArgumentException("No link handler found")
-      consumer.accept(Unit)
-    } else if (code.startsWith("userTxt,")) {
-      val consumer = txtTriggers[id]
-      consumer ?: throw IllegalArgumentException("No input handler found")
-      consumer.accept(code.removePrefix("userTxt,"))
-    } else {
-      throw IllegalArgumentException("Unknown command: $code")
-    }
-  }
-
-  fun hrefLink(linkText: String, classname: String = """href-link""", handler: Consumer<Unit>): String {
-    val operationID = randomID()
-    linkTriggers[operationID] = handler
-    return """<a class="$classname" data-id="$operationID">$linkText</a>"""
-  }
-
-  fun textInput(handler: Consumer<String>): String {
-    val operationID = randomID()
-    txtTriggers[operationID] = handler
-    //language=HTML
-    return """<form class="reply-form">
-                   <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
-                   <button class="text-submit-button" data-id="$operationID">Send</button>
-               </form>""".trimIndent()
-  }
 
   abstract fun userMessage(
     session: Session,

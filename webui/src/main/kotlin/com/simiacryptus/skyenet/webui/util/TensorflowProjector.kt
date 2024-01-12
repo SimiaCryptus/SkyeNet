@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
@@ -46,28 +47,34 @@ class TensorflowProjector(
         val vectorFileName = "vectors.tsv"
         val metadataFileName = "metadata.tsv"
         val configFileName = "projector-config.json"
-        dataStorage.getSessionDir(userId, sessionID).resolve(vectorFileName).writeText(vectorTsv)
-        dataStorage.getSessionDir(userId, sessionID).resolve(metadataFileName).writeText(metadataTsv)
-        // projector-config.json
+        val sessionDir = dataStorage.getSessionDir(userId, sessionID)
+        sessionDir.resolve(vectorFileName).writeText(vectorTsv)
+        sessionDir.resolve(metadataFileName).writeText(metadataTsv)
+        //val vectorURL = """$host/$appPath/fileIndex/$sessionID/$vectorFileName"""
+        val vectorURL = cloud!!.upload("projector/$sessionID/$vectorFileName", "text/plain", vectorTsv)
+        //var metadataURL = """$host/$appPath/fileIndex/$sessionID/$metadataFileName"""
+        val metadataURL = cloud!!.upload("projector/$sessionID/$metadataFileName", "text/plain", metadataTsv)
         val projectorConfig = JsonUtil.toJson(
             mapOf(
                 "embeddings" to listOf(
                     mapOf(
                         "tensorName" to "embedding",
                         "tensorShape" to listOf(vectorMap.values.first().size, 1),
-                        "tensorPath" to "$host/$appPath/fileIndex/$sessionID/$vectorFileName",
-                        "metadataPath" to "$host/$appPath/fileIndex/$sessionID/$metadataFileName",
+                        "tensorPath" to vectorURL,
+                        "metadataPath" to metadataURL,
                     )
                 )
             )
         )
-        dataStorage.getSessionDir(userId, sessionID).resolve(configFileName).writeText(projectorConfig)
+        sessionDir.resolve(configFileName).writeText(projectorConfig)
+        //val configURL = """$host/$appPath/fileIndex/$sessionID/projector-config.json"""
+        val configURL = cloud!!.upload("projector/$sessionID/$configFileName", "application/json", projectorConfig)
         return """
-            <a href="$host/$appPath/fileIndex/$sessionID/projector-config.json">Projector Config</a>
-            <a href="$host/$appPath/fileIndex/$sessionID/$vectorFileName">Vectors</a>
-            <a href="$host/$appPath/fileIndex/$sessionID/$metadataFileName">Metadata</a>
-            <a href="https://projector.tensorflow.org/?config=$host/$appPath/fileIndex/$sessionID/projector-config.json">Projector</a>
-            <iframe src="https://projector.tensorflow.org/?config=$host/$appPath/fileIndex/$sessionID/projector-config.json" width="100%" height="500px"></iframe>
+            <a href="$configURL">Projector Config</a>
+            <a href="$vectorURL">Vectors</a>
+            <a href="$metadataURL">Metadata</a>
+            <a href="https://projector.tensorflow.org/?config=$configURL">Projector</a>
+            <iframe src="https://projector.tensorflow.org/?config=$configURL" width="100%" height="500px"></iframe>
             """.trimIndent()
     }
 

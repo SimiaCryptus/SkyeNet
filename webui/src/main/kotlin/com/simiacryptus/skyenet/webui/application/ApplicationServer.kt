@@ -45,9 +45,10 @@ abstract class ApplicationServer(
     protected open val fileZip by lazy { ServletHolder("fileZip", ZipServlet(dataStorage)) }
     protected open val fileIndex by lazy { ServletHolder("fileIndex", FileServlet(dataStorage)) }
     protected open val sessionSettingsServlet by lazy { ServletHolder("settings", SessionSettingsServlet(this)) }
+    protected open val sessionShareServlet by lazy { ServletHolder("share", SessionShareServlet(this)) }
     protected open val sessionThreadsServlet by lazy { ServletHolder("threads", SessionThreadsServlet(this)) }
     protected open val deleteSessionServlet by lazy { ServletHolder("delete", DeleteSessionServlet(this)) }
-    protected open val cancelSessionServlet by lazy { ServletHolder("cancel", DeleteSessionServlet(this)) }
+    protected open val cancelSessionServlet by lazy { ServletHolder("cancel", CancelThreadsServlet(this)) }
 
     override fun newSession(user: User?, session: Session): SocketManager =
         object : ApplicationSocketManager(
@@ -75,19 +76,6 @@ abstract class ApplicationServer(
         session: Session,
         user: User?,
         userMessage: String,
-        socketManager: ApplicationSocketManager,
-        api: API
-    ) : Unit = this@ApplicationServer.userMessage(
-        session = session,
-        user = user,
-        userMessage = userMessage,
-        ui = socketManager.applicationInterface,
-        api = api
-    )
-    open fun userMessage(
-        session: Session,
-        user: User?,
-        userMessage: String,
         ui: ApplicationInterface,
         api: API
     ) : Unit = throw UnsupportedOperationException()
@@ -96,14 +84,18 @@ abstract class ApplicationServer(
 
     open fun <T : Any> initSettings(session: Session): T? = null
 
-    fun <T : Any> getSettings(session: Session, userId: User?): T? {
-        @Suppress("UNCHECKED_CAST")
-        var settings: T? = dataStorage.getJson(userId, session, "settings.json", settingsClass as Class<T>)
+    fun <T : Any> getSettings(
+        session: Session,
+        userId: User?,
+        @Suppress("UNCHECKED_CAST") clazz: Class<T> = settingsClass as Class<T>
+    ): T? {
+        var settings: T? = dataStorage.getJson(userId, session, "settings.json", clazz)
         if (null == settings) {
-            settings = initSettings(session)
-            if (null != settings) {
-                dataStorage.setJson(userId, session, "settings.json", settings)
+            val initSettings = initSettings<T>(session)
+            if (null != initSettings) {
+                dataStorage.setJson(userId, session, "settings.json", initSettings)
             }
+            settings = dataStorage.getJson(userId, session, "settings.json", clazz)
         }
         return settings
     }
@@ -138,6 +130,7 @@ abstract class ApplicationServer(
         webAppContext.addServlet(sessionsServlet(path), "/sessions")
         webAppContext.addServlet(sessionSettingsServlet, "/settings")
         webAppContext.addServlet(sessionThreadsServlet, "/threads")
+        webAppContext.addServlet(sessionShareServlet, "/share")
         webAppContext.addServlet(deleteSessionServlet, "/delete")
         webAppContext.addServlet(cancelSessionServlet, "/cancel")
     }
@@ -156,6 +149,7 @@ abstract class ApplicationServer(
                 filename.endsWith(".gif") -> "image/gif"
                 filename.endsWith(".svg") -> "image/svg+xml"
                 filename.endsWith(".css") -> "text/css"
+                filename.endsWith(".mp3") -> "audio/mpeg"
                 else -> "text/plain"
             }
         fun HttpServletRequest.getCookie(name: String = AuthenticationInterface.AUTH_COOKIE) =

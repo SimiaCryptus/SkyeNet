@@ -1,3 +1,4 @@
+import com.sass_lang.embedded_protocol.OutputStyle
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import java.net.URI
 
@@ -11,6 +12,8 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.21"
     `maven-publish`
     id("signing")
+    id("io.freefair.sass-base") version "8.4"
+    id("io.freefair.sass-java") version "8.4"
 }
 
 repositories {
@@ -32,10 +35,13 @@ val jetty_version = "11.0.18"
 val jackson_version = "2.15.3"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.42")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.43")
 
     implementation(project(":core"))
 
+    implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
+    compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+    compileOnly("org.jsoup:jsoup:1.17.2")
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
@@ -56,6 +62,8 @@ dependencies {
     testImplementation(project(":kotlin"))
     testImplementation(project(":scala"))
 
+    implementation(group = "org.apache.httpcomponents.client5", name = "httpclient5", version = "5.2.3")
+
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-core", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
@@ -73,6 +81,14 @@ dependencies {
     testImplementation(kotlin("script-runtime"))
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.10.1")
+}
+
+sass {
+    omitSourceMapUrl = false
+    outputStyle = OutputStyle.EXPANDED
+    sourceMapContents = false
+    sourceMapEmbed = false
+    sourceMapEnabled = true
 }
 
 

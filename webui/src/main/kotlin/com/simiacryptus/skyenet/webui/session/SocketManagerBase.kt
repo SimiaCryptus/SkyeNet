@@ -7,7 +7,10 @@ import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
+import java.util.Deque
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Consumer
 
 abstract class SocketManagerBase(
   protected val session: Session,
@@ -19,6 +22,7 @@ abstract class SocketManagerBase(
   private val applicationClass: Class<*>,
 ) : SocketManager {
   private val sockets: MutableMap<ChatSocket, org.eclipse.jetty.websocket.api.Session> = mutableMapOf()
+  private val sendQueues: MutableMap<ChatSocket, Deque<String>> = mutableMapOf()
   private val messageVersions = HashMap<String, AtomicInteger>()
   protected val pool get() = clientManager.getPool(session, owner, dataStorage)
 
@@ -45,12 +49,25 @@ abstract class SocketManagerBase(
     out: String,
   ) {
     synchronized(sockets) {
-      sockets.keys.forEach {
+      sockets.keys.forEach { chatSocket ->
         try {
-          it.remote.sendString(out)
-          it.remote.flush()
+          sendQueues.computeIfAbsent(chatSocket) { ConcurrentLinkedDeque() }.add(out)
         } catch (e: Exception) {
           log.info("Error sending message", e)
+        }
+        pool.submit {
+          try {
+            val deque = sendQueues[chatSocket]!!
+            synchronized(deque) {
+              while (true) {
+                val msg = deque.poll() ?: break
+                chatSocket.remote.sendString(msg)
+              }
+              chatSocket.remote.flush()
+            }
+          } catch (e: Exception) {
+            log.info("Error sending message", e)
+          }
         }
       }
     }
@@ -105,13 +122,13 @@ abstract class SocketManagerBase(
 
   final override fun onWebSocketText(socket: ChatSocket, message: String) {
     if (canWrite(socket.user)) pool.submit {
-      log.debug("$session - Received message: $message")
+      log.debug("{} - Received message: {}", session, message)
       try {
         val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
         if (opCmdPattern.matches(message)) {
           val id = message.substring(1, message.indexOf(","))
           val code = message.substring(id.length + 2)
-          onCmd(id, code, socket)
+          onCmd(id, code)
         } else {
           onRun(message, socket)
         }
@@ -131,12 +148,38 @@ abstract class SocketManagerBase(
     operationType = OperationType.Write
   )
 
-  protected open fun onCmd(
-    id: String,
-    code: String,
-    socket: ChatSocket
-  ) {
+  private val linkTriggers = mutableMapOf<String, Consumer<Unit>>()
+  private val txtTriggers = mutableMapOf<String, Consumer<String>>()
+  private fun onCmd(id: String, code: String) {
+    if (code == "link") {
+      val consumer = linkTriggers[id]
+      consumer ?: throw IllegalArgumentException("No link handler found")
+      consumer.accept(Unit)
+    } else if (code.startsWith("userTxt,")) {
+      val consumer = txtTriggers[id]
+      consumer ?: throw IllegalArgumentException("No input handler found")
+      consumer.accept(code.removePrefix("userTxt,"))
+    } else {
+      throw IllegalArgumentException("Unknown command: $code")
+    }
   }
+
+  fun hrefLink(linkText: String, classname: String = """href-link""", handler: Consumer<Unit>): String {
+    val operationID = randomID()
+    linkTriggers[operationID] = handler
+    return """<a class="$classname" data-id="$operationID">$linkText</a>"""
+  }
+
+  fun textInput(handler: Consumer<String>): String {
+    val operationID = randomID()
+    txtTriggers[operationID] = handler
+    //language=HTML
+    return """<form class="reply-form">
+                   <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
+                   <button class="text-submit-button" data-id="$operationID">Send</button>
+               </form>""".trimIndent()
+  }
+
 
   protected abstract fun onRun(
     userMessage: String,
@@ -159,7 +202,5 @@ abstract class SocketManagerBase(
       session.upgradeRequest.cookies?.find { it.name == AuthenticationInterface.AUTH_COOKIE }?.value?.let {
         ApplicationServices.authenticationManager.getUser(it)
       }
-
   }
-
 }

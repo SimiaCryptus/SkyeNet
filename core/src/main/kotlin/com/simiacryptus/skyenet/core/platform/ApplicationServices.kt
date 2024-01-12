@@ -46,6 +46,12 @@ object ApplicationServices {
             field = value
         }
 
+    var cloud: CloudPlatformInterface? = AwsPlatform.get()
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
+
 }
 
 interface AuthenticationInterface {
@@ -63,6 +69,7 @@ interface AuthorizationInterface {
     enum class OperationType {
         Read,
         Write,
+        Public,
         Share,
         Execute,
         Delete,
@@ -151,6 +158,12 @@ interface StorageInterface {
             return Session("U-$yyyyMMdd-$uuid")
         }
 
+        fun parseSessionID(sessionID: String): Session {
+            val session = Session(sessionID)
+            validateSessionId(session)
+            return session
+        }
+
     }
 }
 
@@ -234,6 +247,25 @@ data class Session(
     }
 
     override fun toString() = sessionId
+    fun isGlobal(): Boolean = sessionId.startsWith("G-")
 }
 
 
+interface CloudPlatformInterface {
+    val shareBase: String
+
+    fun upload(
+        path: String,
+        contentType: String,
+        bytes: ByteArray
+    ) : String
+
+    fun upload(
+        path: String,
+        contentType: String,
+        request: String
+    ) : String
+
+    fun encrypt(fileBytes: ByteArray, keyId: String): String?
+    fun decrypt(encryptedData: ByteArray): String
+}

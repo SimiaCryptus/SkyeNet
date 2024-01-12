@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.core.actors.test
 
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.ClientUtil.toContentList
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization
