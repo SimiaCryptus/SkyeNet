@@ -28,7 +28,7 @@ abstract class SocketManagerBase(
 
   override fun removeSocket(socket: ChatSocket) {
     synchronized(sockets) {
-      sockets.remove(socket)
+      sockets.remove(socket)?.close()
     }
   }
 

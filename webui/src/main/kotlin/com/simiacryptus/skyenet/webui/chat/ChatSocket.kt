@@ -31,6 +31,7 @@ class ChatSocket(
 
     override fun onWebSocketClose(statusCode: Int, reason: String?) {
         super.onWebSocketClose(statusCode, reason)
+
         sessionState.removeSocket(this)
     }
 
