@@ -133,8 +133,18 @@ interface StorageInterface {
     fun listSessions(dir: File): List<String>
     fun userRoot(user: User?): File
     fun deleteSession(user: User?, session: Session)
+  fun getMessageIds(
+    user: User?,
+    session: Session
+  ): List<String>
 
-    companion object {
+  fun setMessageIds(
+    user: User?,
+    session: Session,
+    ids: List<String>
+  )
+
+  companion object {
 
         fun validateSessionId(
             session: Session
