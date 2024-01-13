@@ -44,7 +44,7 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
         val async = req.startAsync()
         resp.outputStream.apply {
           setWriteListener(object : WriteListener {
-            val buffer = ByteArray(1024)
+            val buffer = ByteArray(64 * 1024)
             override fun onWritePossible() {
               while (isReady) {
                 val start = mappedByteBuffer.position()
