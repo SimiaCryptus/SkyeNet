@@ -101,7 +101,7 @@ open class Selenium2S3(
             log.info("Fetching $href")
             val semaphore = Semaphore(0)
             completionSemaphores += semaphore
-            httpClient.execute(SimpleHttpRequest(Method.GET, URI(href)), object : FutureCallback<SimpleHttpResponse> {
+            httpClient.execute(get(href), object : FutureCallback<SimpleHttpResponse> {
               override fun completed(p0: SimpleHttpResponse?) {
                 log.debug("Fetched $href")
                 val html = p0?.body?.bodyText ?: ""
@@ -128,7 +128,7 @@ open class Selenium2S3(
             log.info("Fetching $href")
             val semaphore = Semaphore(0)
             completionSemaphores += semaphore
-            httpClient.execute(SimpleHttpRequest(Method.GET, URI(href)), object : FutureCallback<SimpleHttpResponse> {
+            httpClient.execute(get(href), object : FutureCallback<SimpleHttpResponse> {
               override fun completed(p0: SimpleHttpResponse?) {
                 log.debug("Fetched $href")
                 jsonPages[relative] = p0?.body?.bodyText ?: ""
@@ -151,7 +151,7 @@ open class Selenium2S3(
           else -> {
             val semaphore = Semaphore(0)
             completionSemaphores += semaphore
-            val request = SimpleHttpRequest(Method.GET, URI(href))
+            val request = get(href)
             httpClient.execute(request, object : FutureCallback<SimpleHttpResponse> {
               override fun completed(p0: SimpleHttpResponse?) {
                 try {
@@ -224,6 +224,14 @@ open class Selenium2S3(
       }
     }
     log.debug("Done")
+  }
+
+  private fun get(href: String): SimpleHttpRequest {
+    val request = SimpleHttpRequest(Method.GET, URI(href))
+    cookies?.forEach { cookie ->
+      request.addHeader("Cookie", "${cookie.name}=${cookie.value}")
+    }
+    return request
   }
 
   protected open fun currentPageLinks(driver: WebDriver): List<String> = listOf(

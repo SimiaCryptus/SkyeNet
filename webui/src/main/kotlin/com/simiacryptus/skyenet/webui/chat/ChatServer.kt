@@ -41,8 +41,9 @@ abstract class ChatServer(val resourceBase: String) {
                         throw IllegalArgumentException("sessionId is required")
                     }
                 } catch (e: Exception) {
-                    log.warn("Error configuring websocket", e)
-                    throw e
+                    log.debug("Error configuring websocket", e)
+                    resp.sendError(500, e.message)
+                    null
                 }
             }
         }

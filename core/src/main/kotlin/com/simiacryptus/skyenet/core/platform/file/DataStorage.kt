@@ -186,7 +186,11 @@ open class DataStorage(
 
     override fun userRoot(user: User?) = File(
         File(dataDir, "users"),
-        user?.email ?: throw IllegalArgumentException("User required for private session")
+        if (user?.email != null) {
+            user?.email
+        } else {
+            throw IllegalArgumentException("User required for private session")
+        }
     )
 
     override fun deleteSession(user: User?, session: Session) {
