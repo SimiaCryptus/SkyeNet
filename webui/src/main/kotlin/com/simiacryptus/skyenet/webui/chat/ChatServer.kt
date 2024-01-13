@@ -25,9 +25,7 @@ abstract class ChatServer(val resourceBase: String) {
         override fun configure(factory: JettyWebSocketServletFactory) {
             factory.setCreator { req, resp ->
                 try {
-                    return@setCreator if (!req.parameterMap.containsKey("sessionId")) {
-                        throw IllegalArgumentException("sessionId is required")
-                    } else {
+                    if (req.parameterMap.containsKey("sessionId")) {
                         val session = Session(req.parameterMap["sessionId"]?.first()!!)
                         ChatSocket(
                             if (sessions.containsKey(session)) {
@@ -39,9 +37,12 @@ abstract class ChatServer(val resourceBase: String) {
                                 sessionState
                             }
                         )
+                    } else {
+                        throw IllegalArgumentException("sessionId is required")
                     }
                 } catch (e: Exception) {
                     log.warn("Error configuring websocket", e)
+                    throw e
                 }
             }
         }

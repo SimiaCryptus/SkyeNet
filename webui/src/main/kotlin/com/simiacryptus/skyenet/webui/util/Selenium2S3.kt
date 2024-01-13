@@ -29,9 +29,9 @@ open class Selenium2S3(
   val cookies: Array<out jakarta.servlet.http.Cookie>?,
 ) : AutoCloseable {
 
-  private val chromeDriverService = ChromeDriverService.createDefaultService()
+  private val chromeDriverService by lazy { ChromeDriverService.createDefaultService() }
 
-  private val driver: WebDriver = run {
+  private val driver: WebDriver by lazy {
     val osname = System.getProperty("os.name")
     val chromePath = when {
       // Windows
@@ -51,21 +51,26 @@ open class Selenium2S3(
     ChromeDriver(chromeDriverService, options)
   }
 
-  private val httpClient = HttpAsyncClientBuilder.create()
-    .useSystemProperties()
-    .setDefaultCookieStore(BasicCookieStore().apply {
-      cookies?.forEach { cookie ->
-        addCookie(
-          BasicClientCookie(
-            cookie.name,
-            cookie.value
-          )
+  val cookieStore by lazy {
+    BasicCookieStore().apply {
+    cookies?.forEach { cookie ->
+      addCookie(
+        BasicClientCookie(
+          cookie.name,
+          cookie.value
         )
-      }
-    })
+      )
+    }
+  }
+  }
+  private val httpClient by lazy {
+    HttpAsyncClientBuilder.create()
+    .useSystemProperties()
+    .setDefaultCookieStore(cookieStore)
     .setThreadFactory(pool.threadFactory)
     .build()
     .also { it.start() }
+  }
 
   fun save(
     url: URL,
@@ -146,7 +151,8 @@ open class Selenium2S3(
           else -> {
             val semaphore = Semaphore(0)
             completionSemaphores += semaphore
-            httpClient.execute(SimpleHttpRequest(Method.GET, URI(href)), object : FutureCallback<SimpleHttpResponse> {
+            val request = SimpleHttpRequest(Method.GET, URI(href))
+            httpClient.execute(request, object : FutureCallback<SimpleHttpResponse> {
               override fun completed(p0: SimpleHttpResponse?) {
                 try {
                   log.debug("Fetched $href")
@@ -317,7 +323,6 @@ open class Selenium2S3(
       }
     }
   }
-
 
   override fun close() {
     log.debug("Closing", Exception())

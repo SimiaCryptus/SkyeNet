@@ -122,11 +122,13 @@ abstract class ApplicationDirectory(
     val contexts = ContextHandlerCollection()
     val stats = StatisticsHandler()
     contexts.handlers = (
-        listOf(newWebAppContext("/stats", StatisticsServlet())) +
-            webAppContexts.map {
+        listOf(
+          newWebAppContext("/stats", StatisticsServlet())) +
+          webAppContexts.map {
               it.addFilter(FilterHolder(CorsFilter()), "/*", EnumSet.of(DispatcherType.REQUEST))
               it
-            }).toTypedArray()
+            }
+        ).toTypedArray()
 
     stats.handler = contexts
     stats.handlers
