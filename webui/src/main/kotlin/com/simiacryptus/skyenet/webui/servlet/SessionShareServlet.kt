@@ -26,6 +26,7 @@ class SessionShareServlet(
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
 
     val user = authenticationManager.getUser(req.getCookie())
+    val cookies = req.cookies
 
     if (!req.parameterMap.containsKey("url")) {
       resp.status = HttpServletResponse.SC_BAD_REQUEST
@@ -38,9 +39,7 @@ class SessionShareServlet(
     val appName = url.split("/").dropLast(1).last()
     val sessionID = url.split("#").lastOrNull() ?: throw IllegalArgumentException("No session id in url: $url")
 
-    require(
-      acceptHost(user, host)
-    ) { "Invalid url: $url" }
+    require(acceptHost(user, host)) { "Invalid url: $url" }
 
     val storageInterface = ApplicationServices.dataStorageFactory.invoke(File(File(".skyenet"), appName))
     val session = StorageInterface.parseSessionID(sessionID)
@@ -92,7 +91,7 @@ class SessionShareServlet(
             )
             Selenium2S3(
               pool = pool,
-              cookies = req.cookies,
+              cookies = cookies,
             ).save(
               url = URI(url).toURL(),
               saveRoot = "$appName/$shareId",

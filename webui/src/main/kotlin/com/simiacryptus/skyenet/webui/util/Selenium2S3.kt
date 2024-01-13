@@ -53,23 +53,23 @@ open class Selenium2S3(
 
   val cookieStore by lazy {
     BasicCookieStore().apply {
-    cookies?.forEach { cookie ->
-      addCookie(
-        BasicClientCookie(
-          cookie.name,
-          cookie.value
+      cookies?.forEach { cookie ->
+        addCookie(
+          BasicClientCookie(
+            cookie.name,
+            cookie.value
+          )
         )
-      )
+      }
     }
-  }
   }
   private val httpClient by lazy {
     HttpAsyncClientBuilder.create()
-    .useSystemProperties()
-    .setDefaultCookieStore(cookieStore)
-    .setThreadFactory(pool.threadFactory)
-    .build()
-    .also { it.start() }
+      .useSystemProperties()
+      .setDefaultCookieStore(cookieStore)
+      .setThreadFactory(pool.threadFactory)
+      .build()
+      .also { it.start() }
   }
 
   fun save(
@@ -102,6 +102,7 @@ open class Selenium2S3(
             val semaphore = Semaphore(0)
             completionSemaphores += semaphore
             httpClient.execute(get(href), object : FutureCallback<SimpleHttpResponse> {
+
               override fun completed(p0: SimpleHttpResponse?) {
                 log.debug("Fetched $href")
                 val html = p0?.body?.bodyText ?: ""
@@ -129,6 +130,7 @@ open class Selenium2S3(
             val semaphore = Semaphore(0)
             completionSemaphores += semaphore
             httpClient.execute(get(href), object : FutureCallback<SimpleHttpResponse> {
+
               override fun completed(p0: SimpleHttpResponse?) {
                 log.debug("Fetched $href")
                 jsonPages[relative] = p0?.body?.bodyText ?: ""
@@ -153,16 +155,17 @@ open class Selenium2S3(
             completionSemaphores += semaphore
             val request = get(href)
             httpClient.execute(request, object : FutureCallback<SimpleHttpResponse> {
+
               override fun completed(p0: SimpleHttpResponse?) {
                 try {
-                  log.debug("Fetched $href")
+                  log.debug("Fetched $request")
                   val bytes = p0?.body?.bodyBytes ?: return
-                  validate(mimeType, p0.body.contentType.mimeType, bytes)
-                  cloud!!.upload(
-                    path = "/$saveRoot/$relative",
-                    contentType = mimeType,
-                    bytes = bytes
-                  )
+                  if (validate(mimeType, p0.body.contentType.mimeType, bytes))
+                    cloud!!.upload(
+                      path = "/$saveRoot/$relative",
+                      contentType = mimeType,
+                      bytes = bytes
+                    )
                 } finally {
                   semaphore.release()
                 }
@@ -258,7 +261,7 @@ open class Selenium2S3(
     if (!actual.startsWith(expected)) {
       log.warn("Content type mismatch: $actual != $expected")
       if (actual.startsWith("text/html")) {
-        log.warn("Response Error: ${String(bytes)}")
+        log.warn("Response Error: ${String(bytes)}", Exception())
       }
       return false
     }
