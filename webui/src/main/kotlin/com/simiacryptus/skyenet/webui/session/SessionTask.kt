@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.webui.session
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.actors.CodingActor
+import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
@@ -140,7 +141,7 @@ abstract class SessionTask(
   fun image(
     @Description("The image to display")
     image: BufferedImage
-  ) = add("""<img src="${saveFile("${UUID.randomUUID()}.png", image.toPng())}" />""")
+  ) = add("""<img src="${saveFile("${long64()}.png", image.toPng())}" />""")
 
   companion object {
     val log = LoggerFactory.getLogger(SessionTask::class.java)

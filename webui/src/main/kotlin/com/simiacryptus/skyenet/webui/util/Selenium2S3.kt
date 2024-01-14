@@ -8,6 +8,7 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder
 import org.apache.hc.client5.http.impl.cookie.BasicClientCookie
 import org.apache.hc.core5.concurrent.FutureCallback
 import org.apache.hc.core5.http.Method
+import org.jsoup.Jsoup
 import org.openqa.selenium.By
 import org.openqa.selenium.Cookie
 import org.openqa.selenium.WebDriver
@@ -51,7 +52,7 @@ open class Selenium2S3(
     ChromeDriver(chromeDriverService, options)
   }
 
-  val cookieStore by lazy {
+  private val cookieStore by lazy {
     BasicCookieStore().apply {
       cookies?.forEach { cookie ->
         addCookie(
@@ -71,6 +72,10 @@ open class Selenium2S3(
       .build()
       .also { it.start() }
   }
+  private val linkReplacements = mutableMapOf<String, String>()
+  private val htmlPages: MutableMap<String, String> = mutableMapOf()
+  private val jsonPages = mutableMapOf<String, String>()
+  private val links: MutableList<String> = mutableListOf()
 
   fun save(
     url: URL,
@@ -82,108 +87,24 @@ open class Selenium2S3(
     driver.navigate().refresh()
     Thread.sleep(5000) // Wait for javascript to load
 
-    val linkReplacements = mutableMapOf<String, String>()
-    val htmlPages = mutableMapOf((currentFilename ?: url.file.split("/").last()) to editPage(driver.pageSource))
-    val jsonPages = mutableMapOf<String, String>()
-    val links = currentPageLinks(driver).toMutableList()
+    htmlPages += mutableMapOf((currentFilename ?: url.file.split("/").last()) to editPage(driver.pageSource))
+    val baseUrl = url.toString().split("#").first()
+    links += toAbsolute(baseUrl, *currentPageLinks(driver).map { link ->
+      val relative = toRelative(baseUrl, link) ?: return@map link
+      linkReplacements[link] = "${cloud!!.shareBase}/$saveRoot/${toArchivePath(relative)}"
+      linkReplacements[relative] = "${cloud!!.shareBase}/$saveRoot/${toArchivePath(relative)}"
+      link
+    }.toTypedArray()).toMutableList()
     val completionSemaphores = mutableListOf<Semaphore>()
 
+    val coveredLinks = mutableSetOf<String>()
     while (links.isNotEmpty()) {
       val href = links.removeFirst()
       try {
-        if (linkReplacements.containsKey(href)) continue
-        val relative = relativize(url.toString().split("/").dropLast(1).joinToString("/"), href) ?: continue
-        linkReplacements[href] = "${cloud!!.shareBase}/$saveRoot/$relative"
-        when (val mimeType = mimeType(relative)) {
-
-          "text/html" -> {
-            if (htmlPages.containsKey(relative)) continue
-            log.info("Fetching $href")
-            val semaphore = Semaphore(0)
-            completionSemaphores += semaphore
-            httpClient.execute(get(href), object : FutureCallback<SimpleHttpResponse> {
-
-              override fun completed(p0: SimpleHttpResponse?) {
-                log.debug("Fetched $href")
-                val html = p0?.body?.bodyText ?: ""
-                htmlPages[relative] = html
-                links += currentPageLinks(html)
-                semaphore.release()
-              }
-
-              override fun failed(p0: java.lang.Exception?) {
-                log.info("Error fetching $href", p0)
-                semaphore.release()
-              }
-
-              override fun cancelled() {
-                log.info("Cancelled fetching $href")
-                semaphore.release()
-              }
-
-            })
-          }
-
-          "application/json" -> {
-            if (jsonPages.containsKey(relative)) continue
-            log.info("Fetching $href")
-            val semaphore = Semaphore(0)
-            completionSemaphores += semaphore
-            httpClient.execute(get(href), object : FutureCallback<SimpleHttpResponse> {
-
-              override fun completed(p0: SimpleHttpResponse?) {
-                log.debug("Fetched $href")
-                jsonPages[relative] = p0?.body?.bodyText ?: ""
-                semaphore.release()
-              }
-
-              override fun failed(p0: java.lang.Exception?) {
-                log.info("Error fetching $href", p0)
-                semaphore.release()
-              }
-
-              override fun cancelled() {
-                log.info("Cancelled fetching $href")
-                semaphore.release()
-              }
-
-            })
-          }
-
-          else -> {
-            val semaphore = Semaphore(0)
-            completionSemaphores += semaphore
-            val request = get(href)
-            httpClient.execute(request, object : FutureCallback<SimpleHttpResponse> {
-
-              override fun completed(p0: SimpleHttpResponse?) {
-                try {
-                  log.debug("Fetched $request")
-                  val bytes = p0?.body?.bodyBytes ?: return
-                  if (validate(mimeType, p0.body.contentType.mimeType, bytes))
-                    cloud!!.upload(
-                      path = "/$saveRoot/$relative",
-                      contentType = mimeType,
-                      bytes = bytes
-                    )
-                } finally {
-                  semaphore.release()
-                }
-              }
-
-              override fun failed(p0: java.lang.Exception?) {
-                log.info("Error fetching $href", p0)
-                semaphore.release()
-              }
-
-              override fun cancelled() {
-                log.info("Cancelled fetching $href")
-                semaphore.release()
-              }
-
-            })
-          }
-        }
+        if (coveredLinks.contains(href)) continue
+        coveredLinks += href
+        log.debug("Processing $href")
+        process(url, href, completionSemaphores, saveRoot)
       } catch (e: Exception) {
         log.warn("Error processing $href", e)
       }
@@ -193,10 +114,153 @@ open class Selenium2S3(
     completionSemaphores.forEach { it.acquire(); it.release() }
 
     log.debug("Saving")
+    saveHTML(saveRoot)
+    log.debug("Done")
+  }
+
+  private fun process(
+    url: URL,
+    href: String,
+    completionSemaphores: MutableList<Semaphore>,
+    saveRoot: String
+  ): Boolean {
+    val base = url.toString().split("/").dropLast(1).joinToString("/")
+    val relative = toArchivePath(toRelative(base, href) ?: return true)
+    when (val mimeType = mimeType(relative)) {
+
+      "text/html" -> {
+        if (htmlPages.containsKey(relative)) return true
+        log.info("Fetching $href")
+        val semaphore = Semaphore(0)
+        completionSemaphores += semaphore
+        getHtml(href, htmlPages, relative, links, saveRoot, semaphore)
+      }
+
+      "application/json" -> {
+        if (jsonPages.containsKey(relative)) return true
+        log.info("Fetching $href")
+        val semaphore = Semaphore(0)
+        completionSemaphores += semaphore
+        getJson(href, jsonPages, relative, semaphore)
+      }
+
+      else -> {
+        val semaphore = Semaphore(0)
+        completionSemaphores += semaphore
+        getMedia(href, mimeType, saveRoot, relative, semaphore)
+      }
+    }
+    return false
+  }
+
+  private fun getHtml(
+    href: String,
+    htmlPages: MutableMap<String, String>,
+    relative: String,
+    links: MutableList<String>,
+    saveRoot: String,
+    semaphore: Semaphore
+  ) {
+    httpClient.execute(get(href), object : FutureCallback<SimpleHttpResponse> {
+
+      override fun completed(p0: SimpleHttpResponse?) {
+        log.debug("Fetched $href")
+        val html = p0?.body?.bodyText ?: ""
+        htmlPages[relative] = html
+        links += toAbsolute(href, *currentPageLinks(html).map { link ->
+          val relative = toArchivePath(toRelative(href, link) ?: return@map link)
+          linkReplacements[link] = "${cloud!!.shareBase}/$saveRoot/$relative"
+          link
+        }.toTypedArray())
+        semaphore.release()
+      }
+
+      override fun failed(p0: java.lang.Exception?) {
+        log.info("Error fetching $href", p0)
+        semaphore.release()
+      }
+
+      override fun cancelled() {
+        log.info("Cancelled fetching $href")
+        semaphore.release()
+      }
+
+    })
+  }
+
+  private fun getJson(
+    href: String,
+    jsonPages: MutableMap<String, String>,
+    relative: String,
+    semaphore: Semaphore
+  ) {
+    httpClient.execute(get(href), object : FutureCallback<SimpleHttpResponse> {
+
+      override fun completed(p0: SimpleHttpResponse?) {
+        log.debug("Fetched $href")
+        jsonPages[relative] = p0?.body?.bodyText ?: ""
+        semaphore.release()
+      }
+
+      override fun failed(p0: java.lang.Exception?) {
+        log.info("Error fetching $href", p0)
+        semaphore.release()
+      }
+
+      override fun cancelled() {
+        log.info("Cancelled fetching $href")
+        semaphore.release()
+      }
+
+    })
+  }
+
+  private fun getMedia(
+    href: String,
+    mimeType: String,
+    saveRoot: String,
+    relative: String,
+    semaphore: Semaphore
+  ) {
+    val request = get(href)
+    httpClient.execute(request, object : FutureCallback<SimpleHttpResponse> {
+
+      override fun completed(p0: SimpleHttpResponse?) {
+        try {
+          log.debug("Fetched $request")
+          val bytes = p0?.body?.bodyBytes ?: return
+          if (validate(mimeType, p0.body.contentType.mimeType, bytes))
+            cloud!!.upload(
+              path = "/$saveRoot/$relative",
+              contentType = mimeType,
+              bytes = bytes
+            )
+        } finally {
+          semaphore.release()
+        }
+      }
+
+      override fun failed(p0: java.lang.Exception?) {
+        log.info("Error fetching $href", p0)
+        semaphore.release()
+      }
+
+      override fun cancelled() {
+        log.info("Cancelled fetching $href")
+        semaphore.release()
+      }
+
+    })
+  }
+
+  private fun saveHTML(
+    saveRoot: String
+  ) {
     (htmlPages.map { (filename, html) ->
       pool.submit {
         try {
-          val finalHtml = linkReplacements.toList().fold(html) { acc, (href, relative) -> acc.replace(href, relative) }
+          val finalHtml = linkReplacements.toList().filter { it.first.isNotEmpty() }.fold(html)
+          { acc, (href, relative) -> acc.replace("""(?<![/\w#])$href""".toRegex(), relative) }
           cloud!!.upload(
             path = "/$saveRoot/$filename",
             contentType = "text/html",
@@ -209,7 +273,10 @@ open class Selenium2S3(
     } + jsonPages.map { (filename, js) ->
       pool.submit {
         try {
-          val finalJs = linkReplacements.toList().fold(js) { acc, (href, relative) -> acc.replace(href, relative) }
+          val finalJs = linkReplacements.toList().sortedBy { it.first.length }
+            .fold(js) { acc, (href, relative) -> //language=RegExp
+              acc.replace("""(?<![/\w])$href""".toRegex(), relative)
+            }
           cloud!!.upload(
             path = "/$saveRoot/$filename",
             contentType = "application/json",
@@ -226,7 +293,6 @@ open class Selenium2S3(
         log.warn("Error processing", e)
       }
     }
-    log.debug("Done")
   }
 
   private fun get(href: String): SimpleHttpRequest {
@@ -237,7 +303,7 @@ open class Selenium2S3(
     return request
   }
 
-  protected open fun currentPageLinks(driver: WebDriver): List<String> = listOf(
+  protected open fun currentPageLinks(driver: WebDriver) = listOf(
     driver.findElements(By.xpath("//a[@href]")).map<WebElement?, String?> { it?.getAttribute("href") }.toSet(),
     driver.findElements(By.xpath("//img[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
     driver.findElements(By.xpath("//link[@href]")).map<WebElement?, String?> { it?.getAttribute("href") }.toSet(),
@@ -245,13 +311,37 @@ open class Selenium2S3(
     driver.findElements(By.xpath("//source[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
   ).flatten().filterNotNull()
 
-  protected open fun currentPageLinks(html: String): List<String> = listOf(
-    org.jsoup.Jsoup.parse(html).select("a[href]").map { it.attr("href") }.toSet(),
-    org.jsoup.Jsoup.parse(html).select("img[src]").map { it.attr("src") }.toSet(),
-    org.jsoup.Jsoup.parse(html).select("link[href]").map { it.attr("href") }.toSet(),
-    org.jsoup.Jsoup.parse(html).select("script[src]").map { it.attr("src") }.toSet(),
-    org.jsoup.Jsoup.parse(html).select("source[src]").map { it.attr("src") }.toSet(),
+  private fun currentPageLinks(html: String) = listOf(
+    Jsoup.parse(html).select("a[href]").map { it.attr("href") }.toSet(),
+    Jsoup.parse(html).select("img[src]").map { it.attr("src") }.toSet(),
+    Jsoup.parse(html).select("link[href]").map { it.attr("href") }.toSet(),
+    Jsoup.parse(html).select("script[src]").map { it.attr("src") }.toSet(),
+    Jsoup.parse(html).select("source[src]").map { it.attr("src") }.toSet(),
   ).flatten().filterNotNull()
+
+  protected open fun toAbsolute(base: String, vararg links: String) = links
+    .map { it.split("#").first() }.filter { it.isNotBlank() }.distinct()
+    .map { link ->
+      val newLink = when {
+        link.startsWith("http") -> link
+        else -> URI.create(base).resolve(link).toString()
+      }
+      newLink
+    }
+
+  protected open fun toRelative(base: String, link: String): String? = when {
+    link.startsWith(base) -> toRelative(
+      base,
+      link.removePrefix(base).replace("/{2,}".toRegex(), "/").removePrefix("/")
+    ) // relativize
+    link.startsWith("http") -> null // absolute
+    else -> link // relative
+  }
+
+  protected open fun toArchivePath(link: String): String = when {
+    link.startsWith("fileIndex") -> link.split("/").drop(2).joinToString("/") // rm file segment
+    else -> link
+  }
 
   protected open fun validate(
     expected: String,
@@ -296,12 +386,6 @@ open class Selenium2S3(
     }
     return contentType
   }
-
-  protected open fun relativize(base: String, href: String) = when {
-    href.startsWith(base) -> href.removePrefix(base) // relativize
-    href.startsWith("http") -> null // absolute
-    else -> href // relative
-  }?.replace("/{2,}".toRegex(), "/")?.removePrefix("/")
 
   protected open fun editPage(html: String): String {
     val doc = org.jsoup.Jsoup.parse(html)

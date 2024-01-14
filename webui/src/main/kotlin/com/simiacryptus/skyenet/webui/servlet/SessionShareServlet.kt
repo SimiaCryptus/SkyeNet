@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationM
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.StorageInterface
+import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
@@ -17,7 +18,9 @@ import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
 import java.io.File
 import java.net.URI
+import java.nio.ByteBuffer
 import java.util.*
+import kotlin.random.Random
 
 class SessionShareServlet(
   private val server: ApplicationServer,
@@ -79,7 +82,7 @@ class SessionShareServlet(
       }
 
       else -> {
-        val shareId = UUID.randomUUID().toString()
+        val shareId = long64()
         currentlyProcessing.add(shareId)
         pool.submit {
           try {

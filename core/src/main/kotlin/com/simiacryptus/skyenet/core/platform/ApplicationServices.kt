@@ -6,8 +6,10 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.file.*
 import java.io.File
+import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random
 
 object ApplicationServices {
     var isLocked: Boolean = false
@@ -149,26 +151,36 @@ interface StorageInterface {
         fun validateSessionId(
             session: Session
         ) {
-            if (!session.sessionId.matches("""([GU]-)?\d{8}-\w{8}""".toRegex())) {
+            if (!session.sessionId.matches("""([GU]-)?\d{8}-[\w+-.]{4}""".toRegex())) {
                 throw IllegalArgumentException("Invalid session ID: $session")
             }
         }
 
         fun newGlobalID(): Session {
-            val uuid = UUID.randomUUID().toString().split("-").first()
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
             //log.debug("New ID: $yyyyMMdd-$uuid")
-            return Session("G-$yyyyMMdd-$uuid")
+            return Session("G-$yyyyMMdd-${id2()}")
         }
+
+        fun long64() = Base64.getEncoder().encodeToString(ByteBuffer.allocate(8).putLong(Random.nextLong()).array())
+          .toString().replace("=", "").replace("/", ".").replace("+", "-")
 
         fun newUserID(): Session {
-            val uuid = UUID.randomUUID().toString().split("-").first()
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
             //log.debug("New ID: $yyyyMMdd-$uuid")
-            return Session("U-$yyyyMMdd-$uuid")
+            return Session("U-$yyyyMMdd-${id2()}")
         }
 
-        fun parseSessionID(sessionID: String): Session {
+      private fun id2() = long64().filter {
+          when (it) {
+              in 'a'..'z' -> true
+              in 'A'..'Z' -> true
+              in '0'..'9' -> true
+              else -> false
+          }
+      }.take(4)
+
+      fun parseSessionID(sessionID: String): Session {
             val session = Session(sessionID)
             validateSessionId(session)
             return session
