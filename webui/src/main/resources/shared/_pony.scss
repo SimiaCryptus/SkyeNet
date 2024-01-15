@@ -1,0 +1,84 @@
+@import 'normal';
+
+// Base colors
+$base-bubblegum: #ff77a9; // A playful pink for primary elements
+$base-sunshine-yellow: #ffdd57; // A bright sunshine yellow for accents
+$base-candy-red: #ff6b6b; // A soft red for calls to action and highlights
+$base-vanilla: #f3f3f3; // A soft off-white for backgrounds, ensuring legibility
+$base-charcoal: #454545; // A dark grey for text, softer than black for better reading
+$base-pastel-pink: #ffaec9; // A pastel pink for subtle backgrounds
+$base-pastel-yellow: #fdfd96; // A pastel yellow for subtle highlights
+$base-pastel-red: #ff6961; // A pastel red for error states or warnings
+$base-soft-grey: #ced4da; // A soft grey for less important elements
+
+// Derived colors
+$secondary-bg-color: $base-vanilla;
+$secondary-text-color: $base-charcoal;
+$applist-header-bg: $base-bubblegum;
+$applist-header-text: $base-vanilla;
+$applist-link-color: $base-sunshine-yellow;
+$applist-row-even-bg: $base-pastel-pink;
+$applist-row-hover-bg: $base-pastel-yellow;
+$border-color: $base-soft-grey;
+$border-radius: 4px;
+$box-shadow: 0 2px 4px rgba($base-charcoal, 0.1);
+$close-color: $secondary-text-color;
+$close-hover-color: darken($secondary-text-color, 10%);
+$dropdown-btn-bg: $base-bubblegum;
+$dropdown-content-bg: $base-vanilla;
+$dropdown-content-hover-bg: $base-pastel-pink;
+$error-color: $base-pastel-red;
+$success-color: $base-sunshine-yellow;
+$footer-link-color: $base-soft-grey;
+$footer-link-hover-color: darken($footer-link-color, 10%);
+$link-color: $base-candy-red;
+$link-hover-color: darken($link-color, 10%);
+$modal-overlay-color: rgba($base-bubblegum, 0.8);
+$new-session-link-bg: $base-candy-red;
+$new-session-link-hover-bg: darken($new-session-link-bg, 10%);
+$primary-bg-color: $base-vanilla;
+$primary-text-color: $base-charcoal;
+$reply-message-bg: $base-vanilla;
+$reply-message-border: $base-soft-grey;
+$response-message-bg: $base-vanilla;
+$response-message-border: $base-soft-grey;
+$spinner-border-color: lighten($base-charcoal, 20%);
+$toolbar-bg-color: $base-vanilla;
+$toolbar-hover-bg-color: $base-pastel-pink;
+$toolbar-hover-text-color: $base-charcoal;
+$toolbar-text-color: $base-charcoal;
+$transition-speed: 0.3s;
+$user-message-bg: $base-pastel-pink;
+$user-message-border: $base-soft-grey;
+$verbose-pre-bg: $base-pastel-yellow;
+$verbose-pre-border: $base-soft-grey;
+
+// Typography remains the same
+
+// Spacing remains the same
+
+// Buttons
+$button-bg-color: $base-sunshine-yellow;
+$button-text-color: $base-bubblegum;
+$button-hover-bg-color: darken($button-bg-color, 10%);
+$button-hover-text-color: $base-vanilla;
+$button-border-radius: $border-radius;
+$button-box-shadow: $box-shadow;
+
+// Forms
+$input-border-color: $base-soft-grey;
+$input-border-focus-color: $base-candy-red;
+$input-bg-color: $base-vanilla;
+$input-text-color: $secondary-text-color;
+$input-padding: $spacing-sm;
+
+// Messages and Modals
+$message-info-bg-color: lighten($base-sunshine-yellow, 50%);
+$message-info-text-color: $base-charcoal;
+$message-success-bg-color: lighten($base-candy-red, 50%);
+$message-success-text-color: $base-candy-red;
+$message-error-bg-color: lighten($base-pastel-red, 50%);
+$message-error-text-color: $base-pastel-red;
+$modal-content-bg-color: $base-vanilla;
+$modal-content-text-color: $secondary-text-color;
+$modal-content-shadow: 0 4px 8px rgba($base-soft-grey, 0.3);

@@ -88,8 +88,10 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
         <div class="dropdown">
             <a class="dropbtn">Themes</a>
             <div class="dropdown-content">
-                <a id="theme_normal">Normal</a>
+                <a id="theme_normal">Day</a>
                 <a id="theme_night">Night</a>
+                <a id="theme_forest">Forest</a>
+                <a id="theme_pony">Pony</a>
             </div>
         </div>
     </div>

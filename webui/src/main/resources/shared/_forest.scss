@@ -1,0 +1,82 @@
+@import 'night';
+
+// Base colors for Forest Canopy theme
+$base-forest-floor: #2E342D; // Rich dark earth for main backgrounds
+$base-tree-bark: #8B5A2B; // Warm brown for headers and footers
+$base-canopy-leaf: #3A5F0B; // Deep green for accents and active elements
+$base-sunbeam: #F0E68C; // Light khaki for highlights and special features
+$base-dew: #C5E3BF; // Pale green for subtle background contrasts
+$base-underbrush: #6B8E23; // Olive green for secondary backgrounds and buttons
+$base-fern: #71A267; // Muted medium green for borders and separators
+$base-acorn: #806517; // Nutty brown for text and icons
+
+// Derived colors for Forest Canopy theme
+$secondary-bg-color: $base-forest-floor;
+$secondary-text-color: $base-acorn;
+$applist-header-bg: $base-tree-bark;
+$applist-header-text: $base-dew;
+$applist-link-color: $base-sunbeam;
+$applist-row-even-bg: $base-canopy-leaf;
+$applist-row-hover-bg: $base-underbrush;
+$border-color: $base-fern;
+$border-radius: 4px;
+$box-shadow: 0 2px 4px rgba($base-fern, 0.3);
+$close-color: $secondary-text-color;
+$close-hover-color: lighten($secondary-text-color, 10%);
+$dropdown-btn-bg: $base-tree-bark;
+$dropdown-content-bg: $base-forest-floor;
+$dropdown-content-hover-bg: $base-underbrush;
+$error-color: $base-sunbeam;
+$success-color: $base-canopy-leaf;
+$footer-link-color: $base-acorn;
+$footer-link-hover-color: lighten($footer-link-color, 10%);
+$link-color: $base-dew;
+$link-hover-color: lighten($link-color, 10%);
+$modal-overlay-color: rgba($base-tree-bark, 0.8);
+$new-session-link-bg: $base-canopy-leaf;
+$new-session-link-hover-bg: darken($new-session-link-bg, 10%);
+$primary-bg-color: $base-forest-floor;
+$primary-text-color: $base-acorn;
+$reply-message-bg: $base-underbrush;
+$reply-message-border: $base-fern;
+$response-message-bg: $base-underbrush;
+$response-message-border: $base-fern;
+$spinner-border-color: lighten($base-fern, 10%);
+$toolbar-bg-color: $base-tree-bark;
+$toolbar-hover-bg-color: $base-underbrush;
+$toolbar-hover-text-color: $base-acorn;
+$toolbar-text-color: $base-acorn;
+$transition-speed: 0.3s;
+$user-message-bg: $base-canopy-leaf;
+$user-message-border: $base-fern;
+$verbose-pre-bg: $base-underbrush;
+$verbose-pre-border: $base-fern;
+
+// Typography remains the same
+// Spacing remains the same
+
+// Buttons
+$button-bg-color: $base-canopy-leaf;
+$button-text-color: $base-forest-floor;
+$button-hover-bg-color: darken($button-bg-color, 10%);
+$button-hover-text-color: lighten($button-text-color, 10%);
+$button-border-radius: $border-radius;
+$button-box-shadow: $box-shadow;
+
+// Forms
+$input-border-color: $base-fern;
+$input-border-focus-color: $base-dew;
+$input-bg-color: $base-forest-floor;
+$input-text-color: $base-acorn;
+$input-padding: $spacing-sm;
+
+// Messages and Modals
+$message-info-bg-color: lighten($base-canopy-leaf, 40%);
+$message-info-text-color: $base-tree-bark;
+$message-success-bg-color: lighten($base-canopy-leaf, 40%);
+$message-success-text-color: $base-canopy-leaf;
+$message-error-bg-color: lighten($base-sunbeam, 40%);
+$message-error-text-color: $base-sunbeam;
+$modal-content-bg-color: $base-forest-floor;
+$modal-content-text-color: $base-acorn;
+$modal-content-shadow: 0 4px 8px rgba($base-fern, 0.4);
