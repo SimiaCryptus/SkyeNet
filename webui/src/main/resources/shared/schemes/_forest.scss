@@ -1,14 +1,23 @@
 @import 'night';
 
+// Typography Variables
+$font-family-primary: fantasy;
+$font-family-secondary: sans-serif;
+$font-size-base: 1em;
+$font-size-large: 1.5px;
+$font-size-small: 0.8px;
+$font-weight-normal: 100;
+$font-weight-bold: 500;
+
 // Base colors for Forest Canopy theme
 $base-forest-floor: #2E342D; // Rich dark earth for main backgrounds
 $base-tree-bark: #8B5A2B; // Warm brown for headers and footers
 $base-canopy-leaf: #3A5F0B; // Deep green for accents and active elements
 $base-sunbeam: #F0E68C; // Light khaki for highlights and special features
 $base-dew: #C5E3BF; // Pale green for subtle background contrasts
-$base-underbrush: #6B8E23; // Olive green for secondary backgrounds and buttons
+$base-underbrush: #2D3C0F; // Dark Olive green for secondary backgrounds and buttons
 $base-fern: #71A267; // Muted medium green for borders and separators
-$base-acorn: #806517; // Nutty brown for text and icons
+$base-acorn: #C68A18; // Nutty brown for text and icons
 
 // Derived colors for Forest Canopy theme
 $secondary-bg-color: $base-forest-floor;
@@ -52,9 +61,6 @@ $user-message-border: $base-fern;
 $verbose-pre-bg: $base-underbrush;
 $verbose-pre-border: $base-fern;
 
-// Typography remains the same
-// Spacing remains the same
-
 // Buttons
 $button-bg-color: $base-canopy-leaf;
 $button-text-color: $base-forest-floor;
@@ -68,7 +74,7 @@ $input-border-color: $base-fern;
 $input-border-focus-color: $base-dew;
 $input-bg-color: $base-forest-floor;
 $input-text-color: $base-acorn;
-$input-padding: $spacing-sm;
+$input-padding: 10px;
 
 // Messages and Modals
 $message-info-bg-color: lighten($base-canopy-leaf, 40%);

@@ -29,19 +29,11 @@ class SessionThreadsServlet(
                     |    <title>Session Threads</title>
                     |    <style>
                     |        body {
-                    |            font-family: 'Arial', sans-serif;
-                    |            background-color: #f4f4f4;
-                    |            color: #333;
                     |            margin: 0;
                     |            padding: 20px;
                     |        }
                     |
-                    |        h1 {
-                    |            color: #5d5d5d;
-                    |        }
-                    |
                     |        .pool-stats, .pool-threads {
-                    |            background-color: #fff;
                     |            border: 1px solid #ddd;
                     |            padding: 15px;
                     |            margin-bottom: 20px;
@@ -52,17 +44,14 @@ class SessionThreadsServlet(
                     |        .thread {
                     |            margin-bottom: 10px;
                     |            padding: 10px;
-                    |            background-color: #e9e9e9;
                     |            border-radius: 4px;
                     |        }
                     |
                     |        .thread-name {
                     |            font-weight: bold;
-                    |            color: #3a3a3a;
                     |        }
                     |
                     |        .stack-element {
-                    |            background-color: #d9d9d9;
                     |            padding: 5px;
                     |            margin: 2px 0;
                     |            border-radius: 2px;
@@ -75,7 +64,6 @@ class SessionThreadsServlet(
                     |        }
                     |
                     |        a {
-                    |            color: #1a0dab;
                     |            text-decoration: none;
                     |        }
                     |

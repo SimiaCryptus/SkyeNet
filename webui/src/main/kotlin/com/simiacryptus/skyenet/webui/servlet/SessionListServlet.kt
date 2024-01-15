@@ -48,7 +48,7 @@ class SessionListServlet(
             </head>
             <body>
             ${applicationServer.description}
-            <table>
+            <table class='applist'>
                 <tr>
                     <th>Session Name</th>
                     <th>Created</th>

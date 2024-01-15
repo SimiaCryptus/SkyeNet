@@ -1,3 +1,12 @@
+// Typography Variables
+$font-family-primary: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+$font-family-secondary: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+$font-size-base: 1em;
+$font-size-large: 1.5px;
+$font-size-small: 0.8px;
+$font-weight-normal: 400;
+$font-weight-bold: 700;
+
 // Base colors
 $base-white: #ffffff;
 $base-dark: #333333; // Dark color for text
@@ -53,21 +62,6 @@ $user-message-border: $base-grey;
 $verbose-pre-bg: $base-light-grey;
 $verbose-pre-border: $base-grey;
 
-// Typography
-$font-family-primary: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-$font-size-base: 16px;
-$font-size-large: 20px;
-$font-size-small: 14px;
-$font-weight-normal: 400;
-$font-weight-bold: 700;
-
-// Spacing
-$spacing-xs: 5px;
-$spacing-sm: 10px;
-$spacing-md: 15px;
-$spacing-lg: 20px;
-$spacing-xl: 30px;
-
 // Buttons
 $button-bg-color: $base-blue;
 $button-text-color: $base-white;
@@ -81,7 +75,7 @@ $input-border-color: $base-grey;
 $input-border-focus-color: $base-blue;
 $input-bg-color: $base-white;
 $input-text-color: $secondary-text-color;
-$input-padding: $spacing-sm;
+$input-padding: 10px;
 
 // Messages and Modals
 $message-info-bg-color: lighten($base-blue, 50%);

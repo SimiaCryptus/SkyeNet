@@ -91,7 +91,7 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
                 <a id="theme_normal">Day</a>
                 <a id="theme_night">Night</a>
                 <a id="theme_forest">Forest</a>
-                <a id="theme_pony">Pony</a>
+                <a id="theme_pony">Bubblegum</a>
             </div>
         </div>
     </div>
@@ -110,7 +110,7 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
     
     ${MarkdownUtil.renderMarkdown(welcomeMarkdown)}
     
-    <table id="applist">
+    <table class="applist">
         ${parent.childWebApps.joinToString("\n") { app -> appRow(app, user) }}
     </table>
     
