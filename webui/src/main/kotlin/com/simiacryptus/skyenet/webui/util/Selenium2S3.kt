@@ -20,6 +20,7 @@ import java.io.File
 import java.net.URI
 import java.net.URL
 import java.time.Duration
+import java.time.temporal.ChronoUnit
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
@@ -30,27 +31,7 @@ open class Selenium2S3(
   val cookies: Array<out jakarta.servlet.http.Cookie>?,
 ) : AutoCloseable {
 
-  private val chromeDriverService by lazy { ChromeDriverService.createDefaultService() }
-
-  private val driver: WebDriver by lazy {
-    val osname = System.getProperty("os.name")
-    val chromePath = when {
-      // Windows
-      osname.contains("Windows") -> listOf(
-        "C:\\Program Files\\Google\\Chrome\\Application\\chromedriver.exe",
-        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chromedriver.exe"
-      )
-      // Ubuntu
-      osname.contains("Linux") -> listOf("/usr/bin/chromedriver")
-      else -> throw RuntimeException("Not implemented for $osname")
-    }
-    System.setProperty("webdriver.chrome.driver",
-      chromePath.find { File(it).exists() } ?: throw RuntimeException("Chrome not found"))
-    val options = ChromeOptions()
-    options.addArguments("--headless", "--blink-settings=imagesEnabled=false")
-    options.setPageLoadTimeout(Duration.of(90, java.time.temporal.ChronoUnit.SECONDS))
-    ChromeDriver(chromeDriverService, options)
-  }
+  private val driver: WebDriver by lazy { chromeDriver() }
 
   private val cookieStore by lazy {
     BasicCookieStore().apply {
@@ -421,8 +402,9 @@ open class Selenium2S3(
 
   override fun close() {
     log.debug("Closing", Exception())
-    driver.close()
-    chromeDriverService.close()
+    driver.quit()
+    //driver.close()
+    //Companion.chromeDriverService.close()
     httpClient.close()
   }
 
@@ -438,6 +420,31 @@ open class Selenium2S3(
         }
       })
     }
+
+    fun chromeDriver(headless: Boolean = true, loadImages: Boolean = !headless): ChromeDriver {
+      val osname = System.getProperty("os.name")
+      val chromePath = when {
+        // Windows
+        osname.contains("Windows") -> listOf(
+          "C:\\Program Files\\Google\\Chrome\\Application\\chromedriver.exe",
+          "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chromedriver.exe"
+        )
+        // Ubuntu
+        osname.contains("Linux") -> listOf("/usr/bin/chromedriver")
+        else -> throw RuntimeException("Not implemented for $osname")
+      }
+      System.setProperty("webdriver.chrome.driver",
+        chromePath.find { File(it).exists() } ?: throw RuntimeException("Chrome not found"))
+      val options = ChromeOptions()
+      val args = mutableListOf<String>()
+      if(headless) args += "--headless"
+      if(loadImages) args += "--blink-settings=imagesEnabled=false"
+      options.addArguments(*args.toTypedArray())
+      options.setPageLoadTimeout(Duration.of(90, ChronoUnit.SECONDS))
+      return ChromeDriver(chromeDriverService, options)
+    }
+
+    val chromeDriverService by lazy { ChromeDriverService.createDefaultService() }
   }
 
 }

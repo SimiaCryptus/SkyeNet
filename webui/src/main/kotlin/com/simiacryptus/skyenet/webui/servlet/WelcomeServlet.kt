@@ -110,7 +110,7 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
     
     ${MarkdownUtil.renderMarkdown(welcomeMarkdown)}
     
-    <table class="applist">
+    <table class="applist" id='application-list'>
         ${parent.childWebApps.joinToString("\n") { app -> appRow(app, user) }}
     </table>
     
