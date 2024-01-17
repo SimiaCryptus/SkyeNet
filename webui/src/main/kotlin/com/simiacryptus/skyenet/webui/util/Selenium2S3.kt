@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.util
 
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
+import com.simiacryptus.skyenet.core.util.Selenium
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse
 import org.apache.hc.client5.http.cookie.BasicCookieStore
@@ -29,7 +30,7 @@ import java.util.concurrent.ThreadPoolExecutor
 open class Selenium2S3(
   val pool: ThreadPoolExecutor = Executors.newCachedThreadPool() as ThreadPoolExecutor,
   val cookies: Array<out jakarta.servlet.http.Cookie>?,
-) : AutoCloseable {
+) : Selenium {
 
   private val driver: WebDriver by lazy { chromeDriver() }
 
@@ -58,7 +59,7 @@ open class Selenium2S3(
   private val jsonPages = mutableMapOf<String, String>()
   private val links: MutableList<String> = mutableListOf()
 
-  fun save(
+  override fun save(
     url: URL,
     currentFilename: String?,
     saveRoot: String
@@ -95,11 +96,11 @@ open class Selenium2S3(
     completionSemaphores.forEach { it.acquire(); it.release() }
 
     log.debug("Saving")
-    saveHTML(saveRoot)
+    saveAll(saveRoot)
     log.debug("Done")
   }
 
-  private fun process(
+  open protected fun process(
     url: URL,
     href: String,
     completionSemaphores: MutableList<Semaphore>,
@@ -134,7 +135,7 @@ open class Selenium2S3(
     return false
   }
 
-  private fun getHtml(
+  open protected fun getHtml(
     href: String,
     htmlPages: MutableMap<String, String>,
     relative: String,
@@ -169,7 +170,7 @@ open class Selenium2S3(
     })
   }
 
-  private fun getJson(
+  open protected fun getJson(
     href: String,
     jsonPages: MutableMap<String, String>,
     relative: String,
@@ -196,7 +197,7 @@ open class Selenium2S3(
     })
   }
 
-  private fun getMedia(
+  open protected fun getMedia(
     href: String,
     mimeType: String,
     saveRoot: String,
@@ -234,19 +235,13 @@ open class Selenium2S3(
     })
   }
 
-  private fun saveHTML(
+  private fun saveAll(
     saveRoot: String
   ) {
     (htmlPages.map { (filename, html) ->
       pool.submit {
         try {
-          val finalHtml = linkReplacements.toList().filter { it.first.isNotEmpty() }.fold(html)
-          { acc, (href, relative) -> acc.replace("""(?<![/\w#])$href""".toRegex(), relative) }
-          cloud!!.upload(
-            path = "/$saveRoot/$filename",
-            contentType = "text/html",
-            request = finalHtml
-          )
+          saveHTML(html, saveRoot, filename)
         } catch (e: Exception) {
           log.warn("Error processing $filename", e)
         }
@@ -254,15 +249,7 @@ open class Selenium2S3(
     } + jsonPages.map { (filename, js) ->
       pool.submit {
         try {
-          val finalJs = linkReplacements.toList().sortedBy { it.first.length }
-            .fold(js) { acc, (href, relative) -> //language=RegExp
-              acc.replace("""(?<![/\w])$href""".toRegex(), relative)
-            }
-          cloud!!.upload(
-            path = "/$saveRoot/$filename",
-            contentType = "application/json",
-            request = finalJs
-          )
+          saveJS(js, saveRoot, filename)
         } catch (e: Exception) {
           log.warn("Error processing $filename", e)
         }
@@ -276,7 +263,29 @@ open class Selenium2S3(
     }
   }
 
-  private fun get(href: String): SimpleHttpRequest {
+  open protected fun saveJS(js: String, saveRoot: String, filename: String) {
+    val finalJs = linkReplacements.toList().sortedBy { it.first.length }
+      .fold(js) { acc, (href, relative) -> //language=RegExp
+        acc.replace("""(?<![/\w])$href""".toRegex(), relative)
+      }
+    cloud!!.upload(
+      path = "/$saveRoot/$filename",
+      contentType = "application/json",
+      request = finalJs
+    )
+  }
+
+  open protected fun saveHTML(html: String, saveRoot: String, filename: String) {
+    val finalHtml = linkReplacements.toList().filter { it.first.isNotEmpty() }.fold(html)
+    { acc, (href, relative) -> acc.replace("""(?<![/\w#])$href""".toRegex(), relative) }
+    cloud!!.upload(
+      path = "/$saveRoot/$filename",
+      contentType = "text/html",
+      request = finalHtml
+    )
+  }
+
+  open protected fun get(href: String): SimpleHttpRequest {
     val request = SimpleHttpRequest(Method.GET, URI(href))
     cookies?.forEach { cookie ->
       request.addHeader("Cookie", "${cookie.name}=${cookie.value}")
@@ -373,10 +382,11 @@ open class Selenium2S3(
     doc.select("#toolbar").remove()
     doc.select("#namebar").remove()
     doc.select("#main-input").remove()
+    doc.select("#footer").remove()
     return doc.toString()
   }
 
-  open fun setCookies(
+  fun setCookies(
     driver: WebDriver,
     cookies: Array<out jakarta.servlet.http.Cookie>?,
     domain: String? = null

@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
+import com.simiacryptus.skyenet.webui.util.Selenium2S3
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
 import org.eclipse.jetty.server.*
@@ -63,7 +64,14 @@ abstract class ApplicationDirectory(
     }
   )
 
-  open fun setupPlatform() {}
+  open fun setupPlatform() {
+    ApplicationServices.seleniumFactory = { pool, cookies ->
+      Selenium2S3(
+        pool,
+        cookies,
+      )
+    }
+  }
 
   protected open fun _main(args: Array<String>) {
     try {

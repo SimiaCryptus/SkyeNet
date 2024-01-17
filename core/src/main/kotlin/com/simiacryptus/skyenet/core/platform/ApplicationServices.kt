@@ -5,9 +5,12 @@ import com.google.common.util.concurrent.AtomicDouble
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.file.*
+import com.simiacryptus.skyenet.core.util.Selenium
 import java.io.File
+import java.net.URL
 import java.nio.ByteBuffer
 import java.util.*
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
@@ -49,6 +52,13 @@ object ApplicationServices {
         }
 
     var cloud: CloudPlatformInterface? = AwsPlatform.get()
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
+
+
+    var seleniumFactory: ((ThreadPoolExecutor, Array<out jakarta.servlet.http.Cookie>?) -> Selenium)? = null
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value

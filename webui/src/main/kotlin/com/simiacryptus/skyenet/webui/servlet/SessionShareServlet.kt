@@ -92,10 +92,12 @@ class SessionShareServlet(
               if (session.isGlobal()) null else user,
               session = session, filename = "info.json", settings = sessionSettings
             )
-            Selenium2S3(
-              pool = pool,
-              cookies = cookies,
-            ).save(
+//            val selenium2S3 = Selenium2S3(
+//              pool = pool,
+//              cookies = cookies,
+//            )
+            val selenium2S3 = ApplicationServices.seleniumFactory?.invoke(pool, cookies)!!
+            selenium2S3.save(
               url = URI(url).toURL(),
               saveRoot = "$appName/$shareId",
               currentFilename = "index.html",
