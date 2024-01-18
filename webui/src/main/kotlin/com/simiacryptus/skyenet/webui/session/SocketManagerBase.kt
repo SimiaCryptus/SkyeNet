@@ -199,7 +199,7 @@ abstract class SocketManagerBase(
         """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
 
     fun getUser(session: org.eclipse.jetty.websocket.api.Session): User? =
-      session.upgradeRequest.cookies?.find { it.name == AuthenticationInterface.AUTH_COOKIE }?.value?.let {
+      session.upgradeRequest.cookies?.find { it.name == AuthenticationInterface.AUTH_COOKIE }?.value.let {
         ApplicationServices.authenticationManager.getUser(it)
       }
   }

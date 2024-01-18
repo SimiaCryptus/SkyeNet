@@ -9,6 +9,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
+import org.apache.hc.core5.http.HttpRequest
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import java.io.File
@@ -31,7 +32,7 @@ open class ClientManager {
   ): OpenAIClient {
     val key = SessionKey(session, user)
     return if (null == dataStorage) clientCache[key] ?: throw IllegalStateException("No data storage")
-    else clientCache.getOrPut(key) { createClient(session, user, dataStorage) }
+    else clientCache.getOrPut(key) { createClient(session, user, dataStorage)!! }
   }
 
   protected open fun createPool(session: Session, user: User?, dataStorage: StorageInterface?) =
@@ -71,19 +72,20 @@ open class ClientManager {
     session: Session,
     user: User?,
     dataStorage: StorageInterface?,
-  ): OpenAIClient {
+  ): OpenAIClient? {
     if (user != null) {
       val userSettings = ApplicationServices.userSettingsManager.getUserSettings(user)
       val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/openai.log")
       logfile?.parentFile?.mkdirs()
       val userApi =
-        if (userSettings.apiKey.isBlank()) null else MonitoredClient(
-          key = userSettings.apiKey,
-          logfile = logfile,
-          session = session,
-          user = user,
-          workPool = getPool(session, user, dataStorage),
-        )
+        if (userSettings.apiKey?.isBlank() == false)
+          MonitoredClient(
+            key = userSettings.apiKey,
+            logfile = logfile,
+            session = session,
+            user = user,
+            workPool = getPool(session, user, dataStorage),
+          ) else null
       if (userApi != null) return userApi
     }
     val canUseGlobalKey = ApplicationServices.authorizationManager.isAuthorized(
@@ -92,13 +94,17 @@ open class ClientManager {
     if (!canUseGlobalKey) throw RuntimeException("No API key")
     val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/openai.log")
     logfile?.parentFile?.mkdirs()
-    return (if (ClientUtil.keyTxt.isBlank()) null else MonitoredClient(
-      key = ClientUtil.keyTxt,
-      logfile = logfile,
-      session = session,
-      user = user,
-      workPool = getPool(session, user, dataStorage),
-    ))!!
+    return (if (ClientUtil.keyTxt?.isBlank() == false) {
+      MonitoredClient(
+        key = ClientUtil.keyTxt,
+        logfile = logfile,
+        session = session,
+        user = user,
+        workPool = getPool(session, user, dataStorage),
+      )
+    } else {
+      null
+    })!!
   }
 
   inner class MonitoredClient(
@@ -119,8 +125,15 @@ open class ClientManager {
     workPool = workPool,
     client = client,
   ) {
+    var budget = 2.00
+    override fun authorize(request: HttpRequest) {
+      require(budget > 0.0) { "Budget Exceeded" }
+      super.authorize(request)
+    }
+
     override fun onUsage(model: OpenAIModel?, tokens: ApiModel.Usage) {
       ApplicationServices.usageManager.incrementUsage(session, user, model!!, tokens)
+      budget -= tokens.cost ?: 0.0
       super.onUsage(model, tokens)
     }
   }
