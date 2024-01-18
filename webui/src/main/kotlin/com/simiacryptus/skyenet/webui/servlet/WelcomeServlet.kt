@@ -64,6 +64,7 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
     <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name='viewport' content='width=device-width,initial-scale=1'>
         <title>SimiaCryptus Skyenet Apps</title>
         <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
         <link id="theme_style" href="main.css" rel="stylesheet"/>
