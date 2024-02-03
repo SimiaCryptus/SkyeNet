@@ -4,7 +4,6 @@ import com.simiacryptus.skyenet.webui.session.SocketManager
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketAdapter
-import java.time.Duration
 
 class ChatSocket(
     private val sessionState: SocketManager,
@@ -15,8 +14,6 @@ class ChatSocket(
     override fun onWebSocketConnect(session: Session) {
         super.onWebSocketConnect(session)
         //log.debug("{} - Socket connected: {}", session, session.remote)
-        session.isAutoFragment = false
-        session.idleTimeout = Duration.ofMinutes(10)
         sessionState.addSocket(this, session)
         sessionState.getReplay().forEach {
             try {

@@ -14,6 +14,7 @@ import org.eclipse.jetty.webapp.WebAppContext
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
+import java.time.Duration
 
 abstract class ChatServer(val resourceBase: String) {
 
@@ -23,6 +24,16 @@ abstract class ChatServer(val resourceBase: String) {
 
     inner class WebSocketHandler : JettyWebSocketServlet() {
         override fun configure(factory: JettyWebSocketServletFactory) {
+            with(factory) {
+                isAutoFragment = false
+                idleTimeout = Duration.ofMinutes(10)
+                outputBufferSize = 1024 * 1024
+                inputBufferSize = 1024 * 1024
+                maxBinaryMessageSize = 1024 * 1024
+                maxFrameSize = 1024 * 1024
+                maxTextMessageSize = 1024 * 1024
+                this.availableExtensionNames.remove("permessage-deflate")
+            }
             factory.setCreator { req, resp ->
                 try {
                     if (req.parameterMap.containsKey("sessionId")) {
