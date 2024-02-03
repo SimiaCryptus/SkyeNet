@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.kotlin
 
-import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.core.actors.CodingActor
+import com.simiacryptus.skyenet.interpreter.Interpreter
 import org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineBase
 import org.jetbrains.kotlin.cli.common.repl.KotlinJsr223JvmScriptEngineFactoryBase
 import org.jetbrains.kotlin.cli.common.repl.ScriptArgsWithTypes
@@ -77,9 +77,11 @@ open class KotlinInterpreter(
     )
     try {
       val scriptEngine = this.scriptEngine
-      val compile = scriptEngine.compile(wrappedCode)
-      val bindings = scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE)
-      return compile.eval(bindings)
+      return kotlinx.coroutines.runBlocking {
+        val compile = scriptEngine.compile(wrappedCode)
+        val bindings = scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE)
+        compile.eval(bindings)
+      }
     } catch (ex: ScriptException) {
       throw wrapException(ex, wrappedCode, code)
     } catch (ex: Throwable) {

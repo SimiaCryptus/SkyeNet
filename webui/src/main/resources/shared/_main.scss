@@ -22,7 +22,6 @@
     transition: color $transition-speed;
     &:hover {
         color: $link-hover-color;
-        text-decoration: underline;
     }
 }
 
@@ -184,7 +183,7 @@ body {
     background: $primary-bg-color;
     cursor: pointer;
     transition: all $transition-speed;
-    padding: 10px 20px;
+    padding: 5px 10px;
     border-radius: $border-radius;
     text-decoration: unset;
     &:focus,
@@ -338,9 +337,6 @@ pre.response-message {
     a {
         color: $applist-link-color;
         text-decoration: none;
-        &:hover {
-            text-decoration: underline;
-        }
         margin-right: 10px;
     }
 }
