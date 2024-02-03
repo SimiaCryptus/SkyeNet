@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import kotlin.reflect.KClass
 
-open class   CodingAgent<T : Interpreter>(
+open class CodingAgent<T : Interpreter>(
   val api: API,
   dataStorage: StorageInterface,
   session: Session,
@@ -97,94 +97,117 @@ open class   CodingAgent<T : Interpreter>(
     var formHandle: StringBuilder? = null
     val playHandler: (t: Unit) -> Unit = {
       formHandle?.clear()
-      val header = task.header("Running...")
-      try {
-        val resultValue = response.result.resultValue
-        val resultOutput = response.result.resultOutput
-        val result = when {
-          resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
-            |# Output
-            |```text
-            |${resultOutput}
-            |```
-            """.trimMargin()
-
-          else -> """
-            |# Result
-            |```
-            |$resultValue
-            |```
-            |
-            |# Output
-            |```text
-            |${resultOutput}
-            |```
-            """.trimMargin()
-        }
-        header?.clear()
-        task.add(renderMarkdown(result))
-        displayFeedback(task, CodingActor.CodeRequest(
-          messages = request.messages +
-              listOf(
-                "Running...\n\n$result" to ApiModel.Role.assistant,
-              ).filter { it.first.isNotBlank() }
-        ), response)
-      } catch (e: Throwable) {
-        header?.clear()
-        val message = when {
-          e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
-          e is CodingActor.FailedToImplementException -> renderMarkdown(
-            """
-              |**Failed to Implement** 
-              |
-              |${e.message}
-              |
-              |""".trimMargin()
-          )
-
-          else -> renderMarkdown(
-            """
-              |**Error `${e.javaClass.name}`**
-              |
-              |```text
-              |${e.message}
-              |```
-              |""".trimMargin()
-          )
-        }
-        task.add(message, true, "div", "error")
-        displayCode(task, CodingActor.CodeRequest(
-          messages = request.messages +
-              listOf(
-                response.code to ApiModel.Role.assistant,
-                message to ApiModel.Role.system,
-              ).filter { it.first.isNotBlank() }
-        ))
-      }
+      execute(task, response, request)
+    }
+    val regenHandler: (t: Unit) -> Unit = {
+      formHandle?.clear()
+      task.header("Regenerating...")
+      displayCode(task, request.copy(messages = request.messages.dropLastWhile { it.second == ApiModel.Role.assistant }))
     }
     val feedbackHandler: (t: String) -> Unit = { feedback ->
-      try {
-        formHandle?.clear()
-        task.echo(renderMarkdown(feedback))
-        displayCode(task, CodingActor.CodeRequest(
-          messages = request.messages +
-              listOf(
-                response?.code to ApiModel.Role.assistant,
-                feedback to ApiModel.Role.user,
-              ).filter { it.first?.isNotBlank() == true }.map { it.first!! to it.second }
-        ))
-      } catch (e: Throwable) {
-        log.warn("Error", e)
-        task.error(e)
-      }
+      formHandle?.clear()
+      feedback(task, feedback, request, response)
     }
     formHandle = task.add(
       """
       |${if (canPlay) ui.hrefLink("▶", "href-link play-button", playHandler) else ""}
+      |${if (canPlay) ui.hrefLink("♻", "href-link regen-button", regenHandler) else ""}
       |${ui.textInput(feedbackHandler)}
     """.trimMargin(), className = "reply-message"
     )
     task.complete()
+  }
+
+  private fun feedback(
+    task: SessionTask,
+    feedback: String,
+    request: CodingActor.CodeRequest,
+    response: CodeResult
+  ) {
+    try {
+      task.echo(renderMarkdown(feedback))
+      displayCode(task, CodingActor.CodeRequest(
+        messages = request.messages +
+            listOf(
+              response?.code to ApiModel.Role.assistant,
+              feedback to ApiModel.Role.user,
+            ).filter { it.first?.isNotBlank() == true }.map { it.first!! to it.second }
+      ))
+    } catch (e: Throwable) {
+      log.warn("Error", e)
+      task.error(e)
+    }
+  }
+
+  private fun execute(
+    task: SessionTask,
+    response: CodeResult,
+    request: CodingActor.CodeRequest
+  ) {
+    val header = task.header("Running...")
+    try {
+      val resultValue = response.result.resultValue
+      val resultOutput = response.result.resultOutput
+      val result = when {
+        resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
+              |# Output
+              |```text
+              |${resultOutput}
+              |```
+              """.trimMargin()
+
+        else -> """
+              |# Result
+              |```
+              |$resultValue
+              |```
+              |
+              |# Output
+              |```text
+              |${resultOutput}
+              |```
+              """.trimMargin()
+      }
+      header?.clear()
+      task.add(renderMarkdown(result))
+      displayFeedback(task, CodingActor.CodeRequest(
+        messages = request.messages +
+            listOf(
+              "Running...\n\n$result" to ApiModel.Role.assistant,
+            ).filter { it.first.isNotBlank() }
+      ), response)
+    } catch (e: Throwable) {
+      val message = when {
+        e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
+        e is CodingActor.FailedToImplementException -> renderMarkdown(
+          """
+                |**Failed to Implement** 
+                |
+                |${e.message}
+                |
+                |""".trimMargin()
+        )
+
+        else -> renderMarkdown(
+          """
+                |**Error `${e.javaClass.name}`**
+                |
+                |```text
+                |${e.message}
+                |```
+                |""".trimMargin()
+        )
+      }
+      header?.clear()
+      task.add(message, true, "div", "error")
+      displayCode(task, CodingActor.CodeRequest(
+        messages = request.messages +
+            listOf(
+              response.code to ApiModel.Role.assistant,
+              message to ApiModel.Role.system,
+            ).filter { it.first.isNotBlank() }
+      ))
+    }
   }
 
   companion object {

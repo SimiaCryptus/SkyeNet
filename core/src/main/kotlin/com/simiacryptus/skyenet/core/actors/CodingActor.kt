@@ -2,13 +2,13 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel.*
-import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.skyenet.interpreter.Interpreter
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.OutputInterceptor
+import com.simiacryptus.skyenet.interpreter.Interpreter
 import java.util.*
 import javax.script.ScriptException
 import kotlin.reflect.KClass
@@ -39,8 +39,8 @@ open class CodingActor(
     val messages: List<Pair<String, Role>>,
     val codePrefix: String = "",
     val autoEvaluate: Boolean = false,
-    val fixIterations: Int = 4,
-    val fixRetries: Int = 4,
+    val fixIterations: Int = 1,
+    val fixRetries: Int = 1,
   )
 
   interface CodeResult {

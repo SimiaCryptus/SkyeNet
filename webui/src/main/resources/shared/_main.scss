@@ -177,6 +177,7 @@ body {
 }
 
 .play-button,
+.regen-button,
 .cancel-button {
     @include typography($font-size: 1.5rem, $font-weight: $font-weight-bold);
     border: 2px solid transparent;
@@ -185,6 +186,7 @@ body {
     transition: all $transition-speed;
     padding: 10px 20px;
     border-radius: $border-radius;
+    text-decoration: unset;
     &:focus,
     &:hover {
         outline: none;
