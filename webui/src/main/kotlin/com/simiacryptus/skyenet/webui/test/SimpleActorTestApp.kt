@@ -16,6 +16,7 @@ open class SimpleActorTestApp(
     temperature: Double = 0.3,
 ) : ApplicationServer(
   applicationName = applicationName,
+    path = "/simpleActorTest",
 ) {
 
     data class Settings(

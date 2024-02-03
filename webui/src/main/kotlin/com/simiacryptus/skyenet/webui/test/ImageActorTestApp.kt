@@ -16,6 +16,7 @@ open class ImageActorTestApp(
     temperature: Double = 0.3,
 ) : ApplicationServer(
   applicationName = applicationName,
+    path = "/imageActorTest",
 ) {
 
     data class Settings(

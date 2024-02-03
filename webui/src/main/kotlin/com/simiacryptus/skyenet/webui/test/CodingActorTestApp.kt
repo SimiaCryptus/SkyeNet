@@ -20,6 +20,7 @@ open class CodingActorTestApp(
     temperature: Double = 0.3,
 ) : ApplicationServer(
   applicationName = applicationName,
+  path = "/codingActorTest",
 ) {
     override fun userMessage(
         session: Session,

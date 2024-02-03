@@ -19,8 +19,8 @@ open class UsageManager(val root: File = File(".skyenet/usage")) : UsageInterfac
   @Volatile
   private var txLogFileWriter: FileWriter?
   private val usagePerSession = ConcurrentHashMap<Session, UsageCounters>()
-  private val sessionsByUser = ConcurrentHashMap<User, HashSet<Session>>()
-  private val usersBySession = ConcurrentHashMap<Session, HashSet<User>>()
+  private val sessionsByUser = ConcurrentHashMap<String, HashSet<Session>>()
+  private val usersBySession = ConcurrentHashMap<Session, HashSet<String>>()
 
   init {
     txLogFile.parentFile.mkdirs()
@@ -77,11 +77,11 @@ open class UsageManager(val root: File = File(".skyenet/usage")) : UsageInterfac
   private fun writeCompactLog(file: File) {
     FileWriter(file).use { writer ->
       usagePerSession.forEach { (sessionId, usage) ->
-        val user = usersBySession[sessionId]?.firstOrNull()
+        val apiKey = usersBySession[sessionId]?.firstOrNull()
         usage.tokensPerModel.forEach { (model, counter) ->
-          writer.write("$sessionId,${user?.email},${model.model.modelName},${counter.inputTokens.get()},input\n")
-          writer.write("$sessionId,${user?.email},${model.model.modelName},${counter.outputTokens.get()},output\n")
-          writer.write("$sessionId,${user?.email},${model.model.modelName},${counter.cost.get()},cost\n")
+          writer.write("$sessionId,${apiKey},${model.model.modelName},${counter.inputTokens.get()},input\n")
+          writer.write("$sessionId,${apiKey},${model.model.modelName},${counter.outputTokens.get()},output\n")
+          writer.write("$sessionId,${apiKey},${model.model.modelName},${counter.cost.get()},cost\n")
         }
       }
       writer.flush()
@@ -128,24 +128,23 @@ open class UsageManager(val root: File = File(".skyenet/usage")) : UsageInterfac
 
   override fun incrementUsage(
     session: Session,
-    user: User?,
+    apiKey: String?,
     model: OpenAIModel,
     tokens: com.simiacryptus.jopenai.ApiModel.Usage
   ) {
-    @Suppress("NAME_SHADOWING") val user = if (null == user) null else User(email = user.email) // Hack
     usagePerSession.computeIfAbsent(session) { UsageCounters() }
-      .tokensPerModel.computeIfAbsent(UsageKey(session, user, model)) { UsageValues() }
+      .tokensPerModel.computeIfAbsent(UsageKey(session, apiKey, model)) { UsageValues() }
       .addAndGet(tokens)
-    if (user != null) {
-      sessionsByUser.computeIfAbsent(user) { HashSet() }.add(session)
+    if (apiKey != null) {
+      sessionsByUser.computeIfAbsent(apiKey) { HashSet() }.add(session)
     }
     try {
       val txLogFileWriter = txLogFileWriter
       if (null != txLogFileWriter) {
         synchronized(txLogFile) {
-          txLogFileWriter.write("$session,${user?.email},${model.modelName},${tokens.prompt_tokens},input\n")
-          txLogFileWriter.write("$session,${user?.email},${model.modelName},${tokens.completion_tokens},output\n")
-          txLogFileWriter.write("$session,${user?.email},${model.modelName},${tokens.completion_tokens},cost\n")
+          txLogFileWriter.write("$session,${apiKey},${model.modelName},${tokens.prompt_tokens},input\n")
+          txLogFileWriter.write("$session,${apiKey},${model.modelName},${tokens.completion_tokens},output\n")
+          txLogFileWriter.write("$session,${apiKey},${model.modelName},${tokens.completion_tokens},cost\n")
           txLogFileWriter.flush()
         }
       }
@@ -154,9 +153,8 @@ open class UsageManager(val root: File = File(".skyenet/usage")) : UsageInterfac
     }
   }
 
-  override fun getUserUsageSummary(user: User): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> {
-    @Suppress("NAME_SHADOWING") val user = if (null == user) null else User(email = user.email) // Hack
-    return sessionsByUser[user]?.flatMap { sessionId ->
+  override fun getUserUsageSummary(apiKey: String): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> {
+    return sessionsByUser[apiKey]?.flatMap { sessionId ->
       val usage = usagePerSession[sessionId]
       usage?.tokensPerModel?.entries?.map { (model, counter) ->
         model.model to counter.toUsage()

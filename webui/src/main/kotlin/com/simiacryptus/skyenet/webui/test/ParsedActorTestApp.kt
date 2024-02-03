@@ -17,6 +17,7 @@ open class ParsedActorTestApp<T : Any>(
     temperature: Double = 0.3,
 ) : ApplicationServer(
   applicationName = applicationName,
+    path = "/parsedActorTest",
 ) {
     override fun userMessage(
         session: Session,

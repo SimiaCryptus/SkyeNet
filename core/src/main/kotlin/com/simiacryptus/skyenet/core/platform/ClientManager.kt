@@ -3,10 +3,10 @@ package com.simiacryptus.skyenet.core.platform
 import com.google.common.util.concurrent.ListeningScheduledExecutorService
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.jopenai.HttpClientManager
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.OpenAIModel
+import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
 import org.apache.hc.core5.http.HttpRequest
@@ -78,9 +78,10 @@ open class ClientManager {
       val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/openai.log")
       logfile?.parentFile?.mkdirs()
       val userApi =
-        if (userSettings.apiKey?.isBlank() == false)
+        if (userSettings.apiKey.isNotBlank())
           MonitoredClient(
             key = userSettings.apiKey,
+            apiBase = userSettings.apiBase ?: "https://api.openai.com/v1",
             logfile = logfile,
             session = session,
             user = user,
@@ -112,6 +113,7 @@ open class ClientManager {
     logfile: File?,
     private val session: Session,
     private val user: User?,
+    apiBase: String = "https://api.openai.com/v1",
     scheduledPool: ListeningScheduledExecutorService = HttpClientManager.scheduledPool,
     workPool: ThreadPoolExecutor = HttpClientManager.workPool,
     client: CloseableHttpClient = HttpClientManager.client
@@ -124,6 +126,7 @@ open class ClientManager {
     scheduledPool = scheduledPool,
     workPool = workPool,
     client = client,
+    apiBase = apiBase
   ) {
     var budget = 2.00
     override fun authorize(request: HttpRequest) {

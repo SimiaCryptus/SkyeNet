@@ -11,7 +11,6 @@ import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.ContextHandlerCollection
-import org.eclipse.jetty.server.handler.StatisticsHandler
 import org.eclipse.jetty.servlet.FilterHolder
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.servlet.StatisticsServlet
@@ -88,7 +87,7 @@ abstract class ApplicationDirectory(
         }
       }
       ApplicationServices.isLocked = true
-      val welcomeContext = newWebAppContext("/", welcomeResources, welcomeServlet)
+      val welcomeContext = newWebAppContext("/", welcomeResources, "welcome", welcomeServlet)
       val server = start(
         port,
         *(arrayOf(
@@ -128,7 +127,7 @@ abstract class ApplicationDirectory(
     vararg webAppContexts: WebAppContext
   ): Server {
     val contexts = ContextHandlerCollection()
-    val stats = StatisticsHandler()
+//    val stats = StatisticsHandler()
     contexts.handlers = (
         listOf(
           newWebAppContext("/stats", StatisticsServlet())) +
@@ -137,16 +136,12 @@ abstract class ApplicationDirectory(
               it
             }
         ).toTypedArray()
-
-    stats.handler = contexts
-    stats.handlers
-
     val server = Server(port)
     val serverConnector = ServerConnector(server, httpConnectionFactory())
     serverConnector.port = port
     serverConnector.acceptQueueSize = 1000
     server.connectors = arrayOf(serverConnector)
-    server.handler = stats
+    server.handler = contexts
     server.start()
     if (!server.isStarted) throw IllegalStateException("Server failed to start")
     return server
@@ -160,24 +155,27 @@ abstract class ApplicationDirectory(
 
   protected open fun newWebAppContext(path: String, server: ChatServer): WebAppContext {
     val baseResource = server.baseResource ?: throw IllegalStateException("No base resource")
-    val webAppContext = newWebAppContext(path, baseResource)
-    server.configure(webAppContext, path = path, baseUrl = "$domainName/$path")
+    val webAppContext = newWebAppContext(path, baseResource, resourceBase = "applicaton")
+    server.configure(webAppContext)
     return webAppContext
   }
 
   protected open fun newWebAppContext(
     path: String,
     baseResource: Resource,
+    resourceBase: String,
     indexServlet: Servlet? = null
   ): WebAppContext {
     val context = WebAppContext()
     JettyWebSocketServletContainerInitializer.configure(context, null)
     context.baseResource = baseResource
+//    context.resourceBase = resourceBase
     context.contextPath = path
     context.welcomeFiles = arrayOf("index.html")
+    //context.setDefaultContextPath("index.html")
     if (indexServlet != null) {
-      context.addServlet(ServletHolder("index", indexServlet), "/index.html")
-      context.addServlet(ServletHolder("index", indexServlet), "/")
+      context.addServlet(ServletHolder("$path/index", indexServlet), "/index.html")
+//      context.addServlet(ServletHolder("$path/index", indexServlet), "/")
     }
     return context
   }
@@ -186,8 +184,9 @@ abstract class ApplicationDirectory(
     val context = WebAppContext()
     JettyWebSocketServletContainerInitializer.configure(context, null)
     context.contextPath = path
-    //context.welcomeFiles = arrayOf("index.html")
-    context.addServlet(ServletHolder("index", servlet), "/")
+    context.resourceBase = "application"
+    context.welcomeFiles = arrayOf("index.html")
+    context.addServlet(ServletHolder(servlet), "/")
     return context
   }
 

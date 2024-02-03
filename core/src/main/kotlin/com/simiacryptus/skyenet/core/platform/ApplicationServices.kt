@@ -7,7 +7,6 @@ import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.file.*
 import com.simiacryptus.skyenet.core.util.Selenium
 import java.io.File
-import java.net.URL
 import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ThreadPoolExecutor
@@ -16,11 +15,6 @@ import kotlin.random.Random
 
 object ApplicationServices {
     var isLocked: Boolean = false
-        set(value) {
-            require(!isLocked) { "ApplicationServices is locked" }
-            field = value
-        }
-    var usageManager: UsageInterface = UsageManager()
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
@@ -59,6 +53,11 @@ object ApplicationServices {
 
 
     var seleniumFactory: ((ThreadPoolExecutor, Array<out jakarta.servlet.http.Cookie>?) -> Selenium)? = null
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
+    var usageManager: UsageInterface = UsageManager()
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
@@ -202,6 +201,7 @@ interface StorageInterface {
 interface UserSettingsInterface {
     data class UserSettings(
         val apiKey: String = "",
+        val apiBase: String? = "https://api.openai.com/v1",
     )
 
     fun getUserSettings(user: User): UserSettings
@@ -211,16 +211,25 @@ interface UserSettingsInterface {
 
 
 interface UsageInterface {
-    fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: ApiModel.Usage)
+    fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: ApiModel.Usage) = incrementUsage(
+        session, when (user) {
+            null -> null
+            else -> ApplicationServices.userSettingsManager.getUserSettings(user).apiKey
+        }, model, tokens
+    )
+    fun incrementUsage(session: Session, apiKey: String?, model: OpenAIModel, tokens: ApiModel.Usage)
 
-    fun getUserUsageSummary(user: User): Map<OpenAIModel, ApiModel.Usage>
+    fun getUserUsageSummary(user: User): Map<OpenAIModel, ApiModel.Usage> = getUserUsageSummary(
+        ApplicationServices.userSettingsManager.getUserSettings(user).apiKey
+    )
+    fun getUserUsageSummary(apiKey: String): Map<OpenAIModel, ApiModel.Usage>
 
     fun getSessionUsageSummary(session: Session): Map<OpenAIModel, ApiModel.Usage>
     fun clear()
 
     data class UsageKey(
         val session: Session,
-        val user: User?,
+        val apiKey: String?,
         val model: OpenAIModel,
     )
 

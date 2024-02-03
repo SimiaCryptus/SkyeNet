@@ -56,7 +56,7 @@ abstract class ChatServer(val resourceBase: String) {
     private val webSocketHandler by lazy { WebSocketHandler() }
     private val defaultServlet by lazy { DefaultServlet() }
 
-    open fun configure(webAppContext: WebAppContext, path: String = "/", baseUrl: String) {
+    open fun configure(webAppContext: WebAppContext) {
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), "/")
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/ws", webSocketHandler), "/ws")
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", newSessionServlet),"/newSession")
