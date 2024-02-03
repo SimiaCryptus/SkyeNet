@@ -7,7 +7,6 @@ import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
-import java.util.*
 
 abstract class SessionTask(
   private var buffer: MutableList<StringBuilder> = mutableListOf(),
@@ -135,7 +134,7 @@ abstract class SessionTask(
     tag: String = "div",
     @Description("The css class to apply to the message (default: response-message)")
     className: String = "response-message"
-  ) = append("""<$tag class="$className">$message</$tag>""", false)
+  ) = append(if(message.isNotBlank()) """<$tag class="$className">$message</$tag>""" else "", false)
 
   @Description("Displays an image to the task output.")
   fun image(

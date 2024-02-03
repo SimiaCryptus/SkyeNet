@@ -4,7 +4,6 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
-import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.core.actors.ActorSystem
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
@@ -13,6 +12,7 @@ import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationTy
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import kotlin.reflect.KClass
 
-open class CodingAgent<T : Interpreter>(
+open class   CodingAgent<T : Interpreter>(
   val api: API,
   dataStorage: StorageInterface,
   session: Session,
@@ -100,11 +100,12 @@ open class CodingAgent<T : Interpreter>(
       val header = task.header("Running...")
       try {
         val resultValue = response.result.resultValue
+        val resultOutput = response.result.resultOutput
         val result = when {
           resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
             |# Output
             |```text
-            |${response.result.resultOutput}
+            |${resultOutput}
             |```
             """.trimMargin()
 
@@ -116,7 +117,7 @@ open class CodingAgent<T : Interpreter>(
             |
             |# Output
             |```text
-            |${response.result.resultOutput}
+            |${resultOutput}
             |```
             """.trimMargin()
         }
@@ -125,7 +126,7 @@ open class CodingAgent<T : Interpreter>(
         displayFeedback(task, CodingActor.CodeRequest(
           messages = request.messages +
               listOf(
-                "Running...\n\n$resultValue" to ApiModel.Role.assistant,
+                "Running...\n\n$result" to ApiModel.Role.assistant,
               ).filter { it.first.isNotBlank() }
         ), response)
       } catch (e: Throwable) {

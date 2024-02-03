@@ -69,7 +69,7 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
-    implementation(group = "com.google.api-client", name = "google-api-client", version = "2.0.0" /*"1.35.2"*/)
+    implementation(group = "com.google.api-client", name = "google-api-client", version = "1.35.2" /*"1.35.2"*/)
     implementation(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
     implementation(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
