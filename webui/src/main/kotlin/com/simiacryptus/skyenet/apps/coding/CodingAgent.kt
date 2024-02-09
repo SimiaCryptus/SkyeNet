@@ -126,44 +126,67 @@ open class CodingAgent<T : Interpreter>(
     request: CodingActor.CodeRequest,
     response: CodeResult
   ) {
-    var formText: String? = null
+    val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(
       """
       |<div style="display: flex;flex-direction: column;">
-      |${ if (!canPlay) "" else
-          ui.hrefLink("▶", "href-link play-button") {
-            responseAction(task, "Running...", formHandle, formText) {
-              execute(ui.newTask(), response, request)
-            }
-          }
-      }
-      |${ui.hrefLink("♻", "href-link regen-button") {
-        responseAction(task, "Regenerating...", formHandle, formText) {
-          displayCode(
-            ui.newTask(),
-            request.copy(messages = request.messages.dropLastWhile { it.second == ApiModel.Role.assistant })
-          )
-        }
-      }}
+      |${playButton(task, request, response, formText) { formHandle!! }}
+      |${regenButton(task, request, formText) { formHandle!! }}
       |</div>
-      |${ui.textInput { feedback ->
-        responseAction(task, "Revising...", formHandle, formText) {
-          feedback(ui.newTask(), feedback, request, response)
-        }
-      }
-      }
-    """.trimMargin(), className = "reply-message"
+      |${reviseMsg(task, request, response, formText) { formHandle!! }}
+      """.trimMargin(), className = "reply-message"
     )
-    formText = formHandle.toString()
+    formText.append(formHandle.toString())
+    formHandle.toString()
     task.complete()
   }
+
+
+  protected fun reviseMsg(
+    task: SessionTask,
+    request: CodingActor.CodeRequest,
+    response: CodeResult,
+    formText: StringBuilder,
+    formHandle: () -> StringBuilder
+  ) = ui.textInput { feedback ->
+    responseAction(task, "Revising...", formHandle(), formText) {
+      feedback(ui.newTask(), feedback, request, response)
+    }
+  }
+
+  protected fun regenButton(
+    task: SessionTask,
+    request: CodingActor.CodeRequest,
+    formText: StringBuilder,
+    formHandle: () -> StringBuilder
+  ) = ui.hrefLink("♻", "href-link regen-button") {
+    responseAction(task, "Regenerating...", formHandle(), formText) {
+      displayCode(
+        ui.newTask(),
+        request.copy(messages = request.messages.dropLastWhile { it.second == ApiModel.Role.assistant })
+      )
+    }
+  }
+
+  protected fun playButton(
+    task: SessionTask,
+    request: CodingActor.CodeRequest,
+    response: CodeResult,
+    formText: StringBuilder,
+    formHandle: () -> StringBuilder
+  ) = if (!canPlay) "" else
+    ui.hrefLink("▶", "href-link play-button") {
+      responseAction(task, "Running...", formHandle(), formText) {
+        execute(ui.newTask(), response, request)
+      }
+    }
 
   protected open fun responseAction(
     task: SessionTask,
     message: String,
     formHandle: StringBuilder?,
-    formText: String?,
+    formText: StringBuilder,
     fn: () -> Unit = {}
   ) {
     formHandle?.clear()
@@ -179,7 +202,7 @@ open class CodingAgent<T : Interpreter>(
   protected open fun revertButton(
     task: SessionTask,
     formHandle: StringBuilder?,
-    formText: String?
+    formText: StringBuilder
   ): StringBuilder? {
     var revertButton: StringBuilder? = null
     revertButton = task.complete(ui.hrefLink("↩", "href-link regen-button") {

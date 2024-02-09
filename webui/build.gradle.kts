@@ -35,7 +35,7 @@ val jetty_version = "11.0.18"
 val jackson_version = "2.15.3"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.43")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.44")
 
     implementation(project(":core"))
 
