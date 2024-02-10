@@ -38,6 +38,7 @@ dependencies {
     implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.44")
 
     implementation(project(":core"))
+    implementation(project(":kotlin"))
 
     implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
     compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")

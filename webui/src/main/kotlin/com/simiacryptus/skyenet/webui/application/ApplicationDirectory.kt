@@ -17,6 +17,7 @@ import org.eclipse.jetty.servlet.StatisticsServlet
 import org.eclipse.jetty.util.resource.Resource
 import org.eclipse.jetty.util.resource.Resource.newResource
 import org.eclipse.jetty.util.resource.ResourceCollection
+import org.eclipse.jetty.webapp.WebAppClassLoader
 import org.eclipse.jetty.webapp.WebAppContext
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer
 import org.slf4j.LoggerFactory
@@ -170,14 +171,13 @@ abstract class ApplicationDirectory(
   ): WebAppContext {
     val context = WebAppContext()
     JettyWebSocketServletContainerInitializer.configure(context, null)
+    context.classLoader = WebAppClassLoader(ApplicationServices::class.java.classLoader, context)
+    context.isParentLoaderPriority = true
     context.baseResource = baseResource
-//    context.resourceBase = resourceBase
     context.contextPath = path
     context.welcomeFiles = arrayOf("index.html")
-    //context.setDefaultContextPath("index.html")
     if (indexServlet != null) {
       context.addServlet(ServletHolder("$path/index", indexServlet), "/index.html")
-//      context.addServlet(ServletHolder("$path/index", indexServlet), "/")
     }
     return context
   }
@@ -185,6 +185,8 @@ abstract class ApplicationDirectory(
   protected open fun newWebAppContext(path: String, servlet: Servlet): WebAppContext {
     val context = WebAppContext()
     JettyWebSocketServletContainerInitializer.configure(context, null)
+    context.classLoader = WebAppClassLoader(ApplicationServices::class.java.classLoader, context)
+    context.isParentLoaderPriority = true
     context.contextPath = path
     context.resourceBase = "application"
     context.welcomeFiles = arrayOf("index.html")

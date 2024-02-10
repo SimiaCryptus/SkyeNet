@@ -2,11 +2,13 @@ package com.simiacryptus.skyenet.webui.application
 
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.interpreter.Interpreter
+import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.util.OpenApi
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.eclipse.jetty.webapp.WebAppClassLoader
 import java.io.File
 import java.util.*
 import kotlin.reflect.javaType
@@ -32,16 +34,21 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
 //      resp?.sendError(403)
 //      return
 //    }
-
-      fromString(tool.interpreterString).let { (interpreterClass, symbols) ->
-        val effectiveSymbols = (symbols + mapOf(
-          methodInfo.requestName to req,
-          methodInfo.responseName to resp,
-          "json" to JsonUtil,
-        )).filterKeys { !it.isNullOrBlank() }
-        val code = tool.imports + "\n" + (methodInfo.methodBody!!)
-        val interpreter = interpreterClass.getConstructor(Map::class.java).newInstance(effectiveSymbols)
-        interpreter.run(code)
+      val classLoader = Thread.currentThread().contextClassLoader
+      KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader
+      WebAppClassLoader.runWithServerClassAccess {
+        require(null != classLoader.loadClass("org.eclipse.jetty.server.Response"))
+        require(null != classLoader.loadClass("org.eclipse.jetty.server.Request"))
+        fromString(tool.interpreterString).let { (interpreterClass, symbols) ->
+          val effectiveSymbols = (symbols + mapOf(
+            methodInfo.requestName to req,
+            methodInfo.responseName to resp,
+            "json" to JsonUtil,
+          )).filterKeys { !it.isNullOrBlank() }
+          val code = tool.imports + "\n" + (methodInfo.methodBody!!)
+          val interpreter = interpreterClass.getConstructor(Map::class.java).newInstance(effectiveSymbols)
+          interpreter.run(code)
+        }
       }
     } else {
       super.service(req, resp)
