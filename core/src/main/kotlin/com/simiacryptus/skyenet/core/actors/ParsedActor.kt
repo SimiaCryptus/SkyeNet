@@ -58,7 +58,7 @@ open class ParsedActor<T : Any>(
     override val includeMethods: Boolean get() = false
   }
 
-  override fun answer(vararg messages: ApiModel.ChatMessage, input: List<String>, api: API): ParsedResponse<T> {
+  override fun respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage): ParsedResponse<T> {
     return ParsedResponseImpl(*messages, api = api)
   }
 

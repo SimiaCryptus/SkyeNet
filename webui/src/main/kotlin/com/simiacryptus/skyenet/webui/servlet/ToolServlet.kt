@@ -1,8 +1,10 @@
-package com.simiacryptus.skyenet.webui.application
+package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.apps.coding.ToolAgent
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
+import com.simiacryptus.skyenet.webui.application.ApplicationDirectory
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.util.OpenApi
 import jakarta.servlet.http.HttpServlet
@@ -30,10 +32,15 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
         else -> null
       } ?: throw IllegalArgumentException("Method not supported")
 
+
+      // TODO: Check for user cookie or match this key
+      // TODO: Isolate tools per user
 //    if (apiKey != req?.getHeader("Authorization")?.removePrefix("Bearer ")) {
 //      resp?.sendError(403)
 //      return
 //    }
+
+
       val classLoader = Thread.currentThread().contextClassLoader
       KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader
       WebAppClassLoader.runWithServerClassAccess {

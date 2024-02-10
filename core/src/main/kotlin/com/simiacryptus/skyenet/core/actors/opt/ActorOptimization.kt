@@ -1,12 +1,12 @@
 package com.simiacryptus.skyenet.core.actors.opt
 
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.proxy.ChatProxy
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization.GeneticApi.Prompt
 import org.slf4j.LoggerFactory
@@ -49,12 +49,12 @@ open class ActorOptimization(
             val scores = topPrompts.map { prompt ->
                 prompt to testCases.map { testCase ->
                     val actor = actorFactory(prompt)
-                    val answer = actor.answer(*(listOf(
+                    val answer = actor.respond(input = listOf(actor.prompt) as I, api = api, *(listOf(
                         ApiModel.ChatMessage(
                             role = ApiModel.Role.system,
                             content = actor.prompt.toContentList()
                         ),
-                    ) + testCase.userMessages).toTypedArray(), input = listOf(actor.prompt) as I, api = api)
+                    ) + testCase.userMessages).toTypedArray())
                     testCase.expectations.map { it.score(api, resultMapper(answer)) }.average()
                 }.average()
             }

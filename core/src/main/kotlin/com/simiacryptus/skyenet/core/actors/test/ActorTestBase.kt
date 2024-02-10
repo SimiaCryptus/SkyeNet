@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.core.actors.test
 
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization
 import org.slf4j.LoggerFactory
@@ -56,8 +56,11 @@ abstract class ActorTestBase<I: Any, R : Any> {
         }
     }
 
-    open fun answer(messages: Array<ApiModel.ChatMessage>): R = actor.answer(*messages,
-        input = (messages.map { it.content?.first()?.text }) as I, api=api)
+    open fun answer(messages: Array<ApiModel.ChatMessage>): R = actor.respond(
+        input = (messages.map { it.content?.first()?.text }) as I,
+        api=api,
+        *messages
+    )
 
     companion object {
         private val log = LoggerFactory.getLogger(ActorTestBase::class.java)

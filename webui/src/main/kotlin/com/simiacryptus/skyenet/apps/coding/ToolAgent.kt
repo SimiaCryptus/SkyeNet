@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui.application
+package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
@@ -8,7 +8,6 @@ import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.apps.coding.CodingAgent
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.imports
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.sortCode
@@ -18,6 +17,9 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.interpreter.Interpreter
+import com.simiacryptus.skyenet.webui.application.ApplicationInterface
+import com.simiacryptus.skyenet.webui.servlet.Tool
+import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.util.OpenApi

@@ -115,10 +115,10 @@ open class CodingActor(
 
   }
 
-  override fun answer(
-    vararg messages: ChatMessage,
+  override fun respond(
     input: CodeRequest,
     api: API,
+    vararg messages: ChatMessage,
   ): CodeResult {
     var result = CodeResultImpl(
       *messages,
