@@ -9,7 +9,6 @@ import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.actors.CodingActor
-import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.imports
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.sortCode
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
@@ -135,6 +134,7 @@ abstract class ToolAgent<T : Interpreter>(
       val toolsPrefix = "/tools"
       val openAPI = object : ParsedActor<OpenApi>(
         parserClass = OpenApiParser::class.java,
+        model = model,
         prompt = "You are a code documentation assistant. You will create the OpenAPI definition for a servlet handler written in kotlin",
       ) {
         override val describer: TypeDescriber
@@ -149,11 +149,13 @@ abstract class ToolAgent<T : Interpreter>(
       task.add(MarkdownUtil.renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
       val parsedServlet = ParsedActor(
         parserClass = ServletParser::class.java,
+        model = model,
         prompt = "You are a code parsing assistant. You will extract the servlet handler definition from the given kotlin code",
       ).getParser(api).apply(servletHandler.code)
       task.add(MarkdownUtil.renderMarkdown("```json\n${JsonUtil.toJson(parsedServlet)}\n```"))
       var testPage = SimpleActor(
         prompt = "Given the definition for a servlet handler, create a test page that can be used to test the servlet",
+        model = model,
       ).answer(listOf(
         JsonUtil.toJson(openAPI),
         servletImpl
@@ -165,10 +167,7 @@ abstract class ToolAgent<T : Interpreter>(
         Tool(
           path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
           openApiDescription = openAPI,
-          imports = (servletImpl.imports().joinToString("\n") + "\n" + dataschemaHandler.code).sortCode(),
-          code = servletImpl,
           interpreterString = getInterpreterString(),
-          testPage = testPage,
           parsedServlet = parsedServlet
         )
       )
@@ -184,6 +183,10 @@ abstract class ToolAgent<T : Interpreter>(
   }
 
   data class ServletInfo(
+    @Description("Package imports or null if not present")
+    val imports : List<String>? = null,
+    @Description("Supporting data classes or null if not present")
+    val dataClasses : List<DataclassInfo>? = null,
     @Description("Post Handler or null if not present")
     val onPost : HandlerInfo? = null,
     @Description("Get Handler or null if not present")
@@ -199,6 +202,20 @@ abstract class ToolAgent<T : Interpreter>(
       onGet?.validate() != null -> "onGet: ${onGet.validate()}"
       onPut?.validate() != null -> "onPut: ${onPut.validate()}"
       onDelete?.validate() != null -> "onDelete: ${onDelete.validate()}"
+      dataClasses?.any { it.validate() != null } == true -> "dataClasses: ${dataClasses.joinToString { it.validate() ?: "" }}"
+      else -> null
+    }
+  }
+
+  data class DataclassInfo(
+    @Description("The name of the data class")
+    val name : String? = null,
+    @Description("The code for the data class")
+    val code : String? = null,
+  ) : ValidatedObject {
+    override fun validate() = when {
+      name.isNullOrBlank() -> "name is required"
+      code.isNullOrEmpty() -> "code is required"
       else -> null
     }
   }
