@@ -35,7 +35,7 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
 
       fromString(tool.interpreterString).let { (interpreterClass, symbols) ->
         val effectiveSymbols = (symbols + mapOf(
-          methodInfo.requestName to re q,
+          methodInfo.requestName to req,
           methodInfo.responseName to resp,
           "json" to JsonUtil,
         )).filterKeys { !it.isNullOrBlank() }
