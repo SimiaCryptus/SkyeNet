@@ -82,7 +82,7 @@ open class CodingAgent<T : Interpreter>(
       } else {
         actor.answer(codeRequest, api = api)
       }
-      displayCode(task, codeRequest, codeResponse)
+      displayCodeAndFeedback(task, codeRequest, codeResponse)
     } catch (e: Throwable) {
       log.warn("Error", e)
       val error = task.error(e)
@@ -97,28 +97,41 @@ open class CodingAgent<T : Interpreter>(
       })
     }
   }
-  protected open fun displayCode(
+  protected fun displayCodeAndFeedback(
     task: SessionTask,
     codeRequest: CodingActor.CodeRequest,
     response: CodeResult,
   ) {
     try {
-      task.add(
-        renderMarkdown(response.renderedResponse ?:
-          //language=Markdown
-          "```${actor.language.lowercase(Locale.getDefault())}\n${response.code.trim()}\n```"
-        )
-      )
-      displayFeedback(task, CodingActor.CodeRequest(
-        messages = codeRequest.messages +
-            listOf(
-              response.code to ApiModel.Role.assistant,
-            ).filter { it.first.isNotBlank() }
-      ), response)
+      displayCode(task, response)
+      displayFeedback(task, append(codeRequest, response), response)
     } catch (e: Throwable) {
-      log.warn("Error", e)
       task.error(e)
+      log.warn("Error", e)
     }
+  }
+
+  fun append(
+    codeRequest: CodingActor.CodeRequest,
+    response: CodeResult
+  ) = CodingActor.CodeRequest(
+    messages = codeRequest.messages +
+        listOf(
+          response.code to ApiModel.Role.assistant,
+        ).filter { it.first.isNotBlank() }
+  )
+
+  fun displayCode(
+    task: SessionTask,
+    response: CodeResult
+  ) {
+    task.add(
+      renderMarkdown(
+        response.renderedResponse ?:
+        //language=Markdown
+        "```${actor.language.lowercase(Locale.getDefault())}\n${response.code.trim()}\n```"
+      )
+    )
   }
 
   open fun displayFeedback(

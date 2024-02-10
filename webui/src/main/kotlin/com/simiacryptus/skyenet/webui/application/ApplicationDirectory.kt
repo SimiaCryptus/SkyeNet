@@ -51,7 +51,7 @@ abstract class ApplicationDirectory(
   open val usageServlet = UsageServlet()
   open val proxyHttpServlet = ProxyHttpServlet()
   open val welcomeServlet = WelcomeServlet(this)
-  open val toolServlet = ToolServlet(this)
+  abstract val toolServlet : ToolServlet?
 
   open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(
     redirectUri = "$domainName/oauth2callback",
@@ -91,14 +91,14 @@ abstract class ApplicationDirectory(
       val welcomeContext = newWebAppContext("/", welcomeResources, "welcome", welcomeServlet)
       val server = start(
         port,
-        *(arrayOf(
+        *(listOfNotNull(
           newWebAppContext("/userInfo", userInfoServlet),
           newWebAppContext("/userSettings", userSettingsServlet),
           newWebAppContext("/usage", usageServlet),
           newWebAppContext("/proxy", proxyHttpServlet),
-          newWebAppContext("/tools", toolServlet),
+          toolServlet?.let { newWebAppContext("/tools", it) },
           authenticatedWebsite()?.configure(welcomeContext, false) ?: welcomeContext,
-        ) + childWebApps.map {
+        ).toTypedArray() + childWebApps.map {
           newWebAppContext(it.path, it.server)
         })
       )

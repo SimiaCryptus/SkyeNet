@@ -1,21 +1,53 @@
 package com.simiacryptus.skyenet.webui.application
 
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.interpreter.Interpreter
+import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.webui.util.OpenApi
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import java.io.File
 import java.util.*
+import kotlin.reflect.javaType
+import kotlin.reflect.typeOf
 
-class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
+abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
 
+  override fun service(req: HttpServletRequest?, resp: HttpServletResponse?) {
+    req ?: return
+    resp ?: return
+    val path = req.servletPath ?: "/"
+    val tool = tools.find { it.path == path }
+    if(tool != null) {
+      val methodInfo = when(req.method) {
+        "GET" -> tool.parsedServlet.onGet
+        "POST" -> tool.parsedServlet.onPost
+        "PUT" -> tool.parsedServlet.onPut
+        "DELETE" -> tool.parsedServlet.onDelete
+        else -> null
+      } ?: throw IllegalArgumentException("Method not supported")
 
-  data class Tool(
-    val path: String,
-    val openApiDescription: String,
-    val code: String,
-    val interpreterClass: Class<out Interpreter>,
-    val symbols: Map<String, Any> = mapOf(),
-  )
+//    if (apiKey != req?.getHeader("Authorization")?.removePrefix("Bearer ")) {
+//      resp?.sendError(403)
+//      return
+//    }
+
+      fromString(tool.interpreterString).let { (interpreterClass, symbols) ->
+        val effectiveSymbols = (symbols + mapOf(
+          methodInfo.requestName to re q,
+          methodInfo.responseName to resp,
+          "json" to JsonUtil,
+        )).filterKeys { !it.isNullOrBlank() }
+        val code = tool.imports + "\n" + (methodInfo.methodBody!!)
+        val interpreter = interpreterClass.getConstructor(Map::class.java).newInstance(effectiveSymbols)
+        interpreter.run(code)
+      }
+    } else {
+      super.service(req, resp)
+    }
+  }
+
   override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
     resp?.contentType = "text/html"
     resp?.writer?.write(
@@ -23,7 +55,15 @@ class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
         <html>
         <head>
           <title>Tools</title>
+          <meta charset="UTF-8">
+          <meta name='viewport' content='width=device-width,initial-scale=1'>
+          <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+          <link href="https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-ghcolors.min.css" rel="stylesheet"/>
+          <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet"/>
+          <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet"/>
+          <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/match-braces/prism-match-braces.min.css" rel="stylesheet"/>
           <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+          
           <style>
             body { font-family: 'Roboto', Arial, sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 20px; }
             h1 { color: #5a5a5a; }
@@ -42,8 +82,9 @@ class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
           """
             <div class='tool'>
               <div class='tool-path'>${tool.path}</div>
-              <div class='json-display'>${tool.openApiDescription}</div>
-              <div class='code-display'>${tool.code}</div>
+              <div class='interpreter-string'>${tool.interpreterString}</div>
+              <div class='json-display'>${MarkdownUtil.renderMarkdown("```json\n${JsonUtil.toJson(tool.openApiDescription)}\n```")}</div>
+              <div class='code-display'>${MarkdownUtil.renderMarkdown("```kotlin\n${tool.code}\n```")}</div>
             </div>
         """.trimIndent()
         }
@@ -55,28 +96,42 @@ class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
       """.trimIndent()
     )
     resp?.writer?.close()
-
   }
 
-  override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
-    val path = (req?.servletPath ?: "").removePrefix("/")
-    if (apiKey != req?.getHeader("Authorization")?.removePrefix("Bearer ")) {
-      resp?.sendError(403)
-      return
-    }
-    tools.find { it.path == path }?.apply {
-      interpreterClass.getConstructor(Map::class.java).newInstance(symbols + mapOf(
-        "req" to req,
-        "resp" to resp
-      )).run(code)
-    } ?: run {
-      resp?.sendError(404)
-    }
-    super.doPost(req, resp)
-  }
+
+  abstract fun fromString(str: String): InterpreterAndTools
 
   companion object {
-    val tools = mutableListOf<Tool>()
+    private val userRoot by lazy { File(File(".skyenet"), "tools").apply { mkdirs() } }
+    @OptIn(ExperimentalStdlibApi::class)
+    val tools by lazy {
+      val file = File(userRoot, "tools.json")
+      if (file.exists()) try {
+        return@lazy JsonUtil.fromJson(file.readText(), typeOf<List<Tool>>().javaType)
+      } catch (e: Throwable) {
+        e.printStackTrace()
+      }
+      mutableListOf<Tool>()
+    }
+    fun addTool(element: Tool) {
+      tools += element
+      File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
+    }
+
     val apiKey = UUID.randomUUID().toString()
   }
 }
+data class InterpreterAndTools(
+  val interpreterClass: Class<out Interpreter>,
+  val symbols: Map<String, Any> = mapOf(),
+)
+
+data class Tool(
+  val path: String,
+  val openApiDescription: OpenApi,
+  val code: String,
+  val interpreterString: String,
+  val testPage: String,
+  val parsedServlet: ToolAgent.ServletInfo,
+  val imports: String,
+)
