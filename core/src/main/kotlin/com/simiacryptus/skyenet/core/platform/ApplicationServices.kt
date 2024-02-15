@@ -39,6 +39,11 @@ object ApplicationServices {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
         }
+    var dataStorageRoot: File = File(System.getProperty("user.home"), ".skyenet")
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
     var clientManager: ClientManager = ClientManager()
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
@@ -57,7 +62,7 @@ object ApplicationServices {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
         }
-    var usageManager: UsageInterface = UsageManager()
+    var usageManager: UsageInterface = UsageManager(File(dataStorageRoot, ".skyenet/usage"))
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value

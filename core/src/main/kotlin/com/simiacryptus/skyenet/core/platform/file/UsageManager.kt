@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-open class UsageManager(val root: File = File(".skyenet/usage")) : UsageInterface {
+open class UsageManager(val root: File) : UsageInterface {
 
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
   private val txLogFile = File(root, "log.csv")
