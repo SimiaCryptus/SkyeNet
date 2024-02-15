@@ -94,7 +94,7 @@ data class Components(
 }
 
 // Simplified examples of component objects
-data class Schema(val type: String? = null, val properties: Map<String, Schema>? = emptyMap())
+data class Schema(val type: String? = null, val properties: Map<String, Schema>? = emptyMap(), val items: Schema? = null)
 data class Parameter(val name: String? = null, val `in`: String? = null, val description: String? = null)
 data class Example(val summary: String? = null, val description: String? = null)
 data class RequestBody(val description: String? = null, val content: Map<String, MediaType>? = null)

@@ -44,6 +44,10 @@ dependencies {
     compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
     compileOnly("org.jsoup:jsoup:1.17.2")
 
+    implementation("org.openapitools:openapi-generator:7.3.0")
+    implementation("org.openapitools:openapi-generator-cli:7.3.0")
+
+
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-annotations", version = jetty_version)

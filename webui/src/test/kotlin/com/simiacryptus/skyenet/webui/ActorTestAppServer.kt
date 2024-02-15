@@ -12,6 +12,7 @@ import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.groovy.GroovyInterpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.scala.ScalaLocalInterpreter
+import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.test.CodingActorTestApp
 import com.simiacryptus.skyenet.webui.test.ImageActorTestApp
 import com.simiacryptus.skyenet.webui.test.ParsedActorTestApp
@@ -42,6 +43,7 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
             ChildWebApp("/test_coding_kotlin", CodingActorTestApp(CodingActor(KotlinInterpreter::class))),
             ChildWebApp("/test_coding_groovy", CodingActorTestApp(CodingActor(GroovyInterpreter::class))),
         )}
+    override val toolServlet: ToolServlet? get() = null
 
     @JvmStatic
     fun main(args: Array<String>) {

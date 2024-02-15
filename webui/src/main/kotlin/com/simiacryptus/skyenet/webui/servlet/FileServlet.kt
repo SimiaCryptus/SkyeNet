@@ -72,11 +72,17 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
       else -> {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
-        val files = file.listFiles()?.filter { it.isFile && !it.name.startsWith(".") }?.sortedBy { it.name }
+        val files = file.listFiles()
+          ?.filter { it.isFile }
+//          ?.filter { !it.name.startsWith(".") }
+          ?.sortedBy { it.name }
           ?.joinToString("<br/>\n") {
             """<a class="file-item" href="${it.name}">${it.name}</a>"""
           } ?: ""
-        val folders = file.listFiles()?.filter { !it.isFile && !it.name.startsWith(".") }?.sortedBy { it.name }
+        val folders = file.listFiles()
+          ?.filter { !it.isFile }
+//          ?.filter { !it.name.startsWith(".") }
+          ?.sortedBy { it.name }
           ?.joinToString("<br/>\n") {
             """<a class="folder-item" href="${it.name}/">${it.name}</a>"""
           } ?: ""

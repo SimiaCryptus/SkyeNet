@@ -151,6 +151,7 @@ open class KotlinInterpreter(
         |```
         """.trimMargin().trim()
 
+    // TODO: Make this threadlocal with wrapper methods
     var classLoader: ClassLoader? = KotlinInterpreter::class.java.classLoader
 
   }
