@@ -3,10 +3,10 @@ package com.simiacryptus.skyenet.webui.session
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.actors.CodingActor
+import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
-import java.util.*
 
 abstract class SessionTask(
   private var buffer: MutableList<StringBuilder> = mutableListOf(),
@@ -134,13 +134,13 @@ abstract class SessionTask(
     tag: String = "div",
     @Description("The css class to apply to the message (default: response-message)")
     className: String = "response-message"
-  ) = append("""<$tag class="$className">$message</$tag>""", false)
+  ) = append(if(message.isNotBlank()) """<$tag class="$className">$message</$tag>""" else "", false)
 
   @Description("Displays an image to the task output.")
   fun image(
     @Description("The image to display")
     image: BufferedImage
-  ) = add("""<img src="${saveFile("${UUID.randomUUID()}.png", image.toPng())}" />""")
+  ) = add("""<img src="${saveFile("${long64()}.png", image.toPng())}" />""")
 
   companion object {
     val log = LoggerFactory.getLogger(SessionTask::class.java)

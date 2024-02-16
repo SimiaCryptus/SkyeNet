@@ -1,5 +1,10 @@
-
 // Mixins
+@mixin typography($font-family: $font-family-primary, $font-size: $font-size-base, $font-weight: $font-weight-normal) {
+    font-family: $font-family;
+    font-size: $font-size;
+    font-weight: $font-weight;
+}
+
 @mixin flex-container($direction: column) {
     display: flex;
     flex-direction: $direction;
@@ -9,7 +14,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
+    width: 100vw;
     height: 100%;
 }
 
@@ -17,7 +22,6 @@
     transition: color $transition-speed;
     &:hover {
         color: $link-hover-color;
-        text-decoration: underline;
     }
 }
 
@@ -29,7 +33,7 @@
 
 // Root styles
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    @include typography($font-family-secondary);
     color: $primary-text-color;
     background-color: $primary-bg-color;
     margin: 0;
@@ -46,6 +50,7 @@ body {
 .chat-input,
 .reply-input {
     background-color: $secondary-bg-color;
+    color: $primary-text-color;
     border-radius: $border-radius;
     padding: 10px;
     margin-bottom: 10px;
@@ -61,7 +66,7 @@ body {
 .code-execution {
     @include flex-container(row);
     padding: 5px;
-    flex-shrink: 0;
+    width: -webkit-fill-available;
     background-color: $primary-bg-color;
 }
 
@@ -78,9 +83,9 @@ body {
     z-index: 50;
     @include flex-container;
     color: white;
-    font-size: 24px;
+    font-size: $font-size-large;
     p {
-        font-size: 3rem;
+        @include typography($font-size: $font-size-large, $font-weight: $font-weight-bold);
         line-height: 1.5;
         margin-bottom: 20px;
         animation: bounce $transition-speed infinite alternate;
@@ -132,7 +137,7 @@ body {
 }
 
 #toolbar {
-    width: 100%;
+    width: 100vw;
     z-index: 2;
 }
 
@@ -158,10 +163,10 @@ body {
         box-shadow: $box-shadow;
     }
     .close {
+        @include typography($font-weight: $font-weight-bold);
         color: $close-color;
         float: right;
-        font-size: 28px;
-        font-weight: bold;
+        font-size: $font-size-large;
         cursor: pointer;
         &:hover,
         &:focus {
@@ -171,15 +176,16 @@ body {
 }
 
 .play-button,
+.regen-button,
 .cancel-button {
-    font-size: 1.5rem;
-    font-weight: 600;
+    @include typography($font-size: 1.5rem, $font-weight: $font-weight-bold);
     border: 2px solid transparent;
     background: $primary-bg-color;
     cursor: pointer;
     transition: all $transition-speed;
-    padding: 10px 20px;
+    padding: 5px 10px;
     border-radius: $border-radius;
+    text-decoration: unset;
     &:focus,
     &:hover {
         outline: none;
@@ -242,7 +248,7 @@ pre.response-message {
 }
 
 .response-header {
-    font-weight: bold;
+    font-weight: $font-weight-bold;
     margin-top: 20px;
     margin-bottom: 10px;
 }
@@ -250,13 +256,13 @@ pre.response-message {
 #footer {
     position: fixed;
     bottom: 0;
-    width: 100%;
+    width: 100vw;
     text-align: right;
     z-index: 1000;
     a {
         color: $footer-link-color;
         text-decoration: none;
-        font-weight: bold;
+        font-weight: $font-weight-bold;
         &:hover {
             text-decoration: underline;
             color: $footer-link-hover-color;
@@ -283,7 +289,7 @@ pre.response-message {
         box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
         z-index: 1;
         a {
-            color: black;
+            color: $primary-text-color;
             padding: 12px 16px;
             text-decoration: none;
             display: block;
@@ -298,8 +304,7 @@ pre.response-message {
     }
 }
 
-#applist {
-    width: 100%;
+.applist {
     border-collapse: collapse;
     margin-top: 20px;
     th {
@@ -308,7 +313,7 @@ pre.response-message {
         background-color: $applist-header-bg;
         color: $applist-header-text;
         text-transform: uppercase;
-        font-weight: 600;
+        font-weight: $font-weight-bold;
     }
     td, th {
         border: 1px solid #ddd;
@@ -332,9 +337,6 @@ pre.response-message {
     a {
         color: $applist-link-color;
         text-decoration: none;
-        &:hover {
-            text-decoration: underline;
-        }
         margin-right: 10px;
     }
 }

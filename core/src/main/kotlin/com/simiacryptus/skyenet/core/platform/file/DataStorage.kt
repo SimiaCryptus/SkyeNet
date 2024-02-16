@@ -35,10 +35,12 @@ open class DataStorage(
         validateSessionId(session)
         val messageDir = File(this.getSessionDir(user, session), MESSAGE_DIR)
         val messages = LinkedHashMap<String, String>()
-        //log.debug("Loading messages for {}: {}", session, messageDir.absolutePath)
-        messageDir.listFiles()?.sortedBy { it.lastModified() }?.forEach { file ->
-            val message = JsonUtil.objectMapper().readValue(file, String::class.java)
-            messages[file.nameWithoutExtension] = message
+        getMessageIds(user, session).forEach { messageId ->
+            val file = File(messageDir, "$messageId.json")
+            if (file.exists()) {
+                val message = JsonUtil.objectMapper().readValue(file, String::class.java)
+                messages[messageId] = message
+            }
         }
         //log.debug("Loaded {} messages for {}", messages.size, session)
         return messages
@@ -98,19 +100,44 @@ open class DataStorage(
         }
     }
 
-    override fun getSessionTime(
+    override fun getMessageIds(
+        user: User?,
+        session: Session
+    ): List<String> {
+        validateSessionId(session)
+        val sessionDir = getSessionDir(user, session)
+        val settings = getJson(sessionDir, "internal.json", Map::class.java) ?: mapOf<String,String>()
+        if(settings.containsKey("ids")) return settings["ids"].toString().split(",").toList()
+        val ids = messageFiles(sessionDir).entries.sortedBy { it.key.lastModified() }
+            ?.map { it.key.nameWithoutExtension }?.toList() ?: listOf()
+        setJson(sessionDir, "internal.json", settings.plus("ids" to ids.joinToString(",")))
+        return ids
+    }
+
+    override fun setMessageIds(
+        user: User?,
+        session: Session,
+        ids: List<String>
+    ) {
+        validateSessionId(session)
+        val sessionDir = getSessionDir(user, session)
+        val settings = getJson(sessionDir, "internal.json", Map::class.java) ?: mapOf<String, String>()
+        setJson(sessionDir, "internal.json", settings.plus("ids" to ids.joinToString(",")))
+    }
+
+override fun getSessionTime(
         user: User?,
         session: Session
     ): Date? {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, "settings.json", Map::class.java) ?: mapOf<String,String>()
+        val settings = getJson(sessionDir, "internal.json", Map::class.java) ?: mapOf<String,String>()
         val dateFormat = SimpleDateFormat.getDateTimeInstance()
         if(settings.containsKey("time")) return dateFormat.parse(settings["time"] as String)
         val file = messageFiles(sessionDir).entries.minByOrNull { it.key.lastModified() }?.key
         return if (null != file) {
             val date = Date(file.lastModified())
-            setJson(sessionDir, "settings.json", settings.plus("time" to dateFormat.format(date)))
+            setJson(sessionDir, "internal.json", settings.plus("time" to dateFormat.format(date)))
             date
         } else {
             //log.debug("Session {}: No messages", session)
@@ -167,9 +194,22 @@ open class DataStorage(
     ) {
         validateSessionId(session)
         val file = File(File(this.getSessionDir(user, session), MESSAGE_DIR), "$messageId.json")
+        if(!file.exists()) {
+            file.parentFile.mkdirs()
+            addMessageID(user, session, messageId)
+        }
         //log.debug("Updating message for {} / {}: {}", session, messageId, file.absolutePath)
-        file.parentFile.mkdirs()
         JsonUtil.objectMapper().writeValue(file, value)
+    }
+
+    open protected fun addMessageID(
+        user: User?,
+        session: Session,
+        messageId: String
+    ) {
+        synchronized(this) {
+            setMessageIds(user, session, getMessageIds(user, session) + messageId)
+        }
     }
 
     override fun listSessions(dir: File): List<String> {
@@ -186,7 +226,11 @@ open class DataStorage(
 
     override fun userRoot(user: User?) = File(
         File(dataDir, "users"),
-        user?.email ?: throw IllegalArgumentException("User required for private session")
+        if (user?.email != null) {
+            user?.email
+        } else {
+            throw IllegalArgumentException("User required for private session")
+        }
     )
 
     override fun deleteSession(user: User?, session: Session) {

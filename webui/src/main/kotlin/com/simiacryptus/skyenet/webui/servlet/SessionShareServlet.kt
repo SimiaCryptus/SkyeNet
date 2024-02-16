@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationM
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.StorageInterface
+import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
@@ -17,7 +18,9 @@ import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
 import java.io.File
 import java.net.URI
+import java.nio.ByteBuffer
 import java.util.*
+import kotlin.random.Random
 
 class SessionShareServlet(
   private val server: ApplicationServer,
@@ -26,6 +29,7 @@ class SessionShareServlet(
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
 
     val user = authenticationManager.getUser(req.getCookie())
+    val cookies = req.cookies
 
     if (!req.parameterMap.containsKey("url")) {
       resp.status = HttpServletResponse.SC_BAD_REQUEST
@@ -38,9 +42,7 @@ class SessionShareServlet(
     val appName = url.split("/").dropLast(1).last()
     val sessionID = url.split("#").lastOrNull() ?: throw IllegalArgumentException("No session id in url: $url")
 
-    require(
-      acceptHost(user, host)
-    ) { "Invalid url: $url" }
+    require(acceptHost(user, host)) { "Invalid url: $url" }
 
     val storageInterface = ApplicationServices.dataStorageFactory.invoke(File(File(".skyenet"), appName))
     val session = StorageInterface.parseSessionID(sessionID)
@@ -80,7 +82,7 @@ class SessionShareServlet(
       }
 
       else -> {
-        val shareId = UUID.randomUUID().toString()
+        val shareId = long64()
         currentlyProcessing.add(shareId)
         pool.submit {
           try {
@@ -90,10 +92,12 @@ class SessionShareServlet(
               if (session.isGlobal()) null else user,
               session = session, filename = "info.json", settings = sessionSettings
             )
-            Selenium2S3(
-              pool = pool,
-              cookies = req.cookies,
-            ).save(
+//            val selenium2S3 = Selenium2S3(
+//              pool = pool,
+//              cookies = cookies,
+//            )
+            val selenium2S3 = ApplicationServices.seleniumFactory?.invoke(pool, cookies)!!
+            selenium2S3.save(
               url = URI(url).toURL(),
               saveRoot = "$appName/$shareId",
               currentFilename = "index.html",

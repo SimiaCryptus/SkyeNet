@@ -23,6 +23,11 @@ class UserSettingsServlet : HttpServlet() {
                 apiKey = when(settings.apiKey) {
                     "" -> ""
                     else -> mask
+                },
+                apiBase = when(settings.apiBase) {
+                    null -> "https://api.openai.com/v1"
+                    "" -> "https://api.openai.com/v1"
+                    else -> settings.apiBase
                 }
             )
             val json = JsonUtil.toJson(visibleSettings)
@@ -59,6 +64,11 @@ class UserSettingsServlet : HttpServlet() {
                     "" -> ""
                     mask -> prevSettings.apiKey
                     else -> settings.apiKey
+                },
+                apiBase = when(settings.apiBase) {
+                    null -> "https://api.openai.com/v1"
+                    "" -> "https://api.openai.com/v1"
+                    else -> settings.apiBase
                 }
             )
             ApplicationServices.userSettingsManager.updateUserSettings(userinfo, reconstructedSettings)

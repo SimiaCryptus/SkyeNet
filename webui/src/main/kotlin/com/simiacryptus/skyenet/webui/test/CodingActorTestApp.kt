@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -19,6 +20,7 @@ open class CodingActorTestApp(
     temperature: Double = 0.3,
 ) : ApplicationServer(
   applicationName = applicationName,
+  path = "/codingActorTest",
 ) {
     override fun userMessage(
         session: Session,
@@ -27,6 +29,7 @@ open class CodingActorTestApp(
         ui: ApplicationInterface,
         api: API
     ) {
+      (api as ClientManager.MonitoredClient).budget = 2.00
         val message = ui.newTask()
         try {
             message.echo(renderMarkdown(userMessage))

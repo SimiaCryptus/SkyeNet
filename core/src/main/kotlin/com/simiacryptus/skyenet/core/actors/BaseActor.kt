@@ -12,7 +12,7 @@ abstract class BaseActor<I,R>(
     val model: ChatModels = ChatModels.GPT35Turbo,
     val temperature: Double = 0.3,
 ) {
-    abstract fun answer(vararg messages: ApiModel.ChatMessage, input: I, api: API): R
+    abstract fun respond(input: I, api: API, vararg messages: ApiModel.ChatMessage): R
     open fun response(vararg input: ApiModel.ChatMessage, model: OpenAIModel = this.model, api: API) = (api as OpenAIClient).chat(
         ApiModel.ChatRequest(
             messages = ArrayList(input.toList()),
@@ -21,7 +21,7 @@ abstract class BaseActor<I,R>(
         ),
         model = this.model
     )
-    open fun answer(input: I, api: API): R = answer(*chatMessages(input), input=input, api = api)
+    open fun answer(input: I, api: API): R = respond(input=input, api = api, *chatMessages(input))
 
     abstract fun chatMessages(questions: I): Array<ApiModel.ChatMessage>
     abstract fun withModel(model: ChatModels): BaseActor<I,R>

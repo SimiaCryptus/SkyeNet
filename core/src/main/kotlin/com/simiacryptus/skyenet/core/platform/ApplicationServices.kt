@@ -5,17 +5,16 @@ import com.google.common.util.concurrent.AtomicDouble
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.file.*
+import com.simiacryptus.skyenet.core.util.Selenium
 import java.io.File
+import java.nio.ByteBuffer
 import java.util.*
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random
 
 object ApplicationServices {
     var isLocked: Boolean = false
-        set(value) {
-            require(!isLocked) { "ApplicationServices is locked" }
-            field = value
-        }
-    var usageManager: UsageInterface = UsageManager()
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
@@ -40,6 +39,11 @@ object ApplicationServices {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
         }
+    var dataStorageRoot: File = File(System.getProperty("user.home"), ".skyenet")
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
     var clientManager: ClientManager = ClientManager()
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
@@ -47,6 +51,18 @@ object ApplicationServices {
         }
 
     var cloud: CloudPlatformInterface? = AwsPlatform.get()
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
+
+
+    var seleniumFactory: ((ThreadPoolExecutor, Array<out jakarta.servlet.http.Cookie>?) -> Selenium)? = null
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
+    var usageManager: UsageInterface = UsageManager(File(dataStorageRoot, ".skyenet/usage"))
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
@@ -133,32 +149,52 @@ interface StorageInterface {
     fun listSessions(dir: File): List<String>
     fun userRoot(user: User?): File
     fun deleteSession(user: User?, session: Session)
+  fun getMessageIds(
+    user: User?,
+    session: Session
+  ): List<String>
 
-    companion object {
+  fun setMessageIds(
+    user: User?,
+    session: Session,
+    ids: List<String>
+  )
+
+  companion object {
 
         fun validateSessionId(
             session: Session
         ) {
-            if (!session.sessionId.matches("""([GU]-)?\d{8}-\w{8}""".toRegex())) {
+            if (!session.sessionId.matches("""([GU]-)?\d{8}-[\w+-.]{4}""".toRegex())) {
                 throw IllegalArgumentException("Invalid session ID: $session")
             }
         }
 
         fun newGlobalID(): Session {
-            val uuid = UUID.randomUUID().toString().split("-").first()
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
             //log.debug("New ID: $yyyyMMdd-$uuid")
-            return Session("G-$yyyyMMdd-$uuid")
+            return Session("G-$yyyyMMdd-${id2()}")
         }
+
+        fun long64() = Base64.getEncoder().encodeToString(ByteBuffer.allocate(8).putLong(Random.nextLong()).array())
+          .toString().replace("=", "").replace("/", ".").replace("+", "-")
 
         fun newUserID(): Session {
-            val uuid = UUID.randomUUID().toString().split("-").first()
             val yyyyMMdd = java.time.LocalDate.now().toString().replace("-", "")
             //log.debug("New ID: $yyyyMMdd-$uuid")
-            return Session("U-$yyyyMMdd-$uuid")
+            return Session("U-$yyyyMMdd-${id2()}")
         }
 
-        fun parseSessionID(sessionID: String): Session {
+      private fun id2() = long64().filter {
+          when (it) {
+              in 'a'..'z' -> true
+              in 'A'..'Z' -> true
+              in '0'..'9' -> true
+              else -> false
+          }
+      }.take(4)
+
+      fun parseSessionID(sessionID: String): Session {
             val session = Session(sessionID)
             validateSessionId(session)
             return session
@@ -170,6 +206,7 @@ interface StorageInterface {
 interface UserSettingsInterface {
     data class UserSettings(
         val apiKey: String = "",
+        val apiBase: String? = "https://api.openai.com/v1",
     )
 
     fun getUserSettings(user: User): UserSettings
@@ -179,16 +216,25 @@ interface UserSettingsInterface {
 
 
 interface UsageInterface {
-    fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: ApiModel.Usage)
+    fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: ApiModel.Usage) = incrementUsage(
+        session, when (user) {
+            null -> null
+            else -> ApplicationServices.userSettingsManager.getUserSettings(user).apiKey
+        }, model, tokens
+    )
+    fun incrementUsage(session: Session, apiKey: String?, model: OpenAIModel, tokens: ApiModel.Usage)
 
-    fun getUserUsageSummary(user: User): Map<OpenAIModel, ApiModel.Usage>
+    fun getUserUsageSummary(user: User): Map<OpenAIModel, ApiModel.Usage> = getUserUsageSummary(
+        ApplicationServices.userSettingsManager.getUserSettings(user).apiKey
+    )
+    fun getUserUsageSummary(apiKey: String): Map<OpenAIModel, ApiModel.Usage>
 
     fun getSessionUsageSummary(session: Session): Map<OpenAIModel, ApiModel.Usage>
     fun clear()
 
     data class UsageKey(
         val session: Session,
-        val user: User?,
+        val apiKey: String?,
         val model: OpenAIModel,
     )
 

@@ -32,7 +32,8 @@ class SessionListServlet(
             """.trimIndent()
         }
         val title = """Sessions"""
-        resp.writer.write(
+      //language=HTML
+      resp.writer.write(
             """
             <html>
             <head>
@@ -47,8 +48,10 @@ class SessionListServlet(
             </style>
             </head>
             <body>
+            <div id='app-description'>
             ${applicationServer.description}
-            <table>
+            </div>
+            <table class='applist' id='session-list'>
                 <tr>
                     <th>Session Name</th>
                     <th>Created</th>

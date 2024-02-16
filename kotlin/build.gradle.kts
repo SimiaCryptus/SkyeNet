@@ -30,7 +30,9 @@ dependencies {
 
     implementation(project(":core"))
 
-    compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.0-RC")
+    //compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.0-RC")// https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+
 
     implementation(kotlin("stdlib"))
     implementation(kotlin("scripting-jsr223"))

@@ -4,12 +4,12 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ApiModel.ChatMessage
 import com.simiacryptus.jopenai.ApiModel.ImageGenerationRequest
-import com.simiacryptus.jopenai.util.ClientUtil.toChatMessage
-import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.GPT4Tokenizer
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.ImageModels
+import com.simiacryptus.jopenai.util.ClientUtil.toChatMessage
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import java.awt.image.BufferedImage
 import java.net.URL
 import javax.imageio.ImageIO
@@ -63,7 +63,7 @@ open class ImageActor(
     }
     private val codex = GPT4Tokenizer(false)
 
-    override fun answer(vararg messages: ChatMessage, input: List<String>, api: API): ImageResponse {
+    override fun respond(input: List<String>, api: API, vararg messages: ChatMessage): ImageResponse {
         var text = response(*messages, api = api).choices.first().message?.content
             ?: throw RuntimeException("No response")
         while (imageModel.maxPrompt <= text.length) {

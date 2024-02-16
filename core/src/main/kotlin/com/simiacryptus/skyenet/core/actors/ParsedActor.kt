@@ -2,13 +2,15 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
+import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ChatProxy
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import java.util.function.Function
 
-open class ParsedActor<T>(
+open class ParsedActor<T : Any>(
   val parserClass: Class<out Function<String, T>>,
   prompt: String,
   name: String? = parserClass.simpleName,
@@ -41,14 +43,22 @@ open class ParsedActor<T>(
     override val obj get() = _obj
   }
 
-  protected fun getParser(api: API) = ChatProxy(
+  fun getParser(api: API): Function<String, T> = object : ChatProxy<Function<String, T>>(
     clazz = parserClass,
     api = (api as OpenAIClient),
     model = parsingModel,
     temperature = temperature,
-  ).create()
+  ){
+    override val describer: TypeDescriber get() = this@ParsedActor.describer
+  }.create()
 
-  override fun answer(vararg messages: ApiModel.ChatMessage, input: List<String>, api: API): ParsedResponse<T> {
+  open val describer: TypeDescriber = object : AbbrevWhitelistYamlDescriber(
+    "com.simiacryptus", "com.github.simiacryptus"
+  ) {
+    override val includeMethods: Boolean get() = false
+  }
+
+  override fun respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage): ParsedResponse<T> {
     return ParsedResponseImpl(*messages, api = api)
   }
 

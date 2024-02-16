@@ -3,11 +3,11 @@ package com.simiacryptus.skyenet.core.actors
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ApiModel.ChatMessage
-import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.GPT4Tokenizer
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.AudioModels
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 
 open class TextToSpeechActor(
   name: String? = null,
@@ -47,7 +47,7 @@ open class TextToSpeechActor(
 
   private val codex = GPT4Tokenizer(false)
 
-  override fun answer(vararg messages: ChatMessage, input: List<String>, api: API) =
+  override fun respond(input: List<String>, api: API, vararg messages: ChatMessage) =
     SpeechResponseImpl(
       messages.joinToString("\n") { it.content?.joinToString("\n") { it.text ?: "" } ?: "" },
       api = api

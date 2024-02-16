@@ -89,9 +89,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (theme_normal) {
         theme_normal.addEventListener('click', () => setTheme('main'));
     }
-    const theme_dark = document.getElementById('theme_night');
-    if (theme_dark) {
-        theme_dark.addEventListener('click', () => setTheme('night'));
+    const theme_night = document.getElementById('theme_night');
+    if (theme_night) {
+        theme_night.addEventListener('click', () => setTheme('night'));
+    }
+    const theme_forest = document.getElementById('theme_forest');
+    if (theme_forest) {
+        theme_forest.addEventListener('click', () => setTheme('forest'));
+    }
+    const theme_pony = document.getElementById('theme_pony');
+    if (theme_pony) {
+        theme_pony.addEventListener('click', () => setTheme('pony'));
     }
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme != null) {

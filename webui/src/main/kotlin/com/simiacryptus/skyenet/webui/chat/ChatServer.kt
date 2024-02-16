@@ -14,6 +14,7 @@ import org.eclipse.jetty.webapp.WebAppContext
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
+import java.time.Duration
 
 abstract class ChatServer(val resourceBase: String) {
 
@@ -23,11 +24,19 @@ abstract class ChatServer(val resourceBase: String) {
 
     inner class WebSocketHandler : JettyWebSocketServlet() {
         override fun configure(factory: JettyWebSocketServletFactory) {
+            with(factory) {
+                isAutoFragment = false
+                idleTimeout = Duration.ofMinutes(10)
+                outputBufferSize = 1024 * 1024
+                inputBufferSize = 1024 * 1024
+                maxBinaryMessageSize = 1024 * 1024
+                maxFrameSize = 1024 * 1024
+                maxTextMessageSize = 1024 * 1024
+                this.availableExtensionNames.remove("permessage-deflate")
+            }
             factory.setCreator { req, resp ->
                 try {
-                    return@setCreator if (!req.parameterMap.containsKey("sessionId")) {
-                        throw IllegalArgumentException("sessionId is required")
-                    } else {
+                    if (req.parameterMap.containsKey("sessionId")) {
                         val session = Session(req.parameterMap["sessionId"]?.first()!!)
                         ChatSocket(
                             if (sessions.containsKey(session)) {
@@ -39,9 +48,13 @@ abstract class ChatServer(val resourceBase: String) {
                                 sessionState
                             }
                         )
+                    } else {
+                        throw IllegalArgumentException("sessionId is required")
                     }
                 } catch (e: Exception) {
-                    log.warn("Error configuring websocket", e)
+                    log.debug("Error configuring websocket", e)
+                    resp.sendError(500, e.message)
+                    null
                 }
             }
         }
@@ -54,7 +67,7 @@ abstract class ChatServer(val resourceBase: String) {
     private val webSocketHandler by lazy { WebSocketHandler() }
     private val defaultServlet by lazy { DefaultServlet() }
 
-    open fun configure(webAppContext: WebAppContext, path: String = "/", baseUrl: String) {
+    open fun configure(webAppContext: WebAppContext) {
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), "/")
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/ws", webSocketHandler), "/ws")
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", newSessionServlet),"/newSession")

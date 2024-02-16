@@ -22,6 +22,7 @@ import java.io.File
 
 abstract class ApplicationServer(
     final override val applicationName: String,
+    val path: String,
     resourceBase: String = "application",
     open val root: File = File(File(".skyenet"), applicationName),
 ) : ChatServer(resourceBase) {
@@ -102,8 +103,8 @@ abstract class ApplicationServer(
 
     protected open fun sessionsServlet(path: String) = ServletHolder("sessionList", SessionListServlet(this.dataStorage, path, this))
 
-    override fun configure(webAppContext: WebAppContext, path: String, baseUrl: String) {
-        super.configure(webAppContext, path, baseUrl)
+    override fun configure(webAppContext: WebAppContext) {
+        super.configure(webAppContext)
 
         webAppContext.addFilter(
             FilterHolder { request, response, chain ->

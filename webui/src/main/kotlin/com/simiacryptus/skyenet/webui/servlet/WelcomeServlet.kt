@@ -9,6 +9,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationDirectory
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -63,6 +64,7 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
     <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name='viewport' content='width=device-width,initial-scale=1'>
         <title>SimiaCryptus Skyenet Apps</title>
         <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
         <link id="theme_style" href="main.css" rel="stylesheet"/>
@@ -88,8 +90,10 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
         <div class="dropdown">
             <a class="dropbtn">Themes</a>
             <div class="dropdown-content">
-                <a id="theme_normal">Normal</a>
+                <a id="theme_normal">Day</a>
                 <a id="theme_night">Night</a>
+                <a id="theme_forest">Forest</a>
+                <a id="theme_pony">Bubblegum</a>
             </div>
         </div>
     </div>
@@ -106,13 +110,13 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
         </div>
     </div>
     
-    ${MarkdownUtil.renderMarkdown(welcomeMarkdown)}
+    ${renderMarkdown(welcomeMarkdown)}
     
-    <table id="applist">
+    <table class="applist" id='application-list'>
         ${parent.childWebApps.joinToString("\n") { app -> appRow(app, user) }}
     </table>
     
-    ${MarkdownUtil.renderMarkdown(postAppMarkdown)}
+    ${renderMarkdown(postAppMarkdown)}
     
     <footer id="footer">
         <a href="https://github.com/SimiaCryptus/SkyeNet" target="_blank">Powered by SkyeNet</a>
@@ -128,7 +132,6 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
   ) = when {
     !authorizationManager.isAuthorized(app.server.javaClass, user, OperationType.Read) -> ""
     else -> """
-            <a
             <tr>
                 <td>
                     ${app.server.applicationName}

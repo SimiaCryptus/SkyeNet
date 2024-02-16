@@ -20,14 +20,14 @@ class ParsedActorInterceptor(
   ChatModels.GPT35Turbo,
 ) {
 
-    override fun answer(vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, input: List<String>, api: API) =
+    override fun respond(input: List<String>, api: API, vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, ) =
       object : ParsedResponse<Any>(resultClass) {
         private val parser: Function<String, Any> = getParser(api)
 
         private val _obj: Any by lazy { parse() }
 
         private fun parse(): Any = functionInterceptor.inner.intercept(text, resultClass) { parser.apply(text) }
-        override val text get() = super@ParsedActorInterceptor.answer(*messages, input = input, api = api).text
+        override val text get() = super@ParsedActorInterceptor.respond(input = input, api = api, *messages, ).text
         override val obj get() = _obj
       }
 

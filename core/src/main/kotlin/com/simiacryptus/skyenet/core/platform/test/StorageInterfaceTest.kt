@@ -17,7 +17,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
     fun testGetJson() {
         // Arrange
         val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
+        val session = Session("G-20230101-1234")
         val filename = "test.json"
 
         // Act
@@ -31,7 +31,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
     fun testGetMessages() {
         // Arrange
         val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
+        val session = Session("G-20230101-1234")
 
         // Act
         val messages = storage.getMessages(user, session)
@@ -44,7 +44,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
     fun testGetSessionDir() {
         // Arrange
         val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
+        val session = Session("G-20230101-1234")
 
         // Act
         val sessionDir = storage.getSessionDir(user, session)
@@ -57,7 +57,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
     fun testGetSessionName() {
         // Arrange
         val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
+        val session = Session("G-20230101-1234")
 
         // Act
         val sessionName = storage.getSessionName(user, session)
@@ -71,7 +71,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
     fun testGetSessionTime() {
         // Arrange
         val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
+        val session = Session("G-20230101-1234")
         storage.updateMessage(user, session, "msg001", "<p>Hello, World!</p><p>Hello, World!</p>")
 
         // Act
@@ -99,7 +99,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
     fun testSetJson() {
         // Arrange
         val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
+        val session = Session("G-20230101-1234")
         val filename = "settings.json"
         val settings = mapOf("theme" to "dark")
 
@@ -115,7 +115,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
     fun testUpdateMessage() {
         // Arrange
         val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
+        val session = Session("G-20230101-1234")
         val messageId = "msg001"
         val value = "Hello, World!"
 
@@ -158,7 +158,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
     fun testDeleteSession() {
         // Arrange
         val user = User(email = "test@example.com")
-        val session = Session("G-20230101-12345678")
+        val session = Session("G-20230101-1234")
 
         // Act and Assert
         try {

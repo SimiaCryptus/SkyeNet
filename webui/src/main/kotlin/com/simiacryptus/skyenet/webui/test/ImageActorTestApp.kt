@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.webui.test
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.core.actors.ImageActor
+import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -15,6 +16,7 @@ open class ImageActorTestApp(
     temperature: Double = 0.3,
 ) : ApplicationServer(
   applicationName = applicationName,
+    path = "/imageActorTest",
 ) {
 
     data class Settings(
@@ -30,6 +32,7 @@ open class ImageActorTestApp(
         ui: ApplicationInterface,
         api: API
     ) {
+        (api as ClientManager.MonitoredClient).budget = 2.00
         val message = ui.newTask()
         try {
             val actor = getSettings<Settings>(session, user)?.actor ?: actor

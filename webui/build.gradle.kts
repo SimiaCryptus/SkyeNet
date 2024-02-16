@@ -35,13 +35,18 @@ val jetty_version = "11.0.18"
 val jackson_version = "2.15.3"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.43")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.44")
 
     implementation(project(":core"))
+    implementation(project(":kotlin"))
 
     implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
     compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
     compileOnly("org.jsoup:jsoup:1.17.2")
+
+    implementation("org.openapitools:openapi-generator:7.3.0")
+    implementation("org.openapitools:openapi-generator-cli:7.3.0")
+
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
@@ -69,7 +74,7 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
-    implementation(group = "com.google.api-client", name = "google-api-client", version = "1.35.2")
+    implementation(group = "com.google.api-client", name = "google-api-client", version = "1.35.2" /*"1.35.2"*/)
     implementation(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
     implementation(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
