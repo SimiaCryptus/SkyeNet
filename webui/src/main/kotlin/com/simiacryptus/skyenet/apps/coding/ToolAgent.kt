@@ -2,12 +2,14 @@ package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.actors.CodingActor
+import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.sortCode
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
@@ -15,11 +17,10 @@ import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
-import com.simiacryptus.skyenet.webui.servlet.Tool
 import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
-import com.simiacryptus.skyenet.webui.util.OpenApi
+import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import com.simiacryptus.skyenet.webui.util.OpenAPI
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -53,7 +54,9 @@ abstract class ToolAgent<T : Interpreter>(
     )
   ),
 ) : CodingAgent<T>(api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, actorMap) {
-  override fun displayFeedback(task: SessionTask, request: CodingActor.CodeRequest, response: CodingActor.CodeResult) {
+
+
+  override fun displayFeedback(task: SessionTask, request: CodingActor.CodeRequest, response: CodeResult) {
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(
@@ -71,152 +74,272 @@ abstract class ToolAgent<T : Interpreter>(
     task.complete()
   }
 
-  protected fun createToolButton(
+  private fun createToolButton(
     task: SessionTask,
     request: CodingActor.CodeRequest,
-    response: CodingActor.CodeResult,
+    response: CodeResult,
     formText: StringBuilder,
     formHandle: () -> StringBuilder
   ) = ui.hrefLink("\uD83D\uDCE4", "href-link regen-button") {
     responseAction(task, "Exporting...", formHandle(), formText) {
-      val dataschemaHandler = dataschemaHandler(request, response, task)
-      val servletHandler = servletHandler(request, response, dataschemaHandler, task)
-      val servletImpl = (dataschemaHandler + servletHandler).sortCode()
-      val toolsPrefix = "/tools"
-      var openAPI = openApi(servletImpl, toolsPrefix, task)
-      for (i in 0..5) {
-        try {
-          org.openapitools.codegen.OpenAPIGenerator.main(
-            arrayOf(
-              "generate",
-              "-i",
-              File.createTempFile("openapi", ".json").apply {
-                writeText(JsonUtil.toJson(openAPI))
-                deleteOnExit()
-              }.absolutePath,
-              "-g", "html2",
-              "-o", File(dataStorage.getSessionDir(user, session), "openapi/html2").apply { mkdirs() }.absolutePath,
-            )
+      displayCodeFeedback(
+        task, schemaActor(), request.copy(
+          messages = listOf(
+            response.code to ApiModel.Role.assistant,
+            "From the given code prototype, identify input out output data structures and generate Kotlin data classes to define this schema" to ApiModel.Role.user
           )
-          task.add("Validated OpenAPI Descriptor - <a href='fileIndex/$session/openapi/html2/index.html'>Documentation Saved</a>");
-          break;
-        } catch (e: SpecValidationException) {
-          val error = """
+        )
+      ) { schemaCode ->
+        displayCodeFeedback(
+          task, servletActor(), request.copy(
+            messages = listOf(
+              response.code to ApiModel.Role.assistant,
+              "Reprocess this code prototype into a servlet using the given data schema. " +
+                  "The last line should instantiate the new servlet class and return it via the returnBuffer collection." to ApiModel.Role.user
+            ),
+            codePrefix = schemaCode
+          )
+        ) { servletHandler ->
+          task.add(renderMarkdown("```kotlin\n${servletHandler}\n```"))
+          val classLoader = Thread.currentThread().contextClassLoader
+          val prevCL = KotlinInterpreter.classLoader
+          KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader
+          try {
+            WebAppClassLoader.runWithServerClassAccess<Any?> {
+              require(null != classLoader.loadClass("org.eclipse.jetty.server.Response"))
+              require(null != classLoader.loadClass("org.eclipse.jetty.server.Request"))
+
+              task.add(renderMarkdown("```kotlin\n${servletHandler}\n```"))
+            }
+          } finally {
+            KotlinInterpreter.classLoader = prevCL
+          }
+
+          val servletImpl = (schemaCode + "\n\n" + servletHandler).sortCode()
+          val toolsPrefix = "/tools"
+          var openAPI = openApi(servletImpl, toolsPrefix, task)
+          for (i in 0..5) {
+            try {
+              org.openapitools.codegen.OpenAPIGenerator.main(
+                arrayOf(
+                  "generate",
+                  "-i",
+                  File.createTempFile("openapi", ".json").apply {
+                    writeText(JsonUtil.toJson(openAPI))
+                    deleteOnExit()
+                  }.absolutePath,
+                  "-g", "html2",
+                  "-o", File(dataStorage.getSessionDir(user, session), "openapi/html2").apply { mkdirs() }.absolutePath,
+                )
+              )
+              task.add("Validated OpenAPI Descriptor - <a href='fileIndex/$session/openapi/html2/index.html'>Documentation Saved</a>");
+              break;
+            } catch (e: SpecValidationException) {
+              val error = """
             |${e.message}
             |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
             |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
           """.trimIndent()
-          task.add(MarkdownUtil.renderMarkdown("```\n${error}\n```"))
-          openAPI = openApiFix(servletImpl, toolsPrefix, task, JsonUtil.toJson(openAPI), error)
+              task.hideable(ui, renderMarkdown("```\n${error}\n```"))
+              openAPI = openApiFix(servletImpl, toolsPrefix, task, JsonUtil.toJson(openAPI), error)
+            }
+          }
+
+          if (ApplicationServices.authorizationManager.isAuthorized(
+              ToolAgent.javaClass,
+              user,
+              AuthorizationInterface.OperationType.Admin
+            )
+          ) {
+            ToolServlet.addTool(
+              ToolServlet.Tool(
+                path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
+                openApiDescription = openAPI,
+                interpreterString = getInterpreterString(),
+                servletCode = servletImpl
+              )
+            )
+          }
+          buildTestPage(openAPI, servletImpl, task)
+        }
+
+      }
+    }
+  }
+
+  private fun servletActor() = object : CodingActor(
+    interpreterClass = actor.interpreterClass,
+    symbols = actor.symbols + mapOf(
+      "returnBuffer" to ServletBuffer(),
+      "json" to JsonUtil,
+      "req" to Request(null, null),
+      "resp" to Response(null, null),
+    ),
+    describer = object : AbbrevWhitelistYamlDescriber(
+      "com.simiacryptus",
+      "com.github.simiacryptus"
+    ) {
+      override fun describe(rawType: Class<in Nothing>, stackMax: Int): String = when (rawType) {
+        Request::class.java -> describe(HttpServletRequest::class.java)
+        Response::class.java -> describe(HttpServletResponse::class.java)
+        else -> super.describe(rawType, stackMax)
+      }
+    },
+    details = actor.details,
+    model = actor.model,
+    fallbackModel = actor.fallbackModel,
+    temperature = actor.temperature,
+    runtimeSymbols = actor.runtimeSymbols
+  ) {
+    override val prompt: String
+      get() = super.prompt
+  }
+
+  private fun schemaActor() = object : CodingActor(
+    interpreterClass = actor.interpreterClass,
+    symbols = mapOf(),
+    details = actor.details,
+    model = actor.model,
+    fallbackModel = actor.fallbackModel,
+    temperature = actor.temperature,
+    runtimeSymbols = actor.runtimeSymbols
+  ) {
+    override val prompt: String
+      get() = super.prompt
+  }
+
+
+  private fun displayCodeFeedback(
+    task: SessionTask,
+    actor: CodingActor,
+    request: CodingActor.CodeRequest,
+    response: CodeResult = actor.answer(request, api = api),
+    onComplete: (String) -> Unit
+  ) {
+    task.hideable(ui, renderMarkdown("```kotlin\n${response.code}\n```"))
+    val formText = StringBuilder()
+    var formHandle: StringBuilder? = null
+    formHandle = task.add(
+      """
+      |<div style="display: flex;flex-direction: column;">
+      |${
+        if (!super.canPlay) "" else
+          super.ui.hrefLink("▶", "href-link play-button") {
+            super.responseAction(task, "Accepted...", formHandle!!, formText) {
+              onComplete(response.code)
+            }
+          }
+      }
+      |${
+        super.ui.hrefLink("♻", "href-link regen-button") {
+          super.responseAction(task, "Regenerating...", formHandle!!, formText) {
+            val task1 = super.ui.newTask()
+            val codeRequest =
+              request.copy(messages = request.messages.dropLastWhile { it.second == ApiModel.Role.assistant })
+            try {
+              val lastUserMessage = codeRequest.messages.last { it.second == ApiModel.Role.user }.first.trim()
+              val codeResponse: CodeResult = if (lastUserMessage.startsWith("```")) {
+                actor.CodeResultImpl(
+                  messages = actor.chatMessages(codeRequest),
+                  input = codeRequest,
+                  api = super.api as OpenAIClient,
+                  givenCode = lastUserMessage.removePrefix("```").removeSuffix("```")
+                )
+              } else {
+                actor.answer(codeRequest, api = super.api)
+              }
+              try {
+                super.displayCode(task1, codeResponse)
+                displayCodeFeedback(task1, actor, super.append(codeRequest, codeResponse), codeResponse, onComplete)
+              } catch (e: Throwable) {
+                task1.error(super.ui, e)
+                log.warn("Error", e)
+              }
+            } catch (e: Throwable) {
+              log.warn("Error", e)
+              val error = task1.error(super.ui, e)
+              var regenButton: StringBuilder? = null
+              regenButton = task1.complete(super.ui.hrefLink("♻", "href-link regen-button") {
+                regenButton?.clear()
+                val header = task1.header("Regenerating...")
+                super.displayCode(task1, codeRequest)
+                header?.clear()
+                error?.clear()
+                task1.complete()
+              })
+            }
+          }
         }
       }
-
-
-      if(ApplicationServices.authorizationManager.isAuthorized(ToolAgent.javaClass, user, AuthorizationInterface.OperationType.Admin)) {
-        ToolServlet.addTool(
-          Tool(
-            path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
-            openApiDescription = openAPI,
-            interpreterString = getInterpreterString(),
-            servletCode = servletImpl
-          )
-        )
+      |</div>  
+      |${
+        super.ui.textInput { feedback ->
+          super.responseAction(task, "Revising...", formHandle!!, formText) {
+            val task1 = super.ui.newTask()
+            try {
+              task1.echo(renderMarkdown(feedback))
+              val codeRequest = CodingActor.CodeRequest(
+                messages = request.messages +
+                    listOf(
+                      response.code to ApiModel.Role.assistant,
+                      feedback to ApiModel.Role.user,
+                    ).filter { it.first.isNotBlank() }.map { it.first to it.second }
+              )
+              try {
+                val lastUserMessage = codeRequest.messages.last { it.second == ApiModel.Role.user }.first.trim()
+                val codeResponse: CodeResult = if (lastUserMessage.startsWith("```")) {
+                  actor.CodeResultImpl(
+                    messages = actor.chatMessages(codeRequest),
+                    input = codeRequest,
+                    api = super.api as OpenAIClient,
+                    givenCode = lastUserMessage.removePrefix("```").removeSuffix("```")
+                  )
+                } else {
+                  actor.answer(codeRequest, api = super.api)
+                }
+                try {
+                  super.displayCode(task1, codeResponse)
+                  displayCodeFeedback(task1, actor, super.append(codeRequest, codeResponse), codeResponse, onComplete)
+                } catch (e: Throwable) {
+                  task1.error(super.ui, e)
+                  log.warn("Error", e)
+                }
+              } catch (e: Throwable) {
+                log.warn("Error", e)
+                val error = task1.error(super.ui, e)
+                var regenButton: StringBuilder? = null
+                regenButton = task1.complete(super.ui.hrefLink("♻", "href-link regen-button") {
+                  regenButton?.clear()
+                  val header = task1.header("Regenerating...")
+                  super.displayCode(task1, codeRequest)
+                  header?.clear()
+                  error?.clear()
+                  task1.complete()
+                })
+              }
+            } catch (e: Throwable) {
+              log.warn("Error", e)
+              task1.error(ui, e)
+            }
+          }
+        }
       }
-      buildTestPage(openAPI, servletImpl, task)
-    }
+      """.trimMargin(), className = "reply-message"
+    )
+    formText.append(formHandle.toString())
+    formHandle.toString()
+    task.complete()
   }
 
-  private fun dataschemaHandler(
-    request: CodingActor.CodeRequest,
-    response: CodingActor.CodeResult,
-    task: SessionTask
-  ) = answer(
-    object : CodingActor(
-      interpreterClass = actor.interpreterClass,
-      symbols = mapOf(),
-      details = actor.details,
-      model = actor.model,
-      fallbackModel = actor.fallbackModel,
-      temperature = actor.temperature,
-      runtimeSymbols = actor.runtimeSymbols
-    ) {
-      override val prompt: String
-        get() = super.prompt
-    }, request.copy(
-      messages = listOf(
-        response.code to ApiModel.Role.assistant,
-        "From the given code prototype, identify input out output data structures and generate Kotlin data classes to define this schema" to ApiModel.Role.user
-      )
-    ), task, feedback = false
-  ).code
 
   class ServletBuffer : ArrayList<HttpServlet>()
-
-  private fun servletHandler(
-    request: CodingActor.CodeRequest,
-    response: CodingActor.CodeResult,
-    dataschemaHandler: String,
-    task: SessionTask
-  ): String {
-    val returnBuffer = ServletBuffer()
-    val answer = answer(
-      object : CodingActor(
-        interpreterClass = actor.interpreterClass,
-        symbols = actor.symbols + mapOf(
-          "returnBuffer" to returnBuffer,
-          "json" to JsonUtil,
-          "req" to Request(null, null),
-          "resp" to Response(null, null),
-        ),
-        describer = object : AbbrevWhitelistYamlDescriber(
-          "com.simiacryptus",
-          "com.github.simiacryptus"
-        ) {
-          override fun describe(rawType: Class<in Nothing>, stackMax: Int): String = when (rawType) {
-            Request::class.java -> describe(HttpServletRequest::class.java)
-            Response::class.java -> describe(HttpServletResponse::class.java)
-            else -> super.describe(rawType, stackMax)
-          }
-        },
-        details = actor.details,
-        model = actor.model,
-        fallbackModel = actor.fallbackModel,
-        temperature = actor.temperature,
-        runtimeSymbols = actor.runtimeSymbols
-      ) {
-        override val prompt: String
-          get() = super.prompt
-      }, request.copy(
-        messages = listOf(
-          response.code to ApiModel.Role.assistant,
-          "Reprocess this code prototype into a servlet using the given data schema. " +
-          "The last line should instantiate the new servlet class and return it via the returnBuffer collection." to ApiModel.Role.user
-        ),
-        codePrefix = dataschemaHandler
-      ), task, feedback = false
-    )
-    val classLoader = Thread.currentThread().contextClassLoader
-    val prevCL = KotlinInterpreter.classLoader
-    KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader
-    try {
-      WebAppClassLoader.runWithServerClassAccess<Any?> {
-        require(null != classLoader.loadClass("org.eclipse.jetty.server.Response"))
-        require(null != classLoader.loadClass("org.eclipse.jetty.server.Request"))
-
-        task.add(MarkdownUtil.renderMarkdown("```kotlin\n${answer.code}\n```"))
-      }
-    } finally {
-      KotlinInterpreter.classLoader = prevCL
-    }
-    return answer.code
-  }
 
   private fun openApi(
     servletImpl: String,
     toolsPrefix: String,
     task: SessionTask
-  ): OpenApi {
-    val openAPI = object : ParsedActor<OpenApi>(
+  ): OpenAPI {
+    val openAPI = object : ParsedActor<OpenAPI>(
       parserClass = OpenApiParser::class.java,
       model = model,
       prompt = "You are a code documentation assistant. You will create the OpenAPI definition for a servlet handler written in kotlin",
@@ -228,9 +351,13 @@ abstract class ToolAgent<T : Interpreter>(
           override val includeMethods: Boolean get() = false
         }
     }.getParser(api).apply(servletImpl).let { openApi ->
-      openApi.copy(paths = openApi.paths?.mapKeys { toolsPrefix + it.key })
+      val hashMap = HashMap(openApi.paths)
+//      openApi.paths.clear()
+//      openApi.paths.putAll(hashMap.mapKeys { toolsPrefix + it.key })
+//      openApi
+      openApi.copy(paths = hashMap.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
     }
-    task.add(MarkdownUtil.renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
+    task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
     return openAPI
   }
 
@@ -240,8 +367,8 @@ abstract class ToolAgent<T : Interpreter>(
     task: SessionTask,
     openApiDraft: String,
     errorMessage: String
-  ): OpenApi {
-    val specActor = object : ParsedActor<OpenApi>(
+  ): OpenAPI {
+    val specActor = object : ParsedActor<OpenAPI>(
       parserClass = OpenApiParser::class.java,
       model = model,
       prompt = "You are a code documentation assistant. You will create the OpenAPI definition for a servlet handler written in kotlin",
@@ -261,14 +388,18 @@ abstract class ToolAgent<T : Interpreter>(
         errorMessage
       ), api
     ).obj.let { openApi ->
-      openApi.copy(paths = openApi.paths?.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
+      val paths = HashMap(openApi.paths)
+//      openApi.paths.clear()
+//      openApi.paths.putAll(paths.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
+//      openApi
+      openApi.copy(paths = paths.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
     }
-    task.add(MarkdownUtil.renderMarkdown("```json\n${JsonUtil.toJson(newSpec)}\n```"))
+    task.add(renderMarkdown("```json\n${JsonUtil.toJson(newSpec)}\n```"))
     return newSpec
   }
 
   private fun buildTestPage(
-    openAPI: OpenApi,
+    openAPI: OpenAPI,
     servletImpl: String,
     task: SessionTask
   ) {
@@ -283,7 +414,7 @@ abstract class ToolAgent<T : Interpreter>(
     )
     // if ```html unwrap
     if (testPage.contains("```html")) testPage = testPage.substringAfter("```html").substringBefore("```")
-    task.add(MarkdownUtil.renderMarkdown("```html\n$testPage\n```"))
+    task.add(renderMarkdown("```html\n$testPage\n```"))
     task.complete(
       "<a href='${
         task.saveFile(
@@ -296,9 +427,9 @@ abstract class ToolAgent<T : Interpreter>(
 
   abstract fun getInterpreterString(): String;
 
-  interface OpenApiParser : Function<String, OpenApi> {
+  interface OpenApiParser : Function<String, OpenAPI> {
     @Description("Extract OpenAPI spec")
-    override fun apply(t: String): OpenApi
+    override fun apply(t: String): OpenAPI
   }
 
   private fun answer(
@@ -306,7 +437,7 @@ abstract class ToolAgent<T : Interpreter>(
     request: CodingActor.CodeRequest,
     task: SessionTask = ui.newTask(),
     feedback: Boolean = true,
-  ): CodingActor.CodeResult {
+  ): CodeResult {
     val response = actor.answer(request, api = api)
     if (feedback) displayCodeAndFeedback(task, request, response)
     else displayCode(task, response)

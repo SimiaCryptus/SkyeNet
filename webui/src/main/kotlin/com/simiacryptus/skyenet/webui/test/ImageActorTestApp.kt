@@ -44,7 +44,7 @@ open class ImageActorTestApp(
             message.complete()
         } catch (e: Throwable) {
             log.warn("Error flushing image", e)
-            message.error(e)
+            message.error(ui, e)
         }
     }
 

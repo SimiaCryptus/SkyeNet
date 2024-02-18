@@ -79,7 +79,7 @@ class WebDevAgent(
       draftHtmlCode(message, codeRequest)
     } catch (e: Throwable) {
       log.warn("Error", e)
-      message.error(e)
+      message.error(ui, e)
     }
   }
 
@@ -131,7 +131,7 @@ class WebDevAgent(
                   )
                 } catch (e: Throwable) {
                   log.warn("Error", e)
-                  task1.error(e)
+                  task1.error(ui, e)
                 }
               }
             }
@@ -142,12 +142,12 @@ class WebDevAgent(
         formHandle.toString()
         task.complete()
       } catch (e: Throwable) {
-        task.error(e)
+        task.error(ui, e)
         log.warn("Error", e)
       }
     } catch (e: Throwable) {
       log.warn("Error", e)
-      val error = task.error(e)
+      val error = task.error(ui, e)
       var regenButton: StringBuilder? = null
       regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button") {
         regenButton?.clear()
@@ -213,7 +213,7 @@ class WebDevAgent(
                   )
                 } catch (e: Throwable) {
                   log.warn("Error", e)
-                  task.error(e)
+                  task.error(ui, e)
                 }
               }
             }
@@ -224,12 +224,12 @@ class WebDevAgent(
         formHandle.toString()
         task.complete()
       } catch (e: Throwable) {
-        task.error(e)
+        task.error(ui, e)
         log.warn("Error", e)
       }
     } catch (e: Throwable) {
       log.warn("Error", e)
-      val error = task.error(e)
+      val error = task.error(ui, e)
       var regenButton: StringBuilder? = null
       regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button") {
         regenButton?.clear()

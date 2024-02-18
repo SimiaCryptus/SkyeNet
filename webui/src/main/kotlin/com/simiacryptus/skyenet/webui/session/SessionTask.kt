@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
+import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
@@ -31,7 +32,7 @@ abstract class SessionTask(
   }
 
   protected abstract fun send(
-    html: String
+    html: String = currentText
   )
 
   @Description("Saves the given data to a file and returns the url of the file.")
@@ -53,6 +54,28 @@ abstract class SessionTask(
     @Description("The css class to apply to the message (default: response-message)")
     className: String = "response-message"
   ) = append("""<$tag class="$className">$message</$tag>""", showSpinner)
+
+  fun hideable(
+    ui: ApplicationInterface,
+    @Description("The message to add")
+    message: String,
+    @Description("Whether to show the spinner for the task (default: true)")
+    showSpinner: Boolean = true,
+    @Description("The html tag to wrap the message in (default: div)")
+    tag: String = "div",
+    @Description("The css class to apply to the message (default: response-message)")
+    className: String = "response-message"
+  ): StringBuilder? {
+    var windowBuffer: StringBuilder? = null
+    val closeButton = """<span class="close">${
+      ui.hrefLink("&times;", "close-button href-link") {
+        windowBuffer?.clear()
+        send()
+      }
+    }</span>"""
+    windowBuffer = append("""<$tag class="$className">$closeButton$message</$tag>""", showSpinner)
+    return windowBuffer
+  }
 
   @Description("Echos a user message to the task output.")
   fun echo(
@@ -87,13 +110,14 @@ abstract class SessionTask(
 
   @Description("Displays an error in the task output.")
   fun error(
+    ui: ApplicationInterface,
     @Description("The error to display")
     e: Throwable,
     @Description("Whether to show the spinner for the task (default: false)")
     showSpinner: Boolean = false,
     @Description("The html tag to wrap the message in (default: div)")
     tag: String = "div"
-  ) = add(
+  ) = hideable(ui,
     when {
       e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
       e is CodingActor.FailedToImplementException -> renderMarkdown(
@@ -114,6 +138,7 @@ abstract class SessionTask(
         |
         |""".trimMargin()
       )
+
       else -> renderMarkdown(
         """
         |**Error `${e.javaClass.name}`**
@@ -134,7 +159,7 @@ abstract class SessionTask(
     tag: String = "div",
     @Description("The css class to apply to the message (default: response-message)")
     className: String = "response-message"
-  ) = append(if(message.isNotBlank()) """<$tag class="$className">$message</$tag>""" else "", false)
+  ) = append(if (message.isNotBlank()) """<$tag class="$className">$message</$tag>""" else "", false)
 
   @Description("Displays an image to the task output.")
   fun image(

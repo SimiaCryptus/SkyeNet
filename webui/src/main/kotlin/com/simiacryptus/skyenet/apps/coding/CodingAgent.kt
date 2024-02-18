@@ -62,7 +62,7 @@ open class CodingAgent<T : Interpreter>(
       displayCode(message, codeRequest)
     } catch (e: Throwable) {
       log.warn("Error", e)
-      message.error(e)
+      message.error(ui, e)
     }
   }
 
@@ -85,7 +85,7 @@ open class CodingAgent<T : Interpreter>(
       displayCodeAndFeedback(task, codeRequest, codeResponse)
     } catch (e: Throwable) {
       log.warn("Error", e)
-      val error = task.error(e)
+      val error = task.error(ui, e)
       var regenButton: StringBuilder? = null
       regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button") {
         regenButton?.clear()
@@ -106,7 +106,7 @@ open class CodingAgent<T : Interpreter>(
       displayCode(task, response)
       displayFeedback(task, append(codeRequest, response), response)
     } catch (e: Throwable) {
-      task.error(e)
+      task.error(ui, e)
       log.warn("Error", e)
     }
   }
@@ -125,7 +125,7 @@ open class CodingAgent<T : Interpreter>(
     task: SessionTask,
     response: CodeResult
   ) {
-    task.add(
+    task.hideable(ui,
       renderMarkdown(
         response.renderedResponse ?:
         //language=Markdown
@@ -243,7 +243,7 @@ open class CodingAgent<T : Interpreter>(
       ))
     } catch (e: Throwable) {
       log.warn("Error", e)
-      task.error(e)
+      task.error(ui, e)
     }
   }
 

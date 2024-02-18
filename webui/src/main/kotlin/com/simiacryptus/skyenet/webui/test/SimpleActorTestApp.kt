@@ -41,7 +41,7 @@ open class SimpleActorTestApp(
             message.complete(renderMarkdown(response))
         } catch (e: Throwable) {
             log.warn("Error", e)
-            message.error(e)
+            message.error(ui, e)
         }
     }
 

@@ -64,7 +64,7 @@ open class CodingActorTestApp(
         }
         catch (e: Throwable) {
             log.warn("Error", e)
-            message.error(e)
+            message.error(ui, e)
         }
     }
 

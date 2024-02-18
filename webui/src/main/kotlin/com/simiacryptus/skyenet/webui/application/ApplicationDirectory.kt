@@ -51,6 +51,7 @@ abstract class ApplicationDirectory(
   open val logoutServlet = LogoutServlet()
   open val usageServlet = UsageServlet()
   open val proxyHttpServlet = ProxyHttpServlet()
+  open val apiKeyServlet = ApiKeyServlet()
   open val welcomeServlet = WelcomeServlet(this)
   abstract val toolServlet : ToolServlet?
 
@@ -97,6 +98,7 @@ abstract class ApplicationDirectory(
           newWebAppContext("/userSettings", userSettingsServlet),
           newWebAppContext("/usage", usageServlet),
           newWebAppContext("/proxy", proxyHttpServlet),
+          newWebAppContext("/apiKeys", apiKeyServlet),
           toolServlet?.let { newWebAppContext("/tools", it) },
           authenticatedWebsite()?.configure(welcomeContext, false) ?: welcomeContext,
         ).toTypedArray() + childWebApps.map {

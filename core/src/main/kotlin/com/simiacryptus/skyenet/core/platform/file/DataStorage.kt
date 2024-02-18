@@ -109,7 +109,7 @@ open class DataStorage(
         val settings = getJson(sessionDir, "internal.json", Map::class.java) ?: mapOf<String,String>()
         if(settings.containsKey("ids")) return settings["ids"].toString().split(",").toList()
         val ids = messageFiles(sessionDir).entries.sortedBy { it.key.lastModified() }
-            ?.map { it.key.nameWithoutExtension }?.toList() ?: listOf()
+            .map { it.key.nameWithoutExtension }.toList()
         setJson(sessionDir, "internal.json", settings.plus("ids" to ids.joinToString(",")))
         return ids
     }
@@ -227,7 +227,7 @@ override fun getSessionTime(
     override fun userRoot(user: User?) = File(
         File(dataDir, "users"),
         if (user?.email != null) {
-            user?.email
+            user.email
         } else {
             throw IllegalArgumentException("User required for private session")
         }

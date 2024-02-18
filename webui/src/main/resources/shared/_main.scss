@@ -175,9 +175,14 @@ body {
     }
 }
 
+.close-button {
+    margin-left: 95%;
+}
+
 .play-button,
 .regen-button,
-.cancel-button {
+.cancel-button,
+.close-button {
     @include typography($font-size: 1.5rem, $font-weight: $font-weight-bold);
     border: 2px solid transparent;
     background: $primary-bg-color;
