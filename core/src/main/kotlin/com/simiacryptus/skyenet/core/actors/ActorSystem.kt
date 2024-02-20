@@ -9,31 +9,38 @@ import com.simiacryptus.skyenet.core.util.FunctionWrapper
 import com.simiacryptus.skyenet.core.util.JsonFunctionRecorder
 import java.io.File
 
-open class ActorSystem<T:Enum<*>>(
-    val actors: Map<T, BaseActor<*,*>>,
-    val dataStorage: StorageInterface,
-    val user: User?,
-    val session: Session
+open class ActorSystem<T : Enum<*>>(
+  val actors: Map<T, BaseActor<*, *>>,
+  val dataStorage: StorageInterface,
+  val user: User?,
+  val session: Session
 ) {
-    private val sessionDir = dataStorage.getSessionDir(user, session)
-    protected val pool by lazy { ApplicationServices.clientManager.getPool(session, user, dataStorage) }
-    fun getActor(actor: T): BaseActor<*,*> {
-        val wrapper = getWrapper(actor.name)
-        return when (val baseActor = actors[actor]) {
-            null -> throw RuntimeException("No actor for $actor")
-            is SimpleActor -> SimpleActorInterceptor(baseActor, wrapper)
-            is ParsedActor<*> -> ParsedActorInterceptor(baseActor, wrapper)
-            is CodingActor -> CodingActorInterceptor(baseActor, wrapper)
-            is ImageActor -> ImageActorInterceptor(baseActor, wrapper)
-            is TextToSpeechActor -> TextToSpeechActorInterceptor(baseActor, wrapper)
-            else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
-        }
-    }
+  private val sessionDir = dataStorage.getSessionDir(user, session)
+  protected val pool by lazy { ApplicationServices.clientManager.getPool(session, user, dataStorage) }
 
-    private val wrapperMap = mutableMapOf<String, FunctionWrapper>()
-    private fun getWrapper(name: String) = synchronized(wrapperMap) {
-        wrapperMap.getOrPut(name) {
-            FunctionWrapper(JsonFunctionRecorder(File(sessionDir, ".sys/actors/$name")))
+  private val actorMap = mutableMapOf<T, BaseActor<*, *>>()
+
+  fun getActor(actor: T): BaseActor<*, *> {
+    return synchronized(actorMap) {
+      actorMap.computeIfAbsent(actor) {
+        val wrapper = getWrapper(actor.name)
+        when (val baseActor = actors[actor]) {
+          null -> throw RuntimeException("No actor for $actor")
+          is SimpleActor -> SimpleActorInterceptor(baseActor, wrapper)
+          is ParsedActor<*> -> ParsedActorInterceptor(baseActor, wrapper)
+          is CodingActor -> CodingActorInterceptor(baseActor, wrapper)
+          is ImageActor -> ImageActorInterceptor(baseActor, wrapper)
+          is TextToSpeechActor -> TextToSpeechActorInterceptor(baseActor, wrapper)
+          else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
         }
+      }
     }
+  }
+
+  private val wrapperMap = mutableMapOf<String, FunctionWrapper>()
+  private fun getWrapper(name: String) = synchronized(wrapperMap) {
+    wrapperMap.getOrPut(name) {
+      FunctionWrapper(JsonFunctionRecorder(File(sessionDir, ".sys/actors/$name")))
+    }
+  }
 }

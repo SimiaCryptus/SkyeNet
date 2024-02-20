@@ -146,7 +146,7 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
       if (tool != null) {
         tools.remove(tool)
         File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
-        resp!!.writer.write("Tool deleted")
+        resp!!.sendRedirect("?")
       } else {
         resp!!.writer.write("Tool not found")
       }
@@ -193,7 +193,12 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
   }
 
   companion object {
-    private val userRoot by lazy { File(File(ApplicationServices.dataStorageRoot, ".skyenet"), "tools").apply { mkdirs() } }
+    private val userRoot by lazy {
+      File(
+        File(ApplicationServices.dataStorageRoot, ".skyenet"),
+        "tools"
+      ).apply { mkdirs() }
+    }
 
     @OptIn(ExperimentalStdlibApi::class)
     val tools by lazy {
@@ -231,7 +236,14 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
       if (!isAdmin && !isHeaderAuth) {
         resp.sendError(403)
       } else {
-        instanceCache.computeIfAbsent(tool) { construct(tool) }.service(req, resp)
+        try {
+          val servlet = instanceCache.computeIfAbsent(tool) { construct(tool) }
+          servlet.service(req, resp)
+        } catch (e: RuntimeException) {
+          throw e
+        } catch (e: Throwable) {
+          throw RuntimeException(e)
+        }
       }
     } else {
       super.service(req, resp)

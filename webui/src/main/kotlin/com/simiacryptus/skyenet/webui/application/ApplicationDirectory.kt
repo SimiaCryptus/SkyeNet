@@ -142,9 +142,11 @@ abstract class ApplicationDirectory(
             }
         ).toTypedArray()
     val server = Server(port)
-    val serverConnector = ServerConnector(server, httpConnectionFactory())
+   // Increase the number of acceptors and selectors for better scalability in a non-blocking model
+   val serverConnector = ServerConnector(server, 4, 8, httpConnectionFactory())
     serverConnector.port = port
     serverConnector.acceptQueueSize = 1000
+   serverConnector.idleTimeout = 30000 // Set idle timeout to 30 seconds
     server.connectors = arrayOf(serverConnector)
     server.handler = contexts
     server.start()

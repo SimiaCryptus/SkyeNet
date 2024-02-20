@@ -59,33 +59,37 @@ open class CodingActor(
     val resultOutput: String
   )
 
+  var evalFormat = true
   override val prompt: String
-    get() = if (symbols.isNotEmpty()) """
-            |You are a coding assistant allows users actions to be enacted using $language and the script context.
-            |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
-            |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
-            |Each response should have EXACTLY ONE code block. Do not use inline blocks.
-            |Code should be structured as appropriately parameterized function(s) 
-            |with the final line invoking the function with the appropriate request parameters.
-            |
-            |Defined symbols include {${symbols.keys.joinToString(", ")}} described below:
-            |
-            |```${this.describer.markupLanguage}
-            |${this.apiDescription}
-            |```
-            |
-            |${details ?: ""}
-            |""".trimMargin().trim()
-    else """
-            |You are a coding assistant allows users actions to be enacted using $language and the script context.
-            |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
-            |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
-            |Each response should have EXACTLY ONE code block. Do not use inline blocks.
-            |Code should be structured as appropriately parameterized function(s) 
-            |with the final line invoking the function with the appropriate request parameters.
-            |
-            |${details ?: ""}
-            |""".trimMargin().trim()
+    get() {
+      val formatInstructions = if(evalFormat) """Code should be structured as appropriately parameterized function(s) 
+              |with the final line invoking the function with the appropriate request parameters.""" else ""
+      return if (symbols.isNotEmpty()) {
+        """
+                  |You are a coding assistant allows users actions to be enacted using $language and the script context.
+                  |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
+                  |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
+                  |Each response should have EXACTLY ONE code block. Do not use inline blocks.
+                  |$formatInstructions
+                  |
+                  |Defined symbols include {${symbols.keys.joinToString(", ")}} described below:
+                  |
+                  |```${this.describer.markupLanguage}
+                  |${this.apiDescription}
+                  |```
+                  |
+                  |${details ?: ""}
+                  |""".trimMargin().trim()
+      } else """
+                |You are a coding assistant allows users actions to be enacted using $language and the script context.
+                |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
+                |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
+                |Each response should have EXACTLY ONE code block. Do not use inline blocks.
+                |$formatInstructions
+                |
+                |${details ?: ""}
+                |""".trimMargin().trim()
+    }
 
   open val apiDescription: String
     get() = this.symbols.map { (name, utilityObj) ->
@@ -164,7 +168,7 @@ open class CodingActor(
     log.debug("Running $code")
     OutputInterceptor.clearGlobalOutput()
     val result = try {
-      interpreter.run((prefix + code).sortCode())
+      interpreter.run((prefix + "\n" + code).sortCode())
     } catch (e: Exception) {
       when {
         e is FailedToImplementException -> throw e

@@ -51,6 +51,12 @@ class WebDevAgent(
       prompt = "Parse the page resource list",
       model = model,
     ),
+    ActorTypes.ArchitectureDiscussionActor to SimpleActor(
+      prompt = """
+      You will discuss and outline the high-level architecture for a web development project based on the user's requirements.
+      This includes suggesting technologies, frameworks, and a basic structure for the project.
+      """.trimIndent(), model = model
+    ),
   )
 ) : ActorSystem<WebDevAgent.ActorTypes>(actorMap, dataStorage, user, session) {
   enum class ActorTypes {
@@ -58,9 +64,11 @@ class WebDevAgent(
     JavascriptCodingActor,
     CssCodingActor,
     ResourceListParser,
+    ArchitectureDiscussionActor,
   }
 
-    val htmlActor by lazy { getActor(ActorTypes.HtmlCodingActor) as SimpleActor }
+  val architectureDiscussionActor by lazy { getActor(ActorTypes.ArchitectureDiscussionActor) as SimpleActor }
+  val htmlActor by lazy { getActor(ActorTypes.HtmlCodingActor) as SimpleActor }
   val javascriptActor by lazy { getActor(ActorTypes.JavascriptCodingActor) as SimpleActor }
   val cssActor by lazy { getActor(ActorTypes.CssCodingActor) as SimpleActor }
   val resourceListParser by lazy { getActor(ActorTypes.ResourceListParser) as ParsedActor<PageResourceList> }
@@ -71,11 +79,19 @@ class WebDevAgent(
     val message = ui.newTask()
     try {
       message.echo(renderMarkdown(userMessage))
+      // Initiate architecture discussion
+      val architectureDiscussion = architectureDiscussionActor.chatMessages(listOf(userMessage))
+      val architectureResponse = architectureDiscussionActor.respond(emptyList(), api, *architectureDiscussion)
+      message.add(renderMarkdown("### Architecture Discussion\n$architectureResponse"))
+
       val toolSpecs = tools.map { ToolServlet.tools.find { t -> t.path == it } }
         .joinToString("\n\n") { it?.let { JsonUtil.toJson(it.openApiDescription) } ?: "" }
       var messageWithTools = userMessage
       if (toolSpecs.isNotBlank()) messageWithTools += "\n\nThese services are available:\n$toolSpecs"
-      val codeRequest = htmlActor.chatMessages(listOf(messageWithTools))
+      val codeRequest = htmlActor.chatMessages(listOf(
+        messageWithTools,
+        architectureResponse
+      ))
       draftHtmlCode(message, codeRequest)
     } catch (e: Throwable) {
       log.warn("Error", e)
@@ -88,7 +104,7 @@ class WebDevAgent(
     request: Array<ApiModel.ChatMessage>,
   ) {
     try {
-      var html = htmlActor.respond(emptyList<String>(), api, *request)
+      var html = htmlActor.respond(emptyList(), api, *request)
       if (html.contains("```html")) html = html.substringAfter("```html").substringBefore("```")
       try {
         task.add(renderMarkdown("```html\n$html\n```"))
@@ -270,11 +286,13 @@ class WebDevAgent(
 
           "js" -> draftResourceCode(
             task,
-            javascriptActor.chatMessages(listOf(
-              userPrompt,
-              html,
-              "Render $path - $description"
-            )),
+            javascriptActor.chatMessages(
+              listOf(
+                userPrompt,
+                html,
+                "Render $path - $description"
+              )
+            ),
             javascriptActor,
             path, "js", "javascript"
           )

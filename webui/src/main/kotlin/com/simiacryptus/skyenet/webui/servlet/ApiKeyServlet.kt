@@ -141,33 +141,70 @@ class ApiKeyServlet : HttpServlet() {
 
   private fun serveEditPage(resp: HttpServletResponse, record: ApiKeyRecord) {
     val usageSummary = ApplicationServices.usageManager.getUserUsageSummary(record.apiKey)
+    //language=HTML
     resp.writer.write(
       """
-            <html>
-            <head>
-                <title>Edit API Key Record: ${record.apiKey}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    form > label { margin-right: 10px; }
-                    form > input[type="text"] { margin-bottom: 10px; display: block; }
-                    form > input[type="submit"] { margin-top: 10px; }
-                </style>
-            </head>
-            <body>
-                <h1>Edit API Key Record: ${record.apiKey}</h1>
-                <form action="edit" method="post">
-                    <input type="hidden" name="apiKey" value="${record.apiKey}">
-                   <label for="mappedKey">Mapped Key:</label>
-                   <input type="text" id="mappedKey" name="mappedKey" value="${record.mappedKey}">
-                    <label for="budget">Budget:</label>
-                    <input type="text" id="budget" name="budget" value="${record.budget}">
-                    <label for="comment">Comment:</label>
-                    <input type="text" id="comment" name="comment" value="${record.comment}">
-                    <input type="submit" value="Submit">
-                </form>
-                <!-- Usage Summary -->
-                <h2>Usage Summary</h2>
-                ${
+      <html>
+      <head>
+          <title>Edit API Key Record: ${record.apiKey}</title>
+          <style>
+              body {
+                  font-family: Arial, sans-serif;
+                  margin: 20px;
+              }
+      
+              form > label {
+                  display: block;
+                  margin-top: 10px;
+              }
+      
+              form > input[type="text"], textarea {
+                  margin-bottom: 10px;
+                  display: block;
+                  width: 100%;
+                  box-sizing: border-box;
+              }
+      
+              form > input[type="text"]#mappedKey {
+                  width: 50%;
+              }
+      
+              textarea {
+                  height: 100px;
+              }
+      
+              form > input[type="submit"] {
+                  margin-top: 10px;
+              }
+      
+              form {
+                  max-width: 600px;
+              }
+      
+              h2 {
+                  margin-top: 20px;
+              }
+      
+              div {
+                  margin-bottom: 10px;
+              }
+          </style>
+      </head>
+      <body>
+      <h1>Edit API Key Record: ${record.apiKey}</h1>
+      <form action="edit" method="post">
+          <input type="hidden" name="apiKey" value="${record.apiKey}">
+          <label for="mappedKey">Mapped Key:</label>
+          <input type="text" id="mappedKey" name="mappedKey" value="${record.mappedKey}" style="width: 100%;">
+          <label for="budget">Budget:</label>
+          <input type="text" id="budget" name="budget" value="${record.budget}">
+          <label for="comment">Description:</label>
+          <textarea id="comment" name="comment">${record.comment}</textarea>
+          <input type="submit" value="Submit">
+      </form>
+      <!-- Usage Summary -->
+      <h2>Usage Summary</h2>
+      ${
         usageSummary.entries.joinToString { (model: OpenAIModel, usage: ApiModel.Usage) ->
           """
           <div>
@@ -178,8 +215,8 @@ class ApiKeyServlet : HttpServlet() {
           """
         }
       }
-        </body>
-        </html>
+      </body>
+      </html>
         """.trimIndent()
     )
   }
