@@ -173,7 +173,7 @@ abstract class SessionTask(
     const val spinner =
       """<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>"""
 
-    private fun BufferedImage.toPng(): ByteArray {
+    fun BufferedImage.toPng(): ByteArray {
       java.io.ByteArrayOutputStream().use { os ->
         javax.imageio.ImageIO.write(this, "png", os)
         return os.toByteArray()

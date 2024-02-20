@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-
 open class OAuthGoogle(
     redirectUri: String,
     val applicationName: String,
@@ -42,6 +41,32 @@ open class OAuthGoogle(
         }, "/googleLogin")), "/*", EnumSet.of(DispatcherType.REQUEST))
         return context
     }
+    private val scopes = listOf(
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://www.googleapis.com/auth/gmail.compose",
+        "https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/gmail.insert",
+        "https://www.googleapis.com/auth/gmail.labels",
+        "https://www.googleapis.com/auth/gmail.metadata",
+        "https://www.googleapis.com/auth/gmail.settings.basic",
+        "https://www.googleapis.com/auth/gmail.settings.sharing",
+        "https://www.googleapis.com/auth/gmail.addons.current.message.action",
+        "https://www.googleapis.com/auth/gmail.addons.current.message.metadata",
+        "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+        "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+        "https://mail.google.com/",
+       "https://www.googleapis.com/auth/drive",
+       "https://www.googleapis.com/auth/drive.file",
+       "https://www.googleapis.com/auth/drive.appdata",
+       "https://www.googleapis.com/auth/drive.metadata.readonly",
+       "https://www.googleapis.com/auth/calendar",
+       "https://www.googleapis.com/auth/calendar.events",
+       "https://www.googleapis.com/auth/calendar.events.readonly",
+       "https://www.googleapis.com/auth/calendar.readonly",
+    )
 
     private val httpTransport = GoogleNetHttpTransport.newTrustedTransport()
     private val jsonFactory = GsonFactory.getDefaultInstance()
@@ -52,10 +77,7 @@ open class OAuthGoogle(
             jsonFactory,
             InputStreamReader(key()!!)
         ),
-        listOf(
-            "https://www.googleapis.com/auth/userinfo.email",
-            "https://www.googleapis.com/auth/userinfo.profile"
-        )
+        scopes
     ).build()
 
     private inner class LoginServlet : HttpServlet() {
@@ -77,22 +99,27 @@ open class OAuthGoogle(
         }
     }
 
+
     private inner class CallbackServlet : HttpServlet() {
         override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
             val code = req.getParameter("code")
             if (code != null) {
-                val sessionID = UUID.randomUUID().toString()
+                val credential = flow.createAndStoreCredential(
+                    flow.newTokenRequest(code).setRedirectUri(redirectUri).execute(), null
+                )
                 val userInfo = Oauth2.Builder(
-                    httpTransport, jsonFactory, flow.createAndStoreCredential(
-                        flow.newTokenRequest(code).setRedirectUri(redirectUri).execute(), null
-                    )
+                    httpTransport,
+                    jsonFactory,
+                    credential
                 ).setApplicationName(applicationName).build().userinfo().get().execute()
                 val user = User(
                     id = userInfo.id,
                     email = userInfo.email,
                     name = userInfo.name,
-                    picture = userInfo.picture
+                    picture = userInfo.picture,
+                    credential = credential,
                 )
+                val sessionID = UUID.randomUUID().toString()
                 ApplicationServices.authenticationManager.putUser(accessToken = sessionID, user = user)
                 log.info("User $user logged in with session $sessionID")
                 val sessionCookie = Cookie(AuthenticationInterface.AUTH_COOKIE, sessionID)

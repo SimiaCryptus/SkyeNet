@@ -7,6 +7,7 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.webui.application.ApplicationDirectory
@@ -237,7 +238,7 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
         resp.sendError(403)
       } else {
         try {
-          val servlet = instanceCache.computeIfAbsent(tool) { construct(tool) }
+          val servlet = instanceCache.computeIfAbsent(tool) { construct(user!!, tool) }
           servlet.service(req, resp)
         } catch (e: RuntimeException) {
           throw e
@@ -250,7 +251,7 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
     }
   }
 
-  private fun construct(tool: Tool): HttpServlet {
+  private fun construct(user: User, tool: Tool): HttpServlet {
     val returnBuffer = ToolAgent.ServletBuffer()
     val classLoader = Thread.currentThread().contextClassLoader
     val prevCL = KotlinInterpreter.classLoader
@@ -259,7 +260,7 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
       WebAppClassLoader.runWithServerClassAccess<Any?> {
         require(null != classLoader.loadClass("org.eclipse.jetty.server.Response"))
         require(null != classLoader.loadClass("org.eclipse.jetty.server.Request"))
-        this.fromString(tool.interpreterString).let { (interpreterClass, symbols) ->
+        this.fromString(user, tool.interpreterString).let { (interpreterClass, symbols) ->
           val effectiveSymbols = (symbols + mapOf(
             "returnBuffer" to returnBuffer,
             "json" to JsonUtil,
@@ -275,7 +276,7 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
     return first
   }
 
-  abstract fun fromString(str: String): InterpreterAndTools
+  abstract fun fromString(user: User, str: String): InterpreterAndTools
 
 }
 

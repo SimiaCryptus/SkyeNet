@@ -301,7 +301,7 @@ open class Selenium2S3(
     driver.findElements(By.xpath("//source[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
   ).flatten().filterNotNull()
 
-  private fun currentPageLinks(html: String) = listOf(
+  private fun  currentPageLinks(html: String) = listOf(
     Jsoup.parse(html).select("a[href]").map { it.attr("href") }.toSet(),
     Jsoup.parse(html).select("img[src]").map { it.attr("src") }.toSet(),
     Jsoup.parse(html).select("link[href]").map { it.attr("href") }.toSet(),
