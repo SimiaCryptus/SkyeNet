@@ -4,6 +4,8 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.userSettingsManager
+import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -25,6 +27,8 @@ class ApiKeyServlet : HttpServlet() {
   )
 
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+    // Log received parameters for debugging
+//     println("Action: $action, API Key: $apiKey, Mapped Key: $mappedKey, Budget: $budget, Comment: $comment, User: ${user?.email}")
     resp.contentType = "text/html"
     val user = ApplicationServices.authenticationManager.getUser(req.getCookie()) ?: return resp.sendError(
       HttpServletResponse.SC_UNAUTHORIZED
@@ -60,11 +64,20 @@ class ApiKeyServlet : HttpServlet() {
           ApiKeyRecord(
             user.email,
             UUID.randomUUID().toString(),
-            ApplicationServices.userSettingsManager.getUserSettings(user).apiKey,
+            userSettingsManager.getUserSettings(user).apiKey,
             0.0,
             ""
           )
         )
+      }
+
+      "invite" -> {
+        val record = apiKeyRecords.find { it.apiKey == apiKey /*&& it.owner != user.email*/ }
+        if (record == null) {
+          throw IllegalArgumentException("API Key record not found, or you do not have permission to access it, or you are the owner.")
+        }
+        // Display a confirmation page instead of directly applying the settings
+        serveInviteConfirmationPage(resp, record, user)
       }
 
       else -> {
@@ -75,14 +88,27 @@ class ApiKeyServlet : HttpServlet() {
   }
 
   override fun doPost(req: HttpServletRequest, resp: HttpServletResponse) {
+    val action = req.getParameter("action")
     val apiKey = req.getParameter("apiKey")
     val mappedKey = req.getParameter("mappedKey")
-    val budget = req.getParameter("budget").toDoubleOrNull()
+    val budget = req.getParameter("budget")?.toDoubleOrNull()
     val comment = req.getParameter("comment")
     val user = ApplicationServices.authenticationManager.getUser(req.getCookie())
-    val record = apiKeyRecords.find { it.apiKey == apiKey && it.owner == user?.email }
+    val record = apiKeyRecords.find { it.apiKey == apiKey }
 
-    if (record != null && budget != null && user != null) { // Ensure user is not null before proceeding
+    if (action == "acceptInvite") {
+      if (apiKey.isNullOrEmpty()) {
+        resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "API Key is missing")
+      } else if (user == null) {
+        resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "User not found")
+      } else if (record == null) {
+        resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid API Key or User not found")
+      } else {
+        userSettingsManager.updateUserSettings(user, userSettingsManager.getUserSettings(user).copy(
+          apiKey = apiKey, apiBase = "https://apps.simiacrypt.us/proxy"))
+        resp.sendRedirect("/") // Redirect to a success page or another relevant page
+      }
+    } else if (record != null && budget != null && user != null) { // Ensure user is not null before proceeding
       apiKeyRecords.remove(record)
       apiKeyRecords.add(
         record.copy(
@@ -139,6 +165,28 @@ class ApiKeyServlet : HttpServlet() {
       """.trimIndent()
   }
 
+  private fun serveInviteConfirmationPage(resp: HttpServletResponse, record: ApiKeyRecord, user: User) {
+    //language=HTML
+    resp.writer.write(
+      """
+    <html>
+    <head>
+        <title>Accept API Key Invitation</title>
+    </head>
+    <body>
+    <h1>Accept API Key Invitation</h1>
+    <p>You have been invited to use the API Key: ${record.apiKey}</p>
+    <form action='/apiKeys/' method="post">
+        <input type="hidden" name="apiKey" value="${record.apiKey}">
+        <input type="hidden" name="action" value="acceptInvite">
+        <input type="submit" value="Accept Invite">
+    </form>
+    </body>
+    </html>
+    """.trimIndent()
+    )
+  }
+
   private fun serveEditPage(resp: HttpServletResponse, record: ApiKeyRecord) {
     val usageSummary = ApplicationServices.usageManager.getUserUsageSummary(record.apiKey)
     //language=HTML
@@ -188,6 +236,9 @@ class ApiKeyServlet : HttpServlet() {
               div {
                   margin-bottom: 10px;
               }
+               .invite-link {
+                   margin-top: 20px;
+               }
           </style>
       </head>
       <body>
@@ -215,6 +266,12 @@ class ApiKeyServlet : HttpServlet() {
           """
         }
       }
+       <!-- Invite Link -->
+       <div class="invite-link">
+           <h2>Invite Link</h2>
+           <p>Share this link to invite others to use this API Key:</p>
+           <a href="?action=invite&apiKey=${URLEncoder.encode(record.apiKey, "UTF-8")}">Invite Link</a>
+       </div>
       </body>
       </html>
         """.trimIndent()
