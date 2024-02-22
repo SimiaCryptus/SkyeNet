@@ -8,7 +8,6 @@ import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationDirectory
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -31,10 +30,6 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
       requestURI.startsWith("/userInfo") -> {
         parent.userInfoServlet.doGet(req, resp!!)
       }
-
-      requestURI.startsWith("/userSettings") -> parent.userSettingsServlet.doGet(req, resp!!)
-      requestURI.startsWith("/logout") -> parent.logoutServlet.doGet(req, resp!!)
-      requestURI.startsWith("/usage") -> parent.usageServlet.doGet(req, resp!!)
       else -> try {
         val inputStream = parent.welcomeResources.addPath(requestURI)?.inputStream
         inputStream?.copyTo(resp?.outputStream!!)

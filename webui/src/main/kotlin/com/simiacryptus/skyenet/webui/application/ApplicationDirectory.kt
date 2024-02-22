@@ -90,17 +90,21 @@ abstract class ApplicationDirectory(
         }
       }
       ApplicationServices.isLocked = true
-      val welcomeContext = newWebAppContext("/", welcomeResources, "welcome", welcomeServlet)
       val server = start(
         port,
         *(listOfNotNull(
           newWebAppContext("/userInfo", userInfoServlet),
           newWebAppContext("/userSettings", userSettingsServlet),
+          newWebAppContext("/logout", logoutServlet),
           newWebAppContext("/usage", usageServlet),
           newWebAppContext("/proxy", proxyHttpServlet),
-          newWebAppContext("/apiKeys", apiKeyServlet),
+          newWebAppContext("/apiKeys", apiKeyServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+          },
           toolServlet?.let { newWebAppContext("/tools", it) },
-          authenticatedWebsite()?.configure(welcomeContext, false) ?: welcomeContext,
+          newWebAppContext("/", welcomeResources, "welcome", welcomeServlet).let {
+            authenticatedWebsite()?.configure(it, false) ?: it
+          },
         ).toTypedArray() + childWebApps.map {
           newWebAppContext(it.path, it.server)
         })
