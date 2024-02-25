@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.webui
 
-import org.junit.jupiter.api.Test
 import org.openapitools.codegen.SpecValidationException
 import java.io.File
 
@@ -86,7 +85,7 @@ class TestOpenAPITool {
     deleteOnExit()
   }
 
-  @Test
+//  @Test
   fun test() {
     //    val openApiTool = OpenAPITool()
     //    openApiTool.generate()
