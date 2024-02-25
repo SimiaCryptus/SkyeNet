@@ -250,7 +250,7 @@ open class CodingAgent<T : Interpreter>(
   protected open fun execute(
     task: SessionTask,
     response: CodeResult,
-    request: CodingActor.CodeRequest
+    request: CodingActor.CodeRequest,
   ) {
     try {
       val result = execute(task, response)
@@ -261,36 +261,45 @@ open class CodingAgent<T : Interpreter>(
             ).filter { it.first.isNotBlank() }
       ), response)
     } catch (e: Throwable) {
-      val message = when {
-        e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
-        e is CodingActor.FailedToImplementException -> renderMarkdown(
-          """
-                |**Failed to Implement** 
-                |
-                |${e.message}
-                |
-                |""".trimMargin()
-        )
-
-        else -> renderMarkdown(
-          """
-                |**Error `${e.javaClass.name}`**
-                |
-                |```text
-                |${e.message}
-                |```
-                |""".trimMargin()
-        )
-      }
-      task.add(message, true, "div", "error")
-      displayCode(task, CodingActor.CodeRequest(
-        messages = request.messages +
-            listOf(
-              response.code to ApiModel.Role.assistant,
-              message to ApiModel.Role.system,
-            ).filter { it.first.isNotBlank() }
-      ))
+      handleExecutionError(e, task, request, response)
     }
+  }
+
+  protected open fun handleExecutionError(
+    e: Throwable,
+    task: SessionTask,
+    request: CodingActor.CodeRequest,
+    response: CodeResult
+  ) {
+    val message = when {
+      e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
+      e is CodingActor.FailedToImplementException -> renderMarkdown(
+        """
+                  |**Failed to Implement** 
+                  |
+                  |${e.message}
+                  |
+                  |""".trimMargin()
+      )
+
+      else -> renderMarkdown(
+        """
+                  |**Error `${e.javaClass.name}`**
+                  |
+                  |```text
+                  |${e.message}
+                  |```
+                  |""".trimMargin()
+      )
+    }
+    task.add(message, true, "div", "error")
+    displayCode(task, CodingActor.CodeRequest(
+      messages = request.messages +
+          listOf(
+            response.code to ApiModel.Role.assistant,
+            message to ApiModel.Role.system,
+          ).filter { it.first.isNotBlank() }
+    ))
   }
 
   fun execute(
