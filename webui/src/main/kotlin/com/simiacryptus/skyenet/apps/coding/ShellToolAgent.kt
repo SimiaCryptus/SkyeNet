@@ -34,7 +34,7 @@ import java.io.File
 import java.util.function.Function
 import kotlin.reflect.KClass
 
-abstract class ToolAgent<T : Interpreter>(
+abstract class ShellToolAgent<T : Interpreter>(
   api: API,
   dataStorage: StorageInterface,
   session: Session,
@@ -180,7 +180,7 @@ abstract class ToolAgent<T : Interpreter>(
       }
   }
 
-  private fun  servletActor() = object : CodingActor(
+  private fun servletActor() = object : CodingActor(
     interpreterClass = actor.interpreterClass,
     symbols = actor.symbols + mapOf(
       "returnBuffer" to ServletBuffer(),
@@ -236,12 +236,17 @@ abstract class ToolAgent<T : Interpreter>(
       """
       |<div style="display: flex;flex-direction: column;">
       |${
-        if (!super.canPlay) "" else
           super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button") {
             super.responseAction(task, "Accepted...", formHandle!!, formText) {
               onComplete(response.code)
             }
           }
+      }
+      |${
+        if (!super.canPlay) "" else
+        ui.hrefLink("▶", "href-link play-button") {
+          execute(ui.newTask(), response)
+        }
       }
       |${
         super.ui.hrefLink("♻", "href-link regen-button") {
@@ -383,7 +388,7 @@ abstract class ToolAgent<T : Interpreter>(
   }
 
   companion object {
-    val log = LoggerFactory.getLogger(ToolAgent::class.java)
+    val log = LoggerFactory.getLogger(ShellToolAgent::class.java)
     fun <T> execWrap(fn: () -> T) : T {
       val classLoader = Thread.currentThread().contextClassLoader
       val prevCL = KotlinInterpreter.classLoader

@@ -253,29 +253,7 @@ open class CodingAgent<T : Interpreter>(
     request: CodingActor.CodeRequest
   ) {
     try {
-      val resultValue = response.result.resultValue
-      val resultOutput = response.result.resultOutput
-      val result = when {
-        resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
-              |# Output
-              |```text
-              |${resultOutput}
-              |```
-              """.trimMargin()
-
-        else -> """
-              |# Result
-              |```
-              |$resultValue
-              |```
-              |
-              |# Output
-              |```text
-              |${resultOutput}
-              |```
-              """.trimMargin()
-      }
-      task.add(renderMarkdown(result))
+      val result = execute(task, response)
       displayFeedback(task, CodingActor.CodeRequest(
         messages = request.messages +
             listOf(
@@ -313,6 +291,36 @@ open class CodingAgent<T : Interpreter>(
             ).filter { it.first.isNotBlank() }
       ))
     }
+  }
+
+  fun execute(
+    task: SessionTask,
+    response: CodeResult
+  ): String {
+    val resultValue = response.result.resultValue
+    val resultOutput = response.result.resultOutput
+    val result = when {
+      resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
+                |# Output
+                |```text
+                |${resultOutput}
+                |```
+                """.trimMargin()
+
+      else -> """
+                |# Result
+                |```
+                |$resultValue
+                |```
+                |
+                |# Output
+                |```text
+                |${resultOutput}
+                |```
+                """.trimMargin()
+    }
+    task.add(renderMarkdown(result))
+    return result
   }
 
   companion object {

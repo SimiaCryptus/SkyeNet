@@ -93,15 +93,21 @@ abstract class ApplicationDirectory(
       val server = start(
         port,
         *(listOfNotNull(
-          newWebAppContext("/userInfo", userInfoServlet),
-          newWebAppContext("/userSettings", userSettingsServlet),
           newWebAppContext("/logout", logoutServlet),
-          newWebAppContext("/usage", usageServlet),
           newWebAppContext("/proxy", proxyHttpServlet),
+          toolServlet?.let { newWebAppContext("/tools", it) },
+          newWebAppContext("/userInfo", userInfoServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+          },
+          newWebAppContext("/userSettings", userSettingsServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+          },
+          newWebAppContext("/usage", usageServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+          },
           newWebAppContext("/apiKeys", apiKeyServlet).let {
             authenticatedWebsite()?.configure(it, true) ?: it
           },
-          toolServlet?.let { newWebAppContext("/tools", it) },
           newWebAppContext("/", welcomeResources, "welcome", welcomeServlet).let {
             authenticatedWebsite()?.configure(it, false) ?: it
           },
