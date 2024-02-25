@@ -55,8 +55,6 @@ abstract class ToolAgent<T : Interpreter>(
     )
   ),
 ) : CodingAgent<T>(api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, actorMap) {
-
-
   override fun displayFeedback(task: SessionTask, request: CodingActor.CodeRequest, response: CodeResult) {
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null

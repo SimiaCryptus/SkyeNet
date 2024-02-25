@@ -32,28 +32,19 @@ open class Selenium2S3(
   val cookies: Array<out jakarta.servlet.http.Cookie>?,
 ) : Selenium {
 
-  private val driver: WebDriver by lazy { chromeDriver() }
+  private val driver: WebDriver by lazy { chromeDriver().apply { Companion.setCookies(this, cookies) } }
 
-  private val cookieStore by lazy {
-    BasicCookieStore().apply {
-      cookies?.forEach { cookie ->
-        addCookie(
-          BasicClientCookie(
-            cookie.name,
-            cookie.value
-          )
-        )
-      }
-    }
-  }
   private val httpClient by lazy {
     HttpAsyncClientBuilder.create()
       .useSystemProperties()
-      .setDefaultCookieStore(cookieStore)
+      .setDefaultCookieStore(BasicCookieStore().apply {
+        cookies?.forEach { cookie -> addCookie(BasicClientCookie(cookie.name, cookie.value)) }
+      })
       .setThreadFactory(pool.threadFactory)
       .build()
       .also { it.start() }
   }
+
   private val linkReplacements = mutableMapOf<String, String>()
   private val htmlPages: MutableMap<String, String> = mutableMapOf()
   private val jsonPages = mutableMapOf<String, String>()
@@ -65,7 +56,6 @@ open class Selenium2S3(
     saveRoot: String
   ) {
     driver.navigate().to(url)
-    setCookies(driver, cookies) // domain = url.host.split(".").takeLast(2).joinToString(".")
     driver.navigate().refresh()
     Thread.sleep(5000) // Wait for javascript to load
 
@@ -301,7 +291,7 @@ open class Selenium2S3(
     driver.findElements(By.xpath("//source[@src]")).map<WebElement?, String?> { it?.getAttribute("src") }.toSet(),
   ).flatten().filterNotNull()
 
-  private fun  currentPageLinks(html: String) = listOf(
+  private fun currentPageLinks(html: String) = listOf(
     Jsoup.parse(html).select("a[href]").map { it.attr("href") }.toSet(),
     Jsoup.parse(html).select("img[src]").map { it.attr("src") }.toSet(),
     Jsoup.parse(html).select("link[href]").map { it.attr("href") }.toSet(),
@@ -386,30 +376,6 @@ open class Selenium2S3(
     return doc.toString()
   }
 
-  fun setCookies(
-    driver: WebDriver,
-    cookies: Array<out jakarta.servlet.http.Cookie>?,
-    domain: String? = null
-  ) {
-    cookies?.forEach { cookie ->
-      try {
-        driver.manage().addCookie(
-          Cookie(
-            /* name = */ cookie.name,
-            /* value = */ cookie.value,
-            /* domain = */ cookie.domain ?: domain,
-            /* path = */ cookie.path,
-            /* expiry = */ if (cookie.maxAge <= 0) null else Date(cookie.maxAge * 1000L),
-            /* isSecure = */ cookie.secure,
-            /* isHttpOnly = */ cookie.isHttpOnly
-          )
-        )
-      } catch (e: Exception) {
-        log.warn("Error setting cookie: $cookie", e)
-      }
-    }
-  }
-
   override fun close() {
     log.debug("Closing", Exception())
     driver.quit()
@@ -447,14 +413,37 @@ open class Selenium2S3(
         chromePath.find { File(it).exists() } ?: throw RuntimeException("Chrome not found"))
       val options = ChromeOptions()
       val args = mutableListOf<String>()
-      if(headless) args += "--headless"
-      if(loadImages) args += "--blink-settings=imagesEnabled=false"
+      if (headless) args += "--headless"
+      if (loadImages) args += "--blink-settings=imagesEnabled=false"
       options.addArguments(*args.toTypedArray())
       options.setPageLoadTimeout(Duration.of(90, ChronoUnit.SECONDS))
       return ChromeDriver(chromeDriverService, options)
     }
 
     val chromeDriverService by lazy { ChromeDriverService.createDefaultService() }
+    fun setCookies(
+      driver: WebDriver,
+      cookies: Array<out jakarta.servlet.http.Cookie>?,
+      domain: String? = null
+    ) {
+      cookies?.forEach { cookie ->
+        try {
+          driver.manage().addCookie(
+            Cookie(
+              /* name = */ cookie.name,
+              /* value = */ cookie.value,
+              /* domain = */ cookie.domain ?: domain,
+              /* path = */ cookie.path,
+              /* expiry = */ if (cookie.maxAge <= 0) null else Date(cookie.maxAge * 1000L),
+              /* isSecure = */ cookie.secure,
+              /* isHttpOnly = */ cookie.isHttpOnly
+            )
+          )
+        } catch (e: Exception) {
+          log.warn("Error setting cookie: $cookie", e)
+        }
+      }
+    }
   }
 
 }

@@ -55,6 +55,7 @@ abstract class SessionTask(
     className: String = "response-message"
   ) = append("""<$tag class="$className">$message</$tag>""", showSpinner)
 
+  @Description("Adds a hideable message to the task output.")
   fun hideable(
     ui: ApplicationInterface,
     @Description("The message to add")

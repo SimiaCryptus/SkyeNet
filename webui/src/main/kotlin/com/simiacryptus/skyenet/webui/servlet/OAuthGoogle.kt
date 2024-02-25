@@ -120,32 +120,7 @@ open class OAuthGoogle(
       this
     }
 
-    var scopes = listOf(
-      "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile",
-      "https://www.googleapis.com/auth/gmail.readonly",
-      "https://www.googleapis.com/auth/gmail.modify",
-      "https://www.googleapis.com/auth/gmail.compose",
-      "https://www.googleapis.com/auth/gmail.send",
-      "https://www.googleapis.com/auth/gmail.insert",
-      "https://www.googleapis.com/auth/gmail.labels",
-      "https://www.googleapis.com/auth/gmail.metadata",
-      "https://www.googleapis.com/auth/gmail.settings.basic",
-      "https://www.googleapis.com/auth/gmail.settings.sharing",
-      "https://www.googleapis.com/auth/gmail.addons.current.message.action",
-      "https://www.googleapis.com/auth/gmail.addons.current.message.metadata",
-      "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
-      "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
-      "https://mail.google.com/",
-      "https://www.googleapis.com/auth/drive",
-      "https://www.googleapis.com/auth/drive.file",
-      "https://www.googleapis.com/auth/drive.appdata",
-      "https://www.googleapis.com/auth/drive.metadata.readonly",
-      "https://www.googleapis.com/auth/calendar",
-      "https://www.googleapis.com/auth/calendar.events",
-      "https://www.googleapis.com/auth/calendar.events.readonly",
-      "https://www.googleapis.com/auth/calendar.readonly",
-    ).toMutableSet()
+    var scopes = listOf<String>().toMutableSet()
 
   }
 

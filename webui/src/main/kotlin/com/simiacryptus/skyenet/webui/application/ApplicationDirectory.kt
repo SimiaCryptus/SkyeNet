@@ -68,10 +68,7 @@ abstract class ApplicationDirectory(
 
   open fun setupPlatform() {
     ApplicationServices.seleniumFactory = { pool, cookies ->
-      Selenium2S3(
-        pool,
-        cookies,
-      )
+      Selenium2S3(pool, cookies,)
     }
   }
 
