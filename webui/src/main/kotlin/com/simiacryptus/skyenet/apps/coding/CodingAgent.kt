@@ -62,7 +62,7 @@ open class CodingAgent<T : Interpreter>(
       displayCode(message, codeRequest)
     } catch (e: Throwable) {
       log.warn("Error", e)
-      message.error(e)
+      message.error(ui, e)
     }
   }
 
@@ -85,7 +85,7 @@ open class CodingAgent<T : Interpreter>(
       displayCodeAndFeedback(task, codeRequest, codeResponse)
     } catch (e: Throwable) {
       log.warn("Error", e)
-      val error = task.error(e)
+      val error = task.error(ui, e)
       var regenButton: StringBuilder? = null
       regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button") {
         regenButton?.clear()
@@ -106,7 +106,7 @@ open class CodingAgent<T : Interpreter>(
       displayCode(task, response)
       displayFeedback(task, append(codeRequest, response), response)
     } catch (e: Throwable) {
-      task.error(e)
+      task.error(ui, e)
       log.warn("Error", e)
     }
   }
@@ -125,7 +125,7 @@ open class CodingAgent<T : Interpreter>(
     task: SessionTask,
     response: CodeResult
   ) {
-    task.add(
+    task.hideable(ui,
       renderMarkdown(
         response.renderedResponse ?:
         //language=Markdown
@@ -243,39 +243,17 @@ open class CodingAgent<T : Interpreter>(
       ))
     } catch (e: Throwable) {
       log.warn("Error", e)
-      task.error(e)
+      task.error(ui, e)
     }
   }
 
   protected open fun execute(
     task: SessionTask,
     response: CodeResult,
-    request: CodingActor.CodeRequest
+    request: CodingActor.CodeRequest,
   ) {
     try {
-      val resultValue = response.result.resultValue
-      val resultOutput = response.result.resultOutput
-      val result = when {
-        resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
-              |# Output
-              |```text
-              |${resultOutput}
-              |```
-              """.trimMargin()
-
-        else -> """
-              |# Result
-              |```
-              |$resultValue
-              |```
-              |
-              |# Output
-              |```text
-              |${resultOutput}
-              |```
-              """.trimMargin()
-      }
-      task.add(renderMarkdown(result))
+      val result = execute(task, response)
       displayFeedback(task, CodingActor.CodeRequest(
         messages = request.messages +
             listOf(
@@ -283,36 +261,75 @@ open class CodingAgent<T : Interpreter>(
             ).filter { it.first.isNotBlank() }
       ), response)
     } catch (e: Throwable) {
-      val message = when {
-        e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
-        e is CodingActor.FailedToImplementException -> renderMarkdown(
-          """
-                |**Failed to Implement** 
-                |
-                |${e.message}
-                |
-                |""".trimMargin()
-        )
-
-        else -> renderMarkdown(
-          """
-                |**Error `${e.javaClass.name}`**
-                |
-                |```text
-                |${e.message}
-                |```
-                |""".trimMargin()
-        )
-      }
-      task.add(message, true, "div", "error")
-      displayCode(task, CodingActor.CodeRequest(
-        messages = request.messages +
-            listOf(
-              response.code to ApiModel.Role.assistant,
-              message to ApiModel.Role.system,
-            ).filter { it.first.isNotBlank() }
-      ))
+      handleExecutionError(e, task, request, response)
     }
+  }
+
+  protected open fun handleExecutionError(
+    e: Throwable,
+    task: SessionTask,
+    request: CodingActor.CodeRequest,
+    response: CodeResult
+  ) {
+    val message = when {
+      e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
+      e is CodingActor.FailedToImplementException -> renderMarkdown(
+        """
+                  |**Failed to Implement** 
+                  |
+                  |${e.message}
+                  |
+                  |""".trimMargin()
+      )
+
+      else -> renderMarkdown(
+        """
+                  |**Error `${e.javaClass.name}`**
+                  |
+                  |```text
+                  |${e.message}
+                  |```
+                  |""".trimMargin()
+      )
+    }
+    task.add(message, true, "div", "error")
+    displayCode(task, CodingActor.CodeRequest(
+      messages = request.messages +
+          listOf(
+            response.code to ApiModel.Role.assistant,
+            message to ApiModel.Role.system,
+          ).filter { it.first.isNotBlank() }
+    ))
+  }
+
+  fun execute(
+    task: SessionTask,
+    response: CodeResult
+  ): String {
+    val resultValue = response.result.resultValue
+    val resultOutput = response.result.resultOutput
+    val result = when {
+      resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
+                |# Output
+                |```text
+                |${resultOutput}
+                |```
+                """.trimMargin()
+
+      else -> """
+                |# Result
+                |```
+                |$resultValue
+                |```
+                |
+                |# Output
+                |```text
+                |${resultOutput}
+                |```
+                """.trimMargin()
+    }
+    task.add(renderMarkdown(result))
+    return result
   }
 
   companion object {

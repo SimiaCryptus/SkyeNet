@@ -51,6 +51,7 @@ abstract class ApplicationDirectory(
   open val logoutServlet = LogoutServlet()
   open val usageServlet = UsageServlet()
   open val proxyHttpServlet = ProxyHttpServlet()
+  open val apiKeyServlet = ApiKeyServlet()
   open val welcomeServlet = WelcomeServlet(this)
   abstract val toolServlet : ToolServlet?
 
@@ -89,16 +90,27 @@ abstract class ApplicationDirectory(
         }
       }
       ApplicationServices.isLocked = true
-      val welcomeContext = newWebAppContext("/", welcomeResources, "welcome", welcomeServlet)
       val server = start(
         port,
         *(listOfNotNull(
-          newWebAppContext("/userInfo", userInfoServlet),
-          newWebAppContext("/userSettings", userSettingsServlet),
-          newWebAppContext("/usage", usageServlet),
+          newWebAppContext("/logout", logoutServlet),
           newWebAppContext("/proxy", proxyHttpServlet),
           toolServlet?.let { newWebAppContext("/tools", it) },
-          authenticatedWebsite()?.configure(welcomeContext, false) ?: welcomeContext,
+          newWebAppContext("/userInfo", userInfoServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+          },
+          newWebAppContext("/userSettings", userSettingsServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+          },
+          newWebAppContext("/usage", usageServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+          },
+          newWebAppContext("/apiKeys", apiKeyServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+          },
+          newWebAppContext("/", welcomeResources, "welcome", welcomeServlet).let {
+            authenticatedWebsite()?.configure(it, false) ?: it
+          },
         ).toTypedArray() + childWebApps.map {
           newWebAppContext(it.path, it.server)
         })
@@ -140,9 +152,11 @@ abstract class ApplicationDirectory(
             }
         ).toTypedArray()
     val server = Server(port)
-    val serverConnector = ServerConnector(server, httpConnectionFactory())
+   // Increase the number of acceptors and selectors for better scalability in a non-blocking model
+   val serverConnector = ServerConnector(server, 4, 8, httpConnectionFactory())
     serverConnector.port = port
     serverConnector.acceptQueueSize = 1000
+   serverConnector.idleTimeout = 30000 // Set idle timeout to 30 seconds
     server.connectors = arrayOf(serverConnector)
     server.handler = contexts
     server.start()

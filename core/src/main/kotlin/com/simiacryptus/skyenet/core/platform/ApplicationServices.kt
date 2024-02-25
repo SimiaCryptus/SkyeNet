@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.core.platform
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.common.util.concurrent.AtomicDouble
 import com.simiacryptus.jopenai.ApiModel
@@ -267,6 +268,7 @@ data class User(
     @get:JsonProperty("name") val name: String? = null,
     @get:JsonProperty("id") val id: String? = null,
     @get:JsonProperty("picture") val picture: String? = null,
+    @get:JsonIgnore val credential: Any? = null,
 ) {
     override fun toString() = email
 

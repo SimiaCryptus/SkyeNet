@@ -1,26 +1,36 @@
 package com.simiacryptus.skyenet.webui.servlet
 
+
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.apps.coding.ToolAgent
+import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.webui.application.ApplicationDirectory
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
-import com.simiacryptus.skyenet.webui.util.OpenApi
+import com.simiacryptus.skyenet.webui.util.OpenAPI
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.webapp.WebAppClassLoader
 import java.io.File
 import java.util.*
-import kotlin.reflect.javaType
+import kotlin.reflect.jvm.javaType
 import kotlin.reflect.typeOf
 
 abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
+
+  data class Tool(
+    val path: String,
+    val openApiDescription: OpenAPI,
+    val interpreterString: String,
+    val servletCode: String,
+  )
 
   private fun indexPage() = """
           <html>
@@ -111,56 +121,6 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
     resp.writer.close()
   }
 
-
-  override fun service(req: HttpServletRequest?, resp: HttpServletResponse?) {
-    req ?: return
-    resp ?: return
-
-
-    val path = req.servletPath ?: "/"
-    val tool = tools.find { it.path == path }
-    if (tool != null) {
-      // TODO: Isolate tools per user
-      val user = authenticationManager.getUser(req.getCookie())
-      val isAdmin = authorizationManager.isAuthorized(
-        ToolServlet.javaClass, user, OperationType.Admin
-      )
-      val isHeaderAuth = apiKey == req.getHeader("Authorization")?.removePrefix("Bearer ")
-      if (!isAdmin && !isHeaderAuth) {
-        resp.sendError(403)
-      } else {
-        instanceCache.computeIfAbsent(tool) { construct(tool) }.service(req, resp)
-      }
-    } else {
-      super.service(req, resp)
-    }
-  }
-
-  private fun construct(tool: Tool): HttpServlet {
-    val returnBuffer = ToolAgent.ServletBuffer()
-    val classLoader = Thread.currentThread().contextClassLoader
-    val prevCL = KotlinInterpreter.classLoader
-    KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader
-    try {
-      WebAppClassLoader.runWithServerClassAccess<Any?> {
-        require(null != classLoader.loadClass("org.eclipse.jetty.server.Response"))
-        require(null != classLoader.loadClass("org.eclipse.jetty.server.Request"))
-        this.fromString(tool.interpreterString).let { (interpreterClass, symbols) ->
-          val effectiveSymbols = (symbols + mapOf(
-            "returnBuffer" to returnBuffer,
-            "json" to JsonUtil,
-          )).filterKeys { !it.isNullOrBlank() }
-          interpreterClass.getConstructor(Map::class.java).newInstance(effectiveSymbols).run(tool.servletCode)
-        }
-      }
-    } finally {
-      KotlinInterpreter.classLoader = prevCL
-    }
-
-    val first = returnBuffer.first()
-    return first
-  }
-
   override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
 
     val user = authenticationManager.getUser(req?.getCookie())
@@ -187,7 +147,7 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
       if (tool != null) {
         tools.remove(tool)
         File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
-        resp!!.writer.write("Tool deleted")
+        resp!!.sendRedirect("?")
       } else {
         resp!!.writer.write("Tool not found")
       }
@@ -223,7 +183,7 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
           path = newpath,
           interpreterString = req.getParameter("interpreterString"),
           servletCode = req.getParameter("servletCode"),
-          openApiDescription = JsonUtil.fromJson(req.getParameter("openApiDescription"), OpenApi::class.java)
+          openApiDescription = JsonUtil.fromJson(req.getParameter("openApiDescription"), OpenAPI::class.java)
         )
       )
       File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
@@ -233,10 +193,13 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
     }
   }
 
-  abstract fun fromString(str: String): InterpreterAndTools
-
   companion object {
-    private val userRoot by lazy { File(File(".skyenet"), "tools").apply { mkdirs() } }
+    private val userRoot by lazy {
+      File(
+        File(ApplicationServices.dataStorageRoot, ".skyenet"),
+        "tools"
+      ).apply { mkdirs() }
+    }
 
     @OptIn(ExperimentalStdlibApi::class)
     val tools by lazy {
@@ -258,6 +221,63 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
     val instanceCache = mutableMapOf<Tool, HttpServlet>()
 
   }
+
+  override fun service(req: HttpServletRequest?, resp: HttpServletResponse?) {
+    req ?: return
+    resp ?: return
+    val path = req.servletPath ?: "/"
+    val tool = tools.find { it.path == path }
+    if (tool != null) {
+      // TODO: Isolate tools per user
+      val user = authenticationManager.getUser(req.getCookie())
+      val isAdmin = authorizationManager.isAuthorized(
+        ToolServlet.javaClass, user, OperationType.Admin
+      )
+      val isHeaderAuth = apiKey == req.getHeader("Authorization")?.removePrefix("Bearer ")
+      if (!isAdmin && !isHeaderAuth) {
+        resp.sendError(403)
+      } else {
+        try {
+          val servlet = instanceCache.computeIfAbsent(tool) { construct(user!!, tool) }
+          servlet.service(req, resp)
+        } catch (e: RuntimeException) {
+          throw e
+        } catch (e: Throwable) {
+          throw RuntimeException(e)
+        }
+      }
+    } else {
+      super.service(req, resp)
+    }
+  }
+
+  private fun construct(user: User, tool: Tool): HttpServlet {
+    val returnBuffer = ToolAgent.ServletBuffer()
+    val classLoader = Thread.currentThread().contextClassLoader
+    val prevCL = KotlinInterpreter.classLoader
+    KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader
+    try {
+      WebAppClassLoader.runWithServerClassAccess<Any?> {
+        require(null != classLoader.loadClass("org.eclipse.jetty.server.Response"))
+        require(null != classLoader.loadClass("org.eclipse.jetty.server.Request"))
+        this.fromString(user, tool.interpreterString).let { (interpreterClass, symbols) ->
+          val effectiveSymbols = (symbols + mapOf(
+            "returnBuffer" to returnBuffer,
+            "json" to JsonUtil,
+          )).filterKeys { !it.isNullOrBlank() }
+          interpreterClass.getConstructor(Map::class.java).newInstance(effectiveSymbols).run(tool.servletCode)
+        }
+      }
+    } finally {
+      KotlinInterpreter.classLoader = prevCL
+    }
+
+    val first = returnBuffer.first()
+    return first
+  }
+
+  abstract fun fromString(user: User, str: String): InterpreterAndTools
+
 }
 
 data class InterpreterAndTools(
@@ -265,9 +285,4 @@ data class InterpreterAndTools(
   val symbols: Map<String, Any> = mapOf(),
 )
 
-data class Tool(
-  val path: String,
-  val openApiDescription: OpenApi,
-  val interpreterString: String,
-  val servletCode: String,
-)
+

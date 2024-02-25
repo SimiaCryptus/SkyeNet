@@ -5,14 +5,14 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
 // OpenAPI root document
-data class OpenApi(
+data class OpenAPI(
   val openapi: String = "3.0.0",
   val info: Info? = null,
   val paths: Map<String, PathItem>? = emptyMap(),
   @JsonInclude(JsonInclude.Include.NON_NULL)
   val components: Components? = null
 ) {
-  fun merge(other: OpenApi) = OpenApi(
+  fun merge(other: OpenAPI) = OpenAPI(
     openapi = openapi,
     info = info,
     paths = (paths ?: emptyMap()) + (other.paths ?: emptyMap()),
@@ -58,7 +58,14 @@ data class PathItem(
 data class Operation(
   val summary: String? = null,
   val description: String? = null,
-  val responses: Map<String, Response>? = emptyMap()
+  val responses: Map<String, Response>? = emptyMap(),
+  val parameters: List<Parameter>? = emptyList(),
+  val operationId: String? = null,
+  val requestBody: RequestBody? = null,
+  val security: List<Map<String, List<String>>>? = emptyList(),
+  val tags: List<String>? = emptyList(),
+  val callbacks: Map<String, Callback>? = emptyMap(),
+  val deprecated: Boolean? = null,
 )
 
 // Operation response
@@ -94,8 +101,25 @@ data class Components(
 }
 
 // Simplified examples of component objects
-data class Schema(val type: String? = null, val properties: Map<String, Schema>? = emptyMap(), val items: Schema? = null)
-data class Parameter(val name: String? = null, val `in`: String? = null, val description: String? = null)
+data class Schema(
+  val type: String? = null,
+  val properties: Map<String, Schema>? = emptyMap(),
+  val items: Schema? = null,
+  val `$ref`: String? = null,
+  val format: String? = null,
+  val description: String? = null,
+
+  )
+
+data class Parameter(
+  val name: String? = null,
+  val `in`: String? = null,
+  val description: String? = null,
+  val required: Boolean? = null,
+  val schema: Schema? = null,
+  val content: Map<String, MediaType>? = null,
+  val example: Any? = null,
+)
 data class Example(val summary: String? = null, val description: String? = null)
 data class RequestBody(val description: String? = null, val content: Map<String, MediaType>? = null)
 data class Header(val description: String? = null)
@@ -105,13 +129,13 @@ data class Callback(val expression: String? = null)
 data class MediaType(val schema: Schema? = null)
 
 // Function to serialize OpenApi object to JSON string
-fun serializeOpenApiSpec(openApi: OpenApi): String {
+fun serializeOpenApiSpec(openApi: OpenAPI): String {
   val mapper = jacksonObjectMapper()
   return mapper.writeValueAsString(openApi)
 }
 
 // Function to deserialize JSON string to OpenApi object
-fun deserializeOpenApiSpec(json: String): OpenApi {
+fun deserializeOpenApiSpec(json: String): OpenAPI {
   val mapper = jacksonObjectMapper()
   return mapper.readValue(json)
 }

@@ -34,7 +34,14 @@ import java.io.File
 import java.util.function.Function
 import kotlin.reflect.KClass
 
-abstract class ToolAgent<T : Interpreter>(
+private val String.escapeQuotedString: String
+  get() = replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+    .replace("\n", "\\n")
+    .replace("\r", "\\r")
+    .replace("$", "\\$")
+
+abstract class ShellToolAgent<T : Interpreter>(
   api: API,
   dataStorage: StorageInterface,
   session: Session,
@@ -63,7 +70,14 @@ abstract class ToolAgent<T : Interpreter>(
     formHandle = task.add(
       """
       |<div style="display: flex;flex-direction: column;">
-      |${super.playButton(task, request, response, formText) { formHandle!! }}
+      |${
+        if (!super.canPlay) "" else
+          super.ui.hrefLink("▶", "href-link play-button") {
+            super.responseAction(task, "Running...", formHandle!!, formText) {
+              super.execute(super.ui.newTask(), response, request)
+            }
+          }
+      }
       |${super.regenButton(task, request, formText) { formHandle!! }}
       |${createToolButton(task, request, response, formText) { formHandle!! }}
       |</div>  
@@ -73,6 +87,26 @@ abstract class ToolAgent<T : Interpreter>(
     formText.append(formHandle.toString())
     formHandle.toString()
     task.complete()
+  }
+
+  private var lastResult: String? = null
+
+  override fun execute(
+    task: SessionTask,
+    response: CodeResult,
+    request: CodingActor.CodeRequest,
+  ) {
+    try {
+      lastResult = execute(task, response)
+      displayFeedback(task, CodingActor.CodeRequest(
+        messages = request.messages +
+            listOf(
+              "Running...\n\n$lastResult" to ApiModel.Role.assistant,
+            ).filter { it.first.isNotBlank() }
+      ), response)
+    } catch (e: Throwable) {
+      handleExecutionError(e, task, request, response)
+    }
   }
 
   private fun createToolButton(
@@ -92,76 +126,121 @@ abstract class ToolAgent<T : Interpreter>(
           )
         )
       ) { schemaCode ->
-        displayCodeFeedback(
-          task, servletActor(), request.copy(
-            messages = listOf(
-              response.code to ApiModel.Role.assistant,
-              "Reprocess this code prototype into a servlet using the given data schema. " +
-                  "The last line should instantiate the new servlet class and return it via the returnBuffer collection." to ApiModel.Role.user
-            ),
-            codePrefix = schemaCode
-          )
-        ) { servletHandler ->
-          val servletImpl = (schemaCode + "\n\n" + servletHandler).sortCode()
-          val toolsPrefix = "/tools"
-          var openAPI = openAPIParsedActor().getParser(api).apply(servletImpl).let { openApi ->
-            openApi.copy(paths = openApi.paths?.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
+        val command = actor.symbols.get("command")?.let { command ->
+          when (command) {
+            is String -> command.split(" ")
+            is List<*> -> command.map { it.toString() }
+            else -> throw IllegalArgumentException("Invalid command: $command")
           }
-          task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
-          for (i in 0..5) {
-            try {
-              OpenAPIGenerator.main(
-                arrayOf(
-                  "generate",
-                  "-i",
-                  File.createTempFile("openapi", ".json").apply {
-                    writeText(JsonUtil.toJson(openAPI))
-                    deleteOnExit()
-                  }.absolutePath,
-                  "-g",
-                  "html2",
-                  "-o",
-                  File(dataStorage.getSessionDir(user, session), "openapi/html2").apply { mkdirs() }.absolutePath,
+        } ?: listOf("bash")
+        val cwd = actor.symbols.get("workingDir")?.toString()?.let { java.io.File(it) } ?: java.io.File(".")
+        val env = actor.symbols.get("env")?.let { env -> (env as Map<String, String>) } ?: mapOf()
+        val codePrefix = """
+              fun execute() : Pair<String, String> {
+                val command = "${command.joinToString(" ").escapeQuotedString}".split(" ")
+                val cwd = java.io.File("${cwd.absolutePath.escapeQuotedString}")
+                val env = mapOf<String, String>(${env.entries.joinToString(",") { "\"${it.key.escapeQuotedString}\" to \"${it.value.escapeQuotedString}\"" }})
+                val processBuilder = ProcessBuilder(*command.toTypedArray()).directory(cwd)
+                processBuilder.environment().putAll(env)
+                val process = processBuilder.start()
+                process.outputStream.write("${response.code.escapeQuotedString}".toByteArray())
+                process.outputStream.close()
+                val output = process.inputStream.bufferedReader().readText()
+                val error = process.errorStream.bufferedReader().readText()
+                val waitFor = process.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+                if (!waitFor) {
+                  process.destroy()
+                  throw RuntimeException("Timeout; output: " + output + "; error: " + error)
+                } else {
+                  return Pair(output, error)
+                }
+              }
+            """.trimIndent()
+        val messages = listOf(
+          "Shell Code: \n```${actor.language}\n${response.code}\n```" to ApiModel.Role.assistant,
+        ) + (lastResult?.let { listOf(
+          "Example Output:\n\n```text\n$it\n```" to ApiModel.Role.assistant
+        ) } ?: listOf()) + listOf(
+          "Schema: \n```kotlin\n${schemaCode}\n```" to ApiModel.Role.assistant,
+          "Implement a parsing method to convert the shell output to the requested data structure" to ApiModel.Role.user
+        )
+        displayCodeFeedback(
+          task, parsedActor(), request.copy(
+            messages = messages,
+            codePrefix = codePrefix
+          )
+        ) { parsedCode ->
+          displayCodeFeedback(
+            task, servletActor(), request.copy(
+              messages = listOf(
+                (codePrefix + "\n\n" + parsedCode) to ApiModel.Role.assistant,
+                "Reprocess this code prototype into a servlet. " +
+                "The last line should instantiate the new servlet class and return it via the returnBuffer collection." to ApiModel.Role.user
+              ),
+              codePrefix = schemaCode
+            )
+          ) { servletHandler ->
+            val servletImpl = (schemaCode + "\n\n" + servletHandler).sortCode()
+            val toolsPrefix = "/tools"
+            var openAPI = openAPIParsedActor().getParser(api).apply(servletImpl).let { openApi ->
+              openApi.copy(paths = openApi.paths?.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
+            }
+            task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
+            for (i in 0..5) {
+              try {
+                OpenAPIGenerator.main(
+                  arrayOf(
+                    "generate",
+                    "-i",
+                    File.createTempFile("openapi", ".json").apply {
+                      writeText(JsonUtil.toJson(openAPI))
+                      deleteOnExit()
+                    }.absolutePath,
+                    "-g",
+                    "html2",
+                    "-o",
+                    File(dataStorage.getSessionDir(user, session), "openapi/html2").apply { mkdirs() }.absolutePath,
+                  )
                 )
-              )
-              task.add("Validated OpenAPI Descriptor - <a href='fileIndex/$session/openapi/html2/index.html'>Documentation Saved</a>");
-              break;
-            } catch (e: SpecValidationException) {
-              val error = """
+                task.add("Validated OpenAPI Descriptor - <a href='fileIndex/$session/openapi/html2/index.html'>Documentation Saved</a>");
+                break;
+              } catch (e: SpecValidationException) {
+                val error = """
             |${e.message}
             |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
             |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
           """.trimIndent()
-              task.hideable(ui, renderMarkdown("```\n${error}\n```"))
-              openAPI = openAPIParsedActor().answer(
-                listOf(
-                  servletImpl,
-                  JsonUtil.toJson(openAPI),
-                  error
-                ), api
-              ).obj.let { openApi ->
-                val paths = HashMap(openApi.paths)
-                openApi.copy(paths = paths.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
+                task.hideable(ui, renderMarkdown("```\n${error}\n```"))
+                openAPI = openAPIParsedActor().answer(
+                  listOf(
+                    servletImpl,
+                    JsonUtil.toJson(openAPI),
+                    error
+                  ), api
+                ).obj.let { openApi ->
+                  val paths = HashMap(openApi.paths)
+                  openApi.copy(paths = paths.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
+                }
+                task.hideable(ui, renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
               }
-              task.hideable(ui, renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
             }
-          }
-          if (ApplicationServices.authorizationManager.isAuthorized(
-              ToolAgent.javaClass,
-              user,
-              AuthorizationInterface.OperationType.Admin
-            )
-          ) {
-            ToolServlet.addTool(
-              ToolServlet.Tool(
-                path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
-                openApiDescription = openAPI,
-                interpreterString = getInterpreterString(),
-                servletCode = servletImpl
+            if (ApplicationServices.authorizationManager.isAuthorized(
+                ToolAgent.javaClass,
+                user,
+                AuthorizationInterface.OperationType.Admin
               )
-            )
+            ) {
+              ToolServlet.addTool(
+                ToolServlet.Tool(
+                  path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
+                  openApiDescription = openAPI,
+                  interpreterString = getInterpreterString(),
+                  servletCode = servletImpl
+                )
+              )
+            }
+            buildTestPage(openAPI, servletImpl, task)
           }
-          buildTestPage(openAPI, servletImpl, task)
         }
       }
     }
@@ -180,8 +259,8 @@ abstract class ToolAgent<T : Interpreter>(
       }
   }
 
-  private fun  servletActor() = object : CodingActor(
-    interpreterClass = actor.interpreterClass,
+  private fun servletActor() = object : CodingActor(
+    interpreterClass = KotlinInterpreter::class,
     symbols = actor.symbols + mapOf(
       "returnBuffer" to ServletBuffer(),
       "json" to JsonUtil,
@@ -209,7 +288,21 @@ abstract class ToolAgent<T : Interpreter>(
   }
 
   private fun schemaActor() = object : CodingActor(
-    interpreterClass = actor.interpreterClass,
+    interpreterClass = KotlinInterpreter::class,
+    symbols = mapOf(),
+    details = actor.details,
+    model = actor.model,
+    fallbackModel = actor.fallbackModel,
+    temperature = actor.temperature,
+    runtimeSymbols = actor.runtimeSymbols
+  ) {
+    override val prompt: String
+      get() = super.prompt
+  }
+
+
+  private fun parsedActor() = object : CodingActor(
+    interpreterClass = KotlinInterpreter::class,
     symbols = mapOf(),
     details = actor.details,
     model = actor.model,
@@ -236,11 +329,16 @@ abstract class ToolAgent<T : Interpreter>(
       """
       |<div style="display: flex;flex-direction: column;">
       |${
+        super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button") {
+          super.responseAction(task, "Accepted...", formHandle!!, formText) {
+            onComplete(response.code)
+          }
+        }
+      }
+      |${
         if (!super.canPlay) "" else
-          super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button") {
-            super.responseAction(task, "Accepted...", formHandle!!, formText) {
-              onComplete(response.code)
-            }
+          ui.hrefLink("▶", "href-link play-button") {
+            execute(ui.newTask(), response)
           }
       }
       |${
@@ -383,8 +481,8 @@ abstract class ToolAgent<T : Interpreter>(
   }
 
   companion object {
-    val log = LoggerFactory.getLogger(ToolAgent::class.java)
-    fun <T> execWrap(fn: () -> T) : T {
+    val log = LoggerFactory.getLogger(ShellToolAgent::class.java)
+    fun <T> execWrap(fn: () -> T): T {
       val classLoader = Thread.currentThread().contextClassLoader
       val prevCL = KotlinInterpreter.classLoader
       KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader

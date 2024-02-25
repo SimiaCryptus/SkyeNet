@@ -74,7 +74,7 @@ open class ImageActor(
                         text.toChatMessage(),
                         "Please shorten the description".toChatMessage(),
                     ),
-                ).flatten().map { it as ChatMessage }.toTypedArray(),
+                ).flatten().toTypedArray(),
                 model = imageModel,
                 api = api
             ).choices.first().message?.content ?: throw RuntimeException("No response")

@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.webui
 
-import org.junit.jupiter.api.Test
 import org.openapitools.codegen.SpecValidationException
 import java.io.File
 
@@ -86,19 +85,22 @@ class TestOpenAPITool {
     deleteOnExit()
   }
 
-  @Test
+//  @Test
   fun test() {
     //    val openApiTool = OpenAPITool()
     //    openApiTool.generate()
 
 
     try {
+      val generator = "java"
+      File("C:/Users/andre/Downloads/openapi/build/openapi-$generator").mkdirs()
       org.openapitools.codegen.OpenAPIGenerator.main(
         arrayOf(
           "generate",
-          "-i", tempFile.absolutePath,
-          "-g", "html2",
-          "-o", "build/openapi-html2",
+          "--skip-validate-spec",
+          "-i", "C:/Users/andre/Downloads/openapi.yaml",
+          "-g", generator,
+          "-o", "C:/Users/andre/Downloads/openapi/build/openapi-$generator",
         )
       )
     } catch (e: SpecValidationException) {

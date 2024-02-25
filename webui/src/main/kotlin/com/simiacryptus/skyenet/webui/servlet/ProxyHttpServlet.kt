@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.webui.servlet
 
+import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -21,6 +23,9 @@ import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
 import java.util.concurrent.TimeUnit
+import java.util.zip.GZIPInputStream
+import kotlin.reflect.javaType
+import kotlin.reflect.typeOf
 
 /**
  * A simple reverse proxy that supports the OpenAI API
@@ -29,36 +34,51 @@ open class ProxyHttpServlet(
   private val targetUrl: String = "https://api.openai.com/v1/"
 ) : HttpServlet() {
 
-  open val asyncClient : CloseableHttpAsyncClient by lazy {
+  open val asyncClient: CloseableHttpAsyncClient by lazy {
     HttpAsyncClientBuilder.create()
-    .setRetryStrategy(DefaultHttpRequestRetryStrategy(0, Timeout.ofSeconds(1)))
-    .setDefaultRequestConfig(RequestConfig.custom()
-      .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.MINUTES))
-      .setResponseTimeout(Timeout.of(5, TimeUnit.MINUTES))
-      .build())
-    .setConnectionManager(with(PoolingAsyncClientConnectionManager()) {
-      defaultMaxPerRoute = 1000
-      maxTotal = 1000
-      this
-    }).build().apply {
-      start()
-    }
+      .setRetryStrategy(DefaultHttpRequestRetryStrategy(0, Timeout.ofSeconds(1)))
+      .setDefaultRequestConfig(
+        RequestConfig.custom()
+          .setConnectionRequestTimeout(Timeout.of(5, TimeUnit.MINUTES))
+          .setResponseTimeout(Timeout.of(5, TimeUnit.MINUTES))
+          .build()
+      )
+      .setConnectionManager(with(PoolingAsyncClientConnectionManager()) {
+        defaultMaxPerRoute = 1000
+        maxTotal = 1000
+        this
+      }).build().apply {
+        start()
+      }
   }
 
   override fun service(req: HttpServletRequest, resp: HttpServletResponse) {
     val asyncContext = req.startAsync()
     asyncContext.timeout = 0
+    val requestKey = req.getHeaders("Authorization").nextElement().removePrefix("Bearer ")
+    val proxyKey = ApiKeyServlet.apiKeyRecords.find { it.apiKey == requestKey }
+    val path = (req.servletPath ?: "").removePrefix("/")
     val proxyRequest = getProxyRequest(req)
+    if (null != proxyKey) proxyRequest?.addHeader("Authorization", "Bearer " + proxyKey.mappedKey)
+    val totalUsage =
+      ApplicationServices.usageManager.getUserUsageSummary(requestKey).values.map { it.cost ?: 0.0 }.sum()
+    if (totalUsage > (proxyKey?.budget ?: 0.0)) {
+      resp.status = 402
+      resp.contentType = "text/plain"
+      resp.writer.println("Budget exceeded")
+      asyncContext.complete()
+      return
+    }
     asyncClient.execute(proxyRequest, object : FutureCallback<SimpleHttpResponse> {
       override fun completed(proxyResponse: SimpleHttpResponse?) {
         require(null != proxyRequest)
         resp.status = proxyResponse?.code ?: 500
-        //resp.contentType = proxyResponse?.contentType?.toString() ?: "text/plain"
         proxyResponse?.headers?.forEach { header ->
           resp.addHeader(header.name, header.value)
         }
-        val bytes = proxyResponse?.bodyBytes ?: ByteArray(0)
-        resp.outputStream.write(onResponse(req, bytes, proxyResponse))
+        val proxyResponseBody = proxyResponse?.bodyBytes ?: ByteArray(0)
+
+        resp.outputStream.write(onResponse(req, path, proxyResponse, proxyResponseBody, proxyKey, proxyRequest?.body?.bodyBytes))
         asyncContext.complete()
       }
 
@@ -85,6 +105,7 @@ open class ProxyHttpServlet(
     val proxyRequest = SimpleHttpRequest(req.method, url)
     val headers = req.headerNames.toList().filter {
       when (it) {
+        "Authorization" -> false
         // Remove headers incompatible with HTTP/2
         "Connection" -> false
         "Host" -> false
@@ -102,8 +123,35 @@ open class ProxyHttpServlet(
     return proxyRequest
   }
 
-  open fun onResponse(req: HttpServletRequest, body: ByteArray, proxyResponse: SimpleHttpResponse?): ByteArray {
-    return body
+  @OptIn(ExperimentalStdlibApi::class)
+  open fun onResponse(
+    req: HttpServletRequest,
+    path: String,
+    proxyResponse: SimpleHttpResponse?,
+    bodyBytes: ByteArray,
+    proxyKey: ApiKeyServlet.ApiKeyRecord?,
+    requestBody: ByteArray?
+  ): ByteArray {
+    val body = JsonUtil.fromJson<Map<String, Any>>(
+      String(GZIPInputStream(bodyBytes.inputStream()).readAllBytes()),
+      typeOf<Map<String, Any>>().javaType
+    )
+    val parsedRequest = JsonUtil.fromJson<Map<String, Any>>(
+      String(requestBody ?: ByteArray(0)),
+      typeOf<Map<String, Any>>().javaType
+    )
+    when (path) {
+      "moderations" -> {
+        log.info("Proxy $path\nRequest: ${JsonUtil.toJson(parsedRequest).replace("\n","\n\t")}\nResponse: ${JsonUtil.toJson(body).replace("\n","\n\t")}")
+      }
+      "chat/completions" -> {
+        log.info("Proxy $path\nRequest: ${JsonUtil.toJson(parsedRequest).replace("\n","\n\t")}\nResponse: ${JsonUtil.toJson(body).replace("\n","\n\t")}")
+      }
+      else -> {
+        log.info("Proxy $path\nRequest: ${JsonUtil.toJson(parsedRequest).replace("\n","\n\t")}\nResponse: ${JsonUtil.toJson(body).replace("\n","\n\t")}")
+      }
+    }
+    return bodyBytes
   }
 
   open fun onRequest(req: HttpServletRequest, bytes: ByteArray?): ByteArray? {
@@ -111,6 +159,7 @@ open class ProxyHttpServlet(
   }
 
   companion object {
+    val log = org.slf4j.LoggerFactory.getLogger(ProxyHttpServlet::class.java)
     // main
     @JvmStatic
     fun main(args: Array<String>) {
