@@ -379,9 +379,9 @@ open class Selenium2S3(
   override fun close() {
     log.debug("Closing", Exception())
     driver.quit()
+    httpClient.close()
     //driver.close()
     //Companion.chromeDriverService.close()
-    httpClient.close()
   }
 
 

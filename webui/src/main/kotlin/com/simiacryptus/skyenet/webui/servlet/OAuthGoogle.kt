@@ -120,7 +120,10 @@ open class OAuthGoogle(
       this
     }
 
-    var scopes = listOf<String>().toMutableSet()
+    var scopes = listOf<String>(
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ).toMutableSet()
 
   }
 
