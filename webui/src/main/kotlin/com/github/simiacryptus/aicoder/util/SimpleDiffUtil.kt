@@ -115,14 +115,10 @@ object SimpleDiffUtil {
     val threshold = (Math.max(a.trim().length, b.trim().length) * factor).toInt()
     val levenshteinDistance = LevenshteinDistance(5)
     val dist = levenshteinDistance.apply(a.trim(), b.trim())
-    if (dist >= 0) {
-      if (dist <= threshold) {
-        return true
-      } else {
-        return false
-      }
+    return if (dist >= 0) {
+      dist <= threshold
     } else {
-      return false
+      false
     }
   }
 }

@@ -7,6 +7,7 @@ import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
+import java.net.URLDecoder
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicInteger
@@ -160,7 +161,9 @@ abstract class SocketManagerBase(
     } else if (code.startsWith("userTxt,")) {
       val consumer = txtTriggers[id]
       consumer ?: throw IllegalArgumentException("No input handler found")
-      consumer.accept(code.removePrefix("userTxt,"))
+      val text = code.substringAfter("userTxt,")
+      val unencoded = URLDecoder.decode(text, "UTF-8")
+      consumer.accept(unencoded)
     } else {
       throw IllegalArgumentException("Unknown command: $code")
     }
@@ -176,10 +179,10 @@ abstract class SocketManagerBase(
     val operationID = randomID()
     txtTriggers[operationID] = handler
     //language=HTML
-    return """<form class="reply-form">
+    return """<div class="reply-form">
                    <textarea class="reply-input" data-id="$operationID" rows="3" placeholder="Type a message"></textarea>
                    <button class="text-submit-button" data-id="$operationID">Send</button>
-               </form>""".trimIndent()
+               </div>""".trimIndent()
   }
 
 

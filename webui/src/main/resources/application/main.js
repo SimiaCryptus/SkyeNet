@@ -258,7 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (target.classList.contains('text-submit-button')) {
             const messageId = target.getAttribute('data-id');
             const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
-            send('!' + messageId + ',userTxt,' + text);
+            // url escape the text
+            const escapedText = encodeURIComponent(text);
+            send('!' + messageId + ',userTxt,' + escapedText);
         }
     });
 

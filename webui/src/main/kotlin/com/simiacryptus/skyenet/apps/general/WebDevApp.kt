@@ -8,9 +8,7 @@ import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.AgentPatterns.iterate
-import com.simiacryptus.skyenet.AgentPatterns.toMessageList
 import com.simiacryptus.skyenet.core.actors.ActorSystem
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
@@ -25,46 +23,48 @@ import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicBoolean
 
 open class WebDevApp(
-        applicationName: String = "Web Dev Assistant v1.0",
-        open val symbols: Map<String, Any> = mapOf(),
-        val temperature: Double = 0.1,
+  applicationName: String = "Web Dev Assistant v1.0",
+  open val symbols: Map<String, Any> = mapOf(),
+  val temperature: Double = 0.1,
 ) : ApplicationServer(
-    applicationName = applicationName,
-    path = "/webdev",
+  applicationName = applicationName,
+  path = "/webdev",
 ) {
-    override fun userMessage(
-      session: Session,
-      user: User?,
-      userMessage: String,
-      ui: ApplicationInterface,
-      api: API
-    ) {
-        val settings = getSettings(session, user) ?: Settings()
-        (api as ClientManager.MonitoredClient).budget = settings.budget ?: 2.00
-        WebDevAgent(
-          api = api,
-          dataStorage = dataStorage,
-          session = session,
-          user = user,
-          ui = ui,
-          tools = settings.tools,
-          model = settings.model,
-        ).start(
-            userMessage = userMessage,
-        )
-    }
-
-    data class Settings(
-      val budget: Double? = 2.00,
-      val tools : List<String> = emptyList(),
-      val model : ChatModels = ChatModels.GPT35Turbo,
+  override fun userMessage(
+    session: Session,
+    user: User?,
+    userMessage: String,
+    ui: ApplicationInterface,
+    api: API
+  ) {
+    val settings = getSettings(session, user) ?: Settings()
+    (api as ClientManager.MonitoredClient).budget = settings.budget ?: 2.00
+    WebDevAgent(
+      api = api,
+      dataStorage = dataStorage,
+      session = session,
+      user = user,
+      ui = ui,
+      tools = settings.tools,
+      model = settings.model,
+    ).start(
+      userMessage = userMessage,
     )
+  }
 
-    override val settingsClass: Class<*> get() = Settings::class.java
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> initSettings(session: Session): T? = Settings() as T
+  data class Settings(
+    val budget: Double? = 2.00,
+    val tools: List<String> = emptyList(),
+    val model: ChatModels = ChatModels.GPT35Turbo,
+  )
+
+  override val settingsClass: Class<*> get() = Settings::class.java
+
+  @Suppress("UNCHECKED_CAST")
+  override fun <T : Any> initSettings(session: Session): T? = Settings() as T
 }
 
 class WebDevAgent(
@@ -100,12 +100,13 @@ class WebDevAgent(
     ),
     ActorTypes.ArchitectureDiscussionActor to SimpleActor(
       prompt = """
-    Translate the user's idea into a detailed architecture for a simple web application. 
-    Suggesting specific frameworks/libraries to import, and draft a basic structure for the project. 
-    Identify key HTML classes and element IDs that will be used to bind the application to the HTML.
-    Identify javascript libraries and provide CDN links for them.
-    List Javascript files to be created, and for each file, describe the functions and interface.
-    """.trimIndent(), model = model
+        Translate the user's idea into a detailed architecture for a simple web application. 
+        Suggest specific frameworks/libraries to import and provide CDN links for them.
+        Specify user interactions and how the application will respond to them.
+        Identify key HTML classes and element IDs that will be used to bind the application to the HTML.
+        Identify javascript coding style and patterns to be used.
+        List Javascript files to be created, and for each file, describe the public functions / interface.
+      """.trimIndent(), model = model
     ),
     ActorTypes.CodeReviewer to SimpleActor(
       prompt = """
@@ -155,19 +156,16 @@ class WebDevAgent(
   fun start(
     userMessage: String,
   ) {
-    val message = ui.newTask()
+    val architectureResponse = iterate(
+      input = userMessage,
+      actor = architectureDiscussionActor,
+      toInput = { listOf(it) },
+      api = api,
+      ui = ui,
+    )
+
+    val task = ui.newTask()
     try {
-      message.echo(renderMarkdown(userMessage))
-
-      val architectureResponse = AgentPatterns.iterate(
-        input = userMessage,
-        actor = architectureDiscussionActor,
-        toInput = { listOf(it) },
-        api = api,
-        ui = ui,
-      )
-      message.add(renderMarkdown("### Architecture Discussion\n$architectureResponse"))
-
       val toolSpecs = tools.map { ToolServlet.tools.find { t -> t.path == it } }
         .joinToString("\n\n") { it?.let { JsonUtil.toJson(it.openApiDescription) } ?: "" }
       var messageWithTools = userMessage
@@ -178,16 +176,17 @@ class WebDevAgent(
           architectureResponse
         )
       )
-      draftHtmlCode(message, codeRequest)
+      draftHtmlCode(task, codeRequest, architectureResponse)
     } catch (e: Throwable) {
       log.warn("Error", e)
-      message.error(ui, e)
+      task.error(ui, e)
     }
   }
 
   private fun draftHtmlCode(
     task: SessionTask,
     request: Array<ApiModel.ChatMessage>,
+    architectureResponse: String,
   ) {
     try {
       var html = htmlActor.respond(emptyList(), api, *request)
@@ -204,24 +203,26 @@ class WebDevAgent(
           |<div style="display: flex;flex-direction: column;">
           |${
             ui.hrefLink("♻", "href-link regen-button") {
+              //val task = ui.newTask()
               responseAction(task, "Regenerating...", formHandle!!, formText) {
                 draftHtmlCode(
-                  ui.newTask(),
-                  request1.dropLastWhile { it.role == ApiModel.Role.assistant }.toTypedArray<ApiModel.ChatMessage>()
+                  task,
+                  request1.dropLastWhile { it.role == ApiModel.Role.assistant }.toTypedArray<ApiModel.ChatMessage>(),
+                  architectureResponse
                 )
               }
             }
           }
-          |${generateResourcesButton(task, request1, html, formText) { formHandle!! }}
+          |${generateResourcesButton(task, request1, html, formText, architectureResponse) { formHandle!! }}
           |</div>
           |${
             ui.textInput { feedback ->
               responseAction(task, "Revising...", formHandle!!, formText) {
-                val task1 = ui.newTask()
+                //val task = ui.newTask()
                 try {
-                  task1.echo(renderMarkdown(feedback))
+                  task.echo(renderMarkdown(feedback))
                   draftHtmlCode(
-                    task1, (request1.toList() + listOf(
+                    task, (request1.toList() + listOf(
                       html to ApiModel.Role.assistant,
                       feedback to ApiModel.Role.user,
                     ).filter { it.first.isNotBlank() }
@@ -230,11 +231,11 @@ class WebDevAgent(
                           it.second,
                           it.first.toContentList()
                         )
-                      }).toTypedArray<ApiModel.ChatMessage>()
+                      }).toTypedArray<ApiModel.ChatMessage>(), architectureResponse
                   )
                 } catch (e: Throwable) {
                   log.warn("Error", e)
-                  task1.error(ui, e)
+                  task.error(ui, e)
                 }
               }
             }
@@ -255,7 +256,7 @@ class WebDevAgent(
       regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button") {
         regenButton?.clear()
         val header = task.header("Regenerating...")
-        draftHtmlCode(task, request)
+        draftHtmlCode(task, request, architectureResponse)
         header?.clear()
         error?.clear()
         task.complete()
@@ -287,9 +288,10 @@ class WebDevAgent(
           |<div style="display: flex;flex-direction: column;">
           |${
             ui.hrefLink("♻", "href-link regen-button") {
+              val task = ui.newTask()
               responseAction(task, "Regenerating...", formHandle!!, formText) {
                 draftResourceCode(
-                  ui.newTask(),
+                  task,
                   request1.dropLastWhile { it.role == ApiModel.Role.assistant }.toTypedArray<ApiModel.ChatMessage>(),
                   actor, path, *languages
                 )
@@ -300,7 +302,7 @@ class WebDevAgent(
           |${
             ui.textInput { feedback ->
               responseAction(task, "Revising...", formHandle!!, formText) {
-                val task = ui.newTask()
+                //val task = ui.newTask()
                 try {
                   task.echo(renderMarkdown(feedback))
                   draftResourceCode(
@@ -360,29 +362,33 @@ class WebDevAgent(
     request: Array<ApiModel.ChatMessage>,
     html: String,
     formText: StringBuilder,
+    architectureResponse: String,
     formHandle: () -> StringBuilder
   ) = ui.hrefLink("\uD83D\uDEE0\uFE0F", "href-link regen-button") {
+    val task = ui.newTask()
     responseAction(task, "Generating Resources...", formHandle(), formText) {
 
       val userPrompt = request.first { it.role == ApiModel.Role.user }.content?.first()?.text ?: ""
       val resources = resourceListParser.getParser(api).apply(html)
       task.echo(renderMarkdown("```json\n${JsonUtil.toJson(resources)}\n```"))
       resources.resources.filter {
-        !it.path.startsWith("http")
+        !it.path!!.startsWith("http")
       }.forEach { (path, description) ->
-        when (path.split(".").last().lowercase()) {
+        val task = ui.newTask()
+        when (path!!.split(".").last().lowercase()) {
 
           "js" -> draftResourceCode(
             task,
             javascriptActor.chatMessages(
               listOf(
                 userPrompt,
+                architectureResponse,
                 html,
                 "Render $path - $description"
               )
             ),
             javascriptActor,
-            path, "js", "javascript"
+            path!!, "js", "javascript"
           )
 
           "css" -> draftResourceCode(
@@ -390,6 +396,7 @@ class WebDevAgent(
             cssActor.chatMessages(
               listOf(
                 userPrompt,
+                architectureResponse,
                 html,
                 "Render $path - $description"
               )
@@ -408,33 +415,52 @@ class WebDevAgent(
           path.split('.').last()
         }\n$code\n```"
       }
-      iterate(
-        ui = ui,
-        userMessage = codeSummary(),
-        heading = renderMarkdown(codeSummary()),
-        initialResponse = { codeReviewer.answer(listOf(it), api = api) },
-        reviseResponse = { userMessage: String, design: String, userResponse: String ->
-          codeReviewer.respond(
-            messages = codeReviewer.chatMessages(listOf(codeSummary())) +
-                listOf(
-                  userResponse.toContentList() to ApiModel.Role.user
-                ).toMessageList(),
-            input = listOf(userMessage),
+      fun outputFn(task: SessionTask, design: String): StringBuilder? {
+        //val task = ui.newTask()
+        return task.complete(renderMarkdown(ui.socketManager.addApplyDiffLinks(codeFiles, design) { newCodeMap ->
+          newCodeMap.forEach { (path, newCode) ->
+            val prev = codeFiles[path]
+            if (prev != newCode) {
+              codeFiles[path] = newCode
+              task.complete("<a href='${task.saveFile(path, newCode.toByteArray(Charsets.UTF_8))}'>$path</a> Updated")
+            }
+          }
+        }))
+      }
+      try {
+        var task = ui.newTask()
+        task.add(message = renderMarkdown(codeSummary()))
+        var design = codeReviewer.answer(listOf(element = codeSummary()), api = api)
+        outputFn(task, design)
+        var textInputHandle: StringBuilder? = null
+        var textInput: String? = null
+        val feedbackGuard = AtomicBoolean(false)
+        textInput = ui.textInput { userResponse ->
+          if (feedbackGuard.getAndSet(true)) return@textInput
+          textInputHandle?.clear()
+          task.complete()
+          task = ui.newTask()
+          task.echo(renderMarkdown(userResponse))
+          val codeSummary = codeSummary()
+          task.add(renderMarkdown(codeSummary))
+          design = codeReviewer.respond(
+            messages = codeReviewer.chatMessages(listOf(
+              codeSummary,
+              userResponse,
+            )),
+            input = listOf(element = codeSummary),
             api = api
           )
-        },
-        outputFn = { task: SessionTask, design: String ->
-          task.add(renderMarkdown(ui.socketManager.addApplyDiffLinks(codeFiles, design) { newCodeMap ->
-            newCodeMap.forEach { path, newCode ->
-              val prev = codeFiles[path]
-              if (prev != newCode) {
-                codeFiles[path] = newCode
-                task.add("<a href='${task.saveFile(path, newCode.toByteArray(Charsets.UTF_8))}'>$path</a> Updated")
-              }
-            }
-          }))
+          outputFn(task, design)
+          textInputHandle = task.complete(textInput!!)
+          feedbackGuard.set(false)
         }
-      )
+        textInputHandle = task.complete(textInput)
+      } catch (e: Throwable) {
+        val task = ui.newTask()
+        task.error(ui = ui, e = e)
+        throw e
+      }
     }
   }
 
@@ -476,14 +502,13 @@ class WebDevAgent(
   }
 
   data class PageResource(
-    val path: String = "",
-    val description: String = ""
+    val path: String? = "",
+    val description: String? = ""
   ) : ValidatedObject {
     override fun validate(): String? = when {
-      path.isBlank() -> "Path is required"
+      path.isNullOrBlank() -> "Path is required"
       path.contains(" ") -> "Path cannot contain spaces"
       !path.contains(".") -> "Path must contain a file extension"
-      description.isBlank() -> "Description is required"
       else -> null
     }
   }

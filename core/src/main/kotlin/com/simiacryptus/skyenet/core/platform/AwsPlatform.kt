@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.core.platform
 
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.regions.Region
@@ -19,9 +18,9 @@ open class AwsPlatform(
   private val region: Region? = Region.US_EAST_1
 ) : CloudPlatformInterface {
   protected open val kmsClient: KmsClient by lazy {
-    KmsClient.builder().region(Region.US_EAST_1).credentialsProvider(
-      ProfileCredentialsProvider.create("data")
-    ).build()
+    KmsClient.builder().region(Region.US_EAST_1)
+      //.credentialsProvider(ProfileCredentialsProvider.create("data"))
+      .build()
   }
 
   protected open val s3Client: S3Client by lazy {

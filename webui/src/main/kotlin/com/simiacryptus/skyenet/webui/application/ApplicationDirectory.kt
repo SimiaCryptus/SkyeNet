@@ -44,7 +44,6 @@ abstract class ApplicationDirectory(
   private fun domainName(isServer: Boolean) =
     if (isServer) "https://$publicName" else "http://$localName:$port"
 
-
   open val welcomeResources = ResourceCollection(allResources("welcome").map(::newResource))
   open val userInfoServlet = UserInfoServlet()
   open val userSettingsServlet = UserSettingsServlet()
