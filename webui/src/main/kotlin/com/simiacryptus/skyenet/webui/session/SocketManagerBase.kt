@@ -7,7 +7,7 @@ import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
-import java.util.Deque
+import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
@@ -89,7 +89,9 @@ abstract class SocketManagerBase(
     override fun saveFile(relativePath: String, data: ByteArray): String {
       dataStorage?.getSessionDir(owner, session)?.let { dir ->
         dir.mkdirs()
-        dir.resolve(relativePath).writeBytes(data)
+        val resolve = dir.resolve(relativePath)
+        resolve.parentFile.mkdirs()
+        resolve.writeBytes(data)
       }
       return "fileIndex/$session/$relativePath"
     }

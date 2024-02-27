@@ -21,6 +21,7 @@ import java.nio.file.StandardOpenOption
 class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
   private val channelCache = CacheBuilder
     .newBuilder().maximumSize(100)
+    .expireAfterAccess(10, java.util.concurrent.TimeUnit.SECONDS)
     .removalListener(RemovalListener<File, FileChannel> { notification ->
       notification.value?.close()
     }).build(object : CacheLoader<File, FileChannel>() {

@@ -74,6 +74,7 @@ abstract class ApplicationDirectory(
 
   protected open fun _main(args: Array<String>) {
     try {
+      log.info("Starting application with args: ${args.joinToString(", ")}")
       setupPlatform()
       init(args.contains("--server"))
       ClientUtil.keyTxt = run {
@@ -112,6 +113,7 @@ abstract class ApplicationDirectory(
           newWebAppContext(it.path, it.server)
         })
       )
+      log.info("Server started successfully on port $port")
       try {
         Desktop.getDesktop().browse(URI("$domainName/"))
       } catch (e: Throwable) {
@@ -120,6 +122,7 @@ abstract class ApplicationDirectory(
       server.join()
     } catch (e: Throwable) {
       e.printStackTrace()
+      log.error("Application encountered an error: ${e.message}", e)
       Thread.sleep(1000)
       exitProcess(1)
     } finally {
@@ -130,6 +133,7 @@ abstract class ApplicationDirectory(
 
   open fun init(isServer: Boolean): ApplicationDirectory {
     OutputInterceptor.setupInterceptor()
+    log.info("Initializing application, isServer: $isServer")
     domainName = domainName(isServer)
     return this
   }
@@ -140,6 +144,7 @@ abstract class ApplicationDirectory(
   ): Server {
     val contexts = ContextHandlerCollection()
 //    val stats = StatisticsHandler()
+    log.info("Starting server on port: $port")
     contexts.handlers = (
         listOf(
           newWebAppContext("/stats", StatisticsServlet())) +
@@ -158,12 +163,14 @@ abstract class ApplicationDirectory(
     server.handler = contexts
     server.start()
     if (!server.isStarted) throw IllegalStateException("Server failed to start")
+    log.info("Server initialization completed successfully.")
     return server
   }
 
   protected open fun httpConnectionFactory(): HttpConnectionFactory {
     val httpConfig = HttpConfiguration()
     httpConfig.addCustomizer(ForwardedRequestCustomizer())
+    log.debug("HTTP connection factory created with custom configuration.")
     return HttpConnectionFactory(httpConfig)
   }
 
@@ -171,6 +178,7 @@ abstract class ApplicationDirectory(
     val baseResource = server.baseResource ?: throw IllegalStateException("No base resource")
     val webAppContext = newWebAppContext(path, baseResource, resourceBase = "applicaton")
     server.configure(webAppContext)
+    log.info("WebAppContext configured for path: $path with ChatServer")
     return webAppContext
   }
 
@@ -185,6 +193,7 @@ abstract class ApplicationDirectory(
     context.classLoader = WebAppClassLoader(ApplicationServices::class.java.classLoader, context)
     context.isParentLoaderPriority = true
     context.baseResource = baseResource
+    log.debug("New WebAppContext created for path: $path")
     context.contextPath = path
     context.welcomeFiles = arrayOf("index.html")
     if (indexServlet != null) {
@@ -199,6 +208,7 @@ abstract class ApplicationDirectory(
     context.classLoader = WebAppClassLoader(ApplicationServices::class.java.classLoader, context)
     context.isParentLoaderPriority = true
     context.contextPath = path
+    log.debug("New WebAppContext created for servlet at path: $path")
     context.resourceBase = "application"
     context.welcomeFiles = arrayOf("index.html")
     context.addServlet(ServletHolder(servlet), "/")

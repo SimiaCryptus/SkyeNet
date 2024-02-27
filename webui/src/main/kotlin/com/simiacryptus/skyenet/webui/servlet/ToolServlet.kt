@@ -40,6 +40,10 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
           </head>
           <body>
             <h1>Tools</h1>
+           <form action="?import=true" method="post" enctype="multipart/form-data">
+               <input type="file" name="file" accept=".json">
+               <input type="submit" value="Import Tools">
+           </form>
             <div class='tools'>
               ${tools.joinToString("\n") { tool -> "<div class='tool'><a href='?path=${tool.path}'>${tool.path}</a></div>" }}
             </div>
@@ -154,6 +158,13 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
       return
     }
 
+ if (req?.getParameter("export") != null) {
+     resp?.contentType = "application/json"
+     resp?.addHeader("Content-Disposition", "attachment; filename=\"tools.json\"")
+     resp?.writer?.write(JsonUtil.toJson(tools))
+     return
+ }
+
     if (path != null) {
       // Display details for a single tool
       val tool = tools.find { it.path == path }
@@ -189,6 +200,20 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
       File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
       resp.sendRedirect("?path=$newpath&editSuccess=true") // Redirect to the tool's detail page or an edit success page
     } else {
+     if (req.getParameter("import") != null) {
+         val inputStream = req.getPart("file")?.inputStream
+         val toolsJson = inputStream?.bufferedReader().use { it?.readText() }
+         if (toolsJson != null) {
+             val importedTools: List<Tool> = JsonUtil.fromJson(toolsJson, typeOf<List<Tool>>().javaType)
+             tools.clear()
+             tools.addAll(importedTools)
+             File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
+             resp.sendRedirect("?importSuccess=true")
+         } else {
+             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid file or format")
+         }
+         return
+     }
       resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Tool not found")
     }
   }
