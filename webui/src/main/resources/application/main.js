@@ -162,10 +162,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (theme_pony) {
         theme_pony.addEventListener('click', () => setTheme('pony'));
     }
+    const theme_alien = document.getElementById('theme_alien');
+    if (theme_alien) {
+        theme_alien.addEventListener('click', () => setTheme('alien'));
+    }
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme != null) {
         document.getElementById('theme_style').href = savedTheme + '.css';
     }
+
 
 
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));

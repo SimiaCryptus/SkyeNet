@@ -28,6 +28,11 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
       dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(req.getCookie()), session)
     val file = File(sessionDir, pathSegments.drop(1).joinToString("/"))
     when {
+      !file.exists() -> {
+        resp.status = HttpServletResponse.SC_NOT_FOUND
+        resp.writer.write("File not found")
+      }
+
       file.isFile -> {
         var channel = channelCache.get(file)
         while(!channel.isOpen) {

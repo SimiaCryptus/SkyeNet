@@ -50,6 +50,9 @@ open class DataStorage(
         user: User?,
         session: Session
     ): File {
+        if(sessionPaths.containsKey(session)) {
+            return sessionPaths[session]!!
+        }
         validateSessionId(session)
         val parts = session.sessionId.split("-")
         return when (parts.size) {
@@ -244,6 +247,7 @@ override fun getSessionTime(
         private val log = org.slf4j.LoggerFactory.getLogger(StorageInterface::class.java)
 
         private val MESSAGE_DIR = ".sys" + File.separator + "messages"
+        val sessionPaths = mutableMapOf<Session, File>()
 
     }
 }

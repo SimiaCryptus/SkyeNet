@@ -146,7 +146,21 @@ fun SocketManagerBase.addApplyDiffLinks(
         send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
       }
     }
-    markdown.replace(diffVal, diffVal + "\n" + hrefLink)
+    val reverseHrefLink = hrefLink("(Bottom to Top)") {
+      try {
+        if (fullPatch.contains(diffVal)) return@hrefLink
+        fullPatch.add(diffVal)
+        val reversedCode = code.lines().reversed().joinToString("\n")
+        val reversedDiff = diffVal.lines().reversed().joinToString("\n")
+        val newReversedCode = SimpleDiffUtil.patch(reversedCode, reversedDiff)
+        val newCode = newReversedCode.lines().reversed().joinToString("\n")
+        handle(newCode)
+        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Diff Applied (Bottom to Top)</div>""")
+      } catch (e: Throwable) {
+        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
+      }
+    }
+    markdown.replace(diffVal, diffVal + "\n" + hrefLink + "\n" + reverseHrefLink)
   }
   return withLinks
 }
@@ -177,7 +191,22 @@ fun SocketManagerBase.addApplyDiffLinks(
         send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
       }
     }
-    markdown.replace(diffVal, diffVal + "\n" + hrefLink)
+    val reverseHrefLink = hrefLink("(Bottom to Top)") {
+      try {
+        val reversedCodeMap = code.mapValues { (_, v) -> v.lines().reversed().joinToString("\n") }
+        val reversedDiff = diffVal.lines().reversed().joinToString("\n")
+        val newReversedCodeMap = reversedCodeMap.mapValues { (file, prevCode) ->
+          if (filename == file) {
+            SimpleDiffUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
+          } else prevCode
+        }
+        handle(newReversedCodeMap)
+        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Diff Applied (Bottom to Top)</div>""")
+      } catch (e: Throwable) {
+        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
+      }
+    }
+    markdown.replace(diffVal, diffVal + "\n" + hrefLink + "\n" + reverseHrefLink)
   }
   return withLinks
 }
