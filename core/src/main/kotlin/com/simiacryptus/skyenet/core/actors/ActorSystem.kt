@@ -23,15 +23,20 @@ open class ActorSystem<T : Enum<*>>(
   fun getActor(actor: T): BaseActor<*, *> {
     return synchronized(actorMap) {
       actorMap.computeIfAbsent(actor) {
-        val wrapper = getWrapper(actor.name)
-        when (val baseActor = actors[actor]) {
-          null -> throw RuntimeException("No actor for $actor")
-          is SimpleActor -> SimpleActorInterceptor(baseActor, wrapper)
-          is ParsedActor<*> -> ParsedActorInterceptor(baseActor, wrapper)
-          is CodingActor -> CodingActorInterceptor(baseActor, wrapper)
-          is ImageActor -> ImageActorInterceptor(baseActor, wrapper)
-          is TextToSpeechActor -> TextToSpeechActorInterceptor(baseActor, wrapper)
-          else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
+        try {
+          val wrapper = getWrapper(actor.name)
+          when (val baseActor = actors[actor]) {
+            null -> throw RuntimeException("No actor for $actor")
+            is SimpleActor -> SimpleActorInterceptor(baseActor, wrapper)
+            is ParsedActor<*> -> ParsedActorInterceptor(baseActor, wrapper)
+            is CodingActor -> CodingActorInterceptor(baseActor, wrapper)
+            is ImageActor -> ImageActorInterceptor(baseActor, wrapper)
+            is TextToSpeechActor -> TextToSpeechActorInterceptor(baseActor, wrapper)
+            else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
+          }
+        } catch (e: Throwable) {
+          log.warn("Error creating actor $actor", e)
+          actors[actor]!!
         }
       }
     }
@@ -42,5 +47,9 @@ open class ActorSystem<T : Enum<*>>(
     wrapperMap.getOrPut(name) {
       FunctionWrapper(JsonFunctionRecorder(File(sessionDir, ".sys/actors/$name")))
     }
+  }
+
+  companion object {
+    private val log = org.slf4j.LoggerFactory.getLogger(ActorSystem::class.java)
   }
 }

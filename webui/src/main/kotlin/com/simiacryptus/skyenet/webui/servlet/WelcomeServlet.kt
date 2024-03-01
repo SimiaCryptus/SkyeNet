@@ -89,6 +89,7 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
                 <a id="theme_night">Night</a>
                 <a id="theme_forest">Forest</a>
                 <a id="theme_pony">Bubblegum</a>
+                <a id="theme_alien">Alien</a>
             </div>
         </div>
     </div>

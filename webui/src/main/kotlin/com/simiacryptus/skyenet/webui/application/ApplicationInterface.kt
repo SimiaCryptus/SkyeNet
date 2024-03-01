@@ -5,7 +5,7 @@ import com.simiacryptus.skyenet.webui.session.SessionTask
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 
-open class ApplicationInterface(private val inner: ApplicationSocketManager) {
+open class ApplicationInterface(val socketManager: ApplicationSocketManager) {
   @Description("Returns html for a link that will trigger the given handler when clicked.")
   open fun hrefLink(
     @Description("The text to display in the link")
@@ -14,18 +14,18 @@ open class ApplicationInterface(private val inner: ApplicationSocketManager) {
     classname: String = """href-link""",
     @Description("The handler to trigger when the link is clicked")
     handler: Consumer<Unit>
-  ) = inner.hrefLink(linkText, classname, oneAtATime(handler))
+  ) = socketManager.hrefLink(linkText, classname, oneAtATime(handler))
 
   @Description("Returns html for a text input form that will trigger the given handler when submitted.")
   open fun textInput(
     @Description("The handler to trigger when the form is submitted")
     handler: Consumer<String>
-  ): String = inner.textInput(oneAtATime(handler))
+  ): String = socketManager.textInput(oneAtATime(handler))
 
   @Description("Creates a new 'task' that can be used to display the progress of a long-running operation.")
   open fun newTask(
     //cancelable: Boolean = false
-  ): SessionTask = inner.newTask(false)
+  ): SessionTask = socketManager.newTask(false)
 
   companion object {
     fun <T> oneAtATime(handler: Consumer<T>): Consumer<T> {

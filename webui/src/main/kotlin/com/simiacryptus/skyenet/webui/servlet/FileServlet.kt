@@ -14,20 +14,12 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
 
 class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
-  private val channelCache = CacheBuilder
-    .newBuilder().maximumSize(100)
-    .removalListener(RemovalListener<File, FileChannel> { notification ->
-      notification.value?.close()
-    }).build(object : CacheLoader<File, FileChannel>() {
-      override fun load(key: File): FileChannel {
-        return FileChannel.open(key.toPath(), StandardOpenOption.WRITE, StandardOpenOption.READ)
-      }
-    })
 
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
     val pathSegments = parsePath(req.pathInfo ?: "/")
@@ -36,39 +28,32 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
       dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(req.getCookie()), session)
     val file = File(sessionDir, pathSegments.drop(1).joinToString("/"))
     when {
-      file.isFile -> {
-        val channel = channelCache.get(file)
-        val mappedByteBuffer: MappedByteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
-        resp.contentType = ApplicationServer.getMimeType(file.name)
-        resp.status = HttpServletResponse.SC_OK
-        val async = req.startAsync()
-        resp.outputStream.apply {
-          setWriteListener(object : WriteListener {
-            val buffer = ByteArray(256 * 1024)
-            override fun onWritePossible() {
-              while (isReady) {
-                val start = mappedByteBuffer.position()
-                val attemptedReadSize = buffer.size.coerceAtMost(mappedByteBuffer.remaining())
-                mappedByteBuffer.get(buffer, 0, attemptedReadSize)
-                val end = mappedByteBuffer.position()
-                val readBytes = end - start
-                if (readBytes == 0) {
-                  async.complete()
-                  return
-                }
-                write(buffer, 0, readBytes)
-              }
-            }
+      !file.exists() -> {
+        resp.status = HttpServletResponse.SC_NOT_FOUND
+        resp.writer.write("File not found")
+      }
 
-            override fun onError(throwable: Throwable) {
-              log.warn("Error writing file", throwable)
-            }
-          })
+      file.isFile -> {
+        var channel = channelCache.get(file)
+        while(!channel.isOpen) {
+          channelCache.refresh(file)
+          channel = channelCache.get(file)
+        }
+        try {
+          if (channel.size() > 1024 * 1024 * 1) {
+            writeLarge(channel, resp, file, req)
+          } else {
+            writeSmall(channel, resp, file, req)
+          }
+        } finally {
+          //channelCache.put(file, channel)
         }
       }
+
       req.pathInfo?.endsWith("/") == false -> {
         resp.sendRedirect(req.requestURI + "/")
       }
+
       else -> {
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
@@ -88,6 +73,72 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
           } ?: ""
         resp.writer.write(directoryHTML(req, session, pathSegments.drop(1).joinToString("/"), folders, files))
       }
+    }
+  }
+
+  private fun writeSmall(channel: FileChannel, resp: HttpServletResponse, file: File, req: HttpServletRequest) {
+    resp.contentType = ApplicationServer.getMimeType(file.name)
+    resp.status = HttpServletResponse.SC_OK
+    val async = req.startAsync()
+    resp.outputStream.apply {
+      setWriteListener(object : WriteListener {
+        val buffer = ByteArray(16 * 1024)
+        val byteBuffer = ByteBuffer.wrap(buffer)
+        override fun onWritePossible() {
+          while (isReady) {
+            byteBuffer.clear()
+            val readBytes = channel.read(byteBuffer)
+            if (readBytes == -1) {
+              async.complete()
+              channelCache.put(file, channel)
+              return
+            }
+            write(buffer, 0, readBytes)
+          }
+        }
+
+        override fun onError(throwable: Throwable) {
+          log.warn("Error writing file", throwable)
+          channelCache.put(file, channel)
+        }
+      })
+    }
+  }
+
+  private fun writeLarge(
+    channel: FileChannel,
+    resp: HttpServletResponse,
+    file: File,
+    req: HttpServletRequest
+  ) {
+    val mappedByteBuffer: MappedByteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
+    resp.contentType = ApplicationServer.getMimeType(file.name)
+    resp.status = HttpServletResponse.SC_OK
+    val async = req.startAsync()
+    resp.outputStream.apply {
+      setWriteListener(object : WriteListener {
+        val buffer = ByteArray(256 * 1024)
+        override fun onWritePossible() {
+          while (isReady) {
+            val start = mappedByteBuffer.position()
+            val attemptedReadSize = buffer.size.coerceAtMost(mappedByteBuffer.remaining())
+            mappedByteBuffer.get(buffer, 0, attemptedReadSize)
+            val end = mappedByteBuffer.position()
+            val readBytes = end - start
+            if (readBytes == 0) {
+              async.complete()
+              channelCache.put(file, channel)
+              return
+            }
+            write(buffer, 0, readBytes)
+          }
+        }
+
+        override fun onError(throwable: Throwable) {
+          log.warn("Error writing file", throwable)
+          channelCache.put(file, channel)
+        }
+      })
     }
   }
 
@@ -194,6 +245,28 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
       }
       return pathSegments
     }
+
+    val channelCache = CacheBuilder
+      .newBuilder().maximumSize(100)
+      .expireAfterAccess(10, java.util.concurrent.TimeUnit.SECONDS)
+      .removalListener(RemovalListener<File, FileChannel> { notification ->
+        log.info("Closing FileChannel for file: ${notification.key}")
+        try {
+          val channel = notification.value
+          if (channel == null) {
+            log.error("FileChannel is null for file: ${notification.key}")
+          } else {
+            channel.close()
+            log.info("Successfully closed FileChannel for file: ${notification.key}")
+          }
+        } catch (e: Throwable) {
+          log.error("Error closing FileChannel for file: ${notification.key}", e)
+        }
+      }).build(object : CacheLoader<File, FileChannel>() {
+        override fun load(key: File): FileChannel {
+          return FileChannel.open(key.toPath(), StandardOpenOption.READ)
+        }
+      })
   }
 
 }

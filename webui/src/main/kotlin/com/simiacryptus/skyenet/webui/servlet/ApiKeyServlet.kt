@@ -23,7 +23,8 @@ class ApiKeyServlet : HttpServlet() {
     val apiKey: String,
     val mappedKey: String,
     val budget: Double,
-    val comment: String
+    val comment: String,
+    val welcomeMessage: String = "Welcome to our service!"
   )
 
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
@@ -93,6 +94,8 @@ class ApiKeyServlet : HttpServlet() {
     val mappedKey = req.getParameter("mappedKey")
     val budget = req.getParameter("budget")?.toDoubleOrNull()
     val comment = req.getParameter("comment")
+    // welcomeMessage
+    val welcomeMessage = req.getParameter("welcomeMessage")
     val user = ApplicationServices.authenticationManager.getUser(req.getCookie())
     val record = apiKeyRecords.find { it.apiKey == apiKey }
 
@@ -104,8 +107,11 @@ class ApiKeyServlet : HttpServlet() {
       } else if (record == null) {
         resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid API Key or User not found")
       } else {
-        userSettingsManager.updateUserSettings(user, userSettingsManager.getUserSettings(user).copy(
-          apiKey = apiKey, apiBase = "https://apps.simiacrypt.us/proxy"))
+        userSettingsManager.updateUserSettings(
+          user, userSettingsManager.getUserSettings(user).copy(
+            apiKey = apiKey, apiBase = "https://apps.simiacrypt.us/proxy"
+          )
+        )
         resp.sendRedirect("/") // Redirect to a success page or another relevant page
       }
     } else if (record != null && budget != null && user != null) { // Ensure user is not null before proceeding
@@ -121,7 +127,14 @@ class ApiKeyServlet : HttpServlet() {
       resp.sendRedirect("?action=edit&apiKey=$apiKey&editSuccess=true")
     } else if (apiKey != null && budget != null) {
       // Create a new record if apiKey is not found
-      val newRecord = ApiKeyRecord(user?.email ?: "", apiKey, mappedKey ?: "", budget, comment ?: "")
+      val newRecord = ApiKeyRecord(
+        owner = user?.email ?: "",
+        apiKey = apiKey,
+        mappedKey = mappedKey ?: "",
+        budget = budget,
+        comment = comment ?: "",
+        welcomeMessage = welcomeMessage ?: "Welcome to our service!"
+      )
       apiKeyRecords.add(newRecord)
       saveRecords()
       resp.sendRedirect(
@@ -175,6 +188,7 @@ class ApiKeyServlet : HttpServlet() {
     </head>
     <body>
     <h1>Accept API Key Invitation</h1>
+    <h2>${record.welcomeMessage}</h2>
     <p>You have been invited to use the API Key: ${record.apiKey}</p>
     <form action='/apiKeys/' method="post">
         <input type="hidden" name="apiKey" value="${record.apiKey}">
@@ -251,6 +265,8 @@ class ApiKeyServlet : HttpServlet() {
           <input type="text" id="budget" name="budget" value="${record.budget}">
           <label for="comment">Description:</label>
           <textarea id="comment" name="comment">${record.comment}</textarea>
+          <label for="welcomeMessage">Welcome Message:</label>
+          <textarea id="welcomeMessage" name="welcomeMessage">${record.welcomeMessage}</textarea>
           <input type="submit" value="Submit">
       </form>
       <!-- Usage Summary -->

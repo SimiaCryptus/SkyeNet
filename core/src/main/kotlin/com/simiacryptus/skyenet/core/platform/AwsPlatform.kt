@@ -18,8 +18,8 @@ open class AwsPlatform(
   private val region: Region? = Region.US_EAST_1
 ) : CloudPlatformInterface {
   protected open val kmsClient: KmsClient by lazy {
-    KmsClient.builder()
-      .region(region) // Specify the region or use the default region provider chain
+    KmsClient.builder().region(Region.US_EAST_1)
+      //.credentialsProvider(ProfileCredentialsProvider.create("data"))
       .build()
   }
 

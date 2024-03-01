@@ -58,13 +58,16 @@ open class CodingAgent<T : Interpreter>(
     val message = ui.newTask()
     try {
       message.echo(renderMarkdown(userMessage))
-      val codeRequest = CodingActor.CodeRequest(listOf(userMessage to ApiModel.Role.user))
+      val codeRequest = codeRequest(listOf(userMessage to ApiModel.Role.user))
       displayCode(message, codeRequest)
     } catch (e: Throwable) {
       log.warn("Error", e)
       message.error(ui, e)
     }
   }
+
+  protected open fun codeRequest(messages: List<Pair<String, ApiModel.Role>>) =
+    CodingActor.CodeRequest(messages)
 
   fun displayCode(
     task: SessionTask,
@@ -114,7 +117,7 @@ open class CodingAgent<T : Interpreter>(
   fun append(
     codeRequest: CodingActor.CodeRequest,
     response: CodeResult
-  ) = CodingActor.CodeRequest(
+  ) = codeRequest(
     messages = codeRequest.messages +
         listOf(
           response.code to ApiModel.Role.assistant,
@@ -234,7 +237,7 @@ open class CodingAgent<T : Interpreter>(
   ) {
     try {
       task.echo(renderMarkdown(feedback))
-      displayCode(task, CodingActor.CodeRequest(
+      displayCode(task, codeRequest(
         messages = request.messages +
             listOf(
               response.code to ApiModel.Role.assistant,
@@ -254,7 +257,7 @@ open class CodingAgent<T : Interpreter>(
   ) {
     try {
       val result = execute(task, response)
-      displayFeedback(task, CodingActor.CodeRequest(
+      displayFeedback(task, codeRequest(
         messages = request.messages +
             listOf(
               "Running...\n\n$result" to ApiModel.Role.assistant,
