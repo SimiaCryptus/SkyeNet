@@ -171,7 +171,7 @@ fun SocketManagerBase.addApplyDiffLinks(
   //fullPatch: Map<String, MutableList<String>> = mutableMapOf(),
   handle: (Map<String, String>) -> Unit
 ): String {
-  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)\n(?:[^`]+\n)?(```diff.*?\n```)""".toRegex() // capture filename
+  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff.*?\n```)""".toRegex() // capture filename
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
