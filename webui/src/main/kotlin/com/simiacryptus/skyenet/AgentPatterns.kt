@@ -34,32 +34,47 @@ object AgentPatterns {
       var design = initialResponse(userMessage)
       outputFn(task, design)
       var textInputHandle: StringBuilder? = null
-      var acceptHandle: StringBuilder? = null
       val onAccept = Semaphore(0)
       var textInput: String? = null
       var acceptLink: String? = null
+      var retryLink: String? = null
       val feedbackGuard = AtomicBoolean(false)
       val acceptGuard = AtomicBoolean(false)
+      val retryGuard = AtomicBoolean(false)
+      fun feedbackForm() = """
+              |<div style="display: flex;flex-direction: column;">
+              |${acceptLink!!}
+              |${retryLink!!}
+              |</div>
+              |${textInput!!}
+            """.trimMargin()
       textInput = ui.textInput { userResponse ->
         if (feedbackGuard.getAndSet(true)) return@textInput
         textInputHandle?.clear()
-        acceptHandle?.clear()
         task.echo(MarkdownUtil.renderMarkdown(userResponse))
         design = reviseResponse(userMessage, design, userResponse)
         outputFn(task, design)
-        textInputHandle = task.add(textInput!!)
-        acceptHandle = task.complete(acceptLink!!)
+        textInputHandle = task.complete(feedbackForm(), className = "reply-message")
         feedbackGuard.set(false)
       }
-      acceptLink = ui.hrefLink("Accept") {
+      acceptLink = ui.hrefLink("\uD83D\uDC4D") {
         if (acceptGuard.getAndSet(true)) return@hrefLink
         textInputHandle?.clear()
-        acceptHandle?.clear()
         task.complete()
         onAccept.release()
       }
-      textInputHandle = task.add(textInput)
-      acceptHandle = task.complete(acceptLink)
+      retryLink = ui.hrefLink("♻") {
+        if (retryGuard.getAndSet(true)) return@hrefLink
+        textInputHandle?.clear()
+        task.echo(heading)
+        design = initialResponse(userMessage)
+        outputFn(task, design)
+        textInputHandle = task.complete(feedbackForm(), className = "reply-message")
+        feedbackGuard.set(false)
+        acceptGuard.set(false)
+        retryGuard.set(false)
+      }
+      textInputHandle = task.complete(feedbackForm(), className = "reply-message")
       onAccept.acquire()
       design
     } catch (e: Throwable) {
@@ -67,6 +82,7 @@ object AgentPatterns {
       throw e
     }
   }
+
 
 
   fun <I : Any, T : Any> iterate(
