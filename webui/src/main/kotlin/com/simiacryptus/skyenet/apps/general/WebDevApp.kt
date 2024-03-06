@@ -414,8 +414,8 @@ class WebDevAgent(
     ) : ValidatedObject {
       override fun validate(): String? = when {
         path.isNullOrBlank() -> "Path is required"
-        path.contains(" ") -> "Path cannot contain spaces"
-        !path.contains(".") -> "Path must contain a file extension"
+        //path.contains(" ") -> "Path cannot contain spaces"
+        //!path.contains(".") -> "Path must contain a file extension"
         else -> null
       }
     }
