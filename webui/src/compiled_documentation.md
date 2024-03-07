@@ -1,3 +1,6 @@
+
+
+
 # main\kotlin\com\simiacryptus\skyenet\apps\coding\CodingApp.kt
 
 ## CodingApp Class Documentation
@@ -798,6 +801,8 @@ Generates HTML for a clickable link that triggers a specified handler when click
 - `String`: HTML for the clickable link.
 
 ##### Example Usage
+
+This section provides an example of how to use the API, demonstrating a typical scenario and how the API responds to various inputs.
 
 ```kotlin
 val linkHtml = applicationInterface.hrefLink("Click Me", "custom-class") {

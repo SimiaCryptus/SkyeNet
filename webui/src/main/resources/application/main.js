@@ -246,26 +246,48 @@ document.addEventListener('DOMContentLoaded', () => {
         connect(undefined, onWebSocketText);
     }
 
+        function findAncestor(element, selector) {
+            while (element && !element.matches(selector)) {
+                element = element.parentElement;
+            }
+            return element;
+        }
+
     document.body.addEventListener('click', (event) => {
         const target = event.target;
-        if (target.classList.contains('href-link')) {
-            const messageId = target.getAttribute('data-id');
+        const hrefLink = findAncestor(target, '.href-link');
+        if (hrefLink) {
+            const messageId = hrefLink.getAttribute('data-id');
             send('!' + messageId + ',link');
-        } else if (target.classList.contains('play-button')) {
+        } else {
+            const playButton = findAncestor(target, '.play-button');
+            if (playButton) {
+                const messageId = playButton.getAttribute('data-id');
+                send('!' + messageId + ',run');
+            } else {
+                const regenButton = findAncestor(target, '.regen-button');
+                if (regenButton) {
+                    const messageId = regenButton.getAttribute('data-id');
+                    send('!' + messageId + ',regen');
+                } else {
+                    const cancelButton = findAncestor(target, '.cancel-button');
+                    if (cancelButton) {
+                        const messageId = cancelButton.getAttribute('data-id');
+                        send('!' + messageId + ',stop');
+                    } else {
+                        const textSubmitButton = findAncestor(target, '.text-submit-button');
+                        if (textSubmitButton) {
+                            const messageId = textSubmitButton.getAttribute('data-id');
+                            const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
+                            // url escape the text
+                            const escapedText = encodeURIComponent(text);
+                            send('!' + messageId + ',userTxt,' + escapedText);
+                        }
+                    }
+                }
+            }
             const messageId = target.getAttribute('data-id');
             send('!' + messageId + ',run');
-        } else if (target.classList.contains('regen-button')) {
-            const messageId = target.getAttribute('data-id');
-            send('!' + messageId + ',regen');
-        } else if (target.classList.contains('cancel-button')) {
-            const messageId = target.getAttribute('data-id');
-            send('!' + messageId + ',stop');
-        } else if (target.classList.contains('text-submit-button')) {
-            const messageId = target.getAttribute('data-id');
-            const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
-            // url escape the text
-            const escapedText = encodeURIComponent(text);
-            send('!' + messageId + ',userTxt,' + escapedText);
         }
     });
 

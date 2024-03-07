@@ -17,6 +17,7 @@ open class ParsedActor<T : Any>(
   model: ChatModels = ChatModels.GPT35Turbo,
   temperature: Double = 0.3,
   val parsingModel: ChatModels = ChatModels.GPT35Turbo,
+  val deserializerRetries: Int = 2,
 ) : BaseActor<List<String>, ParsedResponse<T>>(
   prompt = prompt,
   name = name,
@@ -47,7 +48,8 @@ open class ParsedActor<T : Any>(
     clazz = parserClass,
     api = (api as OpenAIClient),
     model = parsingModel,
-    temperature = temperature,
+    temperature = 0.1,
+    deserializerRetries = deserializerRetries,
   ){
     override val describer: TypeDescriber get() = this@ParsedActor.describer
   }.create()
