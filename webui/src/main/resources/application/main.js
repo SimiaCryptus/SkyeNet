@@ -10,7 +10,7 @@ function closeModal() {
 async function fetchData(endpoint, useSession = true) {
     try {
         // Add session id to the endpoint as a path parameter
-        if(useSession) {
+        if (useSession) {
             const sessionId = getSessionId();
             if (sessionId) {
                 endpoint = endpoint + "?sessionId=" + sessionId;
@@ -55,7 +55,7 @@ function onWebSocketText(event) {
         messageDiv.id = messageId;
         messageDiv.innerHTML = messageContent;
         messagesDiv.appendChild(messageDiv);
-        if(singleInput) {
+        if (singleInput) {
             const mainInput = document.getElementById('main-input');
             if (mainInput) {
                 mainInput.style.display = 'none';
@@ -63,7 +63,7 @@ function onWebSocketText(event) {
                 console.log("Error: Could not find .main-input");
             }
         }
-        if(stickyInput) {
+        if (stickyInput) {
             const mainInput = document.getElementById('main-input');
             if (mainInput) {
                 // Keep at top of screen
@@ -80,17 +80,18 @@ function onWebSocketText(event) {
     Prism.highlightAll();
     refreshVerbose();
     refreshReplyForms()
+    mermaid.run();
 }
 
 function toggleVerbose() {
     let verboseToggle = document.getElementById('verbose');
-    if(verboseToggle.innerText === 'Hide Verbose') {
+    if (verboseToggle.innerText === 'Hide Verbose') {
         const elements = document.getElementsByClassName('verbose');
         for (let i = 0; i < elements.length; i++) {
             elements[i].classList.add('verbose-hidden'); // Add the 'verbose-hidden' class to hide
         }
         verboseToggle.innerText = 'Show Verbose';
-    } else if(verboseToggle.innerText === 'Show Verbose') {
+    } else if (verboseToggle.innerText === 'Show Verbose') {
         const elements = document.getElementsByClassName('verbose');
         for (let i = 0; i < elements.length; i++) {
             elements[i].classList.remove('verbose-hidden'); // Remove the 'verbose-hidden' class to show
@@ -112,7 +113,7 @@ function refreshReplyForms() {
                     if (textSubmitButton) {
                         textSubmitButton.click();
                     } else {
-                        form.dispatchEvent(new Event('submit', { cancelable: true }));
+                        form.dispatchEvent(new Event('submit', {cancelable: true}));
                     }
                 }
             }
@@ -123,12 +124,12 @@ function refreshReplyForms() {
 
 function refreshVerbose() {
     let verboseToggle = document.getElementById('verbose');
-    if(verboseToggle.innerText === 'Hide Verbose') {
+    if (verboseToggle.innerText === 'Hide Verbose') {
         const elements = document.getElementsByClassName('verbose');
         for (let i = 0; i < elements.length; i++) {
             elements[i].classList.remove('verbose-hidden'); // Remove the 'verbose-hidden' class to show
         }
-    } else if(verboseToggle.innerText === 'Show Verbose') {
+    } else if (verboseToggle.innerText === 'Show Verbose') {
         const elements = document.getElementsByClassName('verbose');
         for (let i = 0; i < elements.length; i++) {
             elements[i].classList.add('verbose-hidden'); // Add the 'verbose-hidden' class to hide
@@ -145,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('theme_style').href = theme + '.css';
         localStorage.setItem('theme', theme);
     }
+
     const theme_normal = document.getElementById('theme_normal');
     if (theme_normal) {
         theme_normal.addEventListener('click', () => setTheme('main'));
@@ -170,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedTheme != null) {
         document.getElementById('theme_style').href = savedTheme + '.css';
     }
-
 
 
     document.getElementById('history').addEventListener('click', () => showModal('sessions'));
@@ -211,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let heightAdjustment = postEditScrollHeight - originalScrollHeight;
     messageInput.style.height = '';
 
-    messageInput.addEventListener('input', function() {
+    messageInput.addEventListener('input', function () {
         // Reset the height to a single row to get the scroll height for the current content
         this.style.height = 'auto';
         // Set the height to the scroll height, which represents the height of the content
@@ -246,34 +247,34 @@ document.addEventListener('DOMContentLoaded', () => {
         connect(undefined, onWebSocketText);
     }
 
-        function findAncestor(element, selector) {
-            while (element && !element.matches(selector)) {
-                element = element.parentElement;
-            }
-            return element;
+    function findAncestor(element, selector) {
+        while (element && !element.matches(selector)) {
+            element = element.parentElement;
         }
+        return element;
+    }
 
     document.body.addEventListener('click', (event) => {
         const target = event.target;
         const hrefLink = findAncestor(target, '.href-link');
         if (hrefLink) {
             const messageId = hrefLink.getAttribute('data-id');
-            send('!' + messageId + ',link');
+            if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',link');
         } else {
             const playButton = findAncestor(target, '.play-button');
             if (playButton) {
                 const messageId = playButton.getAttribute('data-id');
-                send('!' + messageId + ',run');
+                if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',run');
             } else {
                 const regenButton = findAncestor(target, '.regen-button');
                 if (regenButton) {
                     const messageId = regenButton.getAttribute('data-id');
-                    send('!' + messageId + ',regen');
+                    if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',regen');
                 } else {
                     const cancelButton = findAncestor(target, '.cancel-button');
                     if (cancelButton) {
                         const messageId = cancelButton.getAttribute('data-id');
-                        send('!' + messageId + ',stop');
+                        if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',stop');
                     } else {
                         const textSubmitButton = findAncestor(target, '.text-submit-button');
                         if (textSubmitButton) {
@@ -281,13 +282,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
                             // url escape the text
                             const escapedText = encodeURIComponent(text);
-                            send('!' + messageId + ',userTxt,' + escapedText);
+                            if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',userTxt,' + escapedText);
                         }
                     }
                 }
             }
-            const messageId = target.getAttribute('data-id');
-            send('!' + messageId + ',run');
         }
     });
 
@@ -361,11 +360,11 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
         });
-/*
+    /*
 
-            <a id="privacy">Privacy Policy</a>
-            <a id="tos">Terms of Service</a>
- */
+                <a id="privacy">Privacy Policy</a>
+                <a id="tos">Terms of Service</a>
+     */
     // Get the privacy and terms links
     const privacyLink = document.getElementById('privacy');
     const tosLink = document.getElementById('tos');

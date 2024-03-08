@@ -10,7 +10,10 @@ object MarkdownUtil {
         val parser = Parser.builder(options).build()
         val renderer = HtmlRenderer.builder(options).build()
         val document = parser.parse(response)
-        return renderer.render(document)
+       val html = renderer.render(document)
+       // Basic Mermaid block detection and wrapping
+       val enhancedHtml = html.replace(Regex("<pre[^>]*><code class=\"language-mermaid\">(.*?)</code></pre>", RegexOption.DOT_MATCHES_ALL), "<pre class=\"mermaid\">$1</pre>")
+       return enhancedHtml
     }
 
     private fun defaultOptions(): MutableDataSet {

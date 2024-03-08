@@ -9,6 +9,7 @@ import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 object AgentPatterns {
 
@@ -29,7 +30,7 @@ object AgentPatterns {
     outputFn: (SessionTask, T) -> Unit = { task, design -> task.add(MarkdownUtil.renderMarkdown(design.toString())) },
   ): T {
     val task = ui.newTask()
-    return try {
+    fun main() : T = try {
       task.echo(heading)
       var design = initialResponse(userMessage)
       outputFn(task, design)
@@ -78,9 +79,15 @@ object AgentPatterns {
       onAccept.acquire()
       design
     } catch (e: Throwable) {
+      val atomicRef = AtomicReference<T>()
+      val retryOnErrorLink = ui.hrefLink("🔄 Retry") {
+        atomicRef.set(main())
+      }
       task.error(ui, e)
-      throw e
+      task.complete(retryOnErrorLink)
+      atomicRef.get()
     }
+    return main()
   }
 
 
