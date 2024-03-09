@@ -1,112 +1,110 @@
 package com.simiacryptus.skyenet.webui
 
+import org.junit.jupiter.api.Test
+import org.openapitools.codegen.OpenAPIGenerator
 import org.openapitools.codegen.SpecValidationException
 import java.io.File
+import java.net.URI
 
 class TestOpenAPITool {
-  val tempFile = File.createTempFile("openapi", ".json").apply {
-    writeText(
-      """
-      {
-    "openapi" : "3.0.0",
-    "info" : {
-      "title" : "Gmail Labels API",
-      "version" : "1.0.0",
-      "description" : "API for fetching labels from a Gmail account."
-    },
-    "paths" : {
-      "/tools/gmail/labels" : {
-        "get" : {
-          "summary" : "Get Gmail labels",
-          "description" : "Retrieves a list of labels from the user's Gmail account.",
-          "responses" : {
-            "200" : {
-              "description" : "A list of Gmail labels",
-              "content" : {
-                "application/json" : {
-                  "schema" : {
-                    "properties" : { }
-                  }
-                }
-              }
-            },
-            "500" : {
-              "description" : "Internal Server Error",
-              "content" : {
-                "text/plain" : {
-                  "schema" : {
-                    "type" : "string",
-                    "properties" : { }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "components" : {
-      "schemas" : {
-        "LabelsResponse" : {
-          "type" : "object",
-          "properties" : {
-            "labels" : {
-              "type" : "array",
-              "properties" : { }
-            }
-          }
-        },
-        "Label" : {
-          "type" : "object",
-          "properties" : {
-            "id" : {
-              "type" : "string",
-              "properties" : { }
-            },
-            "name" : {
-              "type" : "string",
-              "properties" : { }
-            }
-          }
-        }
-      },
-      "responses" : { },
-      "parameters" : { },
-      "examples" : { },
-      "requestBodies" : { },
-      "headers" : { },
-      "securitySchemes" : { },
-      "links" : { },
-      "callbacks" : { }
-    }
-  }
-    """.trimIndent()
-    )
-    deleteOnExit()
-  }
 
-//  @Test
+
+    @Test
   fun test() {
-    //    val openApiTool = OpenAPITool()
-    //    openApiTool.generate()
+      process(
+        outDir = "C:/Users/andre/code/jo-penai/build/openapi",
+        apiname = "openapi",
+        suffix = ".yaml",
+        url = "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml",
+        generator = "java",
+        additionalProperties = mapOf(
+          "asyncNative" to "true",
+          "library" to "apache-httpclient",
+          "serializationLibrary" to "jackson",
+          "apiPackage" to "com.simiacryptus.api.java.openai",
+          "modelPackage" to "com.simiacryptus.api.java.openai.model",
+        )
+      )
+//      process(
+//        outDir = "C:/Users/andre/code/jo-penai/build/openapi",
+//        apiname = "openapi",
+//        suffix = ".yaml",
+//        url = "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml",
+//        generator = "kotlin",
+//        additionalProperties = mapOf(
+//          "apiPackage" to "com.simiacryptus.api.kotlin.openai",
+//        )
+//      )
+      //https://docs.mistral.ai/redocusaurus/plugin-redoc-0.yaml
+      process(
+        outDir = "C:/Users/andre/code/jo-penai/build/openapi",
+        apiname = "openapi",
+        suffix = ".yaml",
+        url = "https://docs.mistral.ai/redocusaurus/plugin-redoc-0.yaml",
+        generator = "java",
+        additionalProperties = mapOf(
+          "asyncNative" to "true",
+          "library" to "apache-httpclient",
+          "serializationLibrary" to "jackson",
+          "apiPackage" to "com.simiacryptus.api.java.mistral",
+          "modelPackage" to "com.simiacryptus.api.java.mistral.model",
+        )
+      )
+//      process(
+//        outDir = "C:/Users/andre/code/jo-penai/build/openapi",
+//        apiname = "openapi",
+//        suffix = ".yaml",
+//        url = "https://docs.mistral.ai/redocusaurus/plugin-redoc-0.yaml",
+//        generator = "kotlin",
+//        additionalProperties = mapOf(
+//          "apiPackage" to "com.simiacryptus.api.kotlin.mistral",
+//        )
+//      )
+      // file:///C:\Users\andre\code\jo-penai\ModelsLab AI API's.postman_collection.json
+      process(
+        outDir = "C:/Users/andre/code/jo-penai/build/openapi",
+        apiname = "openapi",
+        suffix = ".json",
+        url = "file:///C:/Users/andre/code/jo-penai/ModelsLab_API.json",
+        generator = "java",
+        additionalProperties = mapOf(
+          "asyncNative" to "true",
+          "library" to "apache-httpclient",
+          "serializationLibrary" to "jackson",
+          "apiPackage" to "com.simiacryptus.api.java.modelslab",
+          "modelPackage" to "com.simiacryptus.api.java.modelslab.model",
+        )
+      )
+  }
 
-
+  private fun process(
+    outDir: String,
+    apiname: String,
+    suffix: String,
+    url: String,
+    generator: String,
+    additionalProperties : Map<String, String> = mapOf(),
+  ) {
     try {
-      val generator = "java"
-      File("C:/Users/andre/Downloads/openapi/build/openapi-$generator").mkdirs()
-      org.openapitools.codegen.OpenAPIGenerator.main(
+      File(outDir).mkdirs()
+      val inputFile = File.createTempFile(apiname, suffix).apply {
+        val text = URI(url).toURL().readText()
+        writeText(text)
+        deleteOnExit()
+      }.absolutePath
+      OpenAPIGenerator.main(
         arrayOf(
           "generate",
           "--skip-validate-spec",
-          "-i", "C:/Users/andre/Downloads/openapi.yaml",
+          "-i", inputFile,
           "-g", generator,
-          "-o", "C:/Users/andre/Downloads/openapi/build/openapi-$generator",
-        )
+          "-o", outDir,
+          if (additionalProperties.isEmpty()) null else (
+              "--additional-properties=" + additionalProperties.entries.joinToString(",") { "${it.key}=${it.value}" })
+        ).filterNotNull().toTypedArray()
       )
     } catch (e: SpecValidationException) {
-
       e.printStackTrace()
     }
-
   }
 }

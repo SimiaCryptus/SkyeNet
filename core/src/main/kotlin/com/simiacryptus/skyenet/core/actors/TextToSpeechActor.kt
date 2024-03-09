@@ -7,6 +7,7 @@ import com.simiacryptus.jopenai.GPT4Tokenizer
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.AudioModels
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 
 open class TextToSpeechActor(
@@ -61,7 +62,7 @@ open class TextToSpeechActor(
     speed = 1.0,
   )
 
-  override fun withModel(model: ChatModels) = this
+  override fun withModel(model: OpenAITextModel) = this
 }
 
 interface SpeechResponse {

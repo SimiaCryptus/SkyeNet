@@ -8,6 +8,7 @@ import com.simiacryptus.jopenai.GPT4Tokenizer
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.ImageModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toChatMessage
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import java.awt.image.BufferedImage
@@ -17,7 +18,7 @@ import javax.imageio.ImageIO
 open class ImageActor(
     prompt: String = "Transform the user request into an image generation prompt that the user will like",
     name: String? = null,
-    textModel: ChatModels = ChatModels.GPT35Turbo,
+    textModel: OpenAITextModel = ChatModels.GPT35Turbo,
     val imageModel: ImageModels = ImageModels.DallE2,
     temperature: Double = 0.3,
     val width: Int = 1024,
@@ -82,7 +83,7 @@ open class ImageActor(
         return ImageResponseImpl(text, api = api)
     }
 
-    override fun withModel(model: ChatModels): ImageActor = ImageActor(
+    override fun withModel(model: OpenAITextModel): ImageActor = ImageActor(
         prompt = prompt,
         name = name,
         textModel = model,

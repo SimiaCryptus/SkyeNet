@@ -6,6 +6,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.interpreter.Interpreter
@@ -22,8 +23,8 @@ open class CodingActor(
   ),
   name: String? = interpreterClass.simpleName,
   val details: String? = null,
-  model: ChatModels = ChatModels.GPT35Turbo,
-  val fallbackModel: ChatModels = ChatModels.GPT4Turbo,
+  model: OpenAITextModel = ChatModels.GPT35Turbo,
+  val fallbackModel: OpenAITextModel = ChatModels.GPT4Turbo,
   temperature: Double = 0.1,
   val runtimeSymbols: Map<String, Any> = mapOf()
 ) : BaseActor<CodingActor.CodeRequest, CodingActor.CodeResult>(
@@ -233,7 +234,7 @@ open class CodingActor(
     override val code: String = givenCode ?: implementation.first
 
     private fun implement(
-      model: ChatModels,
+      model: OpenAITextModel,
     ): Pair<String, String> {
       val request = ChatRequest(messages = ArrayList(this.messages.toList()))
       for (codingAttempt in 0..input.fixRetries) {
@@ -301,7 +302,7 @@ open class CodingActor(
     previousCode: String,
     error: Throwable,
     vararg promptMessages: ChatMessage,
-    model: ChatModels
+    model: OpenAITextModel
   ): String = chat(
     api = api,
     request = ChatRequest(
@@ -333,12 +334,12 @@ open class CodingActor(
     model = model
   )
 
-  private fun chat(api: OpenAIClient, request: ChatRequest, model: ChatModels) =
+  private fun chat(api: OpenAIClient, request: ChatRequest, model: OpenAITextModel) =
     api.chat(request.copy(model = model.modelName, temperature = temperature), model)
       .choices.first().message?.content.orEmpty().trim()
 
 
-  override fun withModel(model: ChatModels): CodingActor = CodingActor(
+  override fun withModel(model: OpenAITextModel): CodingActor = CodingActor(
     interpreterClass = interpreterClass,
     symbols = symbols,
     describer = describer,

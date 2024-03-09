@@ -6,6 +6,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.proxy.ChatProxy
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import java.util.function.Function
@@ -14,9 +15,9 @@ open class ParsedActor<T : Any>(
   val parserClass: Class<out Function<String, T>>,
   prompt: String,
   name: String? = parserClass.simpleName,
-  model: ChatModels = ChatModels.GPT35Turbo,
+  model: OpenAITextModel = ChatModels.GPT35Turbo,
   temperature: Double = 0.3,
-  val parsingModel: ChatModels = ChatModels.GPT35Turbo,
+  val parsingModel: OpenAITextModel = ChatModels.GPT35Turbo,
   val deserializerRetries: Int = 2,
 ) : BaseActor<List<String>, ParsedResponse<T>>(
   prompt = prompt,
@@ -64,7 +65,7 @@ open class ParsedActor<T : Any>(
     return ParsedResponseImpl(*messages, api = api)
   }
 
-  override fun withModel(model: ChatModels): ParsedActor<T> = ParsedActor(
+  override fun withModel(model: OpenAITextModel): ParsedActor<T> = ParsedActor(
     parserClass = parserClass,
     prompt = prompt,
     name = name,

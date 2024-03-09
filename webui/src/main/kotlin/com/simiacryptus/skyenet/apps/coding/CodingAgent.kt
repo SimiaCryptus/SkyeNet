@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.actors.ActorSystem
 import com.simiacryptus.skyenet.core.actors.CodingActor
@@ -31,7 +32,7 @@ open class CodingAgent<T : Interpreter>(
   val symbols: Map<String, Any>,
   temperature: Double = 0.1,
   val details: String? = null,
-  val model: ChatModels = ChatModels.GPT35Turbo,
+  val model: OpenAITextModel = ChatModels.GPT35Turbo,
   val actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(interpreter, symbols = symbols, temperature = temperature, details = details, model = model)
   ),
