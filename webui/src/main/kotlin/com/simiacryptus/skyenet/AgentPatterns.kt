@@ -6,12 +6,63 @@ import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 object AgentPatterns {
+
+  fun retryable(
+    ui: ApplicationInterface,
+    task: SessionTask = ui.newTask(),
+    process: () -> String,
+  ): String {
+    val container = task.add("<div class=\"tabs-container\"></div>")
+    val history = mutableListOf<String>()
+    return object {
+      fun newHTML(ui: ApplicationInterface): String = """
+      <div class="tabs-container">
+        <div class="tabs">
+        ${
+        history.withIndex().joinToString("\n") { (index, _) ->
+          val tabId = "$index"
+          """<button class="tab-button" data-for-tab="$tabId">${index + 1}</button>"""
+        }
+      }
+        ${
+        ui.hrefLink("♻") {
+          history.add("Retrying...")
+          container?.clear()
+          container?.append(newHTML(ui))
+          task.add("")
+          val newResult = process()
+          history.removeLast()
+          addTab(ui, newResult)
+        }
+      }
+        </div>
+        ${
+        history.withIndex().joinToString("\n") { (index, content) ->
+          """
+            <div class="tab-content${if (index == history.size - 1) " active" else ""}" data-tab="$index">
+              $content
+            </div>
+          """.trimIndent()
+        }
+      }
+      </div>
+    """.trimIndent()
+
+      fun addTab(ui: ApplicationInterface, content: String): String {
+        history.add(content)
+        container?.clear()
+        container?.append(newHTML(ui))
+        task.complete()
+        return content
+      }
+    }.addTab(ui, process())
+  }
 
   fun List<Pair<List<ApiModel.ContentPart>, ApiModel.Role>>.toMessageList(): Array<ApiModel.ChatMessage> =
     this.map { (content, role) ->
@@ -24,13 +75,13 @@ object AgentPatterns {
   fun <T : Any> iterate(
     ui: ApplicationInterface,
     userMessage: String,
-    heading: String = MarkdownUtil.renderMarkdown(userMessage),
+    heading: String = renderMarkdown(userMessage),
     initialResponse: (String) -> T,
     reviseResponse: (String, T, String) -> T,
-    outputFn: (SessionTask, T) -> Unit = { task, design -> task.add(MarkdownUtil.renderMarkdown(design.toString())) },
+    outputFn: (SessionTask, T) -> Unit = { task, design -> task.add(renderMarkdown(design.toString())) },
   ): T {
     val task = ui.newTask()
-    fun main() : T = try {
+    fun main(): T = try {
       task.echo(heading)
       var design = initialResponse(userMessage)
       outputFn(task, design)
@@ -52,7 +103,7 @@ object AgentPatterns {
       textInput = ui.textInput { userResponse ->
         if (feedbackGuard.getAndSet(true)) return@textInput
         textInputHandle?.clear()
-        task.echo(MarkdownUtil.renderMarkdown(userResponse))
+        task.echo(renderMarkdown(userResponse))
         design = reviseResponse(userMessage, design, userResponse)
         outputFn(task, design)
         textInputHandle = task.complete(feedbackForm(), className = "reply-message")
@@ -91,15 +142,14 @@ object AgentPatterns {
   }
 
 
-
   fun <I : Any, T : Any> iterate(
     input: String,
-    heading: String = MarkdownUtil.renderMarkdown(input),
+    heading: String = renderMarkdown(input),
     actor: BaseActor<I, T>,
     toInput: (String) -> I,
     api: API,
     ui: ApplicationInterface,
-    outputFn: (SessionTask, T) -> Unit = { task, design -> task.add(MarkdownUtil.renderMarkdown(design.toString())) }
+    outputFn: (SessionTask, T) -> Unit = { task, design -> task.add(renderMarkdown(design.toString())) }
   ) = iterate(
     ui = ui,
     userMessage = input,

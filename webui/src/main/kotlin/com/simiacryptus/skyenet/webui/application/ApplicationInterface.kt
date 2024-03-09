@@ -2,10 +2,11 @@ package com.simiacryptus.skyenet.webui.application
 
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.webui.session.SessionTask
+import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 
-open class ApplicationInterface(val socketManager: ApplicationSocketManager) {
+open class ApplicationInterface(val socketManager: SocketManagerBase) {
   @Description("Returns html for a link that will trigger the given handler when clicked.")
   open fun hrefLink(
     @Description("The text to display in the link")

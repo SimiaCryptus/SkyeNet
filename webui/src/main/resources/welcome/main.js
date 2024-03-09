@@ -19,7 +19,30 @@ async function fetchData(endpoint) {
     }
 }
 
+function updateTabs() {
+    const buttons = document.querySelectorAll('.tab-button');
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            const forTab = button.getAttribute('data-for-tab');
+            const tabsParent = button.parentElement.parentElement;
+            const toShow = tabsParent.querySelector(`.tab-content[data-tab="${forTab}"]`);
+
+            const allContents = tabsParent.querySelectorAll('.tab-content');
+            // Remove active class from all tabs and contents
+            // This line seems to be an error or misplaced, consider removing or fixing it
+            buttons.forEach(btn => btn.classList.remove('active'));
+            allContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            button.classList.add('active');
+            toShow.classList.add('active');
+        });
+    });
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
+    updateTabs();
     document.querySelector('.close').addEventListener('click', closeModal);
 
     window.addEventListener('click', (event) => {
