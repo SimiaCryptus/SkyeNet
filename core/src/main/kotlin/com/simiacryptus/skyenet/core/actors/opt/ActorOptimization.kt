@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.core.actors.opt
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ChatProxy
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.actors.BaseActor
@@ -16,7 +16,7 @@ import kotlin.math.pow
 
 open class ActorOptimization(
     val api: OpenAIClient,
-    val model: OpenAITextModel,
+    val model: ChatModels,
     private val mutationRate: Double = 0.5,
     private val mutatonTypes: Map<String, Double> = mapOf(
         "Rephrase" to 1.0,

@@ -121,7 +121,7 @@ open class ClientManager {
     workPool: ThreadPoolExecutor = HttpClientManager.workPool,
     client: CloseableHttpClient = HttpClientManager.client
   ) : OpenAIClient(
-    key = key,
+    key = mapOf(apiProvider to key),
     logLevel = Level.DEBUG,
     logStreams = listOfNotNull(
       logfile?.outputStream()?.buffered()
@@ -129,13 +129,12 @@ open class ClientManager {
     scheduledPool = scheduledPool,
     workPool = workPool,
     client = client,
-    apiBase = apiBase,
-    apiProvider = apiProvider
+    apiBase = mapOf(apiProvider to apiBase),
   ) {
     var budget = 2.00
-    override fun authorize(request: HttpRequest) {
+    override fun authorize(request: HttpRequest, apiProvider: APIProvider) {
       require(budget > 0.0) { "Budget Exceeded" }
-      super.authorize(request)
+      super.authorize(request, ClientUtil.defaultApiProvider)
     }
 
     override fun onUsage(model: OpenAIModel?, tokens: ApiModel.Usage) {

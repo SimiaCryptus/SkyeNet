@@ -10,7 +10,7 @@ import com.simiacryptus.jopenai.models.OpenAITextModel
 abstract class BaseActor<I,R>(
     open val prompt: String,
     val name: String? = null,
-    val model: OpenAITextModel,
+    val model: ChatModels,
     val temperature: Double = 0.3,
 ) {
     abstract fun respond(input: I, api: API, vararg messages: ApiModel.ChatMessage): R
@@ -25,5 +25,5 @@ abstract class BaseActor<I,R>(
     open fun answer(input: I, api: API): R = respond(input=input, api = api, *chatMessages(input))
 
     abstract fun chatMessages(questions: I): Array<ApiModel.ChatMessage>
-    abstract fun withModel(model: OpenAITextModel): BaseActor<I,R>
+    abstract fun withModel(model: ChatModels): BaseActor<I,R>
 }

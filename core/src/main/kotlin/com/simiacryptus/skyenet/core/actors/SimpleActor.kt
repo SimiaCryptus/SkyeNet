@@ -9,7 +9,7 @@ import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 open class SimpleActor(
     prompt: String,
     name: String? = null,
-    model: OpenAITextModel,
+    model: ChatModels,
     temperature: Double = 0.3,
 ) : BaseActor<List<String>,String>(
     prompt = prompt,
@@ -31,7 +31,7 @@ open class SimpleActor(
         )
     }
 
-    override fun withModel(model: OpenAITextModel): SimpleActor = SimpleActor(
+    override fun withModel(model: ChatModels): SimpleActor = SimpleActor(
         prompt = prompt,
         name = name,
         model = model,

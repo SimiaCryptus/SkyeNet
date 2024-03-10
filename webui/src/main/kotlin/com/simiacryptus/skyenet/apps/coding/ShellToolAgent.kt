@@ -6,7 +6,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.describe.TypeDescriber
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
@@ -51,7 +51,7 @@ abstract class ShellToolAgent<T : Interpreter>(
   symbols: Map<String, Any>,
   temperature: Double = 0.1,
   details: String? = null,
-  model: OpenAITextModel,
+  model: ChatModels,
   actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(
       interpreter,

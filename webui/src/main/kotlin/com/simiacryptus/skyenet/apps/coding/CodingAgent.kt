@@ -32,7 +32,7 @@ open class CodingAgent<T : Interpreter>(
   val symbols: Map<String, Any>,
   temperature: Double = 0.1,
   val details: String? = null,
-  val model: OpenAITextModel,
+  val model: ChatModels,
   val actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(interpreter, symbols = symbols, temperature = temperature, details = details, model = model)
   ),

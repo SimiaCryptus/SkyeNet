@@ -15,9 +15,9 @@ open class ParsedActor<T : Any>(
   val parserClass: Class<out Function<String, T>>,
   prompt: String,
   name: String? = parserClass.simpleName,
-  model: OpenAITextModel,
+  model: ChatModels,
   temperature: Double = 0.3,
-  val parsingModel: OpenAITextModel,
+  val parsingModel: ChatModels,
   val deserializerRetries: Int = 2,
 ) : BaseActor<List<String>, ParsedResponse<T>>(
   prompt = prompt,
@@ -65,7 +65,7 @@ open class ParsedActor<T : Any>(
     return ParsedResponseImpl(*messages, api = api)
   }
 
-  override fun withModel(model: OpenAITextModel): ParsedActor<T> = ParsedActor(
+  override fun withModel(model: ChatModels): ParsedActor<T> = ParsedActor(
     parserClass = parserClass,
     prompt = prompt,
     name = name,

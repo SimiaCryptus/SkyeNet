@@ -18,7 +18,7 @@ import javax.imageio.ImageIO
 open class ImageActor(
     prompt: String = "Transform the user request into an image generation prompt that the user will like",
     name: String? = null,
-    textModel: OpenAITextModel,
+    textModel: ChatModels,
     val imageModel: ImageModels = ImageModels.DallE2,
     temperature: Double = 0.3,
     val width: Int = 1024,
@@ -83,7 +83,7 @@ open class ImageActor(
         return ImageResponseImpl(text, api = api)
     }
 
-    override fun withModel(model: OpenAITextModel): ImageActor = ImageActor(
+    override fun withModel(model: ChatModels): ImageActor = ImageActor(
         prompt = prompt,
         name = name,
         textModel = model,

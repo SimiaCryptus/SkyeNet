@@ -23,8 +23,8 @@ open class CodingActor(
   ),
   name: String? = interpreterClass.simpleName,
   val details: String? = null,
-  model: OpenAITextModel,
-  val fallbackModel: OpenAITextModel = ChatModels.GPT4Turbo,
+  model: ChatModels,
+  val fallbackModel: ChatModels = ChatModels.GPT4Turbo,
   temperature: Double = 0.1,
   val runtimeSymbols: Map<String, Any> = mapOf()
 ) : BaseActor<CodingActor.CodeRequest, CodingActor.CodeResult>(
@@ -234,7 +234,7 @@ open class CodingActor(
     override val code: String = givenCode ?: implementation.first
 
     private fun implement(
-      model: OpenAITextModel,
+      model: ChatModels,
     ): Pair<String, String> {
       val request = ChatRequest(messages = ArrayList(this.messages.toList()))
       for (codingAttempt in 0..input.fixRetries) {
@@ -302,7 +302,7 @@ open class CodingActor(
     previousCode: String,
     error: Throwable,
     vararg promptMessages: ChatMessage,
-    model: OpenAITextModel
+    model: ChatModels
   ): String = chat(
     api = api,
     request = ChatRequest(
@@ -334,12 +334,12 @@ open class CodingActor(
     model = model
   )
 
-  private fun chat(api: OpenAIClient, request: ChatRequest, model: OpenAITextModel) =
+  private fun chat(api: OpenAIClient, request: ChatRequest, model: ChatModels) =
     api.chat(request.copy(model = model.modelName, temperature = temperature), model)
       .choices.first().message?.content.orEmpty().trim()
 
 
-  override fun withModel(model: OpenAITextModel): CodingActor = CodingActor(
+  override fun withModel(model: ChatModels): CodingActor = CodingActor(
     interpreterClass = interpreterClass,
     symbols = symbols,
     describer = describer,
