@@ -14,6 +14,7 @@ abstract class ParsedActorTestBase<T:Any>(
       parserClass = parserClass,
       prompt = prompt,
       parsingModel = ChatModels.GPT35Turbo,
+      model = ChatModels.GPT35Turbo,
     )
 
     override fun getPrompt(actor: BaseActor<List<String>,ParsedResponse<T>>): String = actor.prompt

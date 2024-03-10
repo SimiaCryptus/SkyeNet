@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.audio.AudioRecorder
 import com.simiacryptus.jopenai.audio.LookbackLoudnessWindowBuffer
 import com.simiacryptus.jopenai.audio.TranscriptionProcessor
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ChatProxy
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -35,7 +36,8 @@ open class Ears(
 
     open val commandRecognizer = ChatProxy(
         clazz = CommandRecognizer::class.java,
-        api = api
+        api = api,
+        model = ChatModels.GPT35Turbo,
     ).create()
 
     open fun timeout(ms: Long): () -> Boolean {

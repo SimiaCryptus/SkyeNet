@@ -10,7 +10,7 @@ import com.simiacryptus.jopenai.models.OpenAITextModel
 abstract class BaseActor<I,R>(
     open val prompt: String,
     val name: String? = null,
-    val model: OpenAITextModel = ChatModels.GPT35Turbo,
+    val model: OpenAITextModel,
     val temperature: Double = 0.3,
 ) {
     abstract fun respond(input: I, api: API, vararg messages: ApiModel.ChatMessage): R

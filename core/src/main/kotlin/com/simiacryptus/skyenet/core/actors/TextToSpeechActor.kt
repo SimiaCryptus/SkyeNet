@@ -15,9 +15,11 @@ open class TextToSpeechActor(
   val audioModel: AudioModels = AudioModels.TTS_HD,
   val voice: String = "alloy",
   val speed: Double = 1.0,
+  val models: ChatModels,
 ) : BaseActor<List<String>, SpeechResponse>(
   prompt = "",
   name = name,
+  model = models,
 ) {
   override fun chatMessages(questions: List<String>) = questions.map {
     ChatMessage(
@@ -60,6 +62,7 @@ open class TextToSpeechActor(
     audioModel = model,
     voice = "alloy",
     speed = 1.0,
+    models = ChatModels.GPT35Turbo,
   )
 
   override fun withModel(model: OpenAITextModel) = this

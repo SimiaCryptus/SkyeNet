@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.webui.servlet
 
+import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.UserSettingsInterface.UserSettings
@@ -28,6 +29,10 @@ class UserSettingsServlet : HttpServlet() {
                     null -> "https://api.openai.com/v1"
                     "" -> "https://api.openai.com/v1"
                     else -> settings.apiBase
+                },
+                apiProvider = when(settings.apiProvider) {
+                    null -> APIProvider.OpenAI
+                    else -> settings.apiProvider
                 }
             )
             val json = JsonUtil.toJson(visibleSettings)
@@ -69,6 +74,10 @@ class UserSettingsServlet : HttpServlet() {
                     null -> "https://api.openai.com/v1"
                     "" -> "https://api.openai.com/v1"
                     else -> settings.apiBase
+                },
+                apiProvider = when(settings.apiProvider) {
+                    null -> APIProvider.OpenAI
+                    else -> settings.apiProvider
                 }
             )
             ApplicationServices.userSettingsManager.updateUserSettings(userinfo, reconstructedSettings)

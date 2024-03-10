@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
@@ -10,10 +11,11 @@ import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import kotlin.reflect.KClass
 
 open class CodingApp<T: Interpreter>(
-        applicationName: String,
-        private val interpreter: KClass<T>,
-        open val symbols: Map<String, Any> = mapOf(),
-        val temperature: Double = 0.1,
+    applicationName: String,
+    private val interpreter: KClass<T>,
+    open val symbols: Map<String, Any> = mapOf(),
+    val temperature: Double = 0.1,
+    val model: ChatModels,
 ) : ApplicationServer(
     applicationName = applicationName,
     path = "/coding",
@@ -35,6 +37,7 @@ open class CodingApp<T: Interpreter>(
             interpreter = interpreter,
             symbols = symbols,
             temperature = temperature,
+            model = model,
         ).start(
             userMessage = userMessage,
         )

@@ -15,7 +15,7 @@ import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 
 open class ChatSocketManager(
   session: Session,
-  val model: OpenAITextModel = ChatModels.GPT35Turbo,
+  val model: OpenAITextModel,
   val userInterfacePrompt: String,
   open val initialAssistantPrompt: String = "",
   open val systemPrompt: String,

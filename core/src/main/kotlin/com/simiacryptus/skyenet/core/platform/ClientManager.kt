@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.HttpClientManager
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
@@ -82,6 +83,7 @@ open class ClientManager {
           MonitoredClient(
             key = userSettings.apiKey,
             apiBase = userSettings.apiBase ?: "https://api.openai.com/v1",
+            apiProvider = userSettings.apiProvider ?: APIProvider.OpenAI,
             logfile = logfile,
             session = session,
             user = user,
@@ -114,6 +116,7 @@ open class ClientManager {
     private val session: Session,
     private val user: User?,
     apiBase: String = "https://api.openai.com/v1",
+    apiProvider: APIProvider = APIProvider.OpenAI,
     scheduledPool: ListeningScheduledExecutorService = HttpClientManager.scheduledPool,
     workPool: ThreadPoolExecutor = HttpClientManager.workPool,
     client: CloseableHttpClient = HttpClientManager.client
@@ -126,7 +129,8 @@ open class ClientManager {
     scheduledPool = scheduledPool,
     workPool = workPool,
     client = client,
-    apiBase = apiBase
+    apiBase = apiBase,
+    apiProvider = apiProvider
   ) {
     var budget = 2.00
     override fun authorize(request: HttpRequest) {

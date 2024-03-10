@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         messageInput.focus();
     }
-    
+
     const sessionId = getSessionId();
     if (sessionId) {
         connect(sessionId, onWebSocketText);

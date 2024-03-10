@@ -45,7 +45,7 @@ abstract class ToolAgent<T : Interpreter>(
   symbols: Map<String, Any>,
   temperature: Double = 0.1,
   details: String? = null,
-  model: OpenAITextModel = ChatModels.GPT35Turbo,
+  model: OpenAITextModel,
   actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(
       interpreter,
@@ -170,6 +170,7 @@ abstract class ToolAgent<T : Interpreter>(
     parserClass = OpenApiParser::class.java,
     model = model,
     prompt = "You are a code documentation assistant. You will create the OpenAPI definition for a servlet handler written in kotlin",
+    parsingModel = model,
   ) {
     override val describer: TypeDescriber
       get() = object : AbbrevWhitelistYamlDescriber(

@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.actors.test
 
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization
@@ -25,7 +26,7 @@ abstract class ActorTestBase<I: Any, R : Any> {
         resultMapper: (R) -> String = this::resultMapper
     ) {
         ActorOptimization(
-            api
+            api, ChatModels.GPT35Turbo
         ).runGeneticGenerations(
             populationSize = 1,
             generations = 1,

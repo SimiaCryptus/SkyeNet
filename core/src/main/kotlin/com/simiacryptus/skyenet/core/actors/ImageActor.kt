@@ -18,7 +18,7 @@ import javax.imageio.ImageIO
 open class ImageActor(
     prompt: String = "Transform the user request into an image generation prompt that the user will like",
     name: String? = null,
-    textModel: OpenAITextModel = ChatModels.GPT35Turbo,
+    textModel: OpenAITextModel,
     val imageModel: ImageModels = ImageModels.DallE2,
     temperature: Double = 0.3,
     val width: Int = 1024,
