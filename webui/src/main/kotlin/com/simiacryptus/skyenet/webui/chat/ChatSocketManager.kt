@@ -2,7 +2,6 @@ package com.simiacryptus.skyenet.webui.chat
 
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
-import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.AgentPatterns
@@ -46,15 +45,17 @@ open class ChatSocketManager(
     val responseContents = renderResponse(userMessage)
     task.echo(responseContents)
     messages += ApiModel.ChatMessage(ApiModel.Role.user, userMessage.toContentList())
+    val messagesCopy = messages.toList()
     try {
       AgentPatterns.retryable(ApplicationInterface(this), task) {
         val response = (api.chat(
           ApiModel.ChatRequest(
-            messages = messages,
+            messages = messagesCopy,
             temperature = temperature,
             model = model.modelName,
           ), model
         ).choices.first().message?.content.orEmpty())
+        messages.dropLastWhile { it.role == ApiModel.Role.assistant }
         messages += ApiModel.ChatMessage(ApiModel.Role.assistant, response.toContentList())
         onResponse(renderResponse(response), responseContents)
         return@retryable renderResponse(response)
