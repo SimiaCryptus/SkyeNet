@@ -40,7 +40,7 @@ open class UsageManager(val root: File) : UsageInterface {
             CompletionModels.values(),
             EditModels.values(),
             EmbeddingModels.values()
-          ).flatMap { it.toList() }.find { model == it.modelName }
+          ).flatMap { it.values }.find { model == it.modelName }
             ?: throw RuntimeException("Unknown model $model")
           when (direction) {
             "input" -> incrementUsage(

@@ -8,6 +8,7 @@ import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationTy
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.util.Selenium
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import com.simiacryptus.skyenet.webui.util.Selenium2S3
@@ -18,9 +19,6 @@ import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
 import java.io.File
 import java.net.URI
-import java.nio.ByteBuffer
-import java.util.*
-import kotlin.random.Random
 
 class SessionShareServlet(
   private val server: ApplicationServer,
@@ -96,7 +94,10 @@ class SessionShareServlet(
 //              pool = pool,
 //              cookies = cookies,
 //            )
-            val selenium2S3 = ApplicationServices.seleniumFactory?.invoke(pool, cookies)!!
+            val selenium2S3: Selenium = ApplicationServices.seleniumFactory?.invoke(pool, cookies)!!
+            if(selenium2S3 is Selenium2S3) {
+              selenium2S3.loadImages = req.getParameter("loadImages")?.toBoolean() ?: false
+            }
             selenium2S3.save(
               url = URI(url).toURL(),
               saveRoot = "$appName/$shareId",

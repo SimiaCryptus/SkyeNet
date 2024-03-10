@@ -30,11 +30,12 @@ abstract class ApplicationServer(
   open val description: String = ""
   open val singleInput = true
   open val stickyInput = false
-  open val appInfo: Any by lazy {
+  open val appInfo by lazy {
     mapOf(
       "applicationName" to applicationName,
       "singleInput" to singleInput,
-      "stickyInput" to stickyInput
+      "stickyInput" to stickyInput,
+      "loadImages" to false,
     )
   }
 

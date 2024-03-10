@@ -31,8 +31,8 @@ open class Selenium2S3(
   val pool: ThreadPoolExecutor = Executors.newCachedThreadPool() as ThreadPoolExecutor,
   val cookies: Array<out jakarta.servlet.http.Cookie>?,
 ) : Selenium {
-
-  private val driver: WebDriver by lazy { chromeDriver().apply { Companion.setCookies(this, cookies) } }
+  var loadImages: Boolean = false
+  open val driver: WebDriver by lazy { chromeDriver(loadImages = loadImages).apply { Companion.setCookies(this, cookies) } }
 
   private val httpClient by lazy {
     HttpAsyncClientBuilder.create()
