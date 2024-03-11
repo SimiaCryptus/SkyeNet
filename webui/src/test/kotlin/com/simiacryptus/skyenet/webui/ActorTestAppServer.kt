@@ -32,16 +32,17 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
 
     override val childWebApps by lazy {
         listOf(
-            ChildWebApp("/test_simple", SimpleActorTestApp(SimpleActor("Translate the user's request into pig latin.", "PigLatin"))),
+            ChildWebApp("/test_simple", SimpleActorTestApp(SimpleActor("Translate the user's request into pig latin.", "PigLatin", model = ChatModels.GPT35Turbo))),
             ChildWebApp("/test_parsed_joke", ParsedActorTestApp(ParsedActor(
               JokeParser::class.java,
               "Tell me a joke",
-              parsingModel = ChatModels.GPT35Turbo
+              parsingModel = ChatModels.GPT35Turbo,
+              model = ChatModels.GPT35Turbo,
             ))),
-            ChildWebApp("/images", ImageActorTestApp(ImageActor())),
-            ChildWebApp("/test_coding_scala", CodingActorTestApp(CodingActor(ScalaLocalInterpreter::class))),
-            ChildWebApp("/test_coding_kotlin", CodingActorTestApp(CodingActor(KotlinInterpreter::class))),
-            ChildWebApp("/test_coding_groovy", CodingActorTestApp(CodingActor(GroovyInterpreter::class))),
+            ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = ChatModels.GPT35Turbo))),
+            ChildWebApp("/test_coding_scala", CodingActorTestApp(CodingActor(ScalaLocalInterpreter::class, model = ChatModels.GPT35Turbo))),
+            ChildWebApp("/test_coding_kotlin", CodingActorTestApp(CodingActor(KotlinInterpreter::class, model = ChatModels.GPT35Turbo))),
+            ChildWebApp("/test_coding_groovy", CodingActorTestApp(CodingActor(GroovyInterpreter::class, model = ChatModels.GPT35Turbo))),
         )}
     override val toolServlet: ToolServlet? get() = null
 

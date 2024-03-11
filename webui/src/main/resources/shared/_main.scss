@@ -376,3 +376,15 @@ pre.response-message {
         transform: rotate(360deg);
     }
 }
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-button.active {
+    background-color: $button-bg-color;
+}

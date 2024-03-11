@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.core.actors.record
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
@@ -9,15 +8,15 @@ import com.simiacryptus.skyenet.core.util.FunctionWrapper
 import java.util.function.Function
 
 class ParsedActorInterceptor(
-    val inner: ParsedActor<*>,
-    private val functionInterceptor: FunctionWrapper,
+  val inner: ParsedActor<*>,
+  private val functionInterceptor: FunctionWrapper,
 ) : ParsedActor<Any>(
   parserClass = inner.parserClass as Class<out Function<String, Any>>,
   prompt = inner.prompt,
   name = inner.name,
   model = inner.model,
   temperature = inner.temperature,
-  ChatModels.GPT35Turbo,
+  parsingModel = inner.parsingModel,
 ) {
 
     override fun respond(input: List<String>, api: API, vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, ) =

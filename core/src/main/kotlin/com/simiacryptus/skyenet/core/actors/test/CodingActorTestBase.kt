@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.core.actors.test
 
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.core.actors.CodingActor
@@ -11,6 +12,7 @@ abstract class CodingActorTestBase : ActorTestBase<CodingActor.CodeRequest, Code
     override fun actorFactory(prompt: String): CodingActor = CodingActor(
         interpreterClass = interpreterClass,
         details = prompt,
+        model = ChatModels.GPT35Turbo
     )
 
     override fun getPrompt(actor: BaseActor<CodingActor.CodeRequest, CodeResult>): String = (actor as CodingActor).details!!

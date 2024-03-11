@@ -149,8 +149,8 @@ class JsonFunctionRecorder(baseDir: File) : FunctionInterceptor, Closeable {
 
 
 
-fun getModel(modelName: String?): OpenAIModel? = ChatModels.values().find { it.modelName == modelName }
-    ?: EmbeddingModels.values().find { it.modelName == modelName }
+fun getModel(modelName: String?): OpenAIModel? = ChatModels.values().values.find { it.modelName == modelName }
+    ?: EmbeddingModels.values().values.find { it.modelName == modelName }
     ?: ImageModels.values().find { it.modelName == modelName }
 
 

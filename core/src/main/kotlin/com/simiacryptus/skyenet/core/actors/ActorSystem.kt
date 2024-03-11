@@ -27,11 +27,26 @@ open class ActorSystem<T : Enum<*>>(
           val wrapper = getWrapper(actor.name)
           when (val baseActor = actors[actor]) {
             null -> throw RuntimeException("No actor for $actor")
-            is SimpleActor -> SimpleActorInterceptor(baseActor, wrapper)
-            is ParsedActor<*> -> ParsedActorInterceptor(baseActor, wrapper)
-            is CodingActor -> CodingActorInterceptor(baseActor, wrapper)
-            is ImageActor -> ImageActorInterceptor(baseActor, wrapper)
-            is TextToSpeechActor -> TextToSpeechActorInterceptor(baseActor, wrapper)
+            is SimpleActor -> SimpleActorInterceptor(
+              inner = baseActor,
+              functionInterceptor = wrapper
+            )
+            is ParsedActor<*> -> ParsedActorInterceptor(
+              inner = baseActor,
+              functionInterceptor = wrapper
+            )
+            is CodingActor -> CodingActorInterceptor(
+              inner = baseActor,
+              functionInterceptor = wrapper
+            )
+            is ImageActor -> ImageActorInterceptor(
+              inner = baseActor,
+              functionInterceptor = wrapper
+            )
+            is TextToSpeechActor -> TextToSpeechActorInterceptor(
+              inner = baseActor,
+              functionInterceptor = wrapper
+            )
             else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
           }
         } catch (e: Throwable) {

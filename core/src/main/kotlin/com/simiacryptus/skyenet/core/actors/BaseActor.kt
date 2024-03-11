@@ -5,11 +5,12 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
+import com.simiacryptus.jopenai.models.OpenAITextModel
 
 abstract class BaseActor<I,R>(
     open val prompt: String,
     val name: String? = null,
-    val model: ChatModels = ChatModels.GPT35Turbo,
+    val model: ChatModels,
     val temperature: Double = 0.3,
 ) {
     abstract fun respond(input: I, api: API, vararg messages: ApiModel.ChatMessage): R

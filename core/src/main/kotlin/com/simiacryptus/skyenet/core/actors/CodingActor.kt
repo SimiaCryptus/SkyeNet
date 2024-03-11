@@ -6,6 +6,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.interpreter.Interpreter
@@ -22,7 +23,7 @@ open class CodingActor(
   ),
   name: String? = interpreterClass.simpleName,
   val details: String? = null,
-  model: ChatModels = ChatModels.GPT35Turbo,
+  model: ChatModels,
   val fallbackModel: ChatModels = ChatModels.GPT4Turbo,
   temperature: Double = 0.1,
   val runtimeSymbols: Map<String, Any> = mapOf()

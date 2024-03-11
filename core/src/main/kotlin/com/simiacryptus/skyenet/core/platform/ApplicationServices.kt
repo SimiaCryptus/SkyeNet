@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.common.util.concurrent.AtomicDouble
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.file.*
 import com.simiacryptus.skyenet.core.util.Selenium
@@ -208,6 +209,7 @@ interface UserSettingsInterface {
   data class UserSettings(
     val apiKey: String = "",
     val apiBase: String? = "https://api.openai.com/v1",
+    val apiProvider: APIProvider = APIProvider.OpenAI,
   )
 
   fun getUserSettings(user: User): UserSettings

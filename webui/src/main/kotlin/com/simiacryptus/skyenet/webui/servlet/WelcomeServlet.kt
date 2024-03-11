@@ -106,13 +106,13 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
         </div>
     </div>
     
-    ${renderMarkdown(welcomeMarkdown)}
+    ${renderMarkdown(welcomeMarkdown, tabs = false)}
     
     <table class="applist" id='application-list'>
         ${parent.childWebApps.joinToString("\n") { app -> appRow(app, user) }}
     </table>
     
-    ${renderMarkdown(postAppMarkdown)}
+    ${renderMarkdown(postAppMarkdown, tabs = false)}
     
     <footer id="footer">
         <a href="https://github.com/SimiaCryptus/SkyeNet" target="_blank">Powered by SkyeNet</a>

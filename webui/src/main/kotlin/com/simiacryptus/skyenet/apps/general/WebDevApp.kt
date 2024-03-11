@@ -73,7 +73,7 @@ class WebDevAgent(
   session: Session,
   user: User?,
   val ui: ApplicationInterface,
-  val model: ChatModels = ChatModels.GPT35Turbo,
+  val model: ChatModels,
   val tools: List<String> = emptyList(),
   val actorMap: Map<ActorTypes, BaseActor<*, *>> = mapOf(
     ActorTypes.HtmlCodingActor to SimpleActor(
@@ -103,7 +103,8 @@ class WebDevAgent(
         Identify coding styles and patterns to be used.
         List all files to be created, and for each file, describe the public interface / purpose / content summary.
       """.trimIndent(),
-      model = model
+      model = model,
+      parsingModel = model,
     ),
     ActorTypes.CodeReviewer to SimpleActor(
       prompt = """
