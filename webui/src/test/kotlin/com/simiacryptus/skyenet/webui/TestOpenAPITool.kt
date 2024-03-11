@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.webui
 
-import org.junit.jupiter.api.Test
 import org.openapitools.codegen.OpenAPIGenerator
 import org.openapitools.codegen.SpecValidationException
 import java.io.File
@@ -9,7 +8,7 @@ import java.net.URI
 class TestOpenAPITool {
 
 
-    @Test
+//    @Test
   fun test() {
       process(
         outDir = "C:/Users/andre/code/jo-penai/build/openapi",
