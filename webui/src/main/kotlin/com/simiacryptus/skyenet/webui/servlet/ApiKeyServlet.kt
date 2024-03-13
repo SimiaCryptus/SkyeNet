@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
@@ -65,7 +66,7 @@ class ApiKeyServlet : HttpServlet() {
           ApiKeyRecord(
             user.email,
             UUID.randomUUID().toString(),
-            userSettingsManager.getUserSettings(user).apiKey,
+            userSettingsManager.getUserSettings(user).apiKeys[APIProvider.OpenAI] ?: "", // TODO: Expand support for other providers
             0.0,
             ""
           )
@@ -109,7 +110,8 @@ class ApiKeyServlet : HttpServlet() {
       } else {
         userSettingsManager.updateUserSettings(
           user, userSettingsManager.getUserSettings(user).copy(
-            apiKey = apiKey, apiBase = "https://apps.simiacrypt.us/proxy"
+            apiKeys = mapOf(APIProvider.OpenAI to apiKey), // TODO: Expand support for other providers
+            apiBase = mapOf(APIProvider.OpenAI to "https://apps.simiacrypt.us/proxy")
           )
         )
         resp.sendRedirect("/") // Redirect to a success page or another relevant page

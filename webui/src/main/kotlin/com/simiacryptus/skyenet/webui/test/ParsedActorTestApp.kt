@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 
 open class ParsedActorTestApp<T : Any>(
     private val actor: ParsedActor<T>,
-    applicationName: String = "ParsedActorTest_" + actor.parserClass.simpleName,
+    applicationName: String = "ParsedActorTest_" + (actor.parserClass ?: actor.resultClass).simpleName,
     temperature: Double = 0.3,
 ) : ApplicationServer(
   applicationName = applicationName,

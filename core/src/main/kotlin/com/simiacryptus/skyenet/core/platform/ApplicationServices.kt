@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.common.util.concurrent.AtomicDouble
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.APIProvider
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.file.*
 import com.simiacryptus.skyenet.core.util.Selenium
@@ -207,9 +208,8 @@ interface StorageInterface {
 
 interface UserSettingsInterface {
   data class UserSettings(
-    val apiKey: String = "",
-    val apiBase: String? = "https://api.openai.com/v1",
-    val apiProvider: APIProvider = APIProvider.OpenAI,
+    val apiKeys: Map<APIProvider, String> = APIProvider.values().associateWith { "" },
+    val apiBase: Map<APIProvider, String> = APIProvider.values().associateWith { it.base ?: "" },
   )
 
   fun getUserSettings(user: User): UserSettings
@@ -222,14 +222,21 @@ interface UsageInterface {
   fun incrementUsage(session: Session, user: User?, model: OpenAIModel, tokens: ApiModel.Usage) = incrementUsage(
     session, when (user) {
       null -> null
-      else -> ApplicationServices.userSettingsManager.getUserSettings(user).apiKey
+      else -> {
+        val userSettings = ApplicationServices.userSettingsManager.getUserSettings(user)
+        userSettings.apiKeys[if (model is ChatModels) {
+          model.provider
+        } else {
+          APIProvider.OpenAI
+        }]
+      }
     }, model, tokens
   )
 
   fun incrementUsage(session: Session, apiKey: String?, model: OpenAIModel, tokens: ApiModel.Usage)
 
   fun getUserUsageSummary(user: User): Map<OpenAIModel, ApiModel.Usage> = getUserUsageSummary(
-    ApplicationServices.userSettingsManager.getUserSettings(user).apiKey
+    ApplicationServices.userSettingsManager.getUserSettings(user).apiKeys[APIProvider.OpenAI]!! // TODO: Support other providers
   )
 
   fun getUserUsageSummary(apiKey: String): Map<OpenAIModel, ApiModel.Usage>
