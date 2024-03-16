@@ -133,7 +133,7 @@ class WebDevAgent(
       model = model,
     ),
   ),
-) : ActorSystem<WebDevAgent.ActorTypes>(actorMap, dataStorage, user, session) {
+) : ActorSystem<WebDevAgent.ActorTypes>(actorMap.map { it.key.name to it.value.javaClass }.toMap(), dataStorage, user, session) {
   enum class ActorTypes {
     HtmlCodingActor,
     JavascriptCodingActor,
