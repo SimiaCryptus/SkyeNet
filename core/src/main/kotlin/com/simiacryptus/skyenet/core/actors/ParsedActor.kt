@@ -11,11 +11,10 @@ import com.simiacryptus.jopenai.util.JsonUtil
 import java.util.function.Function
 
 open class ParsedActor<T : Any>(
-  val parserClass: Class<out Function<String, T>>? = null,
-  val resultClass: Class<T> = parserClass!!.getMethod("apply", String::class.java).returnType as Class<T>,
+  val resultClass: Class<T>,
   val exampleInstance: T = resultClass.getConstructor().newInstance(),
   prompt: String,
-  name: String? = (parserClass?.simpleName ?: resultClass.simpleName),
+  name: String? = resultClass.simpleName,
   model: ChatModels,
   temperature: Double = 0.3,
   val parsingModel: ChatModels,
@@ -106,7 +105,7 @@ open class ParsedActor<T : Any>(
   }
 
   override fun withModel(model: ChatModels): ParsedActor<T> = ParsedActor(
-    parserClass = parserClass,
+    resultClass = resultClass,
     prompt = prompt,
     name = name,
     model = model,

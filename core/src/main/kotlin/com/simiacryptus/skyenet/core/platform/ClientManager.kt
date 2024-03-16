@@ -143,6 +143,5 @@ open class ClientManager {
   }
 
   companion object {
-    private val log = LoggerFactory.getLogger(ClientManager::class.java)
   }
 }

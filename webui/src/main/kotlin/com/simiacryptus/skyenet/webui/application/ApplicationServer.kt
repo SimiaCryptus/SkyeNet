@@ -139,7 +139,6 @@ abstract class ApplicationServer(
   }
 
   companion object {
-    private val log = LoggerFactory.getLogger(ApplicationServer::class.java)
 
     fun getMimeType(filename: String): String =
       when {

@@ -33,7 +33,7 @@ open class AuthorizationManager : AuthorizationInterface {
         false
     }
 
-    fun isUserAuthorized(permissionPath: String, user: User?) =
+    private fun isUserAuthorized(permissionPath: String, user: User?) =
         javaClass.getResourceAsStream(permissionPath)?.use { stream ->
             val lines = stream.bufferedReader().readLines()
             lines.any { line ->

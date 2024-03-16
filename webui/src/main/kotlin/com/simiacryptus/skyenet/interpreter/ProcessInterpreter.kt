@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 open class ProcessInterpreter(
-  val defs: Map<String, Any> = mapOf(),
+  private val defs: Map<String, Any> = mapOf(),
 ) : Interpreter {
 
   val command: List<String>
@@ -63,6 +63,5 @@ open class ProcessInterpreter(
   }
 
   companion object {
-    private val log = LoggerFactory.getLogger(ProcessInterpreter::class.java)
   }
 }

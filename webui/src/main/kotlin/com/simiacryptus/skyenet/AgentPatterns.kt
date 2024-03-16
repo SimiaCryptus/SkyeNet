@@ -65,7 +65,7 @@ object AgentPatterns {
     }.addTab(ui, process())
   }
 
-  fun List<Pair<List<ApiModel.ContentPart>, ApiModel.Role>>.toMessageList(): Array<ApiModel.ChatMessage> =
+  private fun List<Pair<List<ApiModel.ContentPart>, ApiModel.Role>>.toMessageList(): Array<ApiModel.ChatMessage> =
     this.map { (content, role) ->
       ApiModel.ChatMessage(
         role = role,

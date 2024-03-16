@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.util.*
 
-abstract class UserSettingsTest(val userSettings: UserSettingsInterface) {
+abstract class UserSettingsTest(private val userSettings: UserSettingsInterface) {
 
 
   @Test

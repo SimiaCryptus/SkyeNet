@@ -94,7 +94,8 @@ class WebDevAgent(
   """.trimIndent(), model = model
     ),
     ActorTypes.ArchitectureDiscussionActor to ParsedActor(
-      parserClass = PageResourceListParser::class.java,
+//      parserClass = PageResourceListParser::class.java,
+      resultClass = PageResourceList::class.java,
       prompt = """
         Translate the user's idea into a detailed architecture for a simple web application. 
         Suggest specific frameworks/libraries to import and provide CDN links for them.
@@ -141,12 +142,12 @@ class WebDevAgent(
     CodeReviewer,
   }
 
-  val architectureDiscussionActor by lazy { getActor(ActorTypes.ArchitectureDiscussionActor) as ParsedActor<PageResourceList> }
-  val htmlActor by lazy { getActor(ActorTypes.HtmlCodingActor) as SimpleActor }
-  val javascriptActor by lazy { getActor(ActorTypes.JavascriptCodingActor) as SimpleActor }
-  val cssActor by lazy { getActor(ActorTypes.CssCodingActor) as SimpleActor }
-  val codeReviewer by lazy { getActor(ActorTypes.CodeReviewer) as SimpleActor }
-  val codeFiles = mutableMapOf<String, String>()
+  private val architectureDiscussionActor by lazy { getActor(ActorTypes.ArchitectureDiscussionActor) as ParsedActor<PageResourceList> }
+  private val htmlActor by lazy { getActor(ActorTypes.HtmlCodingActor) as SimpleActor }
+  private val javascriptActor by lazy { getActor(ActorTypes.JavascriptCodingActor) as SimpleActor }
+  private val cssActor by lazy { getActor(ActorTypes.CssCodingActor) as SimpleActor }
+  private val codeReviewer by lazy { getActor(ActorTypes.CodeReviewer) as SimpleActor }
+  private val codeFiles = mutableMapOf<String, String>()
 
   fun start(
     userMessage: String,
@@ -392,11 +393,6 @@ class WebDevAgent(
 
   companion object {
     private val log = LoggerFactory.getLogger(WebDevAgent::class.java)
-
-    interface PageResourceListParser : java.util.function.Function<String, PageResourceList> {
-      @Description("Parse out a list of files and descriptions in this project")
-      override fun apply(html: String): PageResourceList
-    }
 
     data class PageResourceList(
       @Description("List of resources in this project; don't forget the index.html file!")

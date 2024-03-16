@@ -36,7 +36,6 @@ class ChatSocket(
     }
 
     companion object {
-        private val log = org.slf4j.LoggerFactory.getLogger(ChatSocket::class.java)
     }
 }
 

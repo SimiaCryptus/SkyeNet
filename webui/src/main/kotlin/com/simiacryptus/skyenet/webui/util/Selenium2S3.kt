@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadPoolExecutor
 
 open class Selenium2S3(
   val pool: ThreadPoolExecutor = Executors.newCachedThreadPool() as ThreadPoolExecutor,
-  val cookies: Array<out jakarta.servlet.http.Cookie>?,
+  private val cookies: Array<out jakarta.servlet.http.Cookie>?,
 ) : Selenium {
   var loadImages: Boolean = false
   open val driver: WebDriver by lazy { chromeDriver(loadImages = loadImages).apply { Companion.setCookies(this, cookies) } }
@@ -420,7 +420,7 @@ open class Selenium2S3(
       return ChromeDriver(chromeDriverService, options)
     }
 
-    val chromeDriverService by lazy { ChromeDriverService.createDefaultService() }
+    private val chromeDriverService by lazy { ChromeDriverService.createDefaultService() }
     fun setCookies(
       driver: WebDriver,
       cookies: Array<out jakarta.servlet.http.Cookie>?,

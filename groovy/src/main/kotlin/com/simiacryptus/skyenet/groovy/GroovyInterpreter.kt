@@ -6,7 +6,7 @@ import groovy.lang.Script
 import org.codehaus.groovy.control.CompilationFailedException
 import org.codehaus.groovy.control.CompilerConfiguration
 
-open class GroovyInterpreter(val defs: java.util.Map<String, Object>) : Interpreter {
+open class GroovyInterpreter(private val defs: java.util.Map<String, Object>) : Interpreter {
 
     private val shell: GroovyShell
 

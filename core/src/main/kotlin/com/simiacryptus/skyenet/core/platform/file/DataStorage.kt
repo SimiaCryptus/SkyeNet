@@ -244,8 +244,6 @@ override fun getSessionTime(
 
     companion object {
 
-        private val log = org.slf4j.LoggerFactory.getLogger(StorageInterface::class.java)
-
         private val MESSAGE_DIR = ".sys" + File.separator + "messages"
         val sessionPaths = mutableMapOf<Session, File>()
 

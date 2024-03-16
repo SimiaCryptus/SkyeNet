@@ -6,7 +6,6 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.interpreter.Interpreter
@@ -226,7 +225,7 @@ open class CodingActor(
       }
     }
 
-    var _status = CodeResult.Status.Coding
+    private var _status = CodeResult.Status.Coding
 
     override val status get() = _status
 
@@ -266,7 +265,6 @@ open class CodingActor(
                   |""".trimMargin().trim(),
                   language = language,
                   code = workingCode,
-                  renderedResponse = workingRenderedResponse,
                   prefix = input.codePrefix
                 )
               log.debug("Validation failed - ${ex.message}")
@@ -439,7 +437,7 @@ open class CodingActor(
       }
 
     // Detect changes in the case of the first letter and prepend a space
-    fun String.fromPascalCase(): String = buildString {
+    private fun String.fromPascalCase(): String = buildString {
       var lastChar = ' '
       for (c in this@fromPascalCase) {
         if (c.isUpperCase() && lastChar.isLowerCase()) append(' ')
@@ -485,6 +483,5 @@ open class CodingActor(
     val language: String? = null,
     val code: String? = null,
     val prefix: String? = null,
-    val renderedResponse: String? = null,
   ) : RuntimeException(message, cause)
 }

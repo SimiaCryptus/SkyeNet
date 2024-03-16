@@ -9,7 +9,7 @@ import java.net.URLEncoder
 
 class SessionIdFilter(
   val isSecure: (HttpServletRequest) -> Boolean,
-  val loginRedirect: String
+  private val loginRedirect: String
 ) : Filter {
 
   override fun init(filterConfig: FilterConfig?) {}

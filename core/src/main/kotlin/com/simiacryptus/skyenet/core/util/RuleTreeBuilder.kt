@@ -113,7 +113,7 @@ object RuleTreeBuilder {
     return sb.toString()
   }
 
-  fun bestPrefix(
+  private fun bestPrefix(
     positiveSet: SortedSet<String>,
     negativeSet: SortedSet<String>
   ) = allowedPrefixes(positiveSet, negativeSet)
@@ -132,21 +132,11 @@ object RuleTreeBuilder {
       prefix to entropy
     }.reduce({ a, b -> if (a.second >= b.second) a else b }).orElse(null)?.first
 
-  fun bestNextSuffix(
-    remainingItems: MutableSet<String>,
-    doNotMatchReversed: SortedSet<String>,
-    sortedItems: SortedSet<String>
-  ) = prefixExpand(allowedPrefixes(remainingItems.map { it.reversed() }, doNotMatchReversed)).map { it.reversed() }
-    .map { prefix ->
-      val matchingItems = sortedItems.subSet(prefix, prefix + "\uFFFF")
-      prefix to matchingItems.sumOf { prefix.length } - prefix.length
-    }.maxByOrNull { it.second }
-
   fun prefixExpand(allowedPrefixes: Collection<String>) =
     allowedPrefixes.filter { allowedPrefixes.none { prefix -> prefix != it && prefix.startsWith(it) } }
       .flatMap { prefixExpand(it) }.toSet()
 
-  fun prefixExpand(it: String) = (1..it.length).map { i -> it.substring(0, i) }
+  private fun prefixExpand(it: String) = (1..it.length).map { i -> it.substring(0, i) }
 
   fun allowedPrefixes(
     items: Collection<String>,

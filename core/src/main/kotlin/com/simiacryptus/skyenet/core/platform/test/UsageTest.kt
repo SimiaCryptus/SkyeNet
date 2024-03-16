@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 
-abstract class UsageTest(val impl: UsageInterface) {
+abstract class UsageTest(private val impl: UsageInterface) {
   private val testUser = User(
     email = "test@example.com",
     name = "Test User",

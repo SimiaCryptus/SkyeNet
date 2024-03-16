@@ -11,7 +11,6 @@ class ParsedActorInterceptor(
   val inner: ParsedActor<*>,
   private val functionInterceptor: FunctionWrapper,
 ) : ParsedActor<Any>(
-  parserClass = inner.parserClass as Class<out Function<String, Any>>,
   resultClass = inner.resultClass as Class<Any>,
   exampleInstance = inner.exampleInstance,
   prompt = inner.prompt,
