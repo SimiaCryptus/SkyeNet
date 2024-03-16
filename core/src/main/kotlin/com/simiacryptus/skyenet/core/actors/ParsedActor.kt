@@ -13,12 +13,18 @@ import java.util.function.Function
 open class ParsedActor<T : Any>(
   val parserClass: Class<out Function<String, T>>? = null,
   val resultClass: Class<T> = parserClass!!.getMethod("apply", String::class.java).returnType as Class<T>,
+  val exampleInstance: T = resultClass.getConstructor().newInstance(),
   prompt: String,
   name: String? = (parserClass?.simpleName ?: resultClass.simpleName),
   model: ChatModels,
   temperature: Double = 0.3,
   val parsingModel: ChatModels,
   val deserializerRetries: Int = 2,
+  open val describer: TypeDescriber = object : AbbrevWhitelistYamlDescriber(
+    "com.simiacryptus", "com.github.simiacryptus"
+  ) {
+    override val includeMethods: Boolean get() = false
+  },
 ) : BaseActor<List<String>, ParsedResponse<T>>(
   prompt = prompt,
   name = name,
@@ -53,6 +59,12 @@ open class ParsedActor<T : Any>(
             |```yaml
             |${describe.replace("\n", "\n  ")}
             |```
+            |
+            |This is an example output:
+            |```json
+            |${JsonUtil.toJson(exampleInstance)}
+            |```
+            |
           """.trimMargin()
     for (i in 0 until deserializerRetries) {
       try {
@@ -73,7 +85,7 @@ open class ParsedActor<T : Any>(
         if(!contentUnwrapped.startsWith("{") && !contentUnwrapped.startsWith("```")) {
           val start = contentUnwrapped.indexOf("{").coerceAtMost(contentUnwrapped.indexOf("```"))
           val end = contentUnwrapped.lastIndexOf("}").coerceAtLeast(contentUnwrapped.lastIndexOf("```") + 2) + 1
-          contentUnwrapped = contentUnwrapped.substring(start, end)
+          if(start < end && start >= 0) contentUnwrapped = contentUnwrapped.substring(start, end)
         }
 
         // if input is wrapped in a ```json block, remove the block
@@ -87,12 +99,6 @@ open class ParsedActor<T : Any>(
       }
     }
     throw RuntimeException("No response")
-  }
-
-  open val describer: TypeDescriber = object : AbbrevWhitelistYamlDescriber(
-    "com.simiacryptus", "com.github.simiacryptus"
-  ) {
-    override val includeMethods: Boolean get() = false
   }
 
   override fun respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage): ParsedResponse<T> {

@@ -96,9 +96,9 @@ open class ClientManager {
     if (!canUseGlobalKey) throw RuntimeException("No API key")
     val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/openai.log")
     logfile?.parentFile?.mkdirs()
-    return (if (ClientUtil.keyTxt.isNotBlank()) {
+    return (if (ClientUtil.keyMap.isNotEmpty()) {
       MonitoredClient(
-        key = mapOf(APIProvider.OpenAI to ClientUtil.keyTxt),
+        key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
         logfile = logfile,
         session = session,
         user = user,

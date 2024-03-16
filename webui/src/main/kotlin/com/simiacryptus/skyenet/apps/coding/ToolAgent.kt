@@ -191,10 +191,12 @@ abstract class ToolAgent<T : Interpreter>(
       "com.simiacryptus",
       "com.github.simiacryptus"
     ) {
-      override fun describe(rawType: Class<in Nothing>, stackMax: Int): String = when (rawType) {
+      override fun describe(rawType: Class<in Nothing>,
+                            stackMax: Int,
+                            describedTypes: MutableSet<String>): String = when (rawType) {
         Request::class.java -> describe(HttpServletRequest::class.java)
         Response::class.java -> describe(HttpServletResponse::class.java)
-        else -> super.describe(rawType, stackMax)
+        else -> super.describe(rawType, stackMax, describedTypes)
       }
     },
     details = actor.details,

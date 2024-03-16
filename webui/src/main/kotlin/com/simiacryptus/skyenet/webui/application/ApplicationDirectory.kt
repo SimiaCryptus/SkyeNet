@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.webui.application
 
 
 import com.simiacryptus.jopenai.util.ClientUtil
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.webui.chat.ChatServer
@@ -78,9 +79,10 @@ abstract class ApplicationDirectory(
       init(args.contains("--server"))
       ClientUtil.keyTxt = run {
         try {
-          val encryptedData = javaClass.classLoader.getResourceAsStream("openai.key.kms")?.readAllBytes()
-            ?: throw RuntimeException("Unable to load resource: ${"openai.key.kms"}")
-          ApplicationServices.cloud!!.decrypt(encryptedData)
+          val encryptedData = javaClass.classLoader.getResourceAsStream("openai.key.json.kms")?.readAllBytes()
+            ?: throw RuntimeException("Unable to load resource: ${"openai.key.json.kms"}")
+          val decrypt = ApplicationServices.cloud!!.decrypt(encryptedData)
+          JsonUtil.fromJson(decrypt, Map::class.java)
         } catch (e: Throwable) {
           log.warn("Error loading key.txt", e)
           ""
