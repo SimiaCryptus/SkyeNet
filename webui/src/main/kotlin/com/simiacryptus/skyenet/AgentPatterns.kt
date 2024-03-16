@@ -32,13 +32,14 @@ object AgentPatterns {
       }
         ${
         ui.hrefLink("♻") {
+          val idx = history.size
           history.add("Retrying...")
           container?.clear()
           container?.append(newHTML(ui))
           task.add("")
           val newResult = process()
-          history.removeLast()
-          addTab(ui, newResult)
+          history.removeAt(idx)
+          addTab(ui, newResult, idx)
         }
       }
         </div>
@@ -54,8 +55,8 @@ object AgentPatterns {
       </div>
     """.trimIndent()
 
-      fun addTab(ui: ApplicationInterface, content: String): String {
-        history.add(content)
+      fun addTab(ui: ApplicationInterface, content: String, idx: Int = history.size): String {
+        history.add(idx, content)
         container?.clear()
         container?.append(newHTML(ui))
         task.complete()
@@ -64,7 +65,7 @@ object AgentPatterns {
     }.addTab(ui, process())
   }
 
-  fun List<Pair<List<ApiModel.ContentPart>, ApiModel.Role>>.toMessageList(): Array<ApiModel.ChatMessage> =
+  private fun List<Pair<List<ApiModel.ContentPart>, ApiModel.Role>>.toMessageList(): Array<ApiModel.ChatMessage> =
     this.map { (content, role) ->
       ApiModel.ChatMessage(
         role = role,

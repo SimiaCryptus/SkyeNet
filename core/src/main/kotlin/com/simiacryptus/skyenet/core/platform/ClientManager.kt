@@ -79,11 +79,10 @@ open class ClientManager {
       val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/openai.log")
       logfile?.parentFile?.mkdirs()
       val userApi =
-        if (userSettings.apiKey.isNotBlank())
+        if (userSettings.apiKeys.isNotEmpty())
           MonitoredClient(
-            key = userSettings.apiKey,
-            apiBase = userSettings.apiBase ?: "https://api.openai.com/v1",
-            apiProvider = userSettings.apiProvider ?: APIProvider.OpenAI,
+            key = userSettings.apiKeys,
+            apiBase = userSettings.apiBase,
             logfile = logfile,
             session = session,
             user = user,
@@ -97,9 +96,9 @@ open class ClientManager {
     if (!canUseGlobalKey) throw RuntimeException("No API key")
     val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/openai.log")
     logfile?.parentFile?.mkdirs()
-    return (if (ClientUtil.keyTxt.isNotBlank()) {
+    return (if (ClientUtil.keyMap.isNotEmpty()) {
       MonitoredClient(
-        key = ClientUtil.keyTxt,
+        key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
         logfile = logfile,
         session = session,
         user = user,
@@ -111,17 +110,16 @@ open class ClientManager {
   }
 
   inner class MonitoredClient(
-    key: String,
+    key: Map<APIProvider, String>,
     logfile: File?,
     private val session: Session,
     private val user: User?,
-    apiBase: String = "https://api.openai.com/v1",
-    apiProvider: APIProvider = APIProvider.OpenAI,
+    apiBase: Map<APIProvider, String> = APIProvider.values().associate { it to (it.base ?: "") },
     scheduledPool: ListeningScheduledExecutorService = HttpClientManager.scheduledPool,
     workPool: ThreadPoolExecutor = HttpClientManager.workPool,
     client: CloseableHttpClient = HttpClientManager.client
   ) : OpenAIClient(
-    key = mapOf(apiProvider to key),
+    key = key,
     logLevel = Level.DEBUG,
     logStreams = listOfNotNull(
       logfile?.outputStream()?.buffered()
@@ -129,7 +127,7 @@ open class ClientManager {
     scheduledPool = scheduledPool,
     workPool = workPool,
     client = client,
-    apiBase = mapOf(apiProvider to apiBase),
+    apiBase = apiBase,
   ) {
     var budget = 2.00
     override fun authorize(request: HttpRequest, apiProvider: APIProvider) {
@@ -145,6 +143,5 @@ open class ClientManager {
   }
 
   companion object {
-    private val log = LoggerFactory.getLogger(ClientManager::class.java)
   }
 }

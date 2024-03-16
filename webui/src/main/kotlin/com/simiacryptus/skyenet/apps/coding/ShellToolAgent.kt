@@ -247,7 +247,8 @@ abstract class ShellToolAgent<T : Interpreter>(
   }
 
   private fun openAPIParsedActor() = object : ParsedActor<OpenAPI>(
-    parserClass = OpenApiParser::class.java,
+//    parserClass = OpenApiParser::class.java,
+    resultClass = OpenAPI::class.java,
     model = model,
     prompt = "You are a code documentation assistant. You will create the OpenAPI definition for a servlet handler written in kotlin",
     parsingModel = model,
@@ -272,10 +273,12 @@ abstract class ShellToolAgent<T : Interpreter>(
       "com.simiacryptus",
       "com.github.simiacryptus"
     ) {
-      override fun describe(rawType: Class<in Nothing>, stackMax: Int): String = when (rawType) {
+      override fun describe(rawType: Class<in Nothing>,
+                            stackMax: Int,
+                            describedTypes: MutableSet<String>): String = when (rawType) {
         Request::class.java -> describe(HttpServletRequest::class.java)
         Response::class.java -> describe(HttpServletResponse::class.java)
-        else -> super.describe(rawType, stackMax)
+        else -> super.describe(rawType, stackMax, describedTypes)
       }
     },
     details = actor.details,
@@ -463,11 +466,6 @@ abstract class ShellToolAgent<T : Interpreter>(
   }
 
   abstract fun getInterpreterString(): String;
-
-  interface OpenApiParser : Function<String, OpenAPI> {
-    @Description("Extract OpenAPI spec")
-    override fun apply(t: String): OpenAPI
-  }
 
   private fun answer(
     actor: CodingActor,

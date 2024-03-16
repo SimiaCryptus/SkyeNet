@@ -8,27 +8,27 @@ abstract class InterpreterTestBase {
 
     @Test
     fun `test run with valid code`() {
-        val interpreter = newInterpreter(mapOf<String,Any>())
+        val interpreter = newInterpreter(mapOf())
         val result = interpreter.run("2 + 2")
         Assertions.assertEquals(4, result)
     }
 
     @Test
     fun `test run with invalid code`() {
-        val interpreter = newInterpreter(mapOf<String,Any>())
+        val interpreter = newInterpreter(mapOf())
         assertThrows<Exception> { interpreter.run("2 +") }
     }
 
     @Test
     fun `test validate with valid code`() {
-        val interpreter = newInterpreter(mapOf<String,Any>())
+        val interpreter = newInterpreter(mapOf())
         val result = interpreter.validate("2 + 2")
         Assertions.assertEquals(null, result)
     }
 
     @Test
     fun `test validate with invalid code`() {
-        val interpreter = newInterpreter(mapOf<String,Any>())
+        val interpreter = newInterpreter(mapOf())
         assertThrows<Exception> { with(interpreter.validate("2 +")) { throw this!! } }
     }
 
@@ -81,7 +81,7 @@ abstract class InterpreterTestBase {
 
     @Test
     open fun `test validate with undefined variable`() {
-        val interpreter = newInterpreter(mapOf<String,Any>())
+        val interpreter = newInterpreter(mapOf())
         assertThrows<Exception> { with(interpreter.validate("x * y")) { throw this!! } }
     }
 

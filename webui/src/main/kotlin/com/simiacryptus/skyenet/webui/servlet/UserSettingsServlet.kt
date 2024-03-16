@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.UserSettingsInterface.UserSettings
@@ -21,19 +20,15 @@ class UserSettingsServlet : HttpServlet() {
         } else {
             val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
             val visibleSettings = settings.copy(
-                apiKey = when(settings.apiKey) {
+                apiKeys = settings.apiKeys.mapValues { when(it.value) {
                     "" -> ""
                     else -> mask
-                },
-                apiBase = when(settings.apiBase) {
+                } },
+                apiBase = settings.apiBase.mapValues { when(it.value) {
                     null -> "https://api.openai.com/v1"
                     "" -> "https://api.openai.com/v1"
-                    else -> settings.apiBase
-                },
-                apiProvider = when(settings.apiProvider) {
-                    null -> APIProvider.OpenAI
-                    else -> settings.apiProvider
-                }
+                    else -> settings.apiBase[it.key]!!
+                } },
             )
             val json = JsonUtil.toJson(visibleSettings)
             //language=HTML
@@ -65,20 +60,16 @@ class UserSettingsServlet : HttpServlet() {
             val settings = JsonUtil.fromJson<UserSettings>(req.getParameter("settings"), UserSettings::class.java)
             val prevSettings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
             val reconstructedSettings = prevSettings.copy(
-                apiKey = when(settings.apiKey) {
+                apiKeys = settings.apiKeys.mapValues { when(it.value) {
                     "" -> ""
-                    mask -> prevSettings.apiKey
-                    else -> settings.apiKey
-                },
-                apiBase = when(settings.apiBase) {
+                    mask -> prevSettings.apiKeys[it.key]!!
+                    else -> settings.apiKeys[it.key]!!
+                } },
+                apiBase = settings.apiBase.mapValues { when(it.value) {
                     null -> "https://api.openai.com/v1"
                     "" -> "https://api.openai.com/v1"
-                    else -> settings.apiBase
-                },
-                apiProvider = when(settings.apiProvider) {
-                    null -> APIProvider.OpenAI
-                    else -> settings.apiProvider
-                }
+                    else -> settings.apiBase[it.key]!!
+                } },
             )
             ApplicationServices.userSettingsManager.updateUserSettings(userinfo, reconstructedSettings)
             resp.sendRedirect("/")
@@ -86,6 +77,5 @@ class UserSettingsServlet : HttpServlet() {
     }
 
     companion object {
-        private val log = org.slf4j.LoggerFactory.getLogger(UserSettingsServlet::class.java)
     }
 }

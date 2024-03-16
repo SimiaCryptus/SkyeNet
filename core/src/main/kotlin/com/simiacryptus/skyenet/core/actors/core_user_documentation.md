@@ -1,4 +1,30 @@
+# Skyenet Core Actors Package Documentation
 
+The Skyenet Core Actors package is a comprehensive framework designed to facilitate interaction with OpenAI's GPT models and other functionalities such as text-to-speech and image generation. This package is structured to provide a robust foundation for building applications that leverage OpenAI's capabilities, including conversational agents, code generators, and visual content creators.
+
+## Package Overview
+
+The package is organized into several key components, each serving a specific purpose within the framework. Below is an overview of the primary classes and their relationships.
+
+### Core Classes
+
+- **`BaseActor`**: Serves as the abstract base class for all actors. It defines the basic structure and functionalities common to all types of actors.
+- **`SimpleActor`**: Extends `BaseActor` to provide simple interaction with OpenAI's GPT models, focusing on sending prompts and receiving text responses.
+- **`ParsedActor`**: A specialized actor that parses responses into specific data types, extending the `BaseActor` functionalities.
+- **`CodingActor`**: Designed for code generation and execution, this actor extends `BaseActor` and integrates with code interpreters.
+- **`ImageActor`**: Focuses on generating images from textual prompts, extending the capabilities of `BaseActor` to support visual content creation.
+- **`TextToSpeechActor`**: Converts text into speech, extending `BaseActor` to utilize OpenAI's text-to-speech models.
+
+### Supporting Classes and Interfaces
+
+- **`ActorSystem`**: Manages and interacts with various types of actors within a session, applying specific interceptors based on the actor type.
+- **`ParsedResponse`**: Represents responses parsed from various sources in a structured manner.
+- **Interceptors (`*Interceptor`)**: Specialized classes designed to intercept and potentially modify the behavior of actor instances (e.g., `CodingActorInterceptor`, `ImageActorInterceptor`).
+
+### Documentation and Testing Base Classes
+
+- **`ActorTestBase`**: An abstract class designed to facilitate the testing of actors within the system.
+- **`ParsedActorTestBase`, `CodingActorTestBase`, `ImageActorTestBase`**: Extend `ActorTestBase` to provide testing functionalities tailored to specific actor types.
 
 
 # BaseActor.kt

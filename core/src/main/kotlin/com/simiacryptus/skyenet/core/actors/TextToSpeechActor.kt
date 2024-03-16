@@ -47,22 +47,12 @@ open class TextToSpeechActor(
     )
   ) ?: throw RuntimeException("No response")
 
-  private val codex = GPT4Tokenizer(false)
-
   override fun respond(input: List<String>, api: API, vararg messages: ChatMessage) =
     SpeechResponseImpl(
       messages.joinToString("\n") { it.content?.joinToString("\n") { it.text ?: "" } ?: "" },
       api = api
     )
 
-
-  fun withModel(model: AudioModels): TextToSpeechActor = TextToSpeechActor(
-    name = name,
-    audioModel = model,
-    voice = "alloy",
-    speed = 1.0,
-    models = ChatModels.GPT35Turbo,
-  )
 
   override fun withModel(model: ChatModels) = this
 }

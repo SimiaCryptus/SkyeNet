@@ -19,6 +19,5 @@ class LogoutServlet : HttpServlet() {
     }
 
     companion object {
-        private val log = org.slf4j.LoggerFactory.getLogger(LogoutServlet::class.java)
     }
 }

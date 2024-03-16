@@ -1,12 +1,13 @@
 package com.simiacryptus.skyenet.core.platform.test
 
+import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.core.platform.UserSettingsInterface
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.util.*
 
-abstract class UserSettingsTest(val userSettings: UserSettingsInterface) {
+abstract class UserSettingsTest(private val userSettings: UserSettingsInterface) {
 
 
   @Test
@@ -18,10 +19,10 @@ abstract class UserSettingsTest(val userSettings: UserSettingsInterface) {
       id = id
     )
 
-    val newSettings = UserSettingsInterface.UserSettings(apiKey = "12345")
+    val newSettings = UserSettingsInterface.UserSettings(apiKeys = mapOf(APIProvider.OpenAI to "12345"))
     userSettings.updateUserSettings(testUser, newSettings)
     val settings = userSettings.getUserSettings(testUser)
-    Assertions.assertEquals("12345", settings.apiKey)
+    Assertions.assertEquals("12345", settings.apiKeys[APIProvider.OpenAI])
   }
 
   @Test
@@ -33,12 +34,12 @@ abstract class UserSettingsTest(val userSettings: UserSettingsInterface) {
       id = id
     )
     val initialSettings = userSettings.getUserSettings(testUser)
-    Assertions.assertEquals("", initialSettings.apiKey)
+    Assertions.assertEquals("", initialSettings.apiKeys[APIProvider.OpenAI])
 
-    val updatedSettings = UserSettingsInterface.UserSettings(apiKey = "67890")
+    val updatedSettings = UserSettingsInterface.UserSettings(apiKeys = mapOf(APIProvider.OpenAI to "67890"))
     userSettings.updateUserSettings(testUser, updatedSettings)
 
     val settingsAfterUpdate = userSettings.getUserSettings(testUser)
-    Assertions.assertEquals("67890", settingsAfterUpdate.apiKey)
+    Assertions.assertEquals("67890", settingsAfterUpdate.apiKeys[APIProvider.OpenAI])
   }
 }

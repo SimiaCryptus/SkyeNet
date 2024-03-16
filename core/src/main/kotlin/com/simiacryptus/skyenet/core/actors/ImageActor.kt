@@ -62,9 +62,8 @@ open class ImageActor(
         ).data.first().url
         return ImageIO.read(URL(url))
     }
-    private val codex = GPT4Tokenizer(false)
 
-    override fun respond(input: List<String>, api: API, vararg messages: ChatMessage): ImageResponse {
+  override fun respond(input: List<String>, api: API, vararg messages: ChatMessage): ImageResponse {
         var text = response(*messages, api = api).choices.first().message?.content
             ?: throw RuntimeException("No response")
         while (imageModel.maxPrompt <= text.length) {
@@ -93,15 +92,6 @@ open class ImageActor(
         height = height,
     )
 
-    fun withModel(model: ImageModels): ImageActor = ImageActor(
-        prompt = prompt,
-        name = name,
-        textModel = this.model,
-        imageModel = model,
-        temperature = temperature,
-        width = width,
-        height = height,
-    )
 }
 
 interface ImageResponse {

@@ -12,12 +12,6 @@ data class OpenAPI(
   @JsonInclude(JsonInclude.Include.NON_NULL)
   val components: Components? = null
 ) {
-  fun merge(other: OpenAPI) = OpenAPI(
-    openapi = openapi,
-    info = info,
-    paths = (paths ?: emptyMap()) + (other.paths ?: emptyMap()),
-    components = components?.merge(other.components) ?: other.components
-  )
 }
 
 // Metadata about the API
@@ -87,17 +81,6 @@ data class Components(
   val links: Map<String, Link>? = emptyMap(),
   val callbacks: Map<String, Callback>? = emptyMap()
 ) {
-  fun merge(components: Components?) = if (null == components) this else Components(
-    schemas = schemas?.plus(components.schemas ?: emptyMap()) ?: components.schemas,
-    responses = responses?.plus(components.responses ?: emptyMap()) ?: components.responses,
-    parameters = parameters?.plus(components.parameters ?: emptyMap()) ?: components.parameters,
-    examples = examples?.plus(components.examples ?: emptyMap()) ?: components.examples,
-    requestBodies = requestBodies?.plus(components.requestBodies ?: emptyMap()) ?: components.requestBodies,
-    headers = headers?.plus(components.headers ?: emptyMap()) ?: components.headers,
-    securitySchemes = securitySchemes?.plus(components.securitySchemes ?: emptyMap()) ?: components.securitySchemes,
-    links = links?.plus(components.links ?: emptyMap()) ?: components.links,
-    callbacks = callbacks?.plus(components.callbacks ?: emptyMap()) ?: components.callbacks
-  )
 }
 
 // Simplified examples of component objects
@@ -128,14 +111,3 @@ data class Link(val operationId: String? = null)
 data class Callback(val expression: String? = null)
 data class MediaType(val schema: Schema? = null)
 
-// Function to serialize OpenApi object to JSON string
-fun serializeOpenApiSpec(openApi: OpenAPI): String {
-  val mapper = jacksonObjectMapper()
-  return mapper.writeValueAsString(openApi)
-}
-
-// Function to deserialize JSON string to OpenApi object
-fun deserializeOpenApiSpec(json: String): OpenAPI {
-  val mapper = jacksonObjectMapper()
-  return mapper.readValue(json)
-}

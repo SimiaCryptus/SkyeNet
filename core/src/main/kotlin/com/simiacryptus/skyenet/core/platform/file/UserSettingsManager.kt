@@ -15,12 +15,15 @@ open class UserSettingsManager : UserSettingsInterface {
         return userSettings.getOrPut(user) {
             val file = File(userConfigDirectory, "$user.json")
             if (file.exists()) {
-                log.info("Loading user settings for $user from $file")
-                JsonUtil.fromJson(file.readText(), UserSettings::class.java)
-            } else {
-                log.info("Creating new user settings for $user at $file")
-                UserSettings()
+                try {
+                    log.info("Loading user settings for $user from $file")
+                    return@getOrPut JsonUtil.fromJson(file.readText(), UserSettings::class.java)
+                } catch (e: Throwable) {
+                    log.warn("Error loading user settings for $user from $file", e)
+                }
             }
+            log.info("Creating new user settings for $user at $file")
+            return@getOrPut UserSettings()
         }
     }
 
