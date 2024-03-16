@@ -34,8 +34,8 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
         listOf(
             ChildWebApp("/test_simple", SimpleActorTestApp(SimpleActor("Translate the user's request into pig latin.", "PigLatin", model = ChatModels.GPT35Turbo))),
             ChildWebApp("/test_parsed_joke", ParsedActorTestApp(ParsedActor(
-              JokeParser::class.java,
-              "Tell me a joke",
+              resultClass = TestJokeDataStructure::class.java,
+              prompt = "Tell me a joke",
               parsingModel = ChatModels.GPT35Turbo,
               model = ChatModels.GPT35Turbo,
             ))),
