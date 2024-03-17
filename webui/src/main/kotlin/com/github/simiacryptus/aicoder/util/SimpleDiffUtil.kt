@@ -129,7 +129,7 @@ fun SocketManagerBase.addApplyDiffLinks(
   fullPatch: MutableList<String> = mutableListOf(),
   handle: (String) -> Unit
 ): String {
-  val diffPattern = """(?s)(?<![^\n])```diff(.*?)\n```""".toRegex()
+  val diffPattern = """(?s)(?<![^\n])```diff\n(.*?)\n```""".toRegex()
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val diffVal = diffBlock.value
@@ -165,13 +165,34 @@ fun SocketManagerBase.addApplyDiffLinks(
   return withLinks
 }
 
-fun SocketManagerBase.addApplyDiffLinks(
-  code: Map<String, String>, // filename to code
+fun SocketManagerBase.addSaveLinks(
   response: String,
-  //fullPatch: Map<String, MutableList<String>> = mutableMapOf(),
+  handle: (String, String) -> Unit
+): String {
+  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```.*?\n```)""".toRegex() // capture filename
+  val matches = diffPattern.findAll(response).distinct()
+  val withLinks = matches.fold(response) { markdown, diffBlock ->
+    val filename = diffBlock.groupValues[1]
+    val codeValue = diffBlock.groupValues[2]
+    val hrefLink = hrefLink("Apply Diff") {
+      try {
+        handle(filename, codeValue)
+        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Saved ${filename}</div>""")
+      } catch (e: Throwable) {
+        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
+      }
+    }
+    markdown.replace(codeValue, codeValue + "\n" + hrefLink)
+  }
+  return withLinks
+}
+
+fun SocketManagerBase.addApplyDiffLinks(
+  code: Map<String, String>,
+  response: String,
   handle: (Map<String, String>) -> Unit
 ): String {
-  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff.*?\n```)""".toRegex() // capture filename
+  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff\n.*?\n```)""".toRegex() // capture filename
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
@@ -179,11 +200,10 @@ fun SocketManagerBase.addApplyDiffLinks(
     val hrefLink = hrefLink("Apply Diff") {
       try {
         val newCode = code.map { (file, prevCode) ->
-          var newCode = prevCode
-          if (filename == file) {
-            newCode = SimpleDiffUtil.patch(prevCode, diffVal)
+          file to when (filename) {
+            file -> SimpleDiffUtil.patch(prevCode, diffVal)
+            else -> prevCode
           }
-          file to newCode
         }.toMap()
         handle(newCode)
         send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Diff Applied</div>""")

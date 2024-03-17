@@ -26,7 +26,6 @@ async function fetchData(endpoint, useSession = true) {
         if (typeof Prism !== 'undefined') {
             Prism.highlightAll();
         }
-        Prism.highlightAll();
     } catch (error) {
         console.error('Error fetching data:', error);
     }
@@ -36,6 +35,111 @@ let messageVersions = {};
 let singleInput = false;
 let stickyInput = false;
 let loadImages = "true";
+
+(function () {
+    class SvgPanZoom {
+
+        // Make sure to update the init function to avoid attaching multiple listeners to the same SVG
+        init(svgElement) {
+            console.log("Initializing SvgPanZoom for an SVG element");
+            if (svgElement.dataset.svgPanZoomInitialized) return; // Skip if already initialized
+            svgElement.dataset.svgPanZoomInitialized = true; // Mark as initialized
+            this.svgElement = svgElement;
+            this.currentTransform = {x: 0, y: 0, scale: 1};
+            this.onMove = this.onMove.bind(this);
+            this.onClick = this.onClick.bind(this);
+            this.handleZoom = this.handleZoom.bind(this);
+            this.ensureTransformGroup();
+            this.attachEventListeners();
+        }
+
+        // Ensure the SVG has a <g> element for transformations
+        ensureTransformGroup() {
+            console.log("Ensuring transform group exists in the SVG");
+            if (!this.svgElement.querySelector('g.transform-group')) {
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.classList.add('transform-group');
+                while (this.svgElement.firstChild) {
+                    group.appendChild(this.svgElement.firstChild);
+                }
+                this.svgElement.appendChild(group);
+            }
+            this.transformGroup = this.svgElement.querySelector('g.transform-group');
+        }
+
+        // Attach event listeners for panning and zooming
+        attachEventListeners() {
+            console.log("Attaching event listeners for panning and zooming");
+            this.svgElement.addEventListener('click', this.onClick.bind(this));
+            this.svgElement.addEventListener('mousemove', this.onMove.bind(this));
+            this.svgElement.addEventListener('wheel', this.handleZoom.bind(this));
+        }
+
+        // Start panning
+        onClick(event) {
+            if (this.isPanning) {
+                this.isPanning = false;
+                console.log("Ending pan");
+            } else {
+                this.isPanning = true;
+                console.log("Starting pan");
+                this.startX = event.clientX;
+                this.startY = event.clientY;
+                this.priorPan = {x: this.currentTransform.x, y: this.currentTransform.y};
+            }
+        }
+
+        // Perform panning
+        onMove(event) {
+            const moveScale = this.svgElement.viewBox.baseVal.width / this.svgElement.width.baseVal.value;
+            if (this.isPanning === false) return;
+            const dx = event.clientX - this.startX;
+            const dy = event.clientY - this.startY;
+            if(this.currentTransform.x) {
+                this.currentTransform.x = dx * moveScale + this.priorPan.x;
+            } else {
+                this.currentTransform.x = dx * moveScale + this.priorPan.x;
+            }
+            if(this.currentTransform.y) {
+                this.currentTransform.y = dy * moveScale + this.priorPan.y;
+            } else {
+                this.currentTransform.y = dy * moveScale + this.priorPan.y;
+            }
+            console.log("Panning %s, %s", this.currentTransform.x, this.currentTransform.y);
+            this.updateTransform();
+        }
+
+        // Handle zooming
+        handleZoom(event) {
+            event.preventDefault();
+            const direction = event.deltaY > 0 ? -1 : 1;
+            const zoomFactor = 0.1;
+            this.currentTransform.scale += direction * zoomFactor;
+            this.currentTransform.scale = Math.max(0.1, this.currentTransform.scale); // Prevent inverting
+            console.log("Handling zoom %s (%s)", direction, this.currentTransform.scale);
+            this.updateTransform();
+        }
+
+        // Update SVG transform
+        updateTransform() {
+            console.log("Updating SVG transform");
+            const transformAttr = `translate(${this.currentTransform.x} ${this.currentTransform.y}) scale(${this.currentTransform.scale})`;
+            this.transformGroup.setAttribute('transform', transformAttr);
+        }
+    }
+
+    // Expose the library to the global scope
+    window.SvgPanZoom = SvgPanZoom;
+})();
+
+function applyToAllSvg() {
+    console.log("Applying SvgPanZoom to all SVG elements");
+    document.querySelectorAll('svg').forEach(svg => {
+        if (!svg.dataset.svgPanZoomInitialized) {
+            new SvgPanZoom().init(svg);
+        }
+    });
+}
 
 function onWebSocketText(event) {
     console.log('WebSocket message:', event);
@@ -52,6 +156,7 @@ function onWebSocketText(event) {
     } else {
         messageVersions[messageId] = messageVersion;
     }
+    // Cleanup: remove temporary event listeners
 
     let messageDiv = document.getElementById(messageId);
 
@@ -90,7 +195,7 @@ function onWebSocketText(event) {
     refreshReplyForms()
     if (typeof mermaid !== 'undefined') mermaid.run();
     updateTabs();
-
+    applyToAllSvg();
 }
 
 function updateTabs() {
@@ -172,7 +277,12 @@ function refreshVerbose() {
 document.addEventListener('DOMContentLoaded', () => {
     updateTabs();
     if (typeof mermaid !== 'undefined') mermaid.run();
+    applyToAllSvg();
 
+    // Set a timer to periodically apply svgPanZoom to all SVG elements
+    setInterval(() => {
+        applyToAllSvg();
+    }, 5000); // Adjust the interval as needed
     function setTheme(theme) {
         document.getElementById('theme_style').href = theme + '.css';
         localStorage.setItem('theme', theme);
@@ -235,14 +345,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('main-input');
     const messageInput = document.getElementById('chat-input');
 
-    if(form) form.addEventListener('submit', (event) => {
+    if (form) form.addEventListener('submit', (event) => {
         event.preventDefault();
         send(messageInput.value);
         messageInput.value = '';
     });
 
 
-    if(messageInput) {
+    if (messageInput) {
         messageInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
