@@ -10,7 +10,7 @@ import com.simiacryptus.skyenet.core.util.JsonFunctionRecorder
 import java.io.File
 
 open class ActorSystem<T : Enum<*>>(
-  val actors: Map<T, BaseActor<*, *>>,
+  val actors: Map<String, Class<*>>,
   val dataStorage: StorageInterface,
   val user: User?,
   val session: Session
@@ -25,7 +25,7 @@ open class ActorSystem<T : Enum<*>>(
       actorMap.computeIfAbsent(actor) {
         try {
           val wrapper = getWrapper(actor.name)
-          when (val baseActor = actors[actor]) {
+          when (val baseActor = actors[actor.name]) {
             null -> throw RuntimeException("No actor for $actor")
             is SimpleActor -> SimpleActorInterceptor(
               inner = baseActor,
@@ -51,7 +51,7 @@ open class ActorSystem<T : Enum<*>>(
           }
         } catch (e: Throwable) {
           log.warn("Error creating actor $actor", e)
-          actors[actor]!!
+          actors[actor.name]!!.getConstructor().newInstance() as BaseActor<*, *>
         }
       }
     }

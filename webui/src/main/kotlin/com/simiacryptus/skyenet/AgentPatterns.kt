@@ -132,11 +132,13 @@ object AgentPatterns {
       design
     } catch (e: Throwable) {
       val atomicRef = AtomicReference<T>()
-      val retryOnErrorLink = ui.hrefLink("🔄 Retry") {
-        atomicRef.set(main())
-      }
+      val semaphore = Semaphore(0)
       task.error(ui, e)
-      task.complete(retryOnErrorLink)
+      task.complete(ui.hrefLink("🔄 Retry") {
+        atomicRef.set(main())
+        semaphore.release()
+      })
+      semaphore.acquire()
       atomicRef.get()
     }
     return main()
