@@ -13,9 +13,11 @@ open class ApplicationInterface(val socketManager: SocketManagerBase) {
     linkText: String,
     @Description("The css class to apply to the link")
     classname: String = """href-link""",
+    @Description("The id to apply to the link")
+    id: String? = null,
     @Description("The handler to trigger when the link is clicked")
-    handler: Consumer<Unit>
-  ) = socketManager.hrefLink(linkText, classname, oneAtATime(handler))
+    handler: Consumer<Unit>,
+  ) = socketManager.hrefLink(linkText, classname, id, oneAtATime(handler))
 
   @Description("Returns html for a text input form that will trigger the given handler when submitted.")
   open fun textInput(

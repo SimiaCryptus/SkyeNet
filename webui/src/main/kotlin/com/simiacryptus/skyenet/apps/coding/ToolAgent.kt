@@ -4,7 +4,6 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
-import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
@@ -31,7 +30,6 @@ import org.openapitools.codegen.OpenAPIGenerator
 import org.openapitools.codegen.SpecValidationException
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.function.Function
 import kotlin.reflect.KClass
 
 abstract class ToolAgent<T : Interpreter>(
@@ -79,7 +77,7 @@ abstract class ToolAgent<T : Interpreter>(
     response: CodeResult,
     formText: StringBuilder,
     formHandle: () -> StringBuilder
-  ) = ui.hrefLink("\uD83D\uDCE4", "href-link regen-button") {
+  ) = ui.hrefLink("\uD83D\uDCE4", "href-link regen-button"){
     val task = ui.newTask()
     responseAction(task, "Exporting...", formHandle(), formText) {
       displayCodeFeedback(
@@ -126,10 +124,10 @@ abstract class ToolAgent<T : Interpreter>(
               break;
             } catch (e: SpecValidationException) {
               val error = """
-            |${e.message}
-            |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
-            |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
-          """.trimIndent()
+              |${e.message}
+              |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
+              |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
+            """.trimIndent()
               task.hideable(ui, renderMarkdown("```\n${error}\n```"))
               openAPI = openAPIParsedActor().answer(
                 listOf(
@@ -239,14 +237,14 @@ abstract class ToolAgent<T : Interpreter>(
       |<div style="display: flex;flex-direction: column;">
       |${
         if (!super.canPlay) "" else
-          super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button") {
+          super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button"){
             super.responseAction(task, "Accepted...", formHandle!!, formText) {
               onComplete(response.code)
             }
           }
       }
       |${
-        super.ui.hrefLink("♻", "href-link regen-button") {
+        super.ui.hrefLink("♻", "href-link regen-button"){
           super.responseAction(task, "Regenerating...", formHandle!!, formText) {
             //val task = super.ui.newTask()
             val codeRequest =
@@ -269,7 +267,7 @@ abstract class ToolAgent<T : Interpreter>(
               log.warn("Error", e)
               val error = task.error(super.ui, e)
               var regenButton: StringBuilder? = null
-              regenButton = task.complete(super.ui.hrefLink("♻", "href-link regen-button") {
+              regenButton = task.complete(super.ui.hrefLink("♻", "href-link regen-button"){
                 regenButton?.clear()
                 val header = task.header("Regenerating...")
                 super.displayCode(task, codeRequest)
@@ -312,7 +310,7 @@ abstract class ToolAgent<T : Interpreter>(
                 log.warn("Error", e)
                 val error = task.error(super.ui, e)
                 var regenButton: StringBuilder? = null
-                regenButton = task.complete(super.ui.hrefLink("♻", "href-link regen-button") {
+                regenButton = task.complete(super.ui.hrefLink("♻", "href-link regen-button"){
                   regenButton?.clear()
                   val header = task.header("Regenerating...")
                   super.displayCode(task, codeRequest)

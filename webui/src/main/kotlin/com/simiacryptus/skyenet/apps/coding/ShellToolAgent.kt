@@ -4,7 +4,6 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
-import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
@@ -31,7 +30,6 @@ import org.openapitools.codegen.OpenAPIGenerator
 import org.openapitools.codegen.SpecValidationException
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.function.Function
 import kotlin.reflect.KClass
 
 private val String.escapeQuotedString: String
@@ -72,7 +70,7 @@ abstract class ShellToolAgent<T : Interpreter>(
       |<div style="display: flex;flex-direction: column;">
       |${
         if (!super.canPlay) "" else
-          super.ui.hrefLink("▶", "href-link play-button") {
+          super.ui.hrefLink("▶", "href-link play-button"){
             super.responseAction(task, "Running...", formHandle!!, formText) {
               super.execute(super.ui.newTask(), response, request)
             }
@@ -115,7 +113,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     response: CodeResult,
     formText: StringBuilder,
     formHandle: () -> StringBuilder
-  ) = ui.hrefLink("\uD83D\uDCE4", "href-link regen-button") {
+  ) = ui.hrefLink("\uD83D\uDCE4", "href-link regen-button"){
     val task = ui.newTask()
     responseAction(task, "Exporting...", formHandle(), formText) {
       displayCodeFeedback(
@@ -136,26 +134,26 @@ abstract class ShellToolAgent<T : Interpreter>(
         val cwd = actor.symbols.get("workingDir")?.toString()?.let { java.io.File(it) } ?: java.io.File(".")
         val env = actor.symbols.get("env")?.let { env -> (env as Map<String, String>) } ?: mapOf()
         val codePrefix = """
-              fun execute() : Pair<String, String> {
-                val command = "${command.joinToString(" ").escapeQuotedString}".split(" ")
-                val cwd = java.io.File("${cwd.absolutePath.escapeQuotedString}")
-                val env = mapOf<String, String>(${env.entries.joinToString(",") { "\"${it.key.escapeQuotedString}\" to \"${it.value.escapeQuotedString}\"" }})
-                val processBuilder = ProcessBuilder(*command.toTypedArray()).directory(cwd)
-                processBuilder.environment().putAll(env)
-                val process = processBuilder.start()
-                process.outputStream.write("${response.code.escapeQuotedString}".toByteArray())
-                process.outputStream.close()
-                val output = process.inputStream.bufferedReader().readText()
-                val error = process.errorStream.bufferedReader().readText()
-                val waitFor = process.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
-                if (!waitFor) {
-                  process.destroy()
-                  throw RuntimeException("Timeout; output: " + output + "; error: " + error)
-                } else {
-                  return Pair(output, error)
+                fun execute() : Pair<String, String> {
+                  val command = "${command.joinToString(" ").escapeQuotedString}".split(" ")
+                  val cwd = java.io.File("${cwd.absolutePath.escapeQuotedString}")
+                  val env = mapOf<String, String>(${env.entries.joinToString(",") { "\"${it.key.escapeQuotedString}\" to \"${it.value.escapeQuotedString}\"" }})
+                  val processBuilder = ProcessBuilder(*command.toTypedArray()).directory(cwd)
+                  processBuilder.environment().putAll(env)
+                  val process = processBuilder.start()
+                  process.outputStream.write("${response.code.escapeQuotedString}".toByteArray())
+                  process.outputStream.close()
+                  val output = process.inputStream.bufferedReader().readText()
+                  val error = process.errorStream.bufferedReader().readText()
+                  val waitFor = process.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+                  if (!waitFor) {
+                    process.destroy()
+                    throw RuntimeException("Timeout; output: " + output + "; error: " + error)
+                  } else {
+                    return Pair(output, error)
+                  }
                 }
-              }
-            """.trimIndent()
+              """.trimIndent()
         val messages = listOf(
           "Shell Code: \n```${actor.language}\n${response.code}\n```" to ApiModel.Role.assistant,
         ) + (lastResult?.let { listOf(
@@ -175,7 +173,7 @@ abstract class ShellToolAgent<T : Interpreter>(
               messages = listOf(
                 (codePrefix + "\n\n" + parsedCode) to ApiModel.Role.assistant,
                 "Reprocess this code prototype into a servlet. " +
-                "The last line should instantiate the new servlet class and return it via the returnBuffer collection." to ApiModel.Role.user
+                    "The last line should instantiate the new servlet class and return it via the returnBuffer collection." to ApiModel.Role.user
               ),
               codePrefix = schemaCode
             )
@@ -206,10 +204,10 @@ abstract class ShellToolAgent<T : Interpreter>(
                 break;
               } catch (e: SpecValidationException) {
                 val error = """
-            |${e.message}
-            |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
-            |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
-          """.trimIndent()
+              |${e.message}
+              |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
+              |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
+            """.trimIndent()
                 task.hideable(ui, renderMarkdown("```\n${error}\n```"))
                 openAPI = openAPIParsedActor().answer(
                   listOf(
@@ -333,7 +331,7 @@ abstract class ShellToolAgent<T : Interpreter>(
       """
       |<div style="display: flex;flex-direction: column;">
       |${
-        super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button") {
+        super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button"){
           super.responseAction(task, "Accepted...", formHandle!!, formText) {
             onComplete(response.code)
           }
@@ -341,12 +339,12 @@ abstract class ShellToolAgent<T : Interpreter>(
       }
       |${
         if (!super.canPlay) "" else
-          ui.hrefLink("▶", "href-link play-button") {
+          ui.hrefLink("▶", "href-link play-button"){
             execute(ui.newTask(), response)
           }
       }
       |${
-        super.ui.hrefLink("♻", "href-link regen-button") {
+        super.ui.hrefLink("♻", "href-link regen-button"){
           super.responseAction(task, "Regenerating...", formHandle!!, formText) {
             //val task = super.ui.newTask()
             val codeRequest =
@@ -369,7 +367,7 @@ abstract class ShellToolAgent<T : Interpreter>(
               log.warn("Error", e)
               val error = task.error(super.ui, e)
               var regenButton: StringBuilder? = null
-              regenButton = task.complete(super.ui.hrefLink("♻", "href-link regen-button") {
+              regenButton = task.complete(super.ui.hrefLink("♻", "href-link regen-button"){
                 regenButton?.clear()
                 val header = task.header("Regenerating...")
                 super.displayCode(task, codeRequest)
@@ -412,7 +410,7 @@ abstract class ShellToolAgent<T : Interpreter>(
                 log.warn("Error", e)
                 val error = task.error(super.ui, e)
                 var regenButton: StringBuilder? = null
-                regenButton = task.complete(super.ui.hrefLink("♻", "href-link regen-button") {
+                regenButton = task.complete(super.ui.hrefLink("♻", "href-link regen-button"){
                   regenButton?.clear()
                   val header = task.header("Regenerating...")
                   super.displayCode(task, codeRequest)

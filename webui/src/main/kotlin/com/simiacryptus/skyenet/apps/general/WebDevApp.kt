@@ -159,8 +159,8 @@ class WebDevAgent(
       toInput = { listOf(it) },
       api = api,
       ui = ui,
-      outputFn = { task, design ->
-        task.add(renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)}\n```"))
+      outputFn = { design ->
+        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)}\n```")
       }
     )
 
@@ -308,7 +308,7 @@ class WebDevAgent(
           """
           |<div style="display: flex;flex-direction: column;">
           |${
-            ui.hrefLink("♻", "href-link regen-button") {
+            ui.hrefLink("♻", "href-link regen-button"){
               val task = ui.newTask()
               responseAction(task, "Regenerating...", formHandle!!, formText) {
                 draftResourceCode(
@@ -358,7 +358,7 @@ class WebDevAgent(
       log.warn("Error", e)
       val error = task.error(ui, e)
       var regenButton: StringBuilder? = null
-      regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button") {
+      regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button"){
         regenButton?.clear()
         val header = task.header("Regenerating...")
         draftResourceCode(task, request, actor, path, *languages)
@@ -383,7 +383,7 @@ class WebDevAgent(
     } finally {
       header?.clear()
       var revertButton: StringBuilder? = null
-      revertButton = task.complete(ui.hrefLink("↩", "href-link regen-button") {
+      revertButton = task.complete(ui.hrefLink("↩", "href-link regen-button"){
         revertButton?.clear()
         formHandle?.append(formText)
         task.complete()

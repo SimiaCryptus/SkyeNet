@@ -7,11 +7,33 @@ import com.simiacryptus.skyenet.core.actors.BaseActor
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import java.util.concurrent.Callable
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 object AgentPatterns {
+
+  fun displayMapInTabs(
+    map: Map<String, String>,
+  ) = """
+    <div class="tabs-container">
+    <div class="tabs">${
+      map.keys.joinToString("\n") { key ->
+        """<button class="tab-button" data-for-tab="$key">$key</button>"""
+      }
+    }</div>
+    ${
+      map.entries.withIndex().joinToString("\n") { (idx, t) ->
+        val (key, value) = t
+        """<div class="tab-content ${when {
+          idx == 0 -> "active"
+          else -> ""
+        } }" data-tab="$key">$value</div>"""
+      }
+    }
+    </div>
+  """.trimIndent()
 
   fun retryable(
     ui: ApplicationInterface,
@@ -66,12 +88,7 @@ object AgentPatterns {
   }
 
   private fun List<Pair<List<ApiModel.ContentPart>, ApiModel.Role>>.toMessageList(): Array<ApiModel.ChatMessage> =
-    this.map { (content, role) ->
-      ApiModel.ChatMessage(
-        role = role,
-        content = content
-      )
-    }.toTypedArray()
+    this.map { (content, role) -> ApiModel.ChatMessage(role = role, content = content) }.toTypedArray()
 
   fun <T : Any> iterate(
     ui: ApplicationInterface,
@@ -79,69 +96,135 @@ object AgentPatterns {
     heading: String = renderMarkdown(userMessage),
     initialResponse: (String) -> T,
     reviseResponse: (String, T, String) -> T,
-    outputFn: (SessionTask, T) -> Unit = { task, design -> task.add(renderMarkdown(design.toString())) },
+    outputFn: (T) -> String = { design -> renderMarkdown(design.toString()) },
   ): T {
     val task = ui.newTask()
-    fun main(): T = try {
-      task.echo(heading)
-      var design = initialResponse(userMessage)
-      outputFn(task, design)
-      var textInputHandle: StringBuilder? = null
-      val onAccept = Semaphore(0)
-      var textInput: String? = null
-      var acceptLink: String? = null
-      var retryLink: String? = null
-      val feedbackGuard = AtomicBoolean(false)
+    val atomicRef = AtomicReference<T>()
+    val semaphore = Semaphore(0)
+    return object : Callable<T> {
+      val tabs = mutableListOf<String>()
+      val options = mutableListOf<T>()
+      val tabContainer = task.add("<div class=\"tabs-container\"></div>")
       val acceptGuard = AtomicBoolean(false)
-      val retryGuard = AtomicBoolean(false)
-      fun feedbackForm() = """
-              |<div style="display: flex;flex-direction: column;">
-              |${acceptLink!!}
-              |${retryLink!!}
-              |</div>
-              |${textInput!!}
-            """.trimMargin()
-      textInput = ui.textInput { userResponse ->
-        if (feedbackGuard.getAndSet(true)) return@textInput
-        textInputHandle?.clear()
-        task.echo(renderMarkdown(userResponse))
-        design = reviseResponse(userMessage, design, userResponse)
-        outputFn(task, design)
-        textInputHandle = task.complete(feedbackForm(), className = "reply-message")
-        feedbackGuard.set(false)
+      val feedbackGuard = AtomicBoolean(false)
+
+      fun main(replaceTabIndex: Int? = null) {
+        try {
+          val history = mutableListOf<String>()
+          var design = initialResponse(userMessage)
+          options.add(design)
+          var textInput: String? = null
+          var acceptLink: String? = null
+          fun feedbackForm() = """
+                  |<div style="display: flex; flex-direction: column;">
+                  |${acceptLink!!}
+                  |</div>
+                  |${textInput!!}
+                """.trimMargin()
+          textInput = ui.textInput { userResponse ->
+            if (feedbackGuard.getAndSet(true)) return@textInput
+            val markdown = renderMarkdown(userResponse)
+            history.add(markdown)
+            task.echo(markdown)
+            design = reviseResponse(userMessage, design, userResponse)
+            feedbackGuard.set(false)
+          }
+          val idx = tabs.size
+          acceptLink = ui.hrefLink("\uD83D\uDC4D"){
+            accept(acceptGuard, design, idx)
+          }
+          tabContainer?.clear()
+          replaceTabIndex?.let { tabs.removeAt(it) }
+          tabContainer?.append(addTab(outputFn(design) + "\n" + feedbackForm()))
+          task.complete()
+        } catch (e: Throwable) {
+          task.error(ui, e)
+          task.complete(ui.hrefLink("🔄 Retry"){
+            main()
+          })
+        }
       }
-      acceptLink = ui.hrefLink("\uD83D\uDC4D") {
-        if (acceptGuard.getAndSet(true)) return@hrefLink
-        textInputHandle?.clear()
+
+      fun addTab(content: String, idx: Int = tabs.size): String {
+        tabs.add(idx, content)
+        tabContainer?.clear()
+        tabContainer?.append(newHTML(idx).trimIndent())
         task.complete()
-        onAccept.release()
+        return content
       }
-      retryLink = ui.hrefLink("♻") {
-        if (retryGuard.getAndSet(true)) return@hrefLink
-        textInputHandle?.clear()
-        task.echo(heading)
-        design = initialResponse(userMessage)
-        outputFn(task, design)
-        textInputHandle = task.complete(feedbackForm(), className = "reply-message")
-        feedbackGuard.set(false)
-        acceptGuard.set(false)
-        retryGuard.set(false)
+
+      // Adjust the logic to handle the replaceTabIndex parameter properly
+      private fun newHTML(idx: Int = tabs.size - 1, replaceTabIndex: Int? = null): String {
+        replaceTabIndex?.let { tabs.removeAt(it) }
+        return """
+        <div class="tabs-container">
+          <div class="tabs">
+          ${
+          tabs.withIndex().joinToString("\n") { (index, _) ->
+            val tabId = "$index"
+            """<button class="tab-button" data-for-tab="$tabId" class="${if (index == idx) "active" else ""}">${index + 1}</button>"""
+          }
+        }
+          ${
+          ui.hrefLink("♻"){
+            val idx = tabs.size
+            tabs.add("Retrying...")
+            tabContainer?.clear()
+            tabContainer?.append(newHTML(idx))
+            task.add("")
+            main(idx)
+          }
+        } 
+          </div>
+          ${
+          tabs.withIndex().joinToString("\n") { (index, content) ->
+            """
+                <div class="tab-content" data-tab="$index" class="${if (index == tabs.size - 1) "active" else ""}">
+                $content
+                </div>
+              """.trimIndent()
+          }
+        }
+        </div><!-- End tabs-container -->
+        """
       }
-      textInputHandle = task.complete(feedbackForm(), className = "reply-message")
-      onAccept.acquire()
-      design
-    } catch (e: Throwable) {
-      val atomicRef = AtomicReference<T>()
-      val semaphore = Semaphore(0)
-      task.error(ui, e)
-      task.complete(ui.hrefLink("🔄 Retry") {
-        atomicRef.set(main())
+
+      private fun accept(
+        acceptGuard: AtomicBoolean, design: T, idx: Int
+      ) {
+        if (acceptGuard.getAndSet(true)) return
+        tabContainer?.clear()
+        tabContainer?.append(
+          """
+          <div class="tabs-container">
+            <div class="tabs">${
+            tabs.indices.joinToString(separator = "\n") { index ->
+              "<button class=\"tab-button\" data-for-tab=\"$index\">${index + 1}</button>"
+            }
+          }</div>${
+            tabs.withIndex().joinToString(separator = "\n") { (index, content) ->
+              "<div class=\"tab-content${when{
+                index == idx -> " active"
+                else -> ""
+              } }\" data-tab=\"index\">$content</div>"
+            }
+          }
+          </div>
+          """.trimIndent())
+        task.complete()
+        atomicRef.set(design)
         semaphore.release()
-      })
-      semaphore.acquire()
-      atomicRef.get()
-    }
-    return main()
+      }
+
+      override fun call(): T {
+        task.echo(heading)
+        main()
+        semaphore.acquire()
+        return atomicRef.get()
+      }
+
+    }.call()
+
   }
 
 
@@ -152,7 +235,7 @@ object AgentPatterns {
     toInput: (String) -> I,
     api: API,
     ui: ApplicationInterface,
-    outputFn: (SessionTask, T) -> Unit = { task, design -> task.add(renderMarkdown(design.toString())) }
+    outputFn: (T) -> String = { design -> renderMarkdown(design.toString()) }
   ) = iterate(
     ui = ui,
     userMessage = input,
@@ -161,13 +244,10 @@ object AgentPatterns {
     reviseResponse = { userMessage: String, design: T, userResponse: String ->
       val input = toInput(userMessage)
       actor.respond(
-        messages = actor.chatMessages(input) +
-            listOf(
-              design.toString().toContentList() to ApiModel.Role.assistant,
-              userResponse.toContentList() to ApiModel.Role.user
-            ).toMessageList(),
-        input = input,
-        api = api
+        messages = actor.chatMessages(input) + listOf(
+          design.toString().toContentList() to ApiModel.Role.assistant,
+          userResponse.toContentList() to ApiModel.Role.user
+        ).toMessageList(), input = input, api = api
       )
     },
     outputFn = outputFn
