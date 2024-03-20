@@ -90,7 +90,7 @@ open class CodingAgent<T : Interpreter>(
       log.warn("Error", e)
       val error = task.error(ui, e)
       var regenButton: StringBuilder? = null
-      regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button") {
+      regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button"){
         regenButton?.clear()
         val header = task.header("Regenerating...")
         displayCode(task, codeRequest)
@@ -176,7 +176,7 @@ open class CodingAgent<T : Interpreter>(
     request: CodingActor.CodeRequest,
     formText: StringBuilder,
     formHandle: () -> StringBuilder
-  ) = ui.hrefLink("♻", "href-link regen-button") {
+  ) = ui.hrefLink("♻", "href-link regen-button"){
     responseAction(task, "Regenerating...", formHandle(), formText) {
       displayCode(
         ui.newTask(),
@@ -192,7 +192,7 @@ open class CodingAgent<T : Interpreter>(
     formText: StringBuilder,
     formHandle: () -> StringBuilder
   ) = if (!canPlay) "" else
-    ui.hrefLink("▶", "href-link play-button") {
+    ui.hrefLink("▶", "href-link play-button"){
       responseAction(task, "Running...", formHandle(), formText) {
         execute(ui.newTask(), response, request)
       }
@@ -221,7 +221,7 @@ open class CodingAgent<T : Interpreter>(
     formText: StringBuilder
   ): StringBuilder? {
     var revertButton: StringBuilder? = null
-    revertButton = task.complete(ui.hrefLink("↩", "href-link regen-button") {
+    revertButton = task.complete(ui.hrefLink("↩", "href-link regen-button"){
       revertButton?.clear()
       formHandle?.append(formText)
       task.complete()

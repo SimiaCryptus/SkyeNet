@@ -169,10 +169,13 @@ abstract class SocketManagerBase(
     }
   }
 
-  fun hrefLink(linkText: String, classname: String = """href-link""", handler: Consumer<Unit>): String {
+  fun hrefLink(linkText: String, classname: String = """href-link""", id: String? = null, handler: Consumer<Unit>): String {
     val operationID = randomID()
     linkTriggers[operationID] = handler
-    return """<a class="$classname" data-id="$operationID">$linkText</a>"""
+    return """<a class="$classname" data-id="$operationID"${when {
+      id != null -> """ id="$id""""
+      else -> ""
+    }}>$linkText</a>"""
   }
 
   fun textInput(handler: Consumer<String>): String {

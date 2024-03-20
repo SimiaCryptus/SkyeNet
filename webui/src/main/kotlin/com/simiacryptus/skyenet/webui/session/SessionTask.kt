@@ -69,7 +69,7 @@ abstract class SessionTask(
   ): StringBuilder? {
     var windowBuffer: StringBuilder? = null
     val closeButton = """<span class="close">${
-      ui.hrefLink("&times;", "close-button href-link") {
+      ui.hrefLink("&times;", "close-button href-link"){
         windowBuffer?.clear()
         send()
       }

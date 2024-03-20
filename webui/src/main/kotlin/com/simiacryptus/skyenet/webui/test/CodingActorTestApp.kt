@@ -40,15 +40,15 @@ open class CodingActorTestApp(
               OperationType.Execute
             )
             val playLink = if (!canPlay) "" else {
-                ui.hrefLink("▶", "href-link play-button") {
-                    message.add("Running...")
-                    val result = response.result
-                    message.complete(
-                        """
-                        |<pre>${result.resultValue}</pre>
-                        |<pre>${result.resultOutput}</pre>
-                        """.trimMargin()
-                    )
+                ui.hrefLink("▶", "href-link play-button"){
+                  message.add("Running...")
+                  val result = response.result
+                  message.complete(
+                    """
+                                        |<pre>${result.resultValue}</pre>
+                                        |<pre>${result.resultOutput}</pre>
+                                        """.trimMargin()
+                  )
                 }
             }
             message.complete(
