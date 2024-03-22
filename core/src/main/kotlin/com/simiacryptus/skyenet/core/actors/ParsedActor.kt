@@ -11,13 +11,13 @@ import com.simiacryptus.jopenai.util.JsonUtil
 import java.util.function.Function
 
 open class ParsedActor<T : Any>(
-  val resultClass: Class<T>,
-  val exampleInstance: T = resultClass.getConstructor().newInstance(),
-  prompt: String,
-  name: String? = resultClass.simpleName,
-  model: ChatModels,
+  var resultClass: Class<T>? = null,
+  val exampleInstance: T? = resultClass?.getConstructor()?.newInstance(),
+  prompt: String = "",
+  name: String? = resultClass?.simpleName,
+  model: ChatModels = ChatModels.GPT4Turbo,
   temperature: Double = 0.3,
-  val parsingModel: ChatModels,
+  val parsingModel: ChatModels = ChatModels.GPT35Turbo,
   val deserializerRetries: Int = 2,
   open val describer: TypeDescriber = object : AbbrevWhitelistYamlDescriber(
     "com.simiacryptus", "com.github.simiacryptus"
@@ -30,6 +30,11 @@ open class ParsedActor<T : Any>(
   model = model,
   temperature = temperature,
 ) {
+  init {
+    requireNotNull(resultClass) {
+      "Result class is required"
+    }
+  }
   override fun chatMessages(questions: List<String>) = arrayOf(
     ApiModel.ChatMessage(
       role = ApiModel.Role.system,
@@ -43,15 +48,16 @@ open class ParsedActor<T : Any>(
   }
 
   private inner class ParsedResponseImpl(vararg messages: ApiModel.ChatMessage, api: API) :
-    ParsedResponse<T>(resultClass) {
-    override val text = response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
+    ParsedResponse<T>(resultClass!!) {
+    override val text =
+      response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
     private val _obj: T by lazy { getParser(api).apply(text) }
     override val obj get() = _obj
   }
 
   fun getParser(api: API) = Function<String, T> { input ->
     describer.coverMethods = false
-    val describe = describer.describe(resultClass)
+    val describe = resultClass?.let { describer.describe(it) } ?: ""
     val prompt = """
             |Parse the user's message into a json object described by:
             |
@@ -61,7 +67,7 @@ open class ParsedActor<T : Any>(
             |
             |This is an example output:
             |```json
-            |${JsonUtil.toJson(exampleInstance)}
+            |${JsonUtil.toJson(exampleInstance!!)}
             |```
             |
           """.trimMargin()
@@ -81,10 +87,10 @@ open class ParsedActor<T : Any>(
         var contentUnwrapped = content?.trim() ?: throw RuntimeException("No response")
 
         // If Plaintext is found before the { or ```, strip it
-        if(!contentUnwrapped.startsWith("{") && !contentUnwrapped.startsWith("```")) {
+        if (!contentUnwrapped.startsWith("{") && !contentUnwrapped.startsWith("```")) {
           val start = contentUnwrapped.indexOf("{").coerceAtMost(contentUnwrapped.indexOf("```"))
           val end = contentUnwrapped.lastIndexOf("}").coerceAtLeast(contentUnwrapped.lastIndexOf("```") + 2) + 1
-          if(start < end && start >= 0) contentUnwrapped = contentUnwrapped.substring(start, end)
+          if (start < end && start >= 0) contentUnwrapped = contentUnwrapped.substring(start, end)
         }
 
         // if input is wrapped in a ```json block, remove the block
@@ -92,7 +98,8 @@ open class ParsedActor<T : Any>(
           contentUnwrapped = contentUnwrapped.substring(7, contentUnwrapped.length - 3)
         }
 
-        contentUnwrapped.let { return@Function JsonUtil.fromJson<T>(it, resultClass) }
+        contentUnwrapped.let { return@Function JsonUtil.fromJson<T>(it, resultClass
+          ?: throw RuntimeException("Result class undefined")) }
       } catch (e: Exception) {
         log.info("Failed to parse response", e)
       }
@@ -101,7 +108,12 @@ open class ParsedActor<T : Any>(
   }
 
   override fun respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage): ParsedResponse<T> {
-    return ParsedResponseImpl(*messages, api = api)
+    try {
+      return ParsedResponseImpl(*messages, api = api)
+    } catch (e: Exception) {
+      log.info("Failed to parse response", e)
+      throw e
+    }
   }
 
   override fun withModel(model: ChatModels): ParsedActor<T> = ParsedActor(
@@ -112,6 +124,7 @@ open class ParsedActor<T : Any>(
     temperature = temperature,
     parsingModel = parsingModel,
   )
+
   companion object {
     private val log = org.slf4j.LoggerFactory.getLogger(ParsedActor::class.java)
   }

@@ -136,7 +136,7 @@ abstract class SocketManagerBase(
           onRun(message, socket)
         }
       } catch (e: Throwable) {
-        log.warn("$session - Error processing message: $message", e)
+        log.error("$session - Error processing message: $message", e)
         send("""${randomID()},<div class="error">${MarkdownUtil.renderMarkdown(e.message ?: "")}</div>""")
       }
     } else {

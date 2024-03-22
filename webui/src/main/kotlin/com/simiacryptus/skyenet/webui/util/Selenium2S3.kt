@@ -32,7 +32,14 @@ open class Selenium2S3(
   private val cookies: Array<out jakarta.servlet.http.Cookie>?,
 ) : Selenium {
   var loadImages: Boolean = false
-  open val driver: WebDriver by lazy { chromeDriver(loadImages = loadImages).apply { Companion.setCookies(this, cookies) } }
+  open val driver: WebDriver by lazy {
+    chromeDriver(loadImages = loadImages).apply {
+      Companion.setCookies(
+        this,
+        cookies
+      )
+    }
+  }
 
   private val httpClient by lazy {
     HttpAsyncClientBuilder.create()
@@ -55,6 +62,9 @@ open class Selenium2S3(
     currentFilename: String?,
     saveRoot: String
   ) {
+    log.info("Saving URL: $url")
+    log.info("Current filename: $currentFilename")
+    log.info("Save root: $saveRoot")
     driver.navigate().to(url)
     driver.navigate().refresh()
     Thread.sleep(5000) // Wait for javascript to load
@@ -69,7 +79,10 @@ open class Selenium2S3(
     }.toTypedArray()).toMutableList()
     val completionSemaphores = mutableListOf<Semaphore>()
 
+    log.info("Fetching page source")
+    log.info("Base URL: $baseUrl")
     val coveredLinks = mutableSetOf<String>()
+    log.info("Processing links")
     while (links.isNotEmpty()) {
       val href = links.removeFirst()
       try {
@@ -82,6 +95,7 @@ open class Selenium2S3(
       }
     }
 
+    log.info("Fetching current page links")
     log.debug("Waiting for completion")
     completionSemaphores.forEach { it.acquire(); it.release() }
 

@@ -169,7 +169,7 @@ fun SocketManagerBase.addSaveLinks(
   response: String,
   handle: (String, String) -> Unit
 ): String {
-  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
+  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`\n]+`?)*\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]

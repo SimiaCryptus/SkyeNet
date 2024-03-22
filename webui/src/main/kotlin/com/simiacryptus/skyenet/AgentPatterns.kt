@@ -44,7 +44,7 @@ object AgentPatterns {
     open val process: (StringBuilder) -> String,
   ) {
     val container = task.add("<div class=\"tabs-container\"></div>")
-    val history = mutableListOf<String>()
+    private val history = mutableListOf<String>()
     fun newHTML(ui: ApplicationInterface): String = """
     <div class="tabs-container">
       <div class="tabs">
@@ -188,7 +188,6 @@ object AgentPatterns {
         }
           ${
           ui.hrefLink("♻") {
-            val idx = tabs.size
             tabs.add(StringBuilder("Retrying..."))
             tabContainer?.clear()
             tabContainer?.append(newHTML(idx))
