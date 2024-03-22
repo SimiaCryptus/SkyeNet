@@ -10,7 +10,7 @@ import com.simiacryptus.skyenet.core.util.JsonFunctionRecorder
 import java.io.File
 
 open class ActorSystem<T : Enum<*>>(
-  val actors: Map<String, Class<*>>,
+  val actors: Map<String, BaseActor<*, *>>,
   val dataStorage: StorageInterface,
   val user: User?,
   val session: Session
@@ -22,36 +22,41 @@ open class ActorSystem<T : Enum<*>>(
 
   fun getActor(actor: T): BaseActor<*, *> {
     return synchronized(actorMap) {
-      actorMap.computeIfAbsent(actor) {
+      actorMap.computeIfAbsent(actor) { innerActor ->
         try {
           val wrapper = getWrapper(actor.name)
           when (val baseActor = actors[actor.name]) {
             null -> throw RuntimeException("No actor for $actor")
             is SimpleActor -> SimpleActorInterceptor(
-              inner = baseActor,
+              inner = baseActor as SimpleActor,
               functionInterceptor = wrapper
             )
+
             is ParsedActor<*> -> ParsedActorInterceptor(
-              inner = baseActor,
+              inner = (baseActor as ParsedActor<*>),
               functionInterceptor = wrapper
             )
+
             is CodingActor -> CodingActorInterceptor(
-              inner = baseActor,
+              inner = baseActor as CodingActor,
               functionInterceptor = wrapper
             )
+
             is ImageActor -> ImageActorInterceptor(
-              inner = baseActor,
+              inner = baseActor as ImageActor,
               functionInterceptor = wrapper
             )
+
             is TextToSpeechActor -> TextToSpeechActorInterceptor(
-              inner = baseActor,
+              inner = baseActor as TextToSpeechActor,
               functionInterceptor = wrapper
             )
+
             else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
           }
         } catch (e: Throwable) {
           log.warn("Error creating actor $actor", e)
-          actors[actor.name]!!.getConstructor().newInstance() as BaseActor<*, *>
+          actors[actor.name]!!
         }
       }
     }

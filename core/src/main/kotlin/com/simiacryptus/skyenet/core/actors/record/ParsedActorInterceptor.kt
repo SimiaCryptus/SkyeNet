@@ -21,12 +21,12 @@ class ParsedActorInterceptor(
 ) {
 
     override fun respond(input: List<String>, api: API, vararg messages: com.simiacryptus.jopenai.ApiModel.ChatMessage, ) =
-      object : ParsedResponse<Any>(resultClass) {
+      object : ParsedResponse<Any>(resultClass!!) {
         private val parser: Function<String, Any> = getParser(api)
 
         private val _obj: Any by lazy { parse() }
 
-        private fun parse(): Any = functionInterceptor.inner.intercept(text, resultClass) { parser.apply(text) }
+        private fun parse(): Any = functionInterceptor.inner.intercept(text, resultClass!!) { parser.apply(text) }
         override val text get() = super@ParsedActorInterceptor.respond(input = input, api = api, *messages, ).text
         override val obj get() = _obj
       }

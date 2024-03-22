@@ -35,7 +35,7 @@ open class CodingAgent<T : Interpreter>(
   val actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(interpreter, symbols = symbols, temperature = temperature, details = details, model = model)
   ),
-) : ActorSystem<CodingAgent.ActorTypes>(actorMap.map { it.key.name to it.value.javaClass }.toMap(), dataStorage, user, session) {
+) : ActorSystem<CodingAgent.ActorTypes>(actorMap.map { it.key.name to it.value }.toMap(), dataStorage, user, session) {
   enum class ActorTypes {
     CodingActor
   }
