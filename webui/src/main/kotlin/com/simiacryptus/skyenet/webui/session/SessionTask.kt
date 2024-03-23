@@ -10,9 +10,11 @@ import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
 
 abstract class SessionTask(
+  val operationID: String,
   private var buffer: MutableList<StringBuilder> = mutableListOf(),
   private val spinner: String = SessionTask.spinner
 ) {
+
   private val currentText: String
     get() = buffer.filter { it.isNotBlank() }.joinToString("")
 
@@ -57,7 +59,7 @@ abstract class SessionTask(
 
   @Description("Adds a hideable message to the task output.")
   fun hideable(
-    ui: ApplicationInterface,
+    ui: ApplicationInterface?,
     @Description("The message to add")
     message: String,
     @Description("Whether to show the spinner for the task (default: true)")
@@ -69,7 +71,7 @@ abstract class SessionTask(
   ): StringBuilder? {
     var windowBuffer: StringBuilder? = null
     val closeButton = """<span class="close">${
-      ui.hrefLink("&times;", "close-button href-link"){
+      ui?.hrefLink("&times;", "close-button href-link"){
         windowBuffer?.clear()
         send()
       }
@@ -111,7 +113,7 @@ abstract class SessionTask(
 
   @Description("Displays an error in the task output.")
   fun error(
-    ui: ApplicationInterface,
+    ui: ApplicationInterface?,
     @Description("The error to display")
     e: Throwable,
     @Description("Whether to show the spinner for the task (default: false)")
@@ -120,7 +122,18 @@ abstract class SessionTask(
     tag: String = "div"
   ) = hideable(ui,
     when {
-      e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
+      e is ValidatedObject.ValidationError -> renderMarkdown(        """
+        |**Data Validation Error** 
+        |
+        |${e.message}
+        |
+        |Stack Trace:
+        |```text
+        |${e.stackTraceTxt}
+        |```
+        |
+        |""".trimMargin()
+      )
       e is CodingActor.FailedToImplementException -> renderMarkdown(
         """
         |**Failed to Implement** 
@@ -145,7 +158,7 @@ abstract class SessionTask(
         |**Error `${e.javaClass.name}`**
         |
         |```text
-        |${e.message}
+        |${e.stackTraceToString()}
         |```
         |""".trimMargin()
       )
@@ -183,3 +196,11 @@ abstract class SessionTask(
 
   }
 }
+
+val Throwable.stackTraceTxt: String
+  get() {
+    val sw = java.io.StringWriter()
+    val pw = java.io.PrintWriter(sw)
+    printStackTrace(pw)
+    return sw.toString()
+  }

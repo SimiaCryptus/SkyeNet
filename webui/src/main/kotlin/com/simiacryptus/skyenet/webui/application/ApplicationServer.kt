@@ -17,7 +17,6 @@ import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.FilterHolder
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.webapp.WebAppContext
-import org.slf4j.LoggerFactory
 import java.io.File
 
 abstract class ApplicationServer(
@@ -91,13 +90,13 @@ abstract class ApplicationServer(
     userId: User?,
     @Suppress("UNCHECKED_CAST") clazz: Class<T> = settingsClass as Class<T>
   ): T? {
-    var settings: T? = dataStorage.getJson(userId, session, "settings.json", clazz)
+    var settings: T? = dataStorage.getJson(userId, session, ".sys/settings.json", clazz)
     if (null == settings) {
       val initSettings = initSettings<T>(session)
       if (null != initSettings) {
-        dataStorage.setJson(userId, session, "settings.json", initSettings)
+        dataStorage.setJson(userId, session, ".sys/settings.json", initSettings)
       }
-      settings = dataStorage.getJson(userId, session, "settings.json", clazz)
+      settings = dataStorage.getJson(userId, session, ".sys/settings.json", clazz)
     }
     return settings
   }

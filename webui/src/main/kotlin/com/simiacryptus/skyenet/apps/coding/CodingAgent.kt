@@ -290,7 +290,7 @@ open class CodingAgent<T : Interpreter>(
                   |**Error `${e.javaClass.name}`**
                   |
                   |```text
-                  |${e.message}
+                  |${e.stackTraceToString()}
                   |```
                   |""".trimMargin()
       )

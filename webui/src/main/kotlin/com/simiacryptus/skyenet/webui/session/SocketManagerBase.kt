@@ -77,15 +77,22 @@ abstract class SocketManagerBase(
   fun newTask(
     cancelable: Boolean = false
   ): SessionTask {
-    var responseContents = divInitializer(randomID(), cancelable)
+    val operationID = randomID()
+    var responseContents = divInitializer(operationID, cancelable)
     send(responseContents)
-    return SessionTaskImpl(responseContents, SessionTask.spinner)
+    return SessionTaskImpl(operationID, responseContents, SessionTask.spinner)
   }
 
+
   inner class SessionTaskImpl(
+    operationID: String,
     responseContents: String,
-    spinner: String = SessionTask.spinner
-  ) : SessionTask(mutableListOf(StringBuilder(responseContents)), spinner) {
+    spinner: String = SessionTask.spinner,
+    private val buffer: MutableList<StringBuilder> = mutableListOf(StringBuilder(responseContents))
+  ) : SessionTask(
+    operationID = operationID, buffer = buffer, spinner = spinner
+  ) {
+
     override fun send(html: String) = this@SocketManagerBase.send(html)
     override fun saveFile(relativePath: String, data: ByteArray): String {
       dataStorage?.getSessionDir(owner, session)?.let { dir ->
@@ -169,13 +176,20 @@ abstract class SocketManagerBase(
     }
   }
 
-  fun hrefLink(linkText: String, classname: String = """href-link""", id: String? = null, handler: Consumer<Unit>): String {
+  fun hrefLink(
+    linkText: String,
+    classname: String = """href-link""",
+    id: String? = null,
+    handler: Consumer<Unit>
+  ): String {
     val operationID = randomID()
     linkTriggers[operationID] = handler
-    return """<a class="$classname" data-id="$operationID"${when {
-      id != null -> """ id="$id""""
-      else -> ""
-    }}>$linkText</a>"""
+    return """<a class="$classname" data-id="$operationID"${
+      when {
+        id != null -> """ id="$id""""
+        else -> ""
+      }
+    }>$linkText</a>"""
   }
 
   fun textInput(handler: Consumer<String>): String {
@@ -197,11 +211,12 @@ abstract class SocketManagerBase(
   companion object {
     private val log = LoggerFactory.getLogger(ChatServer::class.java)
 
-      private val range = ('a'..'z').toList().toTypedArray()
+    private val range = ('a'..'z').toList().toTypedArray()
     fun randomID(): String {
       val random = java.util.Random()
       return (0..5).map { range[random.nextInt(range.size)] }.joinToString("")
     }
+
     fun divInitializer(operationID: String = randomID(), cancelable: Boolean): String =
       if (!cancelable) """$operationID,""" else
         """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""

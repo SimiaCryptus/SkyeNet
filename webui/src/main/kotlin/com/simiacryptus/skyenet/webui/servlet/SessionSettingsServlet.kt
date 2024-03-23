@@ -57,7 +57,7 @@ class SessionSettingsServlet(
             val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), settingsClass)
             server.dataStorage.setJson(
                 authenticationManager.getUser(req.getCookie()),
-                session, "settings.json", settings
+                session, ".sys/settings.json", settings
             )
             resp.sendRedirect("${req.contextPath}/#$session")
         }

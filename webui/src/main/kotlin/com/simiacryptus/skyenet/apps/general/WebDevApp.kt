@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.apps.general
 
-import com.github.simiacryptus.aicoder.util.addApplyDiffLinks
+import com.github.simiacryptus.aicoder.util.addApplyDiffLinks2
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.describe.Description
@@ -8,6 +8,7 @@ import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.AgentPatterns.iterate
 import com.simiacryptus.skyenet.core.actors.ActorSystem
 import com.simiacryptus.skyenet.core.actors.BaseActor
@@ -152,6 +153,7 @@ class WebDevAgent(
   fun start(
     userMessage: String,
   ) {
+    val task = ui.newTask()
     val architectureResponse = iterate(
       input = userMessage,
       heading = userMessage,
@@ -160,11 +162,17 @@ class WebDevAgent(
       api = api,
       ui = ui,
       outputFn = { design ->
-        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)}\n```")
-      }
+//        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)}\n```")
+        AgentPatterns.displayMapInTabs(
+          mapOf(
+            "Text" to renderMarkdown(design.text),
+            "JSON" to renderMarkdown("```json\n${JsonUtil.toJson(design.obj)}\n```"),
+          )
+        )
+      },
+      task = task
     )
 
-    val task = ui.newTask()
     try {
       val toolSpecs = tools.map { ToolServlet.tools.find { t -> t.path == it } }
         .joinToString("\n\n") { it?.let { JsonUtil.toJson(it.openApiDescription) } ?: "" }
@@ -228,7 +236,7 @@ class WebDevAgent(
 
       fun outputFn(task: SessionTask, design: String): StringBuilder? {
         //val task = ui.newTask()
-        return task.complete(renderMarkdown(ui.socketManager.addApplyDiffLinks(codeFiles, design) { newCodeMap ->
+        return task.complete(renderMarkdown(ui.socketManager.addApplyDiffLinks2(codeFiles, design, handle = { newCodeMap ->
           newCodeMap.forEach { (path, newCode) ->
             val prev = codeFiles[path]
             if (prev != newCode) {
@@ -236,7 +244,7 @@ class WebDevAgent(
               task.complete("<a href='${task.saveFile(path, newCode.toByteArray(Charsets.UTF_8))}'>$path</a> Updated")
             }
           }
-        }))
+        }, task = task)))
       }
       try {
         var task = ui.newTask()

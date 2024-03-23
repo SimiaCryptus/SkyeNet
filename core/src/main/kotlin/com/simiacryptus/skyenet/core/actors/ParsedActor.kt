@@ -58,6 +58,7 @@ open class ParsedActor<T : Any>(
   fun getParser(api: API) = Function<String, T> { input ->
     describer.coverMethods = false
     val describe = resultClass?.let { describer.describe(it) } ?: ""
+    val exceptions = mutableListOf<Exception>()
     val prompt = """
             |Parse the user's message into a json object described by:
             |
@@ -102,9 +103,10 @@ open class ParsedActor<T : Any>(
           ?: throw RuntimeException("Result class undefined")) }
       } catch (e: Exception) {
         log.info("Failed to parse response", e)
+        exceptions.add(e)
       }
     }
-    throw RuntimeException("No response")
+    throw MultiExeption(exceptions)
   }
 
   override fun respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage): ParsedResponse<T> {
