@@ -108,19 +108,28 @@ abstract class SocketManagerBase(
 
   fun send(out: String) {
     try {
-      log.debug("Send Msg: {} - {}", session, out)
       val split = out.split(',', ignoreCase = false, limit = 2)
       val messageID = split[0]
       val newValue = split[1]
-      if (setMessage(messageID, newValue) < 0) return
-      if (sendQueue.contains(messageID)) return
+      if (setMessage(messageID, newValue) < 0) {
+        log.debug("Skipping duplicate message - Key: {}, Value: {} bytes", messageID, newValue.length)
+        return
+      }
+      if (sendQueue.contains(messageID)) {
+        log.debug("Skipping already queued message - Key: {}, Value: {} bytes", messageID, newValue.length)
+        return
+      }
+      log.debug("Queue Send Msg: {} - {} - {} bytes", session, messageID, out.length)
       sendQueue.add(messageID)
       scheduledThreadPoolExecutor.schedule(
         {
           try {
             while (sendQueue.isNotEmpty()) {
               val messageID = sendQueue.poll() ?: return@schedule
-              publish(messageID + "," + messageVersions[messageID] + "," + messageStates[messageID])
+              val ver = messageVersions[messageID]?.get()
+              val v = messageStates[messageID]
+              log.debug("Wire Send Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
+              publish(messageID + "," + ver + "," + v)
             }
           } catch (e: Exception) {
             log.debug("$session - $out", e)
@@ -140,14 +149,17 @@ abstract class SocketManagerBase(
   }
 
   private fun setMessage(key: String, value: String): Int {
-    log.debug("Setting message - Key: {}, Value: {}", key, value)
     if (messageStates.containsKey(key)) {
-      if (messageStates[key] == value) return -1
+      if (messageStates[key] == value) {
+        return -1
+      }
     }
     dataStorage?.updateMessage(owner, session, key, value)
     messageStates.put(key, value)
-    return synchronized(messageVersions)
+    val incrementAndGet = synchronized(messageVersions)
     { messageVersions.getOrPut(key) { AtomicInteger(0) } }.incrementAndGet()
+    log.debug("Setting message - Key: {}, v{}, Value: {} bytes", key, incrementAndGet, value.length)
+    return incrementAndGet
   }
 
   final override fun onWebSocketText(socket: ChatSocket, message: String) {
