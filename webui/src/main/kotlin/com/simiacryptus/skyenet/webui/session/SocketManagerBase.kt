@@ -117,9 +117,13 @@ abstract class SocketManagerBase(
       sendQueue.add(messageID)
       scheduledThreadPoolExecutor.schedule(
         {
-          while (sendQueue.isNotEmpty()) {
-            val messageID = sendQueue.poll() ?: return@schedule
-            publish(messageID + "," + messageVersions[messageID] + "," + messageStates[messageID])
+          try {
+            while (sendQueue.isNotEmpty()) {
+              val messageID = sendQueue.poll() ?: return@schedule
+              publish(messageID + "," + messageVersions[messageID] + "," + messageStates[messageID])
+            }
+          } catch (e: Exception) {
+            log.debug("$session - $out", e)
           }
         },
         50, java.util.concurrent.TimeUnit.MILLISECONDS
@@ -136,6 +140,7 @@ abstract class SocketManagerBase(
   }
 
   private fun setMessage(key: String, value: String): Int {
+    log.debug("Setting message - Key: {}, Value: {}", key, value)
     if (messageStates.containsKey(key)) {
       if (messageStates[key] == value) return -1
     }
@@ -176,6 +181,7 @@ abstract class SocketManagerBase(
   private val linkTriggers = mutableMapOf<String, Consumer<Unit>>()
   private val txtTriggers = mutableMapOf<String, Consumer<String>>()
   private fun onCmd(id: String, code: String) {
+    log.debug("Processing command - ID: {}, Code: {}", id, code)
     if (code == "link") {
       val consumer = linkTriggers[id]
       consumer ?: throw IllegalArgumentException("No link handler found")
