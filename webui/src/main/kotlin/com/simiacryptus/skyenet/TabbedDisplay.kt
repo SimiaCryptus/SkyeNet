@@ -6,28 +6,38 @@ open class TabbedDisplay(
   val task: SessionTask,
   val tabs: MutableList<Pair<String, StringBuilder>> = mutableListOf(),
 ) {
-  val size: Int get() = tabs.size
-  val container by lazy { task.add(render()) }
-  open fun render() = """
-      <div class="tabs-container">
-        <div class="tabs">${
-          tabs.toMap().keys.joinToString("\n") { key: String ->
-            """<button class="tab-button" data-for-tab="$key">$key</button>"""
-          }
-      }</div>
-      ${
-    tabs.withIndex().joinToString("\n") { (idx, t) ->
-      val (key, value) = t
-      """<div class="tab-content ${
-        when {
-          idx == 0 -> "active"
-          else -> ""
-        }
-      }" data-tab="$key">$value</div>"""
-    }
+  companion object {
+    val log = org.slf4j.LoggerFactory.getLogger(TabbedDisplay::class.java)
+//    val scheduledPool = java.util.concurrent.Executors.newScheduledThreadPool(1)
   }
+  val size: Int get() = tabs.size
+  open fun render() = """
+    <div class="tabs-container">
+      ${renderTabButtons()}
+      ${
+        tabs.withIndex().joinToString("\n")
+        { (idx, t) -> renderContentTab(t, idx) }
+      }
       </div>
     """.trimIndent()
+
+  val container = task.add(render())
+
+  open fun renderTabButtons() = """
+    <div class="tabs">${
+      tabs.toMap().keys.withIndex().joinToString("\n") { (idx, key: String) ->
+        """<button class="tab-button" data-for-tab="$idx">$key</button>"""
+      }
+    }</div>
+    """.trimIndent()
+
+  open fun renderContentTab(t: Pair<String, StringBuilder>, idx: Int) = """
+    <div class="tab-content ${
+      when {
+        idx == size - 1 -> "active"
+        else -> ""
+      }
+    }" data-tab="$idx">${t.second}</div>""".trimIndent()
 
 
   operator fun get(i: String) = tabs.toMap()[i]
@@ -58,19 +68,16 @@ open class TabbedDisplay(
     }
   }
 
-  fun removeAt(it: Int) {
-    tabs.removeAt(it)
-    update()
-  }
-
   fun clear() {
     tabs.clear()
     update()
   }
 
   fun update() {
-    container?.clear()
-    container?.append(render())
+    if(container != null) synchronized(container) {
+      container.clear()
+      container.append(render())
+    }
     task.complete()
   }
 }

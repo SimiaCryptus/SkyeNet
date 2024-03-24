@@ -26,6 +26,7 @@ abstract class SocketManagerBase(
   private val sendQueues: MutableMap<ChatSocket, Deque<String>> = mutableMapOf()
   private val messageVersions = HashMap<String, AtomicInteger>()
   protected val pool get() = clientManager.getPool(session, owner, dataStorage)
+  val sendQueue = ConcurrentLinkedDeque<String>()
 
   override fun removeSocket(socket: ChatSocket) {
     synchronized(sockets) {
@@ -109,8 +110,20 @@ abstract class SocketManagerBase(
     try {
       log.debug("Send Msg: {} - {}", session, out)
       val split = out.split(',', ignoreCase = false, limit = 2)
-      val newVersion = setMessage(split[0], split[1])
-      publish("${split[0]},$newVersion,${split[1]}")
+      val messageID = split[0]
+      val newValue = split[1]
+      if (setMessage(messageID, newValue) < 0) return
+      if (sendQueue.contains(messageID)) return
+      sendQueue.add(messageID)
+      scheduledThreadPoolExecutor.schedule(
+        {
+          while (sendQueue.isNotEmpty()) {
+            val messageID = sendQueue.poll() ?: return@schedule
+            publish(messageID + "," + messageVersions[messageID] + "," + messageStates[messageID])
+          }
+        },
+        50, java.util.concurrent.TimeUnit.MILLISECONDS
+      )
     } catch (e: Exception) {
       log.debug("$session - $out", e)
     }
@@ -123,7 +136,9 @@ abstract class SocketManagerBase(
   }
 
   private fun setMessage(key: String, value: String): Int {
-    if (messageStates.containsKey(key) && messageStates[key] == value) return -1
+    if (messageStates.containsKey(key)) {
+      if (messageStates[key] == value) return -1
+    }
     dataStorage?.updateMessage(owner, session, key, value)
     messageStates.put(key, value)
     return synchronized(messageVersions)
@@ -225,5 +240,7 @@ abstract class SocketManagerBase(
       session.upgradeRequest.cookies?.find { it.name == AuthenticationInterface.AUTH_COOKIE }?.value.let {
         ApplicationServices.authenticationManager.getUser(it)
       }
+
+    val scheduledThreadPoolExecutor = java.util.concurrent.Executors.newScheduledThreadPool(1)
   }
 }

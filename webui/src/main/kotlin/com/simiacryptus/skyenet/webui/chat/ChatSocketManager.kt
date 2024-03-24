@@ -4,7 +4,7 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
-import com.simiacryptus.skyenet.AgentPatterns
+import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -48,7 +48,8 @@ open class ChatSocketManager(
     messages += ApiModel.ChatMessage(ApiModel.Role.user, userMessage.toContentList())
     val messagesCopy = messages.toList()
     try {
-      AgentPatterns.retryable(ApplicationInterface(this), task) {
+      val ui = ApplicationInterface(this)
+      val process = { it: StringBuilder ->
         val response = (api.chat(
           ApiModel.ChatRequest(
             messages = messagesCopy,
@@ -59,8 +60,9 @@ open class ChatSocketManager(
         messages.dropLastWhile { it.role == ApiModel.Role.assistant }
         messages += ApiModel.ChatMessage(ApiModel.Role.assistant, response.toContentList())
         onResponse(renderResponse(response, task), responseContents)
-        return@retryable renderResponse(response, task)
+        renderResponse(response, task)
       }
+      Retryable(ui, task, process).apply { addTab(ui, process(container!!)) }
     } catch (e: Exception) {
       log.info("Error in chat", e)
       task.error(ApplicationInterface(this), e)

@@ -32,6 +32,7 @@ async function fetchData(endpoint, useSession = true) {
 }
 
 let messageVersions = {};
+let messageMap = {};
 let singleInput = false;
 let stickyInput = false;
 let loadImages = "true";
@@ -95,12 +96,12 @@ let loadImages = "true";
             if (this.isPanning === false) return;
             const dx = event.clientX - this.startX;
             const dy = event.clientY - this.startY;
-            if(this.currentTransform.x) {
+            if (this.currentTransform.x) {
                 this.currentTransform.x = dx * moveScale + this.priorPan.x;
             } else {
                 this.currentTransform.x = dx * moveScale + this.priorPan.x;
             }
-            if(this.currentTransform.y) {
+            if (this.currentTransform.y) {
                 this.currentTransform.y = dy * moveScale + this.priorPan.y;
             } else {
                 this.currentTransform.y = dy * moveScale + this.priorPan.y;
@@ -141,6 +142,15 @@ function applyToAllSvg() {
     });
 }
 
+function substituteMessages(messageDiv) {
+    Object.entries(messageMap).forEach(([messageId, content]) => {
+        messageDiv.querySelectorAll('[id="' + messageId + '"]').forEach((element) => {
+            element.innerHTML = content;
+            substituteMessages(element);
+        });
+    });
+}
+
 function onWebSocketText(event) {
     console.log('WebSocket message:', event);
     const messagesDiv = document.getElementById('messages');
@@ -155,19 +165,24 @@ function onWebSocketText(event) {
         return;
     } else {
         messageVersions[messageId] = messageVersion;
+        messageMap[messageId] = messageContent;
     }
     // Cleanup: remove temporary event listeners
 
-    let messageDiv = document.getElementById(messageId);
-
-    if (messageDiv) {
-        messageDiv.innerHTML = messageContent;
-    } else {
+    const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
+    messageDivs.forEach((messageDiv) => {
+        if (messageDiv) {
+            messageDiv.innerHTML = messageContent;
+            substituteMessages(messageDiv);
+        }
+    });
+    if(messageDivs.length == 0) {
         messageDiv = document.createElement('div');
         messageDiv.className = 'message message-container'; // Add the message-container class
         messageDiv.id = messageId;
         messageDiv.innerHTML = messageContent;
         if (messagesDiv) messagesDiv.appendChild(messageDiv);
+        substituteMessages(messageDiv);
         if (singleInput) {
             const mainInput = document.getElementById('main-input');
             if (mainInput) {
@@ -188,7 +203,6 @@ function onWebSocketText(event) {
             }
         }
     }
-
     if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
     if (typeof Prism !== 'undefined') Prism.highlightAll();
     refreshVerbose();
@@ -456,17 +470,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .then(data => {
-            if (data.applicationName) {
-                document.title = data.applicationName;
-            }
-            if (data.singleInput) {
-                singleInput = data.singleInput;
-            }
-            if (data.stickyInput) {
-                stickyInput = data.stickyInput;
-            }
-            if (data.loadImages) {
-                loadImages = data.loadImages;
+            if (data) {
+                if (data.applicationName) {
+                    document.title = data.applicationName;
+                }
+                if (data.singleInput) {
+                    singleInput = data.singleInput;
+                }
+                if (data.stickyInput) {
+                    stickyInput = data.stickyInput;
+                }
+                if (data.loadImages) {
+                    loadImages = data.loadImages;
+                }
             }
         })
         .catch(error => {
