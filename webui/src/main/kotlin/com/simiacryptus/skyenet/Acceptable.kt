@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ApiModel.Role
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import java.util.concurrent.Callable
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -15,7 +15,7 @@ class Acceptable<T : Any>(
   private val initialResponse: (String) -> T,
   private val outputFn: (T) -> String,
   private val ui: ApplicationInterface,
-  private val reviseResponse: (List<Pair<String, ApiModel.Role>>) -> T,
+  private val reviseResponse: (List<Pair<String, Role>>) -> T,
   private val atomicRef: AtomicReference<T> = AtomicReference(),
   private val semaphore: Semaphore = Semaphore(0),
   private val heading: String
@@ -47,10 +47,10 @@ class Acceptable<T : Any>(
 
   fun main(tabIndex: Int = tabs.size) {
     try {
-      val history = mutableListOf<Pair<String, ApiModel.Role>>()
-      history.add(userMessage to ApiModel.Role.user)
+      val history = mutableListOf<Pair<String, Role>>()
+      history.add(userMessage to Role.user)
       var design = initialResponse(userMessage)
-      history.add(outputFn(design) to ApiModel.Role.assistant)
+      history.add(outputFn(design) to Role.assistant)
       var acceptLink: String? = null
       var textInput: String? = null
       val feedbackGuard = AtomicBoolean(false)
@@ -63,26 +63,17 @@ class Acceptable<T : Any>(
       textInput = ui.textInput { userResponse ->
         if (feedbackGuard.getAndSet(true)) return@textInput
         try {
-          val tab = tabs[tabs.label(tabIndex)] ?: tabs.set(tabs.label(tabIndex), "")
-          val prevTab = tab.toString()
-          tab.set(
-            prevTab.substringBefore("<!-- START ACCEPT -->")
-                + "<!-- ACCEPTED -->"
-                + prevTab.substringAfter("<!-- END ACCEPT -->")
-                + MarkdownUtil.renderMarkdown(userResponse)
-          )
-          history.add(MarkdownUtil.renderMarkdown(userResponse) to ApiModel.Role.user)
-          tabs.update()
-          task.add("")
-          design = reviseResponse(history + listOf(userResponse to ApiModel.Role.user))
-          if (tabs.size > tabIndex) {
-            tabs.update()
-          } else {
-            tabs.set(
-              tabs.label(tabIndex),
-              MarkdownUtil.renderMarkdown(userResponse) + "\n" + outputFn(design) + "\n" + feedbackForm()
-            )
-          }
+          val prevValue = tabs[tabs.label(tabIndex)]?.toString() ?: /*tabs.set(tabs.label(tabIndex), "")*/ throw IllegalStateException("Tab $tabIndex not found")
+          val newValue = (prevValue.substringBefore("<!-- START ACCEPT -->")
+              + "<!-- ACCEPTED -->"
+              + prevValue.substringAfter("<!-- END ACCEPT -->")
+              + renderMarkdown(userResponse))
+          tabs[tabs.label(tabIndex)] = newValue
+          history.add(renderMarkdown(userResponse) to Role.user)
+          task.add("") // Show spinner
+          design = reviseResponse(history + listOf(userResponse to Role.user))
+          task.complete()
+          tabs[tabs.label(tabIndex)] = renderMarkdown(newValue) + "\n" + outputFn(design) + "\n" + feedbackForm()
         } finally {
           feedbackGuard.set(false)
         }

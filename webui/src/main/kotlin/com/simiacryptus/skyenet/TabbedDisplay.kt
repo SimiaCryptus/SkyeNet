@@ -21,7 +21,7 @@ open class TabbedDisplay(
       </div>
     """.trimIndent()
 
-  val container = task.add(render())
+  val container : StringBuilder by lazy { task.add(render())!! }
 
   open fun renderTabButtons() = """
     <div class="tabs">${
@@ -63,7 +63,7 @@ open class TabbedDisplay(
 
   open fun label(i: Int): String {
     return when {
-      tabs.size <= i -> "Tab ${tabs.size + 1}"
+      tabs.size <= i -> "${tabs.size + 1}"
       else -> tabs[i].first
     }
   }
