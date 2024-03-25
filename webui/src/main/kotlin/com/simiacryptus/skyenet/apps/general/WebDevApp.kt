@@ -1,18 +1,17 @@
 package com.simiacryptus.skyenet.apps.general
 
-import com.github.simiacryptus.aicoder.util.addApplyDiffLinks
+import com.github.simiacryptus.aicoder.util.addApplyDiffLinks2
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ApiModel.Role
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.AgentPatterns.iterate
-import com.simiacryptus.skyenet.core.actors.ActorSystem
-import com.simiacryptus.skyenet.core.actors.BaseActor
-import com.simiacryptus.skyenet.core.actors.ParsedActor
-import com.simiacryptus.skyenet.core.actors.SimpleActor
+import com.simiacryptus.skyenet.Acceptable
+import com.simiacryptus.skyenet.AgentPatterns
+import com.simiacryptus.skyenet.core.actors.*
 import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
@@ -23,7 +22,9 @@ import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
+import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 open class WebDevApp(
   applicationName: String = "Web Dev Assistant v1.1",
@@ -152,19 +153,34 @@ class WebDevAgent(
   fun start(
     userMessage: String,
   ) {
-    val architectureResponse = iterate(
-      input = userMessage,
-      heading = userMessage,
-      actor = architectureDiscussionActor,
-      toInput = { listOf(it) },
-      api = api,
-      ui = ui,
-      outputFn = { design ->
-        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)}\n```")
-      }
-    )
-
     val task = ui.newTask()
+    val toInput = { it: String -> listOf(it) }
+    val architectureResponse = Acceptable(
+      task = task,
+      userMessage = userMessage,
+      initialResponse = { it: String -> architectureDiscussionActor.answer(toInput(it), api = api) },
+      outputFn = { design: ParsedResponse<PageResourceList> ->
+  //        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)}\n```")
+          AgentPatterns.displayMapInTabs(
+            mapOf(
+              "Text" to renderMarkdown(design.text),
+              "JSON" to renderMarkdown("```json\n${JsonUtil.toJson(design.obj)}\n```"),
+            )
+          )
+        },
+      ui = ui,
+      reviseResponse = { userMessages: List<Pair<String, Role>> ->
+        architectureDiscussionActor.respond(
+          messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }.toTypedArray<ApiModel.ChatMessage>()),
+          input = toInput(userMessage),
+          api = api
+        )
+      },
+      atomicRef = AtomicReference(),
+      semaphore = Semaphore(0),
+      heading = userMessage
+    ).call()
+
     try {
       val toolSpecs = tools.map { ToolServlet.tools.find { t -> t.path == it } }
         .joinToString("\n\n") { it?.let { JsonUtil.toJson(it.openApiDescription) } ?: "" }
@@ -228,7 +244,7 @@ class WebDevAgent(
 
       fun outputFn(task: SessionTask, design: String): StringBuilder? {
         //val task = ui.newTask()
-        return task.complete(renderMarkdown(ui.socketManager.addApplyDiffLinks(codeFiles, design) { newCodeMap ->
+        return task.complete(renderMarkdown(ui.socketManager.addApplyDiffLinks2(codeFiles, design, handle = { newCodeMap ->
           newCodeMap.forEach { (path, newCode) ->
             val prev = codeFiles[path]
             if (prev != newCode) {
@@ -236,7 +252,7 @@ class WebDevAgent(
               task.complete("<a href='${task.saveFile(path, newCode.toByteArray(Charsets.UTF_8))}'>$path</a> Updated")
             }
           }
-        }))
+        }, task = task)))
       }
       try {
         var task = ui.newTask()

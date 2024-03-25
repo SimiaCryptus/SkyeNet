@@ -45,7 +45,7 @@ class SessionShareServlet(
     val storageInterface = ApplicationServices.dataStorageFactory.invoke(File(File(".skyenet"), appName))
     val session = StorageInterface.parseSessionID(sessionID)
     val pool = ApplicationServices.clientManager.getPool(session, user, server.dataStorage)
-    val json = storageInterface.getJson(if (session.isGlobal()) null else user, session, "info.json", Map::class.java)
+    val json = storageInterface.getJson(if (session.isGlobal()) null else user, session, ".sys/info.json", Map::class.java)
     val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
     val previousShare = sessionSettings["shareId"]
     when {
@@ -88,7 +88,7 @@ class SessionShareServlet(
             sessionSettings["shareId"] = shareId
             storageInterface.setJson(
               if (session.isGlobal()) null else user,
-              session = session, filename = "info.json", settings = sessionSettings
+              session = session, filename = ".sys/info.json", settings = sessionSettings
             )
 //            val selenium2S3 = Selenium2S3(
 //              pool = pool,

@@ -26,6 +26,7 @@ abstract class SocketManagerBase(
   private val sendQueues: MutableMap<ChatSocket, Deque<String>> = mutableMapOf()
   private val messageVersions = HashMap<String, AtomicInteger>()
   protected val pool get() = clientManager.getPool(session, owner, dataStorage)
+  val sendQueue = ConcurrentLinkedDeque<String>()
 
   override fun removeSocket(socket: ChatSocket) {
     synchronized(sockets) {
@@ -77,15 +78,22 @@ abstract class SocketManagerBase(
   fun newTask(
     cancelable: Boolean = false
   ): SessionTask {
-    var responseContents = divInitializer(randomID(), cancelable)
+    val operationID = randomID()
+    var responseContents = divInitializer(operationID, cancelable)
     send(responseContents)
-    return SessionTaskImpl(responseContents, SessionTask.spinner)
+    return SessionTaskImpl(operationID, responseContents, SessionTask.spinner)
   }
 
+
   inner class SessionTaskImpl(
+    operationID: String,
     responseContents: String,
-    spinner: String = SessionTask.spinner
-  ) : SessionTask(mutableListOf(StringBuilder(responseContents)), spinner) {
+    spinner: String = SessionTask.spinner,
+    private val buffer: MutableList<StringBuilder> = mutableListOf(StringBuilder(responseContents))
+  ) : SessionTask(
+    operationID = operationID, buffer = buffer, spinner = spinner
+  ) {
+
     override fun send(html: String) = this@SocketManagerBase.send(html)
     override fun saveFile(relativePath: String, data: ByteArray): String {
       dataStorage?.getSessionDir(owner, session)?.let { dir ->
@@ -100,10 +108,35 @@ abstract class SocketManagerBase(
 
   fun send(out: String) {
     try {
-      log.debug("Send Msg: {} - {}", session, out)
       val split = out.split(',', ignoreCase = false, limit = 2)
-      val newVersion = setMessage(split[0], split[1])
-      publish("${split[0]},$newVersion,${split[1]}")
+      val messageID = split[0]
+      val newValue = split[1]
+      if (setMessage(messageID, newValue) < 0) {
+        log.debug("Skipping duplicate message - Key: {}, Value: {} bytes", messageID, newValue.length)
+        return
+      }
+      if (sendQueue.contains(messageID)) {
+        log.debug("Skipping already queued message - Key: {}, Value: {} bytes", messageID, newValue.length)
+        return
+      }
+      log.debug("Queue Send Msg: {} - {} - {} bytes", session, messageID, out.length)
+      sendQueue.add(messageID)
+      scheduledThreadPoolExecutor.schedule(
+        {
+          try {
+            while (sendQueue.isNotEmpty()) {
+              val messageID = sendQueue.poll() ?: return@schedule
+              val ver = messageVersions[messageID]?.get()
+              val v = messageStates[messageID]
+              log.debug("Wire Send Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
+              publish(messageID + "," + ver + "," + v)
+            }
+          } catch (e: Exception) {
+            log.debug("$session - $out", e)
+          }
+        },
+        50, java.util.concurrent.TimeUnit.MILLISECONDS
+      )
     } catch (e: Exception) {
       log.debug("$session - $out", e)
     }
@@ -116,11 +149,17 @@ abstract class SocketManagerBase(
   }
 
   private fun setMessage(key: String, value: String): Int {
-    if (messageStates.containsKey(key) && messageStates[key] == value) return -1
+    if (messageStates.containsKey(key)) {
+      if (messageStates[key] == value) {
+        return -1
+      }
+    }
     dataStorage?.updateMessage(owner, session, key, value)
     messageStates.put(key, value)
-    return synchronized(messageVersions)
+    val incrementAndGet = synchronized(messageVersions)
     { messageVersions.getOrPut(key) { AtomicInteger(0) } }.incrementAndGet()
+    log.debug("Setting message - Key: {}, v{}, Value: {} bytes", key, incrementAndGet, value.length)
+    return incrementAndGet
   }
 
   final override fun onWebSocketText(socket: ChatSocket, message: String) {
@@ -154,6 +193,7 @@ abstract class SocketManagerBase(
   private val linkTriggers = mutableMapOf<String, Consumer<Unit>>()
   private val txtTriggers = mutableMapOf<String, Consumer<String>>()
   private fun onCmd(id: String, code: String) {
+    log.debug("Processing command - ID: {}, Code: {}", id, code)
     if (code == "link") {
       val consumer = linkTriggers[id]
       consumer ?: throw IllegalArgumentException("No link handler found")
@@ -169,13 +209,20 @@ abstract class SocketManagerBase(
     }
   }
 
-  fun hrefLink(linkText: String, classname: String = """href-link""", id: String? = null, handler: Consumer<Unit>): String {
+  fun hrefLink(
+    linkText: String,
+    classname: String = """href-link""",
+    id: String? = null,
+    handler: Consumer<Unit>
+  ): String {
     val operationID = randomID()
     linkTriggers[operationID] = handler
-    return """<a class="$classname" data-id="$operationID"${when {
-      id != null -> """ id="$id""""
-      else -> ""
-    }}>$linkText</a>"""
+    return """<a class="$classname" data-id="$operationID"${
+      when {
+        id != null -> """ id="$id""""
+        else -> ""
+      }
+    }>$linkText</a>"""
   }
 
   fun textInput(handler: Consumer<String>): String {
@@ -197,11 +244,12 @@ abstract class SocketManagerBase(
   companion object {
     private val log = LoggerFactory.getLogger(ChatServer::class.java)
 
-      private val range = ('a'..'z').toList().toTypedArray()
+    private val range = ('a'..'z').toList().toTypedArray()
     fun randomID(): String {
       val random = java.util.Random()
       return (0..5).map { range[random.nextInt(range.size)] }.joinToString("")
     }
+
     fun divInitializer(operationID: String = randomID(), cancelable: Boolean): String =
       if (!cancelable) """$operationID,""" else
         """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
@@ -210,5 +258,7 @@ abstract class SocketManagerBase(
       session.upgradeRequest.cookies?.find { it.name == AuthenticationInterface.AUTH_COOKIE }?.value.let {
         ApplicationServices.authenticationManager.getUser(it)
       }
+
+    val scheduledThreadPoolExecutor = java.util.concurrent.Executors.newScheduledThreadPool(1)
   }
 }

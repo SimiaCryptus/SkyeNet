@@ -260,7 +260,7 @@ open class CodingActor(
                   |**ERROR**
                   |
                   |```text
-                  |${ex.message}
+                  |${ex.stackTraceToString()}
                   |```
                   |""".trimMargin().trim(),
                   language = language,

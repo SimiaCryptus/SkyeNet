@@ -1,5 +1,7 @@
 package com.github.simiacryptus.aicoder.util
 
+import com.simiacryptus.skyenet.webui.application.ApplicationInterface
+import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import org.apache.commons.text.similarity.LevenshteinDistance
 
@@ -127,7 +129,9 @@ fun SocketManagerBase.addApplyDiffLinks(
   code: String,
   response: String,
   fullPatch: MutableList<String> = mutableListOf(),
-  handle: (String) -> Unit
+  handle: (String) -> Unit,
+  task: SessionTask,
+  ui: ApplicationInterface? = null,
 ): String {
   val diffPattern = """(?s)(?<![^\n])```diff\n(.*?)\n```""".toRegex()
   val matches = diffPattern.findAll(response).distinct()
@@ -141,9 +145,9 @@ fun SocketManagerBase.addApplyDiffLinks(
           SimpleDiffUtil.patch(lines, patch)
         }
         handle(newCode)
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Diff Applied</div>""")
+        task.complete( """<div class="user-message">Diff Applied</div>""")
       } catch (e: Throwable) {
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
+        task.error(ui, e)
       }
     }
     val reverseHrefLink = hrefLink("(Bottom to Top)") {
@@ -155,9 +159,9 @@ fun SocketManagerBase.addApplyDiffLinks(
         val newReversedCode = SimpleDiffUtil.patch(reversedCode, reversedDiff)
         val newCode = newReversedCode.lines().reversed().joinToString("\n")
         handle(newCode)
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Diff Applied (Bottom to Top)</div>""")
+        task.complete("""<div class="user-message">Diff Applied (Bottom to Top)</div>""")
       } catch (e: Throwable) {
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
+        task.error(ui, e)
       }
     }
     markdown.replace(diffVal, diffVal + "\n" + hrefLink + "\n" + reverseHrefLink)
@@ -167,6 +171,7 @@ fun SocketManagerBase.addApplyDiffLinks(
 
 fun SocketManagerBase.addSaveLinks(
   response: String,
+  task: SessionTask,
   handle: (String, String) -> Unit
 ): String {
   val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`\n]+`?)*\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
@@ -178,20 +183,21 @@ fun SocketManagerBase.addSaveLinks(
     val hrefLink = hrefLink("Save File") {
       try {
         handle(filename, codeValue)
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Saved ${filename}</div>""")
+        task.complete("""<div class="user-message">Saved ${filename}</div>""")
       } catch (e: Throwable) {
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
+        task.error(null,e)
       }
     }
-    markdown.replace(codeValue, codeValue + "\n" + hrefLink)
+    markdown.replace(codeValue + "```", codeValue + "```\n" + hrefLink)
   }
   return withLinks
 }
 
-fun SocketManagerBase.addApplyDiffLinks(
+fun SocketManagerBase.addApplyDiffLinks2(
   code: Map<String, String>,
   response: String,
-  handle: (Map<String, String>) -> Unit
+  handle: (Map<String, String>) -> Unit,
+  task: SessionTask,
 ): String {
   val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff\n.*?\n```)""".toRegex() // capture filename
   val matches = diffPattern.findAll(response).distinct()
@@ -207,9 +213,9 @@ fun SocketManagerBase.addApplyDiffLinks(
           }
         }.toMap()
         handle(newCode)
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Diff Applied</div>""")
+        task.complete( """<div class="user-message">Diff Applied</div>""")
       } catch (e: Throwable) {
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
+        task.error( null, e)
       }
     }
     val reverseHrefLink = hrefLink("(Bottom to Top)") {
@@ -222,9 +228,9 @@ fun SocketManagerBase.addApplyDiffLinks(
           } else prevCode
         }
         handle(newReversedCodeMap)
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="user-message">Diff Applied (Bottom to Top)</div>""")
+        task.complete("""<div class="user-message">Diff Applied (Bottom to Top)</div>""")
       } catch (e: Throwable) {
-        send(SocketManagerBase.divInitializer(cancelable = false) + """<div class="error">${e.message}</div>""")
+        task.error( null, e)
       }
     }
     markdown.replace(diffVal, diffVal + "\n" + hrefLink + "\n" + reverseHrefLink)
