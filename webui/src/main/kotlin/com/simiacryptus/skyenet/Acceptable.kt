@@ -60,20 +60,28 @@ class Acceptable<T : Any>(
               |</div>
               |${textInput!!}
             """.trimMargin()
+
+      val tabLabel = tabs.label(tabIndex)
+      val tabContent = tabs[tabLabel] ?: tabs.set(tabLabel, "")
       textInput = ui.textInput { userResponse ->
         if (feedbackGuard.getAndSet(true)) return@textInput
         try {
-          val prevValue = tabs[tabs.label(tabIndex)]?.toString() ?: /*tabs.set(tabs.label(tabIndex), "")*/ throw IllegalStateException("Tab $tabIndex not found")
+          val prevValue = tabContent.toString()
           val newValue = (prevValue.substringBefore("<!-- START ACCEPT -->")
               + "<!-- ACCEPTED -->"
               + prevValue.substringAfter("<!-- END ACCEPT -->")
               + renderMarkdown(userResponse))
-          tabs[tabs.label(tabIndex)] = newValue
+          tabContent.set(newValue)
           history.add(renderMarkdown(userResponse) to Role.user)
           task.add("") // Show spinner
+          tabs.update()
           design = reviseResponse(history + listOf(userResponse to Role.user))
           task.complete()
-          tabs[tabs.label(tabIndex)] = renderMarkdown(newValue) + "\n" + outputFn(design) + "\n" + feedbackForm()
+          tabContent.set(renderMarkdown(newValue) + "\n" + outputFn(design) + "\n" + feedbackForm())
+          tabs.update()
+        } catch (e: Exception) {
+          task.error(ui, e)
+          throw e
         } finally {
           feedbackGuard.set(false)
         }
@@ -84,7 +92,8 @@ class Acceptable<T : Any>(
               return@hrefLink
             }
             try {
-              tabs[tabs.label(tabIndex)]?.apply {
+              tabs.selectedTab = tabIndex
+              tabContent?.apply {
                 val prevTab = toString()
                 val newValue =
                   prevTab.substringBefore("<!-- START ACCEPT -->") + "<!-- ACCEPTED -->" + prevTab.substringAfter(
@@ -92,7 +101,7 @@ class Acceptable<T : Any>(
                   )
                 set(newValue)
                 tabs.update()
-              } ?: tabs.set(tabs.label(tabIndex), "Tab $tabIndex not found")
+              } ?: throw IllegalStateException("Tab $tabIndex not found")
             } catch (e: Exception) {
               task.error(ui, e)
               acceptGuard.set(false)
@@ -102,11 +111,11 @@ class Acceptable<T : Any>(
             semaphore.release()
           } + "<!-- END ACCEPT -->"
       if (tabs.size > tabIndex) {
-        tabs[tabs.label(tabIndex)]!!.append(outputFn(design) + "\n" + feedbackForm())
-        tabs.update()
+        tabContent?.append(outputFn(design) + "\n" + feedbackForm())
       } else {
-        tabs[tabs.label(tabs.size)] = outputFn(design) + "\n" + feedbackForm()
+        tabContent?.set(outputFn(design) + "\n" + feedbackForm())
       }
+      tabs.update()
     } catch (e: Throwable) {
       task.error(ui, e)
       task.complete(ui.hrefLink("🔄 Retry") {

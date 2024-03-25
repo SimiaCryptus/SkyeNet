@@ -6,6 +6,7 @@ open class TabbedDisplay(
   val task: SessionTask,
   val tabs: MutableList<Pair<String, StringBuilder>> = mutableListOf(),
 ) {
+  var selectedTab: Int = 0
   companion object {
     val log = org.slf4j.LoggerFactory.getLogger(TabbedDisplay::class.java)
 //    val scheduledPool = java.util.concurrent.Executors.newScheduledThreadPool(1)
@@ -34,7 +35,7 @@ open class TabbedDisplay(
   open fun renderContentTab(t: Pair<String, StringBuilder>, idx: Int) = """
     <div class="tab-content ${
       when {
-        idx == size - 1 -> "active"
+        idx == selectedTab -> "active"
         else -> ""
       }
     }" data-tab="$idx">${t.second}</div>""".trimIndent()
@@ -42,7 +43,7 @@ open class TabbedDisplay(
 
   operator fun get(i: String) = tabs.toMap()[i]
   operator fun set(name: String, content: String) =
-    when (val index = find(name)?.let { it + 1 }) {
+    when (val index = find(name)) {
       null -> {
         val stringBuilder = StringBuilder(content)
         tabs.add(name to stringBuilder)
