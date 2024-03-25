@@ -142,11 +142,14 @@ function applyToAllSvg() {
     });
 }
 
-function substituteMessages(messageDiv) {
-    Object.entries(messageMap).forEach(([messageId, content]) => {
-        messageDiv.querySelectorAll('[id="' + messageId + '"]').forEach((element) => {
-            element.innerHTML = content;
-            substituteMessages(element);
+function substituteMessages(outerMessageId, messageDiv) {
+    Object.entries(messageMap).forEach(([innerMessageId, content]) => {
+        if(outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
+            if (element.innerHTML !== content) {
+                //console.log("Substituting message with id " + innerMessageId + " and content " + content);
+                element.innerHTML = content;
+                substituteMessages(innerMessageId, element);
+            }
         });
     });
 }
@@ -173,7 +176,7 @@ function onWebSocketText(event) {
     messageDivs.forEach((messageDiv) => {
         if (messageDiv) {
             messageDiv.innerHTML = messageContent;
-            substituteMessages(messageDiv);
+            substituteMessages(messageId, messageDiv);
         }
     });
     if(messageDivs.length == 0) {
@@ -182,7 +185,7 @@ function onWebSocketText(event) {
         messageDiv.id = messageId;
         messageDiv.innerHTML = messageContent;
         if (messagesDiv) messagesDiv.appendChild(messageDiv);
-        substituteMessages(messageDiv);
+        substituteMessages(messageId, messageDiv);
         if (singleInput) {
             const mainInput = document.getElementById('main-input');
             if (mainInput) {
