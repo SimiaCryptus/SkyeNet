@@ -163,13 +163,13 @@ function onWebSocketText(event) {
     const messageId = event.data.substring(0, firstCommaIndex);
     const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
     const messageContent = event.data.substring(secondCommaIndex + 1);
-    if (messageVersion <= (messageVersions[messageId] || 0)) {
-        console.log("Ignoring message with id " + messageId + " and version " + messageVersion);
-        return;
-    } else {
+    // if (messageVersion <= (messageVersions[messageId] || 0)) {
+    //     console.log("Ignoring message with id " + messageId + " and version " + messageVersion);
+    //     return;
+    // } else {
         messageVersions[messageId] = messageVersion;
         messageMap[messageId] = messageContent;
-    }
+    // }
     // Cleanup: remove temporary event listeners
 
     const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
