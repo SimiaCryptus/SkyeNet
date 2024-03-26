@@ -8,6 +8,7 @@ import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.actors.ActorSystem
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
+import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.Session
@@ -17,6 +18,8 @@ import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import org.apache.commons.text.StringEscapeUtils
+import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.slf4j.LoggerFactory
 import java.util.*
 import kotlin.reflect.KClass
@@ -290,7 +293,7 @@ open class CodingAgent<T : Interpreter>(
                   |**Error `${e.javaClass.name}`**
                   |
                   |```text
-                  |${e.stackTraceToString()}
+                  |${e.stackTraceToString().indent("  ")}
                   |```
                   |""".trimMargin()
       )
@@ -315,19 +318,19 @@ open class CodingAgent<T : Interpreter>(
       resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
                 |# Output
                 |```text
-                |${resultOutput}
+                |${resultOutput?.let { escapeHtml4(it).indent("  ") }}
                 |```
                 """.trimMargin()
 
       else -> """
                 |# Result
                 |```
-                |$resultValue
+                |${resultValue?.let { escapeHtml4(it).indent("  ") }}
                 |```
                 |
                 |# Output
                 |```text
-                |${resultOutput}
+                |${resultOutput?.let { escapeHtml4(it).indent("  ") }}
                 |```
                 """.trimMargin()
     }

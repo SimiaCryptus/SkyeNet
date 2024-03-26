@@ -1,9 +1,15 @@
 package com.github.simiacryptus.aicoder.util
 
+import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
+import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
+import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.apache.commons.text.similarity.LevenshteinDistance
+import java.net.URLDecoder
+import java.util.concurrent.TimeUnit
 
 object SimpleDiffUtil {
 
@@ -145,7 +151,7 @@ fun SocketManagerBase.addApplyDiffLinks(
           SimpleDiffUtil.patch(lines, patch)
         }
         handle(newCode)
-        task.complete( """<div class="user-message">Diff Applied</div>""")
+        task.complete("""<div class="user-message">Diff Applied</div>""")
       } catch (e: Throwable) {
         task.error(ui, e)
       }
@@ -174,7 +180,8 @@ fun SocketManagerBase.addSaveLinks(
   task: SessionTask,
   handle: (String, String) -> Unit
 ): String {
-  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`\n]+`?)*\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
+  val diffPattern =
+    """(?s)(?<![^\n])#+\s*(?:[^\n]+[:\-]\s+)?([^\n]+)\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
@@ -185,10 +192,10 @@ fun SocketManagerBase.addSaveLinks(
         handle(filename, codeValue)
         task.complete("""<div class="user-message">Saved ${filename}</div>""")
       } catch (e: Throwable) {
-        task.error(null,e)
+        task.error(null, e)
       }
     }
-    markdown.replace(codeValue + "```", codeValue + "```\n" + hrefLink)
+    markdown.replace(codeValue + "```", codeValue?.let { escapeHtml4(it).indent("  ") } + "```\n" + hrefLink)
   }
   return withLinks
 }
@@ -198,12 +205,16 @@ fun SocketManagerBase.addApplyDiffLinks2(
   response: String,
   handle: (Map<String, String>) -> Unit,
   task: SessionTask,
+  ui: ApplicationInterface?,
 ): String {
   val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff\n.*?\n```)""".toRegex() // capture filename
-  val matches = diffPattern.findAll(response).distinct()
+  val matches = diffPattern.findAll(response).toList()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
     val diffVal = diffBlock.groupValues[2]
+    val prevCode = code[filename] ?: ""
+    val newCode = SimpleDiffUtil.patch(prevCode, diffVal)
+    val echoDiff = DiffMatchPatch.patch_toText(DiffMatchPatch.Companion.patch_make(prevCode, newCode))
     val hrefLink = hrefLink("Apply Diff") {
       try {
         val newCode = code.map { (file, prevCode) ->
@@ -213,9 +224,9 @@ fun SocketManagerBase.addApplyDiffLinks2(
           }
         }.toMap()
         handle(newCode)
-        task.complete( """<div class="user-message">Diff Applied</div>""")
+        task.complete("""<div class="user-message">Diff Applied</div>""")
       } catch (e: Throwable) {
-        task.error( null, e)
+        task.error(null, e)
       }
     }
     val reverseHrefLink = hrefLink("(Bottom to Top)") {
@@ -230,10 +241,30 @@ fun SocketManagerBase.addApplyDiffLinks2(
         handle(newReversedCodeMap)
         task.complete("""<div class="user-message">Diff Applied (Bottom to Top)</div>""")
       } catch (e: Throwable) {
-        task.error( null, e)
+        task.error(null, e)
       }
     }
-    markdown.replace(diffVal, diffVal + "\n" + hrefLink + "\n" + reverseHrefLink)
+    val diffTask = ui?.newTask()
+    val prevCodeTask = ui?.newTask()
+    val newCodeTask = ui?.newTask()
+    val patchTask = ui?.newTask()
+    val inTabs = displayMapInTabs(
+      mapOf(
+        "Diff" to (diffTask?.placeholder ?: ""),
+        "Old Code" to (prevCodeTask?.placeholder ?: ""),
+        "New Code" to (newCodeTask?.placeholder ?: ""),
+        "Test Patch" to (patchTask?.placeholder ?: ""),
+      )
+    )
+    SocketManagerBase.scheduledThreadPoolExecutor.schedule({
+      diffTask?.add(renderMarkdown(/*escapeHtml4*/(diffVal)))
+      newCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```"))
+      prevCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```"))
+      patchTask?.add(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff?.let { /*escapeHtml4*/URLDecoder.decode(it, Charsets.UTF_8)/*.indent("  ")*/ }}\n```"))
+    }, 100, TimeUnit.MILLISECONDS)
+    markdown.replace(
+      diffVal, inTabs + "\n" + hrefLink + "\n" + reverseHrefLink
+    )
   }
   return withLinks
 }
