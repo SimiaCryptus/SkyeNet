@@ -214,7 +214,9 @@ fun SocketManagerBase.addApplyDiffLinks2(
     val diffVal = diffBlock.groupValues[2]
     val prevCode = code[filename] ?: ""
     val newCode = SimpleDiffUtil.patch(prevCode, diffVal)
-    val echoDiff = DiffMatchPatch.patch_toText(DiffMatchPatch.Companion.patch_make(prevCode, newCode))
+    val echoDiff = try {
+      DiffMatchPatch.patch_toText(DiffMatchPatch.patch_make(prevCode, newCode))
+    } catch (e: Throwable) { renderMarkdown("```\n${e.stackTraceToString()}\n```") }
     val hrefLink = hrefLink("Apply Diff") {
       try {
         val newCode = code.map { (file, prevCode) ->
