@@ -3,9 +3,11 @@ package com.simiacryptus.skyenet.webui.session
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.actors.CodingActor
+import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
 
@@ -14,6 +16,8 @@ abstract class SessionTask(
   private var buffer: MutableList<StringBuilder> = mutableListOf(),
   private val spinner: String = SessionTask.spinner
 ) {
+
+  val placeholder : String get() = "<div id=\"$operationID\"></div>"
 
   private val currentText: String
     get() = buffer.filter { it.isNotBlank() }.joinToString("")
@@ -129,7 +133,7 @@ abstract class SessionTask(
         |
         |Stack Trace:
         |```text
-        |${e.stackTraceTxt}
+        |${e.stackTraceTxt.indent("  ")}
         |```
         |
         |""".trimMargin()
@@ -142,12 +146,12 @@ abstract class SessionTask(
         |
         |Prefix:
         |```${e.language?.lowercase() ?: ""}
-        |${e.prefix}
+        |${escapeHtml4(e.prefix?.indent("  ") ?: "")}
         |```
         |
         |Implementation Attempt:
         |```${e.language?.lowercase() ?: ""}
-        |${e.code}
+        |${escapeHtml4(e.code?.indent("  ") ?: "")}
         |```
         |
         |""".trimMargin()
@@ -158,7 +162,7 @@ abstract class SessionTask(
         |**Error `${e.javaClass.name}`**
         |
         |```text
-        |${e.stackTraceToString()}
+        |${e.stackTraceToString()?.let { escapeHtml4(it).indent("  ") }}
         |```
         |""".trimMargin()
       )

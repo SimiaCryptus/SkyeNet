@@ -34,6 +34,8 @@ dependencies {
 
     implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.49")
 
+    implementation("org.apache.commons:commons-text:1.11.0")
+
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
     implementation(group = "com.google.guava", name = "guava", version = "32.1.3-jre")

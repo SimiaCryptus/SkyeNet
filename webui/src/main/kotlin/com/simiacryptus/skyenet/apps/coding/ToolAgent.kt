@@ -9,6 +9,7 @@ import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
+import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.sortCode
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
@@ -23,6 +24,7 @@ import com.simiacryptus.skyenet.webui.util.OpenAPI
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.apache.commons.text.StringEscapeUtils
 import org.eclipse.jetty.server.Request
 import org.eclipse.jetty.server.Response
 import org.eclipse.jetty.webapp.WebAppClassLoader
@@ -103,7 +105,7 @@ abstract class ToolAgent<T : Interpreter>(
           var openAPI = openAPIParsedActor().getParser(api).apply(servletImpl).let { openApi ->
             openApi.copy(paths = openApi.paths?.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
           }
-          task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
+          task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI).indent("  ")}\n```"))
           for (i in 0..5) {
             try {
               OpenAPIGenerator.main(
@@ -128,7 +130,7 @@ abstract class ToolAgent<T : Interpreter>(
               |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
               |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
             """.trimIndent()
-              task.hideable(ui, renderMarkdown("```\n${error}\n```"))
+              task.hideable(ui, renderMarkdown("```\n${error.indent("  ")}\n```"))
               openAPI = openAPIParsedActor().answer(
                 listOf(
                   servletImpl,
@@ -139,7 +141,7 @@ abstract class ToolAgent<T : Interpreter>(
                 val paths = HashMap(openApi.paths)
                 openApi.copy(paths = paths.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
               }
-              task.hideable(ui, renderMarkdown("```json\n${JsonUtil.toJson(openAPI)}\n```"))
+              task.hideable(ui, renderMarkdown("```json\n${JsonUtil.toJson(openAPI).indent("  ")}\n```"))
             }
           }
           if (ApplicationServices.authorizationManager.isAuthorized(
@@ -229,7 +231,7 @@ abstract class ToolAgent<T : Interpreter>(
     response: CodeResult = execWrap { actor.answer(request, api = api) },
     onComplete: (String) -> Unit
   ) {
-    task.hideable(ui, renderMarkdown("```kotlin\n${response.code}\n```"))
+    task.hideable(ui, renderMarkdown("```kotlin\n${StringEscapeUtils.escapeHtml4(response.code).indent("  ")}\n```"))
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(

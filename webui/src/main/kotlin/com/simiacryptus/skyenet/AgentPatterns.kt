@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ApiModel.Role
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.actors.BaseActor
+import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
@@ -17,25 +18,30 @@ object AgentPatterns {
   fun displayMapInTabs(
     map: Map<String, String>,
   ) = """
-    <div class="tabs-container">
-    <div class="tabs">${
+    |<div class="tabs-container">
+    |<div class="tabs">
+    |${
     map.keys.joinToString("\n") { key ->
       """<button class="tab-button" data-for-tab="$key">$key</button>"""
-    }
-  }</div>
-    ${
+    }.indent("  ")}
+    |</div>
+    |${
     map.entries.withIndex().joinToString("\n") { (idx, t) ->
       val (key, value) = t
-      """<div class="tab-content ${
+      """
+        |<div class="tab-content${
         when {
-          idx == 0 -> "active"
+          idx == 0 -> " active"
           else -> ""
         }
-      }" data-tab="$key">$value</div>"""
-    }
+      }" data-tab="$key">
+      |${value.indent("  ")}
+      |</div>
+      """.trimMargin()
+    }.indent("  ")
   }
-    </div>
-  """.trimIndent()
+    |</div>
+  """.trimMargin()
 
   fun retryable(
     ui: ApplicationInterface,

@@ -8,6 +8,7 @@ import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import java.util.function.Function
 
 open class ParsedActor<T : Any>(
@@ -68,7 +69,7 @@ open class ParsedActor<T : Any>(
             |
             |This is an example output:
             |```json
-            |${JsonUtil.toJson(exampleInstance!!)}
+            |${JsonUtil.toJson(exampleInstance!!).indent("  ")}
             |```
             |
           """.trimMargin()

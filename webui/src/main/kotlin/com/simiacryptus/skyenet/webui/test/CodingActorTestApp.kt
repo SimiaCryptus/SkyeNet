@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.webui.test
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.skyenet.core.actors.CodingActor
+import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.ClientManager
@@ -11,6 +12,7 @@ import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import org.apache.commons.text.StringEscapeUtils
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -55,7 +57,7 @@ open class CodingActorTestApp(
                 renderMarkdown(
                     """
                     |```${actor.language.lowercase(Locale.getDefault())}
-                    |${response.code}
+                    |${StringEscapeUtils.escapeHtml4(response.code).indent("  ")}
                     |```
                     |$playLink
                     """.trimMargin().trim()
