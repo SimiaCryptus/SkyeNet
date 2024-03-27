@@ -59,8 +59,9 @@ open class ChatSocketManager(
         ).choices.first().message?.content.orEmpty())
         messages.dropLastWhile { it.role == ApiModel.Role.assistant }
         messages += ApiModel.ChatMessage(ApiModel.Role.assistant, response.toContentList())
-        onResponse(renderResponse(response, task), responseContents)
-        renderResponse(response, task)
+        val renderResponse = renderResponse(response, task)
+        onResponse(renderResponse, responseContents)
+        renderResponse
       }
       Retryable(ui, task, process).apply { addTab(ui, process(container!!)) }
     } catch (e: Exception) {

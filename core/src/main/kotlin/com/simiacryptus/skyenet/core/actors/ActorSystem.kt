@@ -65,7 +65,7 @@ open class ActorSystem<T : Enum<*>>(
   private val wrapperMap = mutableMapOf<String, FunctionWrapper>()
   private fun getWrapper(name: String) = synchronized(wrapperMap) {
     wrapperMap.getOrPut(name) {
-      FunctionWrapper(JsonFunctionRecorder(File(sessionDir, ".sys/actors/$name")))
+      FunctionWrapper(JsonFunctionRecorder(File(sessionDir, ".sys/$session/actors/$name")))
     }
   }
 
