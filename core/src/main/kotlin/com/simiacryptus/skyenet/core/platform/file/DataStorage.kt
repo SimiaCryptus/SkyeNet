@@ -33,7 +33,7 @@ open class DataStorage(
         session: Session
     ): LinkedHashMap<String, String> {
         validateSessionId(session)
-        val messageDir = File(this.getSessionDir(user, session), MESSAGE_DIR)
+        val messageDir = File(this.getSessionDir(user, session), MESSAGE_DIR + "/$session")
         val messages = LinkedHashMap<String, String>()
         getMessageIds(user, session).forEach { messageId ->
             val file = File(messageDir, "$messageId.json")
@@ -92,7 +92,7 @@ open class DataStorage(
         val settings = getJson(sessionDir, "settings.json", Map::class.java) ?: mapOf<String,String>()
         if(settings.containsKey("name")) return settings["name"] as String
         val userMessage =
-            messageFiles(sessionDir).entries.minByOrNull { it.key.lastModified() }?.value
+            messageFiles(session, sessionDir).entries.minByOrNull { it.key.lastModified() }?.value
         return if (null != userMessage) {
             setJson(sessionDir, "settings.json", settings.plus("name" to userMessage))
             //log.debug("Session {}: {}", session, userMessage)
@@ -109,11 +109,11 @@ open class DataStorage(
     ): List<String> {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, ".sys/internal.json", Map::class.java) ?: mapOf<String,String>()
+        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String,String>()
         if(settings.containsKey("ids")) return settings["ids"].toString().split(",").toList()
-        val ids = messageFiles(sessionDir).entries.sortedBy { it.key.lastModified() }
+        val ids = messageFiles(session, sessionDir).entries.sortedBy { it.key.lastModified() }
             .map { it.key.nameWithoutExtension }.toList()
-        setJson(sessionDir, ".sys/internal.json", settings.plus("ids" to ids.joinToString(",")))
+        setJson(sessionDir, ".sys/$session/internal.json", settings.plus("ids" to ids.joinToString(",")))
         return ids
     }
 
@@ -124,8 +124,8 @@ open class DataStorage(
     ) {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, ".sys/internal.json", Map::class.java) ?: mapOf<String, String>()
-        setJson(sessionDir, ".sys/internal.json", settings.plus("ids" to ids.joinToString(",")))
+        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String, String>()
+        setJson(sessionDir, ".sys/$session/internal.json", settings.plus("ids" to ids.joinToString(",")))
     }
 
 override fun getSessionTime(
@@ -134,13 +134,13 @@ override fun getSessionTime(
     ): Date? {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, ".sys/internal.json", Map::class.java) ?: mapOf<String,String>()
+        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String,String>()
         val dateFormat = SimpleDateFormat.getDateTimeInstance()
         if(settings.containsKey("time")) return dateFormat.parse(settings["time"] as String)
-        val file = messageFiles(sessionDir).entries.minByOrNull { it.key.lastModified() }?.key
+        val file = messageFiles(session, sessionDir).entries.minByOrNull { it.key.lastModified() }?.key
         return if (null != file) {
             val date = Date(file.lastModified())
-            setJson(sessionDir, ".sys/internal.json", settings.plus("time" to dateFormat.format(date)))
+            setJson(sessionDir, ".sys/$session/internal.json", settings.plus("time" to dateFormat.format(date)))
             date
         } else {
             //log.debug("Session {}: No messages", session)
@@ -148,7 +148,7 @@ override fun getSessionTime(
         }
     }
 
-    private fun messageFiles(sessionDir: File) = File(sessionDir, MESSAGE_DIR).listFiles()
+    private fun messageFiles(session: Session, sessionDir: File) = File(sessionDir, MESSAGE_DIR + "/$session").listFiles()
         ?.filter { file -> file.isFile }
         ?.map { messageFile ->
             val fileText = messageFile.readText()
@@ -196,7 +196,7 @@ override fun getSessionTime(
         value: String
     ) {
         validateSessionId(session)
-        val file = File(File(this.getSessionDir(user, session), MESSAGE_DIR), "$messageId.json")
+        val file = File(File(this.getSessionDir(user, session), MESSAGE_DIR + "/$session"), "$messageId.json")
         if(!file.exists()) {
             file.parentFile.mkdirs()
             addMessageID(user, session, messageId)

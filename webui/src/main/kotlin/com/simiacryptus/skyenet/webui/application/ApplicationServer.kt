@@ -90,13 +90,13 @@ abstract class ApplicationServer(
     userId: User?,
     @Suppress("UNCHECKED_CAST") clazz: Class<T> = settingsClass as Class<T>
   ): T? {
-    var settings: T? = dataStorage.getJson(userId, session, ".sys/settings.json", clazz)
+    var settings: T? = dataStorage.getJson(userId, session, ".sys/$session/settings.json", clazz)
     if (null == settings) {
       val initSettings = initSettings<T>(session)
       if (null != initSettings) {
-        dataStorage.setJson(userId, session, ".sys/settings.json", initSettings)
+        dataStorage.setJson(userId, session, ".sys/$session/settings.json", initSettings)
       }
-      settings = dataStorage.getJson(userId, session, ".sys/settings.json", clazz)
+      settings = dataStorage.getJson(userId, session, ".sys/$session/settings.json", clazz)
     }
     return settings
   }

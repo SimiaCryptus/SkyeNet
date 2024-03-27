@@ -8,8 +8,12 @@ import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.apache.commons.text.similarity.LevenshteinDistance
+import org.slf4j.LoggerFactory
+import java.io.File
 import java.net.URLDecoder
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.readText
 
 object SimpleDiffUtil {
 
@@ -200,32 +204,66 @@ fun SocketManagerBase.addSaveLinks(
   return withLinks
 }
 
+private val log = LoggerFactory.getLogger(SimpleDiffUtil::class.java)
+
+fun findFile(root: Path, filename: String): Path? {
+  return try {
+    when {
+      /* filename is absolute */
+      filename.startsWith("/") -> {
+        val resolve = File(filename)
+        if (resolve.exists()) resolve.toPath() else findFile(root, filename.removePrefix("/"))
+      }
+      /* win absolute */
+      filename.indexOf(":\\") == 1 -> {
+        val resolve = File(filename)
+        if (resolve.exists()) resolve.toPath() else findFile(root, filename.removePrefix(filename.substring(0, 2)))
+      }
+
+      root.resolve(filename).toFile().exists() -> root.resolve(filename)
+      null != root.parent && root != root.parent -> findFile(root.parent, filename)
+      else -> null
+    }
+  } catch (e: Throwable) {
+    log.error("Error finding file: $filename", e)
+    null
+  }
+}
+
 fun SocketManagerBase.addApplyDiffLinks2(
+  root: Path,
   code: Map<String, String>,
   response: String,
   handle: (Map<String, String>) -> Unit,
   task: SessionTask,
-  ui: ApplicationInterface?,
+  ui: ApplicationInterface,
 ): String {
   val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff\n.*?\n```)""".toRegex() // capture filename
   val matches = diffPattern.findAll(response).toList()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
+    val filepath = findFile(root, filename) ?: root.resolve(filename)
     val diffVal = diffBlock.groupValues[2]
-    val prevCode = code[filename] ?: ""
+
+    val prevCode = try {
+      if (!filepath.toFile().exists()) {
+        log.warn("File not found: $filepath")
+        ""
+      } else {
+        filepath.readText(Charsets.UTF_8)
+      }
+    } catch (e: Throwable) {
+      log.error("Error reading file: $filepath", e)
+      ""
+    }
     val newCode = SimpleDiffUtil.patch(prevCode, diffVal)
     val echoDiff = try {
-      DiffMatchPatch.patch_toText(DiffMatchPatch.patch_make(prevCode, newCode))
+      DiffUtil.formatDiff(DiffUtil.generateDiff(prevCode.lines(), newCode.lines()))
     } catch (e: Throwable) { renderMarkdown("```\n${e.stackTraceToString()}\n```") }
+
     val hrefLink = hrefLink("Apply Diff") {
       try {
-        val newCode = code.map { (file, prevCode) ->
-          file to when (filename) {
-            file -> SimpleDiffUtil.patch(prevCode, diffVal)
-            else -> prevCode
-          }
-        }.toMap()
-        handle(newCode)
+        handle(mapOf(root.relativize(filepath).toString() to SimpleDiffUtil.patch(prevCode, diffVal)))
         task.complete("""<div class="user-message">Diff Applied</div>""")
       } catch (e: Throwable) {
         task.error(null, e)
@@ -253,9 +291,9 @@ fun SocketManagerBase.addApplyDiffLinks2(
     val inTabs = displayMapInTabs(
       mapOf(
         "Diff" to (diffTask?.placeholder ?: ""),
-        "Old Code" to (prevCodeTask?.placeholder ?: ""),
-        "New Code" to (newCodeTask?.placeholder ?: ""),
-        "Test Patch" to (patchTask?.placeholder ?: ""),
+        "Code" to (prevCodeTask?.placeholder ?: ""),
+        "Preview" to (newCodeTask?.placeholder ?: ""),
+        "Echo" to (patchTask?.placeholder ?: ""),
       )
     )
     SocketManagerBase.scheduledThreadPoolExecutor.schedule({

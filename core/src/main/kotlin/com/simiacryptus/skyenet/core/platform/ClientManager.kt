@@ -11,7 +11,6 @@ import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
 import org.apache.hc.core5.http.HttpRequest
-import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import java.io.File
 import java.util.concurrent.SynchronousQueue
@@ -76,7 +75,7 @@ open class ClientManager {
   ): OpenAIClient? {
     if (user != null) {
       val userSettings = ApplicationServices.userSettingsManager.getUserSettings(user)
-      val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/openai.log")
+      val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/$session/openai.log")
       logfile?.parentFile?.mkdirs()
       val userApi =
         if (userSettings.apiKeys.isNotEmpty())
@@ -94,7 +93,7 @@ open class ClientManager {
       null, user, OperationType.GlobalKey
     )
     if (!canUseGlobalKey) throw RuntimeException("No API key")
-    val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/openai.log")
+    val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/$session/openai.log")
     logfile?.parentFile?.mkdirs()
     return (if (ClientUtil.keyMap.isNotEmpty()) {
       MonitoredClient(

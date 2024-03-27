@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.general
 
+import com.github.simiacryptus.aicoder.actions.generic.commonRoot
 import com.github.simiacryptus.aicoder.util.addApplyDiffLinks2
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
@@ -24,6 +25,7 @@ import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -249,6 +251,7 @@ class WebDevAgent(
         //val task = ui.newTask()
         return task.complete(
           ui.socketManager.addApplyDiffLinks2(
+            root = codeFiles.keys.map { File(it).toPath() }.toTypedArray().commonRoot(),
             code = codeFiles,
             response = design,
             handle = { newCodeMap ->
