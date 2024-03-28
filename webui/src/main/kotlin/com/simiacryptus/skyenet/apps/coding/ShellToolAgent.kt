@@ -210,7 +210,7 @@ abstract class ShellToolAgent<T : Interpreter>(
               |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
               |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
             """.trimIndent()
-                task.hideable(ui, renderMarkdown("```\n${error?.let { escapeHtml4(it).indent("  ") }}\n```"))
+                task.hideable(ui, renderMarkdown("```\n${error?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
                 openAPI = openAPIParsedActor().answer(
                   listOf(
                     servletImpl,
@@ -326,7 +326,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     response: CodeResult = execWrap { actor.answer(request, api = api) },
     onComplete: (String) -> Unit
   ) {
-    task.hideable(ui, renderMarkdown("```kotlin\n${response.code?.let { escapeHtml4(it).indent("  ") }}\n```"))
+    task.hideable(ui, renderMarkdown("```kotlin\n${response.code?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(
@@ -454,7 +454,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     )
     // if ```html unwrap
     if (testPage.contains("```html")) testPage = testPage.substringAfter("```html").substringBefore("```")
-    task.add(renderMarkdown("```html\n${testPage?.let { escapeHtml4(it).indent("  ") }}\n```"))
+    task.add(renderMarkdown("```html\n${testPage?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
     task.complete(
       "<a href='${
         task.saveFile(

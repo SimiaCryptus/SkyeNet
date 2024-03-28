@@ -9,7 +9,6 @@ import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.interpreter.Interpreter
-import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import java.util.*
 import javax.script.ScriptException
 import kotlin.reflect.KClass
@@ -311,7 +310,7 @@ open class CodingActor(
             Role.assistant,
             """
             |```${language.lowercase()}
-            |${previousCode?.let { escapeHtml4(it).indent("  ") }}
+            |${previousCode?.let { /*escapeHtml4*/(it).indent("  ") }}
             |```
             |""".trimMargin().trim().toContentList()
           ),
@@ -321,7 +320,7 @@ open class CodingActor(
             |The previous code failed with the following error:
             |
             |```
-            |${error.message?.trim() ?: ""?.let { escapeHtml4(it).indent("  ") }}
+            |${error.message?.trim() ?: ""?.let { /*escapeHtml4*/(it).indent("  ") }}
             |```
             |
             |Correct the code and try again.
@@ -393,9 +392,9 @@ open class CodingActor(
     fun getRenderedResponse(respondWithCode: List<Pair<String, String>>, defaultLanguage: String = "") =
       respondWithCode.joinToString("\n") {
         when (it.first) {
-          "code" -> "```$defaultLanguage\n${it.second?.let { escapeHtml4(it).indent("  ") }}\n```"
-          "text" -> it.second?.let { escapeHtml4(it).indent("  ") }.toString()
-          else -> "```${it.first}\n${it.second?.let { escapeHtml4(it).indent("  ") }}\n```"
+          "code" -> "```$defaultLanguage\n${it.second?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"
+          "text" -> it.second?.let { /*escapeHtml4*/(it).indent("  ") }.toString()
+          else -> "```${it.first}\n${it.second?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"
         }
       }
 

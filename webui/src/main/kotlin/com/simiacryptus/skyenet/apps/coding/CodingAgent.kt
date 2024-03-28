@@ -318,19 +318,19 @@ open class CodingAgent<T : Interpreter>(
       resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
                 |# Output
                 |```text
-                |${resultOutput?.let { escapeHtml4(it).indent("  ") }}
+                |${resultOutput?.let { /*escapeHtml4*/(it).indent("  ") }}
                 |```
                 """.trimMargin()
 
       else -> """
                 |# Result
                 |```
-                |${resultValue?.let { escapeHtml4(it).indent("  ") }}
+                |${resultValue?.let { /*escapeHtml4*/(it).indent("  ") }}
                 |```
                 |
                 |# Output
                 |```text
-                |${resultOutput?.let { escapeHtml4(it).indent("  ") }}
+                |${resultOutput?.let { /*escapeHtml4*/(it).indent("  ") }}
                 |```
                 """.trimMargin()
     }

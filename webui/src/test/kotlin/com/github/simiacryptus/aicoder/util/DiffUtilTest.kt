@@ -1,5 +1,6 @@
 package com.github.simiacryptus.aicoder.util
 
+import com.github.simiacryptus.aicoder.util.DiffUtil
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

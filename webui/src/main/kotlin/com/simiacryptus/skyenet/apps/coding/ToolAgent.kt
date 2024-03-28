@@ -24,7 +24,6 @@ import com.simiacryptus.skyenet.webui.util.OpenAPI
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.apache.commons.text.StringEscapeUtils
 import org.eclipse.jetty.server.Request
 import org.eclipse.jetty.server.Response
 import org.eclipse.jetty.webapp.WebAppClassLoader
@@ -231,7 +230,7 @@ abstract class ToolAgent<T : Interpreter>(
     response: CodeResult = execWrap { actor.answer(request, api = api) },
     onComplete: (String) -> Unit
   ) {
-    task.hideable(ui, renderMarkdown("```kotlin\n${StringEscapeUtils.escapeHtml4(response.code).indent("  ")}\n```"))
+    task.hideable(ui, renderMarkdown("```kotlin\n${/*escapeHtml4*/(response.code).indent("  ")}\n```"))
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(
