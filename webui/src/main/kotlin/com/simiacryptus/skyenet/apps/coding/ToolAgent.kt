@@ -44,6 +44,7 @@ abstract class ToolAgent<T : Interpreter>(
   temperature: Double = 0.1,
   details: String? = null,
   model: ChatModels,
+  mainTask: SessionTask = ui.newTask(),
   actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(
       interpreter,
@@ -53,7 +54,7 @@ abstract class ToolAgent<T : Interpreter>(
       model = model
     )
   ),
-) : CodingAgent<T>(api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, actorMap) {
+) : CodingAgent<T>(api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, mainTask, actorMap) {
   override fun displayFeedback(task: SessionTask, request: CodingActor.CodeRequest, response: CodeResult) {
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null

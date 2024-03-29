@@ -119,6 +119,10 @@ abstract class SocketManagerBase(
         log.debug("Skipping already queued message - Key: {}, Value: {} bytes", messageID, newValue.length)
         return
       }
+      if(0==out.length) {
+        log.debug("Skipping empty message - Key: {}, Value: {} bytes", messageID, newValue.length)
+        return
+      }
       log.debug("Queue Send Msg: {} - {} - {} bytes", session, messageID, out.length)
       sendQueue.add(messageID)
       scheduledThreadPoolExecutor.schedule(

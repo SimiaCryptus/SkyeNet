@@ -9,7 +9,6 @@ open class TabbedDisplay(
   var selectedTab: Int = 0
   companion object {
     val log = org.slf4j.LoggerFactory.getLogger(TabbedDisplay::class.java)
-//    val scheduledPool = java.util.concurrent.Executors.newScheduledThreadPool(1)
   }
   val size: Int get() = tabs.size
   open fun render() = """
@@ -63,10 +62,7 @@ open class TabbedDisplay(
   fun find(name: String) = tabs.withIndex().firstOrNull { it.value.first == name }?.index
 
   open fun label(i: Int): String {
-    return when {
-      tabs.size <= i -> "${tabs.size + 1}"
-      else -> tabs[i].first
-    }
+    return "${tabs.size + 1}"
   }
 
   fun clear() {
@@ -74,7 +70,7 @@ open class TabbedDisplay(
     update()
   }
 
-  fun update() {
+  open fun update() {
     if(container != null) synchronized(container) {
       container.clear()
       container.append(render())
