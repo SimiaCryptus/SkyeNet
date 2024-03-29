@@ -31,7 +31,7 @@ open class CodingAgent<T : Interpreter>(
   session: Session,
   user: User?,
   val ui: ApplicationInterface,
-  val interpreter: KClass<T>,
+  interpreter: KClass<T>,
   val symbols: Map<String, Any>,
   temperature: Double = 0.1,
   val details: String? = null,
