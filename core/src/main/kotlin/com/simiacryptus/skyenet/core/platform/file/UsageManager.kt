@@ -144,7 +144,7 @@ open class UsageManager(val root: File) : UsageInterface {
         synchronized(txLogFile) {
           txLogFileWriter.write("$session,${apiKey},${model.modelName},${tokens.prompt_tokens},input\n")
           txLogFileWriter.write("$session,${apiKey},${model.modelName},${tokens.completion_tokens},output\n")
-          txLogFileWriter.write("$session,${apiKey},${model.modelName},${tokens.completion_tokens},cost\n")
+          txLogFileWriter.write("$session,${apiKey},${model.modelName},${tokens.cost},cost\n")
           txLogFileWriter.flush()
         }
       }
