@@ -119,6 +119,7 @@ class Acceptable<T : Any>(
     task: SessionTask,
   ) {
     var history = history
+    history = history + (userResponse to Role.user)
     val prevValue = tabContent.toString()
     val newValue = (prevValue.substringBefore("<!-- START ACCEPT -->")
         + "<!-- ACCEPTED -->"
@@ -127,7 +128,6 @@ class Acceptable<T : Any>(
         + renderMarkdown(userResponse)
         + "</div>")
     tabContent.set(newValue)
-    history = history + (renderMarkdown(userResponse) to Role.user)
     task.add("") // Show spinner
     tabs.update()
     val newDesign = reviseResponse(history)
