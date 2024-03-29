@@ -243,8 +243,8 @@ class WebDevAgent(
       // Apply codeReviewer
       fun codeSummary() = codeFiles.entries.joinToString("\n\n") { (path, code) ->
         "# $path\n```${
-          escapeHtml4(path.split('.').last()).indent("  ")
-        }\n${escapeHtml4(code).indent("  ")}\n```"
+          /*escapeHtml4*/(path.split('.').last()).indent("  ")
+        }\n${/*escapeHtml4*/(code).indent("  ")}\n```"
       }
 
       fun outputFn(task: SessionTask, design: String): StringBuilder? {

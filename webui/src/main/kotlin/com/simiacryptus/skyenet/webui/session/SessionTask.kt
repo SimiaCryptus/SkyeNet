@@ -146,12 +146,12 @@ abstract class SessionTask(
         |
         |Prefix:
         |```${e.language?.lowercase() ?: ""}
-        |${escapeHtml4(e.prefix?.indent("  ") ?: "")}
+        |${/*escapeHtml4*/(e.prefix?.indent("  ") ?: "")}
         |```
         |
         |Implementation Attempt:
         |```${e.language?.lowercase() ?: ""}
-        |${escapeHtml4(e.code?.indent("  ") ?: "")}
+        |${/*escapeHtml4*/(e.code?.indent("  ") ?: "")}
         |```
         |
         |""".trimMargin()
@@ -162,7 +162,7 @@ abstract class SessionTask(
         |**Error `${e.javaClass.name}`**
         |
         |```text
-        |${e.stackTraceToString()?.let { escapeHtml4(it).indent("  ") }}
+        |${e.stackTraceToString()?.let { /*escapeHtml4*/(it).indent("  ") }}
         |```
         |""".trimMargin()
       )

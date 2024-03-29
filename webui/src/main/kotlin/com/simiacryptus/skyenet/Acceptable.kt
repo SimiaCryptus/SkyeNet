@@ -36,7 +36,7 @@ class Acceptable<T : Any>(
           val idx: Int = size
           set(label(idx), "Retrying...")
           task.add("")
-          main(idx)
+          main(idx, this@Acceptable.task)
         }
       } 
         </div>
@@ -45,91 +45,138 @@ class Acceptable<T : Any>(
   }
   private val acceptGuard = AtomicBoolean(false)
 
-  fun main(tabIndex: Int = tabs.size) {
+  fun main(tabIndex: Int = tabs.size, task: SessionTask = this.task) {
     try {
       val history = mutableListOf<Pair<String, Role>>()
       history.add(userMessage to Role.user)
-      var design = initialResponse(userMessage)
+      val design = initialResponse(userMessage)
       history.add(outputFn(design) to Role.assistant)
-      var acceptLink: String? = null
-      var textInput: String? = null
-      val feedbackGuard = AtomicBoolean(false)
-      fun feedbackForm() = """
-              |<div style="display: flex; flex-direction: column;">
-              |${acceptLink!!}
-              |</div>
-              |${textInput!!}
-            """.trimMargin()
-
       val tabLabel = tabs.label(tabIndex)
       val tabContent = tabs[tabLabel] ?: tabs.set(tabLabel, "")
-      textInput = ui.textInput { userResponse ->
-        if (feedbackGuard.getAndSet(true)) return@textInput
-        try {
-          val prevValue = tabContent.toString()
-          val newValue = (prevValue.substringBefore("<!-- START ACCEPT -->")
-              + "<!-- ACCEPTED -->"
-              + prevValue.substringAfter("<!-- END ACCEPT -->")
-              + renderMarkdown(userResponse))
-          tabContent.set(newValue)
-          history.add(renderMarkdown(userResponse) to Role.user)
-          task.add("") // Show spinner
-          tabs.update()
-          design = reviseResponse(history + listOf(userResponse to Role.user))
-          task.complete()
-          tabContent.set(renderMarkdown(newValue) + "\n" + outputFn(design) + "\n" + feedbackForm())
-          tabs.update()
-        } catch (e: Exception) {
-          task.error(ui, e)
-          throw e
-        } finally {
-          feedbackGuard.set(false)
-        }
-      }
-      acceptLink = "<!-- START ACCEPT -->" +
-          ui.hrefLink("\uD83D\uDC4D") {
-            if (acceptGuard.getAndSet(true)) {
-              return@hrefLink
-            }
-            try {
-              tabs.selectedTab = tabIndex
-              tabContent?.apply {
-                val prevTab = toString()
-                val newValue =
-                  prevTab.substringBefore("<!-- START ACCEPT -->") + "<!-- ACCEPTED -->" + prevTab.substringAfter(
-                    "<!-- END ACCEPT -->"
-                  )
-                set(newValue)
-                tabs.update()
-              } ?: throw IllegalStateException("Tab $tabIndex not found")
-            } catch (e: Exception) {
-              task.error(ui, e)
-              acceptGuard.set(false)
-              throw e
-            }
-            atomicRef.set(design)
-            semaphore.release()
-          } + "<!-- END ACCEPT -->"
+
       if (tabs.size > tabIndex) {
-        tabContent?.append(outputFn(design) + "\n" + feedbackForm())
+        tabContent.append(outputFn(design) + "\n" + feedbackForm(tabIndex, tabContent, design, history, task))
       } else {
-        tabContent?.set(outputFn(design) + "\n" + feedbackForm())
+        tabContent.set(outputFn(design) + "\n" + feedbackForm(tabIndex, tabContent, design, history, task))
       }
       tabs.update()
     } catch (e: Throwable) {
       task.error(ui, e)
       task.complete(ui.hrefLink("🔄 Retry") {
-        main()
+        main(task = task)
       })
     }
+  }
+
+  private fun feedbackForm(
+    tabIndex: Int?,
+    tabContent: StringBuilder,
+    design: T,
+    history: List<Pair<String, Role>>,
+    task: SessionTask,
+  ): String = """
+              |<!-- START ACCEPT -->
+              |<div style="display: flex; flex-direction: column;">
+              |${acceptLink(tabIndex, tabContent, design)!!}
+              |</div>
+              |${textInput(design, tabContent, history, task)!!}
+              |<!-- END ACCEPT -->
+            """.trimMargin()
+
+  private fun acceptLink(
+    tabIndex: Int?,
+    tabContent: StringBuilder,
+    design: T,
+  ) = ui.hrefLink("\uD83D\uDC4D") {
+    accept(tabIndex, tabContent, design)
+  }
+
+  private fun textInput(
+    design: T,
+    tabContent: StringBuilder,
+    history: List<Pair<String, Role>>,
+    task: SessionTask,
+  ): String {
+    val feedbackGuard = AtomicBoolean(false)
+    return ui.textInput { userResponse ->
+      if (feedbackGuard.getAndSet(true)) return@textInput
+      try {
+        feedback(tabContent, userResponse, history, design, task)
+      } catch (e: Exception) {
+        task.error(ui, e)
+        throw e
+      } finally {
+        feedbackGuard.set(false)
+      }
+    }
+  }
+
+  private fun feedback(
+    tabContent: StringBuilder,
+    userResponse: String,
+    history: List<Pair<String, Role>>,
+    design: T,
+    task: SessionTask,
+  ) {
+    var history = history
+    history = history + (userResponse to Role.user)
+    val prevValue = tabContent.toString()
+    val newValue = (prevValue.substringBefore("<!-- START ACCEPT -->")
+        + "<!-- ACCEPTED -->"
+        + prevValue.substringAfter("<!-- END ACCEPT -->")
+        + "<div class=\"user-message\">"
+        + renderMarkdown(userResponse)
+        + "</div>")
+    tabContent.set(newValue)
+    task.add("") // Show spinner
+    tabs.update()
+    val newDesign = reviseResponse(history)
+    val newTask = ui.newTask()
+    tabContent.set(newValue + "\n" + newTask.placeholder)
+    tabs.update()
+    task.complete()
+    Retryable(ui, newTask) {
+      outputFn(newDesign) + "\n" + feedbackForm(
+        tabIndex = null,
+        tabContent = it,
+        design = newDesign,
+        history = history,
+        task = newTask
+      )
+    }.apply {
+      set(label(size), process(container))
+    }
+  }
+
+  private fun accept(tabIndex: Int?, tabContent: StringBuilder, design: T) {
+    if (acceptGuard.getAndSet(true)) {
+      return
+    }
+    try {
+      if(null != tabIndex) tabs.selectedTab = tabIndex
+      tabContent?.apply {
+        val prevTab = toString()
+        val newValue =
+          prevTab.substringBefore("<!-- START ACCEPT -->") + "<!-- ACCEPTED -->" + prevTab.substringAfter(
+            "<!-- END ACCEPT -->"
+          )
+        set(newValue)
+        tabs.update()
+      }
+    } catch (e: Exception) {
+      task.error(ui, e)
+      acceptGuard.set(false)
+      throw e
+    }
+    atomicRef.set(design)
+    semaphore.release()
   }
 
   override fun call(): T {
     task.echo(heading)
     main()
     semaphore.acquire()
-    val result = atomicRef.get()
-    return result
+    return atomicRef.get()
   }
 
 }

@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
+import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.actors.ActorSystem
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
@@ -18,11 +19,11 @@ import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
-import org.apache.commons.text.StringEscapeUtils
-import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.slf4j.LoggerFactory
 import java.util.*
+import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
+
 
 open class CodingAgent<T : Interpreter>(
   val api: API,
@@ -30,11 +31,12 @@ open class CodingAgent<T : Interpreter>(
   session: Session,
   user: User?,
   val ui: ApplicationInterface,
-  val interpreter: KClass<T>,
+  interpreter: KClass<T>,
   val symbols: Map<String, Any>,
   temperature: Double = 0.1,
   val details: String? = null,
   val model: ChatModels,
+  private val mainTask: SessionTask = ui.newTask(),
   val actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(interpreter, symbols = symbols, temperature = temperature, details = details, model = model)
   ),
@@ -54,18 +56,38 @@ open class CodingAgent<T : Interpreter>(
       OperationType.Execute
     )
   }
+  val scheduledThreadPoolExecutor = java.util.concurrent.Executors.newScheduledThreadPool(1)
+  val cachedThreadPoolExecutor = java.util.concurrent.Executors.newCachedThreadPool()
 
   fun start(
     userMessage: String,
   ) {
-    val message = ui.newTask()
     try {
-      message.echo(renderMarkdown(userMessage))
+      mainTask.echo(renderMarkdown(userMessage))
       val codeRequest = codeRequest(listOf(userMessage to ApiModel.Role.user))
-      displayCode(message, codeRequest)
+      newRetryable(mainTask, codeRequest)
     } catch (e: Throwable) {
       log.warn("Error", e)
-      message.error(ui, e)
+      mainTask.error(ui, e)
+    }
+  }
+
+  private fun newRetryable(task: SessionTask, codeRequest: CodingActor.CodeRequest) {
+    val newTask = ui.newTask()
+    task.complete(newTask.placeholder)
+    Retryable(ui, newTask) {
+      val newTask = ui.newTask()
+      scheduledThreadPoolExecutor.schedule({
+        cachedThreadPoolExecutor.submit {
+          val statusSB = newTask.add("Running...")
+          displayCode(newTask, codeRequest)
+          statusSB?.clear()
+          newTask.complete()
+        }
+      }, 100, TimeUnit.MILLISECONDS)
+      newTask.placeholder
+    }.apply {
+      set(label(size), process(container))
     }
   }
 
@@ -91,16 +113,6 @@ open class CodingAgent<T : Interpreter>(
       displayCodeAndFeedback(task, codeRequest, codeResponse)
     } catch (e: Throwable) {
       log.warn("Error", e)
-      val error = task.error(ui, e)
-      var regenButton: StringBuilder? = null
-      regenButton = task.complete(ui.hrefLink("♻", "href-link regen-button"){
-        regenButton?.clear()
-        val header = task.header("Regenerating...")
-        displayCode(task, codeRequest)
-        header?.clear()
-        error?.clear()
-        task.complete()
-      })
     }
   }
   protected fun displayCodeAndFeedback(
@@ -150,8 +162,7 @@ open class CodingAgent<T : Interpreter>(
     formHandle = task.add(
       """
       |<div style="display: flex;flex-direction: column;">
-      |${playButton(task, request, response, formText) { formHandle!! }}
-      |${regenButton(task, request, formText) { formHandle!! }}
+      |${if (!canPlay) "" else playButton(task, request, response, formText) { formHandle!! }}
       |</div>
       |${reviseMsg(task, request, response, formText) { formHandle!! }}
       """.trimMargin(), className = "reply-message"
@@ -170,7 +181,7 @@ open class CodingAgent<T : Interpreter>(
     formHandle: () -> StringBuilder
   ) = ui.textInput { feedback ->
     responseAction(task, "Revising...", formHandle(), formText) {
-      feedback(ui.newTask(), feedback, request, response)
+      feedback(task, feedback, request, response)
     }
   }
 
@@ -179,14 +190,7 @@ open class CodingAgent<T : Interpreter>(
     request: CodingActor.CodeRequest,
     formText: StringBuilder,
     formHandle: () -> StringBuilder
-  ) = ui.hrefLink("♻", "href-link regen-button"){
-    responseAction(task, "Regenerating...", formHandle(), formText) {
-      displayCode(
-        ui.newTask(),
-        request.copy(messages = request.messages.dropLastWhile { it.second == ApiModel.Role.assistant })
-      )
-    }
-  }
+  ) = ""
 
   protected fun playButton(
     task: SessionTask,
@@ -197,7 +201,7 @@ open class CodingAgent<T : Interpreter>(
   ) = if (!canPlay) "" else
     ui.hrefLink("▶", "href-link play-button"){
       responseAction(task, "Running...", formHandle(), formText) {
-        execute(ui.newTask(), response, request)
+        execute(task, response, request)
       }
     }
 
@@ -240,7 +244,7 @@ open class CodingAgent<T : Interpreter>(
   ) {
     try {
       task.echo(renderMarkdown(feedback))
-      displayCode(task, codeRequest(
+      newRetryable(task, codeRequest(
         messages = request.messages +
             listOf(
               response.code to ApiModel.Role.assistant,
@@ -318,19 +322,19 @@ open class CodingAgent<T : Interpreter>(
       resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
                 |# Output
                 |```text
-                |${resultOutput?.let { escapeHtml4(it).indent("  ") }}
+                |${resultOutput.let { /*escapeHtml4*/(it).indent("  ") }}
                 |```
                 """.trimMargin()
 
       else -> """
                 |# Result
                 |```
-                |${resultValue?.let { escapeHtml4(it).indent("  ") }}
+                |${resultValue.let { /*escapeHtml4*/(it).indent("  ") }}
                 |```
                 |
                 |# Output
                 |```text
-                |${resultOutput?.let { escapeHtml4(it).indent("  ") }}
+                |${resultOutput.let { /*escapeHtml4*/(it).indent("  ") }}
                 |```
                 """.trimMargin()
     }

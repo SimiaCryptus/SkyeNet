@@ -6,7 +6,6 @@ import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
-import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -199,7 +198,7 @@ fun SocketManagerBase.addSaveLinks(
         task.error(null, e)
       }
     }
-    markdown.replace(codeValue + "```", codeValue?.let { escapeHtml4(it).indent("  ") } + "```\n" + hrefLink)
+    markdown.replace(codeValue + "```", codeValue?.let { /*escapeHtml4*/(it).indent("  ") } + "```\n" + hrefLink)
   }
   return withLinks
 }
@@ -242,12 +241,24 @@ fun SocketManagerBase.addApplyDiffLinks2(
   val matches = diffPattern.findAll(response).toList()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
-    val filepath = findFile(root, filename) ?: root.resolve(filename)
+    val filepath = try {
+      findFile(root, filename) ?: root.resolve(filename)
+    } catch (e: Throwable) {
+      log.error("Error finding file: $filename", e)
+      root.resolve(filename)
+    }
     val diffVal = diffBlock.groupValues[2]
 
     val prevCode = try {
       if (!filepath.toFile().exists()) {
-        log.warn("File not found: $filepath")
+        log.warn(
+          """
+          |File not found: $filepath
+          |Root: ${root.toAbsolutePath()}
+          |Files: 
+          |${code.keys.joinToString("\n") { "* $it" }}
+          """.trimMargin()
+        )
         ""
       } else {
         filepath.readText(Charsets.UTF_8)
@@ -258,12 +269,23 @@ fun SocketManagerBase.addApplyDiffLinks2(
     }
     val newCode = SimpleDiffUtil.patch(prevCode, diffVal)
     val echoDiff = try {
-      DiffUtil.formatDiff(DiffUtil.generateDiff(prevCode.lines(), newCode.lines()))
-    } catch (e: Throwable) { renderMarkdown("```\n${e.stackTraceToString()}\n```") }
+      DiffUtil.formatDiff(
+        DiffUtil.generateDiff(
+          prevCode.lines(),
+          newCode.lines()
+        )
+      )
+    } catch (e: Throwable) {
+      renderMarkdown("```\n${e.stackTraceToString()}\n```")
+    }
 
     val hrefLink = hrefLink("Apply Diff") {
       try {
-        handle(mapOf(root.relativize(filepath).toString() to SimpleDiffUtil.patch(prevCode, diffVal)))
+        handle(mapOf(root.relativize(filepath).toString() to SimpleDiffUtil.patch(
+          prevCode,
+          diffVal
+        )
+        ))
         task.complete("""<div class="user-message">Diff Applied</div>""")
       } catch (e: Throwable) {
         task.error(null, e)
@@ -300,7 +322,17 @@ fun SocketManagerBase.addApplyDiffLinks2(
       diffTask?.add(renderMarkdown(/*escapeHtml4*/(diffVal)))
       newCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```"))
       prevCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```"))
-      patchTask?.add(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff?.let { /*escapeHtml4*/URLDecoder.decode(it, Charsets.UTF_8)/*.indent("  ")*/ }}\n```"))
+      patchTask?.add(
+        renderMarkdown(
+          "# $filename\n\n```diff\n  ${
+            echoDiff?.let { /*escapeHtml4*/URLDecoder.decode(
+              it,
+              Charsets.UTF_8
+            )/*.indent("  ")*/
+            }
+          }\n```"
+        )
+      )
     }, 100, TimeUnit.MILLISECONDS)
     markdown.replace(
       diffVal, inTabs + "\n" + hrefLink + "\n" + reverseHrefLink

@@ -24,7 +24,6 @@ import com.simiacryptus.skyenet.webui.util.OpenAPI
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.apache.commons.text.StringEscapeUtils
 import org.eclipse.jetty.server.Request
 import org.eclipse.jetty.server.Response
 import org.eclipse.jetty.webapp.WebAppClassLoader
@@ -45,6 +44,7 @@ abstract class ToolAgent<T : Interpreter>(
   temperature: Double = 0.1,
   details: String? = null,
   model: ChatModels,
+  mainTask: SessionTask = ui.newTask(),
   actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(
       interpreter,
@@ -54,7 +54,7 @@ abstract class ToolAgent<T : Interpreter>(
       model = model
     )
   ),
-) : CodingAgent<T>(api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, actorMap) {
+) : CodingAgent<T>(api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, mainTask, actorMap) {
   override fun displayFeedback(task: SessionTask, request: CodingActor.CodeRequest, response: CodeResult) {
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
@@ -231,7 +231,7 @@ abstract class ToolAgent<T : Interpreter>(
     response: CodeResult = execWrap { actor.answer(request, api = api) },
     onComplete: (String) -> Unit
   ) {
-    task.hideable(ui, renderMarkdown("```kotlin\n${StringEscapeUtils.escapeHtml4(response.code).indent("  ")}\n```"))
+    task.hideable(ui, renderMarkdown("```kotlin\n${/*escapeHtml4*/(response.code).indent("  ")}\n```"))
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(

@@ -24,7 +24,6 @@ import com.simiacryptus.skyenet.webui.util.OpenAPI
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.eclipse.jetty.server.Request
 import org.eclipse.jetty.server.Response
 import org.eclipse.jetty.webapp.WebAppClassLoader
@@ -61,7 +60,8 @@ abstract class ShellToolAgent<T : Interpreter>(
       model = model
     )
   ),
-) : CodingAgent<T>(api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, actorMap) {
+  mainTask: SessionTask = ui.newTask(),
+) : CodingAgent<T>(api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, mainTask, actorMap) {
 
 
   override fun displayFeedback(task: SessionTask, request: CodingActor.CodeRequest, response: CodeResult) {
@@ -70,14 +70,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     formHandle = task.add(
       """
       |<div style="display: flex;flex-direction: column;">
-      |${
-        if (!super.canPlay) "" else
-          super.ui.hrefLink("▶", "href-link play-button"){
-            super.responseAction(task, "Running...", formHandle!!, formText) {
-              super.execute(super.ui.newTask(), response, request)
-            }
-          }
-      }
+      |${if (!canPlay) "" else playButton(task, request, response, formText) { formHandle!! }}
       |${super.regenButton(task, request, formText) { formHandle!! }}
       |${createToolButton(task, request, response, formText) { formHandle!! }}
       |</div>  
@@ -90,24 +83,6 @@ abstract class ShellToolAgent<T : Interpreter>(
   }
 
   private var lastResult: String? = null
-
-  override fun execute(
-    task: SessionTask,
-    response: CodeResult,
-    request: CodingActor.CodeRequest,
-  ) {
-    try {
-      lastResult = execute(task, response)
-      displayFeedback(task, CodingActor.CodeRequest(
-        messages = request.messages +
-            listOf(
-              "Running...\n\n$lastResult" to ApiModel.Role.assistant,
-            ).filter { it.first.isNotBlank() }
-      ), response)
-    } catch (e: Throwable) {
-      handleExecutionError(e, task, request, response)
-    }
-  }
 
   private fun createToolButton(
     task: SessionTask,
@@ -210,7 +185,7 @@ abstract class ShellToolAgent<T : Interpreter>(
               |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
               |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
             """.trimIndent()
-                task.hideable(ui, renderMarkdown("```\n${error?.let { escapeHtml4(it).indent("  ") }}\n```"))
+                task.hideable(ui, renderMarkdown("```\n${error?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
                 openAPI = openAPIParsedActor().answer(
                   listOf(
                     servletImpl,
@@ -319,6 +294,11 @@ abstract class ShellToolAgent<T : Interpreter>(
   }
 
 
+  /**
+   *
+   * TODO: This method seems redundant.
+   *
+   * */
   private fun displayCodeFeedback(
     task: SessionTask,
     actor: CodingActor,
@@ -326,7 +306,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     response: CodeResult = execWrap { actor.answer(request, api = api) },
     onComplete: (String) -> Unit
   ) {
-    task.hideable(ui, renderMarkdown("```kotlin\n${response.code?.let { escapeHtml4(it).indent("  ") }}\n```"))
+    task.hideable(ui, renderMarkdown("```kotlin\n${response.code?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(
@@ -454,7 +434,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     )
     // if ```html unwrap
     if (testPage.contains("```html")) testPage = testPage.substringAfter("```html").substringBefore("```")
-    task.add(renderMarkdown("```html\n${testPage?.let { escapeHtml4(it).indent("  ") }}\n```"))
+    task.add(renderMarkdown("```html\n${testPage?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
     task.complete(
       "<a href='${
         task.saveFile(

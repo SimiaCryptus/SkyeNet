@@ -12,7 +12,6 @@ import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
-import org.apache.commons.text.StringEscapeUtils
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -57,7 +56,7 @@ open class CodingActorTestApp(
                 renderMarkdown(
                     """
                     |```${actor.language.lowercase(Locale.getDefault())}
-                    |${StringEscapeUtils.escapeHtml4(response.code).indent("  ")}
+                    |${/*escapeHtml4*/(response.code).indent("  ")}
                     |```
                     |$playLink
                     """.trimMargin().trim()
