@@ -37,9 +37,9 @@ object DiffUtil {
    * @return A list of DiffResult indicating the differences.
    */
   fun generateDiff(original: List<String>, modified: List<String>): List<PatchLine> {
-    if (original == modified) return modified.withIndex().map { (i,v) -> PatchLine(Unchanged, i, v) }
-    val original = original.withIndex().map { (i,v) -> PatchLine(Unchanged, i, v) }.toMutableList()
-    val modified = modified.withIndex().map { (i,v) -> PatchLine(Unchanged, i, v) }.toMutableList()
+    if (original == modified) return modified.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }
+    val original = original.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }.toMutableList()
+    val modified = modified.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }.toMutableList()
     val patchLines = mutableListOf<PatchLine>()
 
     while (original.isNotEmpty() && modified.isNotEmpty()) {
@@ -55,28 +55,21 @@ object DiffUtil {
         val modifiedIndex = modified.indexOf(originalLine)
 
         if (originalIndex != -1) {
-          for (i in 0 until originalIndex) {
-            patchLines.add(PatchLine(Deleted, original[i].lineNumber, original[i].line))
-          }
-          patchLines.add(PatchLine(Added, modifiedLine.lineNumber, modifiedLine.line))
-          original.removeAll { it == modifiedLine }
-          modified.removeAt(0)
-        } else if (modifiedIndex != -1) {
-          for (i in 0 until modifiedIndex) {
-            patchLines.add(PatchLine(Added, modified[i].lineNumber, modified[i].line))
-          }
-          patchLines.add(PatchLine(Deleted, originalLine.lineNumber, originalLine.line))
-          modified.removeAll { it == originalLine }
+          patchLines.add(PatchLine(Deleted, original.first().lineNumber, original.first().line))
           original.removeAt(0)
+        } else if (modifiedIndex != -1) {
+          patchLines.add(PatchLine(Added, modified.first().lineNumber, modified.first().line))
+          modified.removeAt(0)
         } else {
           patchLines.add(PatchLine(Deleted, originalLine.lineNumber, originalLine.line))
-          patchLines.add(PatchLine(Added, modifiedLine.lineNumber, modifiedLine.line))
           original.removeAt(0)
+          patchLines.add(PatchLine(Added, modifiedLine.lineNumber, modifiedLine.line))
           modified.removeAt(0)
         }
       }
     }
-
+    patchLines.addAll(original.map { PatchLine(Deleted, it.lineNumber, it.line) })
+    patchLines.addAll(modified.map { PatchLine(Added, it.lineNumber, it.line) })
     return patchLines
   }
 
@@ -91,17 +84,17 @@ object DiffUtil {
    */
   fun formatDiff(patchLines: List<PatchLine>, contextLines: Int = 3) =
     patchLines.withIndex().filter { (idx, lineDiff) ->
-      when(lineDiff.type) {
+      when (lineDiff.type) {
         Added -> true
         Deleted -> true
         Unchanged -> {
-          val distBackwards = idx - patchLines.subList(0, idx).indexOfLast { it.type != Unchanged }
-          val distForwards = patchLines.subList(idx, patchLines.size).indexOfFirst { it.type != Unchanged }
-          distBackwards <= contextLines || distForwards <= contextLines
+          val distBackwards = patchLines.subList(0, idx).indexOfLast { it.type != Unchanged }.let { if (it == -1) null else idx - it }
+          val distForwards = patchLines.subList(idx, patchLines.size).indexOfFirst { it.type != Unchanged }.let { if (it == -1) null else it }
+          (null != distBackwards && distBackwards <= contextLines) || (null != distForwards && distForwards <= contextLines)
         }
       }
     }.joinToString("\n") { (idx, lineDiff) ->
-      when(lineDiff.type) {
+      when (lineDiff.type) {
         Added -> "+ ${lineDiff.line}"
         Deleted -> "- ${lineDiff.line}"
         Unchanged -> "  ${lineDiff.line}"
