@@ -14,7 +14,7 @@ import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.readText
 
-object SimpleDiffUtil {
+object ApxPatchUtil {
 
 
   fun patch(source: String, patch: String): String {
@@ -151,7 +151,7 @@ fun SocketManagerBase.addApplyDiffLinks(
         if (fullPatch.contains(diffVal)) return@hrefLink
         fullPatch.add(diffVal)
         val newCode = fullPatch.fold(code) { lines, patch ->
-          SimpleDiffUtil.patch(lines, patch)
+          ApxPatchUtil.patch(lines, patch)
         }
         handle(newCode)
         task.complete("""<div class="user-message">Diff Applied</div>""")
@@ -165,7 +165,7 @@ fun SocketManagerBase.addApplyDiffLinks(
         fullPatch.add(diffVal)
         val reversedCode = code.lines().reversed().joinToString("\n")
         val reversedDiff = diffVal.lines().reversed().joinToString("\n")
-        val newReversedCode = SimpleDiffUtil.patch(reversedCode, reversedDiff)
+        val newReversedCode = ApxPatchUtil.patch(reversedCode, reversedDiff)
         val newCode = newReversedCode.lines().reversed().joinToString("\n")
         handle(newCode)
         task.complete("""<div class="user-message">Diff Applied (Bottom to Top)</div>""")
@@ -188,7 +188,6 @@ fun SocketManagerBase.addSaveLinks(
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
-//    val language = diffBlock.groupValues[2]
     val codeValue = diffBlock.groupValues[2]
     val hrefLink = hrefLink("Save File") {
       try {
@@ -203,7 +202,7 @@ fun SocketManagerBase.addSaveLinks(
   return withLinks
 }
 
-private val log = LoggerFactory.getLogger(SimpleDiffUtil::class.java)
+private val log = LoggerFactory.getLogger(ApxPatchUtil::class.java)
 
 fun findFile(root: Path, filename: String): Path? {
   return try {
@@ -267,7 +266,7 @@ fun SocketManagerBase.addApplyDiffLinks2(
       log.error("Error reading file: $filepath", e)
       ""
     }
-    val newCode = SimpleDiffUtil.patch(prevCode, diffVal)
+    val newCode = ApxPatchUtil.patch(prevCode, diffVal)
     val echoDiff = try {
       DiffUtil.formatDiff(
         DiffUtil.generateDiff(
@@ -281,7 +280,7 @@ fun SocketManagerBase.addApplyDiffLinks2(
 
     val hrefLink = hrefLink("Apply Diff") {
       try {
-        handle(mapOf(root.relativize(filepath).toString() to SimpleDiffUtil.patch(
+        handle(mapOf(root.relativize(filepath).toString() to ApxPatchUtil.patch(
           prevCode,
           diffVal
         )
@@ -297,7 +296,7 @@ fun SocketManagerBase.addApplyDiffLinks2(
         val reversedDiff = diffVal.lines().reversed().joinToString("\n")
         val newReversedCodeMap = reversedCodeMap.mapValues { (file, prevCode) ->
           if (filename == file) {
-            SimpleDiffUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
+            ApxPatchUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
           } else prevCode
         }
         handle(newReversedCodeMap)
