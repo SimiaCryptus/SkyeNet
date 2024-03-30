@@ -65,14 +65,17 @@ open class CodingAgent<T : Interpreter>(
     try {
       mainTask.echo(renderMarkdown(userMessage))
       val codeRequest = codeRequest(listOf(userMessage to ApiModel.Role.user))
-      newRetryable(mainTask, codeRequest)
+      start(codeRequest, mainTask)
     } catch (e: Throwable) {
       log.warn("Error", e)
       mainTask.error(ui, e)
     }
   }
 
-  private fun newRetryable(task: SessionTask, codeRequest: CodingActor.CodeRequest) {
+  fun start(
+    codeRequest: CodingActor.CodeRequest,
+    task: SessionTask = mainTask,
+  ) {
     val newTask = ui.newTask()
     task.complete(newTask.placeholder)
     Retryable(ui, newTask) {
@@ -91,7 +94,7 @@ open class CodingAgent<T : Interpreter>(
     }
   }
 
-  protected open fun codeRequest(messages: List<Pair<String, ApiModel.Role>>) =
+  open fun codeRequest(messages: List<Pair<String, ApiModel.Role>>) =
     CodingActor.CodeRequest(messages)
 
   fun displayCode(
@@ -244,13 +247,13 @@ open class CodingAgent<T : Interpreter>(
   ) {
     try {
       task.echo(renderMarkdown(feedback))
-      newRetryable(task, codeRequest(
+      start(codeRequest = codeRequest(
         messages = request.messages +
             listOf(
               response.code to ApiModel.Role.assistant,
               feedback to ApiModel.Role.user,
             ).filter { it.first.isNotBlank() }.map { it.first to it.second }
-      ))
+      ), task = task)
     } catch (e: Throwable) {
       log.warn("Error", e)
       task.error(ui, e)
