@@ -58,10 +58,10 @@ open class UsageManager(val root: File) : UsageInterface {
             )
 
             "cost" -> incrementUsage(
-              Session(sessionId),
-              User(email = user),
-              modelEnum,
-              com.simiacryptus.jopenai.ApiModel.Usage(cost = value.toDouble())
+              session = Session(sessionId = sessionId),
+              user = User(email = user),
+              model = modelEnum,
+              tokens = com.simiacryptus.jopenai.ApiModel.Usage(cost = value.toDouble())
             )
 
             else -> throw RuntimeException("Unknown direction $direction")
