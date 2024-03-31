@@ -51,15 +51,31 @@ object DiffUtil {
         original.removeAt(0)
         modified.removeAt(0)
       } else {
-        val originalIndex = original.indexOf(modifiedLine)
-        val modifiedIndex = modified.indexOf(originalLine)
+        val originalIndex = original.indexOf(modifiedLine).let { if (it == -1) null else it }
+        val modifiedIndex = modified.indexOf(originalLine).let { if (it == -1) null else it }
 
-        if (originalIndex != -1) {
-          patchLines.add(PatchLine(Deleted, original.first().lineNumber, original.first().line))
-          original.removeAt(0)
-        } else if (modifiedIndex != -1) {
-          patchLines.add(PatchLine(Added, modified.first().lineNumber, modified.first().line))
-          modified.removeAt(0)
+        if (originalIndex != null && modifiedIndex != null) {
+          if (originalIndex < modifiedIndex) {
+            while(original.first() != modifiedLine) {
+              patchLines.add(PatchLine(Deleted, original.first().lineNumber, original.first().line))
+              original.removeAt(0)
+            }
+          } else {
+            while(modified.first() != originalLine) {
+              patchLines.add(PatchLine(Added, modified.first().lineNumber, modified.first().line))
+              modified.removeAt(0)
+            }
+          }
+        } else if (originalIndex != null) {
+          while(original.first() != modifiedLine) {
+            patchLines.add(PatchLine(Deleted, original.first().lineNumber, original.first().line))
+            original.removeAt(0)
+          }
+        } else if (modifiedIndex != null) {
+          while(modified.first() != originalLine) {
+            patchLines.add(PatchLine(Added, modified.first().lineNumber, modified.first().line))
+            modified.removeAt(0)
+          }
         } else {
           patchLines.add(PatchLine(Deleted, originalLine.lineNumber, originalLine.line))
           original.removeAt(0)
@@ -82,22 +98,32 @@ object DiffUtil {
    * @param contextLines The number of context lines to include around changes.
    * @return A formatted string representing the diff.
    */
-  fun formatDiff(patchLines: List<PatchLine>, contextLines: Int = 3) =
-    patchLines.withIndex().filter { (idx, lineDiff) ->
+  fun formatDiff(patchLines: List<PatchLine>, contextLines: Int = 3): String {
+    val patchList = patchLines.withIndex().filter { (idx, lineDiff) ->
       when (lineDiff.type) {
         Added -> true
         Deleted -> true
         Unchanged -> {
-          val distBackwards = patchLines.subList(0, idx).indexOfLast { it.type != Unchanged }.let { if (it == -1) null else idx - it }
-          val distForwards = patchLines.subList(idx, patchLines.size).indexOfFirst { it.type != Unchanged }.let { if (it == -1) null else it }
+          val distBackwards =
+            patchLines.subList(0, idx).indexOfLast { it.type != Unchanged }.let { if (it == -1) null else idx - it }
+          val distForwards = patchLines.subList(idx, patchLines.size).indexOfFirst { it.type != Unchanged }
+            .let { if (it == -1) null else it }
           (null != distBackwards && distBackwards <= contextLines) || (null != distForwards && distForwards <= contextLines)
         }
       }
-    }.joinToString("\n") { (idx, lineDiff) ->
-      when (lineDiff.type) {
+    }.map { it.value }.toTypedArray()
+
+    return patchList.withIndex().joinToString("\n") { (idx, lineDiff) ->
+      when {
+        idx == 0 -> ""
+        lineDiff.type != Unchanged || patchList[idx - 1].type != Unchanged -> ""
+        patchList[idx - 1].lineNumber + 1 < lineDiff.lineNumber -> "...\n"
+        else -> ""
+      } + when (lineDiff.type) {
         Added -> "+ ${lineDiff.line}"
         Deleted -> "- ${lineDiff.line}"
         Unchanged -> "  ${lineDiff.line}"
       }
     }
+  }
 }

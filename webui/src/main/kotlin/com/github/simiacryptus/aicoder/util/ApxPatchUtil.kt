@@ -184,7 +184,7 @@ fun SocketManagerBase.addSaveLinks(
   handle: (String, String) -> Unit
 ): String {
   val diffPattern =
-    """(?s)(?<![^\n])#+\s*(?:[^\n]+[:\-]\s+)?([^\n]+)\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
+    """(?s)(?<![^\n])#+\s*(?:[^\n]+[:\-]\s+)?([^\n]+)(?:[^`]+`?)*\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
@@ -236,17 +236,27 @@ fun SocketManagerBase.addApplyDiffLinks2(
   task: SessionTask,
   ui: ApplicationInterface,
 ): String {
-  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff\n.*?\n```)""".toRegex() // capture filename
-  val matches = diffPattern.findAll(response).toList()
-  val withLinks = matches.fold(response) { markdown, diffBlock ->
-    val filename = diffBlock.groupValues[1]
+//  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff\n.*?\n```)""".toRegex() // capture filename
+  val diffPattern1 = """(?s)(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
+  val diffPattern2 = """(?s)(?<![^\n])(```diff\n.*?\n```)""".toRegex() // capture filename
+  val headers = diffPattern1.findAll(response).map { it.range to it.groupValues[1] }.toList()
+  val diffs = diffPattern2.findAll(response).map { it.range to it.groupValues[1] }.toList()
+//  val matches = diffPattern.findAll(response).toList()
+  val withLinks = diffs.fold(response) { markdown, diffBlock ->
+    val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
+    val filename = header?.second ?: "Unknown"
     val filepath = try {
       findFile(root, filename) ?: root.resolve(filename)
     } catch (e: Throwable) {
       log.error("Error finding file: $filename", e)
-      root.resolve(filename)
+      try {
+        root.resolve(filename)
+      } catch (e: Throwable) {
+        log.error("Error resolving file: $filename", e)
+        File(filename).toPath()
+      }
     }
-    val diffVal = diffBlock.groupValues[2]
+    val diffVal = diffBlock.second
 
     val prevCode = try {
       if (!filepath.toFile().exists()) {

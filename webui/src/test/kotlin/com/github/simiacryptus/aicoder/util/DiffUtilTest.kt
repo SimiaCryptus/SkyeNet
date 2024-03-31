@@ -120,136 +120,154 @@ class DiffUtilTest {
   @Test
   fun testVerifyLLMPatch() {
     val originalCode = """
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Parakeet Paradise</title>
-          <link rel="stylesheet" href="styles.css">
-          <script src="scripts.js" defer></script>
-      </head>
-      <body>
-          <header>
-              <nav>
-                  <div class="logo">
-                      <h1>Parakeet Paradise</h1>
-                  </div>
-                  <ul class="nav-links">
-                      <li><a href="index.html">Home</a></li>
-                      <li><a href="about-parakeets.html">About Parakeets</a></li>
-                      <li><a href="care-guide.html">Care Guide</a></li>
-                      <li><a href="breeds.html">Breeds</a></li>
-                      <li><a href="gallery.html">Gallery</a></li>
-                      <li><a href="faqs.html">FAQs</a></li>
-                      <li><a href="contact-us.html">Contact Us</a></li>
-                      <li><a href="blog.html">Blog</a></li>
-                  </ul>
-              </nav>
-          </header>
-          <main>
-              <section class="hero">
-                  <h2>Welcome to Parakeet Paradise!</h2>
-                  <p>Discover the colorful world of parakeets and learn everything you need to know about these delightful birds.</p>
-              </section>
-              <section class="featured-content">
-                  <article>
-                      <h3>Parakeet of the Month</h3>
-                      <p>Meet Charlie, a vibrant and playful Budgerigar who loves to sing and interact with his human family.</p>
-                  </article>
-                  <article>
-                      <h3>Latest Blog Posts</h3>
-                      <ul>
-                          <li><a href="blog-post-1.html">5 Fun Facts About Parakeets</a></li>
-                          <li><a href="blog-post-2.html">How to Train Your Parakeet to Talk</a></li>
-                          <li><a href="blog-post-3.html">The Best Diet for Healthy Parakeets</a></li>
-                      </ul>
-                  </article>
-                  <article>
-                      <h3>Care Tips</h3>
-                      <p>Learn how to provide the best care for your feathered friend, from diet to daily routines.</p>
-                  </article>
-              </section>
-          </main>
-          <footer>
-              <p>&copy; 2023 Parakeet Paradise. All rights reserved.</p>
-              <p>Follow us on <a href="#">Social Media</a></p>
-          </footer>
-      </body>
-      </html>
+      /* Basic reset for styling */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f0f0f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .game-container {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(8, 50px);
+        grid-gap: 10px;
+        justify-content: center;
+        margin-bottom: 20px;
+      }
+
+      .grid div {
+        width: 50px;
+        height: 50px;
+        background-color: #e0e0e0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .scoreboard {
+        margin-bottom: 20px;
+      }
+
+      .timer, .score {
+        font-size: 20px;
+        margin-bottom: 10px;
+      }
+
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: white;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      .instructions {
+        font-size: 14px;
+        color: #666;
+        text-align: center;
+        margin-top: 20px;
+      }
     """.trimIndent()
     val llmPatch = """
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Parakeet Paradise</title>
-      +   <!-- Link to the stylesheet -->
-          <link rel="stylesheet" href="styles.css">
-      +   <!-- Link to the JavaScript file -->
-          <script src="scripts.js" defer></script>
-      </head>
-      <body>
-          <header>
-              <nav>
-                  <div class="logo">
-                      <h1>Parakeet Paradise</h1>
-                  </div>
-                  <ul class="nav-links">
-                      <li><a href="index.html">Home</a></li>
-                      <li><a href="about-parakeets.html">About Parakeets</a></li>
-                      <li><a href="care-guide.html">Care Guide</a></li>
-                      <li><a href="breeds.html">Breeds</a></li>
-                      <li><a href="gallery.html">Gallery</a></li>
-                      <li><a href="faqs.html">FAQs</a></li>
-                      <li><a href="contact-us.html">Contact Us</a></li>
-                      <li><a href="blog.html">Blog</a></li>
-                  </ul>
-              </nav>
-          </header>
-          <main>
-              <section class="hero">
-                  <h2>Welcome to Parakeet Paradise!</h2>
-                  <p>Discover the colorful world of parakeets and learn everything you need to know about these delightful birds.</p>
-              </section>
-              <section class="featured-content">
-                  <article>
-                      <h3>Parakeet of the Month</h3>
-                      <p>Meet Charlie, a vibrant and playful Budgerigar who loves to sing and interact with his human family.</p>
-                  </article>
-                  <article>
-                      <h3>Latest Blog Posts</h3>
-                      <ul>
-                          <li><a href="blog-post-1.html">5 Fun Facts About Parakeets</a></li>
-                          <li><a href="blog-post-2.html">How to Train Your Parakeet to Talk</a></li>
-                          <li><a href="blog-post-3.html">The Best Diet for Healthy Parakeets</a></li>
-                      </ul>
-                  </article>
-                  <article>
-                      <h3>Care Tips</h3>
-                      <p>Learn how to provide the best care for your feathered friend, from diet to daily routines.</p>
-                  </article>
-              </section>
-          </main>
-          <footer>
-              <p>© 2023 Parakeet Paradise. All rights reserved.</p>
-              <p>Follow us on <a href="#">Social Media</a></p>
-          </footer>
-      </body>
-      </html>
+        body {
+          font-family: 'Arial', sans-serif;
+      -   background-color: #f0f0f0;
+      +   background-color: #f7f7f7;
+      +   background-image: linear-gradient(315deg, #f7f7f7 0%, #c2e9fb 74%);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+        }
+      
+        .game-container {
+          background-color: #ffffff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      +   transition: transform 0.3s ease;
+        }
+      
+      + .game-container:hover {
+      +   transform: scale(1.02);
+      + }
+      
+        .grid div {
+          width: 50px;
+          height: 50px;
+      -   background-color: #e0e0e0;
+      +   background-color: #d6e4ff;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 24px;
+          font-weight: bold;
+          cursor: pointer;
+          user-select: none;
+      +   border-radius: 5px;
+      +   transition: background-color 0.3s ease;
+        }
+      
+      + .grid div:hover {
+      +   background-color: #adc8ff;
+      + }
+      
+        button {
+          padding: 10px 20px;
+          font-size: 16px;
+          cursor: pointer;
+          border: none;
+          border-radius: 5px;
+      -   background-color: #007bff;
+      +   background-color: #4CAF50;
+          color: white;
+      +   box-shadow: 0 4px #259227;
+        }
+      
+        button:hover {
+      -   background-color: #0056b3;
+      +   background-color: #45a049;
+        }
+      
+      + button:active {
+      +   background-color: #3e8e41;
+      +   box-shadow: 0 2px #666;
+      +   transform: translateY(2px);
+      + }
     """.trimIndent()
     val reconstructed = ApxPatchUtil.patch(originalCode, llmPatch)
 
     val patchLines = DiffUtil.generateDiff(originalCode.lines(), reconstructed.lines())
-    println("\n\nPatched:\n\n")
-    patchLines.forEach {
-      println(it)
-    }
+//    println("\n\nPatched:\n\n")
+//    patchLines.forEach { println(it) }
 
     println("\n\nEcho Patch:\n\n")
-    DiffUtil.formatDiff(patchLines).lines().forEach {
-      println(it)
-    }
+    DiffUtil.formatDiff(patchLines).lines().forEach { println(it) }
   }
 }
