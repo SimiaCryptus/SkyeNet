@@ -120,146 +120,59 @@ class DiffUtilTest {
   @Test
   fun testVerifyLLMPatch() {
     val originalCode = """
-      /* Basic reset for styling */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: 'Arial', sans-serif;
-        background-color: #f0f0f0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-      }
-
-      .game-container {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(8, 50px);
-        grid-gap: 10px;
-        justify-content: center;
-        margin-bottom: 20px;
-      }
-
-      .grid div {
-        width: 50px;
-        height: 50px;
-        background-color: #e0e0e0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 24px;
-        font-weight: bold;
-        cursor: pointer;
-        user-select: none;
-      }
-
-      .scoreboard {
-        margin-bottom: 20px;
-      }
-
-      .timer, .score {
-        font-size: 20px;
-        margin-bottom: 10px;
-      }
-
-      button {
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        background-color: #007bff;
-        color: white;
-      }
-
-      button:hover {
-        background-color: #0056b3;
-      }
-
-      .instructions {
-        font-size: 14px;
-        color: #666;
-        text-align: center;
-        margin-top: 20px;
-      }
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Speed Word Search</title>
+          <link rel="stylesheet" href="style.css">
+      </head>
+      <body>
+          <div id="game-container">
+              <h1>Speed Word Search</h1>
+              <div id="score-board">
+                  <p>Score: <span id="score">0</span></p>
+                  <p>Time Left: <span id="time-left">60</span> seconds</p>
+              </div>
+              <div id="word-display">
+                  <!-- Words will be dynamically added here -->
+              </div>
+              <input type="text" id="word-input" placeholder="Start typing...">
+              <button id="start-game">Start Game</button>
+          </div>
+          <script src="game.js"></script>
+      </body>
+      </html>
     """.trimIndent()
     val llmPatch = """
-        body {
-          font-family: 'Arial', sans-serif;
-      -   background-color: #f0f0f0;
-      +   background-color: #f7f7f7;
-      +   background-image: linear-gradient(315deg, #f7f7f7 0%, #c2e9fb 74%);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-        }
-      
-        .game-container {
-          background-color: #ffffff;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      +   transition: transform 0.3s ease;
-        }
-      
-      + .game-container:hover {
-      +   transform: scale(1.02);
-      + }
-      
-        .grid div {
-          width: 50px;
-          height: 50px;
-      -   background-color: #e0e0e0;
-      +   background-color: #d6e4ff;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          font-size: 24px;
-          font-weight: bold;
-          cursor: pointer;
-          user-select: none;
-      +   border-radius: 5px;
-      +   transition: background-color 0.3s ease;
-        }
-      
-      + .grid div:hover {
-      +   background-color: #adc8ff;
-      + }
-      
-        button {
-          padding: 10px 20px;
-          font-size: 16px;
-          cursor: pointer;
-          border: none;
-          border-radius: 5px;
-      -   background-color: #007bff;
-      +   background-color: #4CAF50;
-          color: white;
-      +   box-shadow: 0 4px #259227;
-        }
-      
-        button:hover {
-      -   background-color: #0056b3;
-      +   background-color: #45a049;
-        }
-      
-      + button:active {
-      +   background-color: #3e8e41;
-      +   box-shadow: 0 2px #666;
-      +   transform: translateY(2px);
-      + }
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Speed Word Search</title>
+            <link rel="stylesheet" href="style.css">
+        </head>
+        <body>
+            <div id="game-container">
+                <h1>Speed Word Search</h1>
+        +       <div id="instructions">
+        +           <p>Find as many words as possible in 60 seconds. Start typing to begin!</p>
+        +       </div>
+                <div id="score-board">
+                    <p>Score: <span id="score">0</span></p>
+                    <p>Time Left: <span id="time-left">60</span> seconds</p>
+                </div>
+                <div id="word-display">
+                    <!-- Words will be dynamically added here -->
+                </div>
+                <input type="text" id="word-input" placeholder="Start typing...">
+                <button id="start-game">Start Game</button>
+            </div>
+            <script src="game.js"></script>
+        </body>
+        </html>
     """.trimIndent()
     val reconstructed = ApxPatchUtil.patch(originalCode, llmPatch)
 
