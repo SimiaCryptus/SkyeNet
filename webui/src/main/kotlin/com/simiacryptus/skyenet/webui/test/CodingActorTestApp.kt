@@ -33,7 +33,7 @@ open class CodingActorTestApp(
       (api as ClientManager.MonitoredClient).budget = 2.00
         val message = ui.newTask()
         try {
-            message.echo(renderMarkdown(userMessage))
+            message.echo(renderMarkdown(userMessage, ui=ui))
             val response = actor.answer(CodingActor.CodeRequest(listOf(userMessage to ApiModel.Role.user)), api = api)
             val canPlay = ApplicationServices.authorizationManager.isAuthorized(
                 this::class.java,
@@ -56,10 +56,10 @@ open class CodingActorTestApp(
                 renderMarkdown(
                     """
                     |```${actor.language.lowercase(Locale.getDefault())}
-                    |${/*escapeHtml4*/(response.code).indent("  ")}
+                    |${/*escapeHtml4*/(response.code)/*.indent("  ")*/}
                     |```
                     |$playLink
-                    """.trimMargin().trim()
+                    """.trimMargin().trim(), ui=ui
                 )
             )
         }

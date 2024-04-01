@@ -76,9 +76,10 @@ abstract class SocketManagerBase(
   }
 
   fun newTask(
-    cancelable: Boolean = false
+    cancelable: Boolean = false,
+    root : Boolean = true
   ): SessionTask {
-    val operationID = randomID()
+    val operationID = randomID(root)
     var responseContents = divInitializer(operationID, cancelable)
     send(responseContents)
     return SessionTaskImpl(operationID, responseContents, SessionTask.spinner)
@@ -248,10 +249,13 @@ abstract class SocketManagerBase(
   companion object {
     private val log = LoggerFactory.getLogger(ChatServer::class.java)
 
-    private val range = ('a'..'z').toList().toTypedArray()
-    fun randomID(): String {
+    private val range1 = ('a'..'y').toList().toTypedArray()
+    private val range2 = range1 + 'z'
+    fun randomID(root : Boolean = true): String {
       val random = java.util.Random()
-      return (0..5).map { range[random.nextInt(range.size)] }.joinToString("")
+      val joinToString = (if (root) range1[random.nextInt(range1.size)] else "z").toString() +
+          (0..4).map { range2[random.nextInt(range2.size)] }.joinToString("")
+      return joinToString
     }
 
     fun divInitializer(operationID: String = randomID(), cancelable: Boolean): String =

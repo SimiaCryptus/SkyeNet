@@ -69,7 +69,7 @@ open class ParsedActor<T : Any>(
             |
             |This is an example output:
             |```json
-            |${JsonUtil.toJson(exampleInstance!!).indent("  ")}
+            |${JsonUtil.toJson(exampleInstance!!)/*.indent("  ")*/}
             |```
             |
           """.trimMargin()

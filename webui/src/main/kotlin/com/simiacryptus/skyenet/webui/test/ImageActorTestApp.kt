@@ -36,7 +36,7 @@ open class ImageActorTestApp(
         val message = ui.newTask()
         try {
             val actor = getSettings<Settings>(session, user)?.actor ?: actor
-            message.echo(renderMarkdown(userMessage))
+            message.echo(renderMarkdown(userMessage, ui=ui))
             val response = actor.answer(
                 listOf(userMessage), api = api)
             message.verbose(response.text)

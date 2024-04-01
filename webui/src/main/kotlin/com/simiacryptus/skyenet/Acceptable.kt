@@ -125,13 +125,13 @@ class Acceptable<T : Any>(
         + "<!-- ACCEPTED -->"
         + prevValue.substringAfter("<!-- END ACCEPT -->")
         + "<div class=\"user-message\">"
-        + renderMarkdown(userResponse)
+        + renderMarkdown(userResponse, ui=ui)
         + "</div>")
     tabContent.set(newValue)
     task.add("") // Show spinner
     tabs.update()
     val newDesign = reviseResponse(history)
-    val newTask = ui.newTask()
+    val newTask = ui.newTask(root = false)
     tabContent.set(newValue + "\n" + newTask.placeholder)
     tabs.update()
     task.complete()

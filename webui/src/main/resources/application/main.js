@@ -181,7 +181,7 @@ function onWebSocketText(event) {
             substituteMessages(messageId, messageDiv);
         }
     });
-    if(messageDivs.length == 0) {
+    if(messageDivs.length == 0 && !messageId.startsWith("z")) {
         messageDiv = document.createElement('div');
         messageDiv.className = 'message message-container'; // Add the message-container class
         messageDiv.id = messageId;
@@ -209,12 +209,36 @@ function onWebSocketText(event) {
         }
     }
     if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    if (typeof Prism !== 'undefined') Prism.highlightAll();
-    refreshVerbose();
-    refreshReplyForms()
-    if (typeof mermaid !== 'undefined') mermaid.run();
-    updateTabs();
-    applyToAllSvg();
+    try{
+        if (typeof Prism !== 'undefined') Prism.highlightAll();
+    } catch (e) {
+        console.log("Error highlighting code: " + e);
+    }
+    try {
+        refreshVerbose();
+    } catch (e) {
+        console.log("Error refreshing verbose: " + e);
+    }
+    try {
+        refreshReplyForms()
+    } catch (e) {
+        console.log("Error refreshing reply forms: " + e);
+    }
+    try {
+        if (typeof mermaid !== 'undefined') mermaid.run();
+    } catch (e) {
+        console.log("Error running mermaid: " + e);
+    }
+    try {
+        updateTabs();
+    } catch (e) {
+        console.log("Error updating tabs: " + e);
+    }
+    try {
+        applyToAllSvg();
+    } catch (e) {
+        console.log("Error applying SVG pan zoom: " + e);
+    }
 }
 
 function updateTabs() {
