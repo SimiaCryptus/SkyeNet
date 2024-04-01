@@ -9,12 +9,11 @@ import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.net.URLDecoder
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.readText
 
-object SimpleDiffUtil {
+object ApxPatchUtil {
 
 
   fun patch(source: String, patch: String): String {
@@ -151,7 +150,7 @@ fun SocketManagerBase.addApplyDiffLinks(
         if (fullPatch.contains(diffVal)) return@hrefLink
         fullPatch.add(diffVal)
         val newCode = fullPatch.fold(code) { lines, patch ->
-          SimpleDiffUtil.patch(lines, patch)
+          ApxPatchUtil.patch(lines, patch)
         }
         handle(newCode)
         task.complete("""<div class="user-message">Diff Applied</div>""")
@@ -165,7 +164,7 @@ fun SocketManagerBase.addApplyDiffLinks(
         fullPatch.add(diffVal)
         val reversedCode = code.lines().reversed().joinToString("\n")
         val reversedDiff = diffVal.lines().reversed().joinToString("\n")
-        val newReversedCode = SimpleDiffUtil.patch(reversedCode, reversedDiff)
+        val newReversedCode = ApxPatchUtil.patch(reversedCode, reversedDiff)
         val newCode = newReversedCode.lines().reversed().joinToString("\n")
         handle(newCode)
         task.complete("""<div class="user-message">Diff Applied (Bottom to Top)</div>""")
@@ -184,11 +183,10 @@ fun SocketManagerBase.addSaveLinks(
   handle: (String, String) -> Unit
 ): String {
   val diffPattern =
-    """(?s)(?<![^\n])#+\s*(?:[^\n]+[:\-]\s+)?([^\n]+)\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
+    """(?s)(?<![^\n])#+\s*(?:[^\n]+[:\-]\s+)?([^\n]+)(?:[^`]+`?)*\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val filename = diffBlock.groupValues[1]
-//    val language = diffBlock.groupValues[2]
     val codeValue = diffBlock.groupValues[2]
     val hrefLink = hrefLink("Save File") {
       try {
@@ -203,7 +201,7 @@ fun SocketManagerBase.addSaveLinks(
   return withLinks
 }
 
-private val log = LoggerFactory.getLogger(SimpleDiffUtil::class.java)
+private val log = LoggerFactory.getLogger(ApxPatchUtil::class.java)
 
 fun findFile(root: Path, filename: String): Path? {
   return try {
@@ -237,106 +235,190 @@ fun SocketManagerBase.addApplyDiffLinks2(
   task: SessionTask,
   ui: ApplicationInterface,
 ): String {
-  val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)(?:[^`]+`?)*\n(```diff\n.*?\n```)""".toRegex() // capture filename
-  val matches = diffPattern.findAll(response).toList()
-  val withLinks = matches.fold(response) { markdown, diffBlock ->
-    val filename = diffBlock.groupValues[1]
-    val filepath = try {
-      findFile(root, filename) ?: root.resolve(filename)
-    } catch (e: Throwable) {
-      log.error("Error finding file: $filename", e)
-      root.resolve(filename)
+  val headerPattern = """(?s)(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
+  val diffPattern = """(?s)(?<![^\n])(```diff\n.*?\n```)""".toRegex() // capture filename
+  val codeblockPattern = """(?s)(?<![^\n])```([^\n])(\n.*?\n)```""".toRegex() // capture filename
+  val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
+  val diffs: List<Pair<IntRange, String>> = diffPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
+  val codeblocks = codeblockPattern.findAll(response).filter {
+    when (it.groupValues[1]) {
+      "diff" -> false
+      else -> true
     }
-    val diffVal = diffBlock.groupValues[2]
+  }.map { it.range to it }.toList()
+  val withPatchLinks: String = diffs.fold(response) { markdown, diffBlock ->
+    val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
+    val filename = header?.second ?: "Unknown"
+    val diffVal = diffBlock.second
+    val newValue = renderDiffBlock(root, filename, code, diffVal, handle, task, ui)
+    markdown.replace(diffVal, newValue)
+  }
+  val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
+    val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
+    val filename = header?.second ?: "Unknown"
+    val filepath = path(root, filename)
+    val prevCode = load(filepath, root, code)
+    val codeLang = codeBlock.second.groupValues[1]
+    val codeValue = codeBlock.second.groupValues[2]
+    val hrefLink = hrefLink("Save File") {
+      try {
+        handle(
+          mapOf(
+            filename to codeValue
+          )
+        )
+        task.complete("""<div class="user-message">Saved ${filename}</div>""")
+      } catch (e: Throwable) {
+        task.error(null, e)
+      }
+    }
+    val codeblockRaw = """
+      ```${codeLang}
+      ${codeValue}
+      ```
+      """.trimIndent()
+    markdown.replace(
+      codeblockRaw, displayMapInTabs(
+        mapOf(
+          "New" to renderMarkdown(codeblockRaw),
+          "Old" to renderMarkdown("""
+          |```${codeLang}
+          |${prevCode}
+          |```
+          """.trimMargin()),
+          "Patch" to renderMarkdown("""
+          |```diff
+          |${
+            DiffUtil.formatDiff(
+              DiffUtil.generateDiff(
+                prevCode.lines(),
+                codeValue.lines()
+              )
+            )
+          }
+          |```
+          """.trimMargin()),
+        )
+      ) + "\n" + hrefLink
+    )
+  }
+  return withSaveLinks
+}
 
-    val prevCode = try {
-      if (!filepath.toFile().exists()) {
-        log.warn(
-          """
+private fun SocketManagerBase.renderDiffBlock(
+  root: Path,
+  filename: String,
+  code: Map<String, String>,
+  diffVal: String,
+  handle: (Map<String, String>) -> Unit,
+  task: SessionTask,
+  ui: ApplicationInterface
+): String {
+  val filepath = path(root, filename)
+  val prevCode = load(filepath, root, code)
+  val newCode = ApxPatchUtil.patch(prevCode, diffVal)
+  val echoDiff = try {
+    DiffUtil.formatDiff(
+      DiffUtil.generateDiff(
+        prevCode.lines(),
+        newCode.lines()
+      )
+    )
+  } catch (e: Throwable) {
+    renderMarkdown("```\n${e.stackTraceToString()}\n```")
+  }
+
+  val hrefLink = hrefLink("Apply Diff") {
+    try {
+      val relativize = try {
+        root.relativize(filepath)
+      } catch (e: Throwable) {
+        filepath
+      }
+      handle(
+        mapOf(
+          relativize.toString() to ApxPatchUtil.patch(
+            prevCode,
+            diffVal
+          )
+        )
+      )
+      task.complete("""<div class="user-message">Diff Applied</div>""")
+    } catch (e: Throwable) {
+      task.error(null, e)
+    }
+  }
+  val reverseHrefLink = hrefLink("(Bottom to Top)") {
+    try {
+      val reversedCodeMap = code.mapValues { (_, v) -> v.lines().reversed().joinToString("\n") }
+      val reversedDiff = diffVal.lines().reversed().joinToString("\n")
+      val newReversedCodeMap = reversedCodeMap.mapValues { (file, prevCode) ->
+        if (filename == file) {
+          ApxPatchUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
+        } else prevCode
+      }
+      handle(newReversedCodeMap)
+      task.complete("""<div class="user-message">Diff Applied (Bottom to Top)</div>""")
+    } catch (e: Throwable) {
+      task.error(null, e)
+    }
+  }
+  val diffTask = ui?.newTask()
+  val prevCodeTask = ui?.newTask()
+  val newCodeTask = ui?.newTask()
+  val patchTask = ui?.newTask()
+  val inTabs = displayMapInTabs(
+    mapOf(
+      "Diff" to (diffTask?.placeholder ?: ""),
+      "Code" to (prevCodeTask?.placeholder ?: ""),
+      "Preview" to (newCodeTask?.placeholder ?: ""),
+      "Echo" to (patchTask?.placeholder ?: ""),
+    )
+  )
+  SocketManagerBase.scheduledThreadPoolExecutor.schedule({
+    diffTask?.add(renderMarkdown(/*escapeHtml4*/(diffVal)))
+    newCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```"))
+    prevCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```"))
+    patchTask?.add(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff}\n```"))
+  }, 100, TimeUnit.MILLISECONDS)
+  val newValue = inTabs + "\n" + hrefLink + "\n" + reverseHrefLink
+  return newValue
+}
+
+private fun load(
+  filepath: Path?,
+  root: Path,
+  code: Map<String, String>
+) = try {
+  if (true != filepath?.toFile()?.exists()) {
+    log.warn(
+      """
           |File not found: $filepath
           |Root: ${root.toAbsolutePath()}
           |Files: 
           |${code.keys.joinToString("\n") { "* $it" }}
           """.trimMargin()
-        )
-        ""
-      } else {
-        filepath.readText(Charsets.UTF_8)
-      }
-    } catch (e: Throwable) {
-      log.error("Error reading file: $filepath", e)
-      ""
-    }
-    val newCode = SimpleDiffUtil.patch(prevCode, diffVal)
-    val echoDiff = try {
-      DiffUtil.formatDiff(
-        DiffUtil.generateDiff(
-          prevCode.lines(),
-          newCode.lines()
-        )
-      )
-    } catch (e: Throwable) {
-      renderMarkdown("```\n${e.stackTraceToString()}\n```")
-    }
-
-    val hrefLink = hrefLink("Apply Diff") {
-      try {
-        handle(mapOf(root.relativize(filepath).toString() to SimpleDiffUtil.patch(
-          prevCode,
-          diffVal
-        )
-        ))
-        task.complete("""<div class="user-message">Diff Applied</div>""")
-      } catch (e: Throwable) {
-        task.error(null, e)
-      }
-    }
-    val reverseHrefLink = hrefLink("(Bottom to Top)") {
-      try {
-        val reversedCodeMap = code.mapValues { (_, v) -> v.lines().reversed().joinToString("\n") }
-        val reversedDiff = diffVal.lines().reversed().joinToString("\n")
-        val newReversedCodeMap = reversedCodeMap.mapValues { (file, prevCode) ->
-          if (filename == file) {
-            SimpleDiffUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
-          } else prevCode
-        }
-        handle(newReversedCodeMap)
-        task.complete("""<div class="user-message">Diff Applied (Bottom to Top)</div>""")
-      } catch (e: Throwable) {
-        task.error(null, e)
-      }
-    }
-    val diffTask = ui?.newTask()
-    val prevCodeTask = ui?.newTask()
-    val newCodeTask = ui?.newTask()
-    val patchTask = ui?.newTask()
-    val inTabs = displayMapInTabs(
-      mapOf(
-        "Diff" to (diffTask?.placeholder ?: ""),
-        "Code" to (prevCodeTask?.placeholder ?: ""),
-        "Preview" to (newCodeTask?.placeholder ?: ""),
-        "Echo" to (patchTask?.placeholder ?: ""),
-      )
     )
-    SocketManagerBase.scheduledThreadPoolExecutor.schedule({
-      diffTask?.add(renderMarkdown(/*escapeHtml4*/(diffVal)))
-      newCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```"))
-      prevCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```"))
-      patchTask?.add(
-        renderMarkdown(
-          "# $filename\n\n```diff\n  ${
-            echoDiff?.let { /*escapeHtml4*/URLDecoder.decode(
-              it,
-              Charsets.UTF_8
-            )/*.indent("  ")*/
-            }
-          }\n```"
-        )
-      )
-    }, 100, TimeUnit.MILLISECONDS)
-    markdown.replace(
-      diffVal, inTabs + "\n" + hrefLink + "\n" + reverseHrefLink
-    )
+    ""
+  } else {
+    filepath.readText(Charsets.UTF_8)
   }
-  return withLinks
+} catch (e: Throwable) {
+  log.error("Error reading file: $filepath", e)
+  ""
+}
+
+private fun path(root: Path, filename: String): Path? {
+  val filepath = try {
+    findFile(root, filename) ?: root.resolve(filename)
+  } catch (e: Throwable) {
+    log.error("Error finding file: $filename", e)
+    try {
+      root.resolve(filename)
+    } catch (e: Throwable) {
+      log.error("Error resolving file: $filename", e)
+      File(filename).toPath()
+    }
+  }
+  return filepath
 }

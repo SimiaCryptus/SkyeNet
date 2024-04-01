@@ -96,15 +96,17 @@ let loadImages = "true";
             if (this.isPanning === false) return;
             const dx = event.clientX - this.startX;
             const dy = event.clientY - this.startY;
-            if (this.currentTransform.x) {
-                this.currentTransform.x = dx * moveScale + this.priorPan.x;
-            } else {
-                this.currentTransform.x = dx * moveScale + this.priorPan.x;
-            }
-            if (this.currentTransform.y) {
-                this.currentTransform.y = dy * moveScale + this.priorPan.y;
-            } else {
-                this.currentTransform.y = dy * moveScale + this.priorPan.y;
+            if(this.priorPan) {
+                if (this.currentTransform.x) {
+                    this.currentTransform.x = dx * moveScale + this.priorPan.x;
+                } else {
+                    this.currentTransform.x = dx * moveScale + this.priorPan.x;
+                }
+                if (this.currentTransform.y) {
+                    this.currentTransform.y = dy * moveScale + this.priorPan.y;
+                } else {
+                    this.currentTransform.y = dy * moveScale + this.priorPan.y;
+                }
             }
             console.log("Panning %s, %s", this.currentTransform.x, this.currentTransform.y);
             this.updateTransform();
