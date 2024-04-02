@@ -132,11 +132,11 @@ abstract class ShellToolAgent<T : Interpreter>(
                 }
               """.trimIndent()
         val messages = listOf(
-          "Shell Code: \n```${actor.language}\n${(response.code).indent("  ")}\n```" to ApiModel.Role.assistant,
+          "Shell Code: \n```${actor.language}\n${(response.code)/*.indent("  ")*/}\n```" to ApiModel.Role.assistant,
         ) + (lastResult?.let { listOf(
-          "Example Output:\n\n```text\n${it.indent("  ")}\n```" to ApiModel.Role.assistant
+          "Example Output:\n\n```text\n${it/*.indent("  ")*/}\n```" to ApiModel.Role.assistant
         ) } ?: listOf()) + listOf(
-          "Schema: \n```kotlin\n${schemaCode.indent("  ")}\n```" to ApiModel.Role.assistant,
+          "Schema: \n```kotlin\n${schemaCode/*.indent("  ")*/}\n```" to ApiModel.Role.assistant,
           "Implement a parsing method to convert the shell output to the requested data structure" to ApiModel.Role.user
         )
         displayCodeFeedback(
@@ -160,7 +160,7 @@ abstract class ShellToolAgent<T : Interpreter>(
             var openAPI = openAPIParsedActor().getParser(api).apply(servletImpl).let { openApi ->
               openApi.copy(paths = openApi.paths?.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
             }
-            task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI).indent("  ")}\n```"))
+            task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI)/*.indent("  ")*/}\n```", ui=ui))
             for (i in 0..5) {
               try {
                 OpenAPIGenerator.main(
@@ -185,7 +185,7 @@ abstract class ShellToolAgent<T : Interpreter>(
               |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
               |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
             """.trimIndent()
-                task.hideable(ui, renderMarkdown("```\n${error?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
+                task.hideable(ui, renderMarkdown("```\n${error?.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n```", ui=ui))
                 openAPI = openAPIParsedActor().answer(
                   listOf(
                     servletImpl,
@@ -196,7 +196,7 @@ abstract class ShellToolAgent<T : Interpreter>(
                   val paths = HashMap(openApi.paths)
                   openApi.copy(paths = paths.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
                 }
-                task.hideable(ui, renderMarkdown("```json\n${JsonUtil.toJson(openAPI).indent("  ")}\n```"))
+                task.hideable(ui, renderMarkdown("```json\n${JsonUtil.toJson(openAPI)/*.indent("  ")*/}\n```", ui=ui))
               }
             }
             if (ApplicationServices.authorizationManager.isAuthorized(
@@ -306,7 +306,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     response: CodeResult = execWrap { actor.answer(request, api = api) },
     onComplete: (String) -> Unit
   ) {
-    task.hideable(ui, renderMarkdown("```kotlin\n${response.code?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
+    task.hideable(ui, renderMarkdown("```kotlin\n${response.code?.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n```", ui=ui))
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(
@@ -367,7 +367,7 @@ abstract class ShellToolAgent<T : Interpreter>(
           super.responseAction(task, "Revising...", formHandle!!, formText) {
             //val task = super.ui.newTask()
             try {
-              task.echo(renderMarkdown(feedback))
+              task.echo(renderMarkdown(feedback, ui=ui))
               val codeRequest = CodingActor.CodeRequest(
                 messages = request.messages +
                     listOf(
@@ -434,7 +434,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     )
     // if ```html unwrap
     if (testPage.contains("```html")) testPage = testPage.substringAfter("```html").substringBefore("```")
-    task.add(renderMarkdown("```html\n${testPage?.let { /*escapeHtml4*/(it).indent("  ") }}\n```"))
+    task.add(renderMarkdown("```html\n${testPage?.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n```", ui=ui))
     task.complete(
       "<a href='${
         task.saveFile(

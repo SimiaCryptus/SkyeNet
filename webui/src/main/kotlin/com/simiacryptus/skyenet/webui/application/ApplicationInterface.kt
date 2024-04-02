@@ -28,7 +28,8 @@ open class ApplicationInterface(val socketManager: SocketManagerBase) {
   @Description("Creates a new 'task' that can be used to display the progress of a long-running operation.")
   open fun newTask(
     //cancelable: Boolean = false
-  ): SessionTask = socketManager.newTask(false)
+    root: Boolean = true
+  ): SessionTask = socketManager.newTask(cancelable = false, root = root)
 
   companion object {
     fun <T> oneAtATime(handler: Consumer<T>): Consumer<T> {

@@ -3,11 +3,9 @@ package com.simiacryptus.skyenet.webui.session
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.core.actors.CodingActor
-import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
-import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
 
@@ -133,10 +131,10 @@ abstract class SessionTask(
         |
         |Stack Trace:
         |```text
-        |${e.stackTraceTxt.indent("  ")}
+        |${e.stackTraceTxt/*.indent("  ")*/}
         |```
         |
-        |""".trimMargin()
+        |""".trimMargin(), ui=ui
       )
       e is CodingActor.FailedToImplementException -> renderMarkdown(
         """
@@ -146,15 +144,15 @@ abstract class SessionTask(
         |
         |Prefix:
         |```${e.language?.lowercase() ?: ""}
-        |${/*escapeHtml4*/(e.prefix?.indent("  ") ?: "")}
+        |${/*escapeHtml4*/(e.prefix/*?.indent("  ")*/ ?: "")}
         |```
         |
         |Implementation Attempt:
         |```${e.language?.lowercase() ?: ""}
-        |${/*escapeHtml4*/(e.code?.indent("  ") ?: "")}
+        |${/*escapeHtml4*/(e.code/*?.indent("  ")*/ ?: "")}
         |```
         |
-        |""".trimMargin()
+        |""".trimMargin(), ui=ui
       )
 
       else -> renderMarkdown(
@@ -162,9 +160,9 @@ abstract class SessionTask(
         |**Error `${e.javaClass.name}`**
         |
         |```text
-        |${e.stackTraceToString()?.let { /*escapeHtml4*/(it).indent("  ") }}
+        |${e.stackTraceToString()?.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
         |```
-        |""".trimMargin()
+        |""".trimMargin(), ui=ui
       )
     }, showSpinner, tag, "error"
   )

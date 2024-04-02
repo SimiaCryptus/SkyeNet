@@ -23,7 +23,6 @@ import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
-import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.Semaphore
@@ -164,11 +163,11 @@ class WebDevAgent(
       userMessage = userMessage,
       initialResponse = { it: String -> architectureDiscussionActor.answer(toInput(it), api = api) },
       outputFn = { design: ParsedResponse<PageResourceList> ->
-        //        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj).indent("  ")}\n```")
+        //        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n```")
         AgentPatterns.displayMapInTabs(
           mapOf(
-            "Text" to renderMarkdown(design.text),
-            "JSON" to renderMarkdown("```json\n${JsonUtil.toJson(design.obj).indent("  ")}\n```"),
+            "Text" to renderMarkdown(design.text, ui=ui),
+            "JSON" to renderMarkdown("```json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n```", ui=ui),
           )
         )
       },
@@ -191,7 +190,7 @@ class WebDevAgent(
         .joinToString("\n\n") { it?.let { JsonUtil.toJson(it.openApiDescription) } ?: "" }
       var messageWithTools = userMessage
       if (toolSpecs.isNotBlank()) messageWithTools += "\n\nThese services are available:\n$toolSpecs"
-      task.echo(renderMarkdown("```json\n${JsonUtil.toJson(architectureResponse.obj).indent("  ")}\n```"))
+      task.echo(renderMarkdown("```json\n${JsonUtil.toJson(architectureResponse.obj)/*.indent("  ")*/}\n```", ui=ui))
       architectureResponse.obj.resources.filter {
         !it.path!!.startsWith("http")
       }.forEach { (path, description) ->
@@ -243,8 +242,8 @@ class WebDevAgent(
       // Apply codeReviewer
       fun codeSummary() = codeFiles.entries.joinToString("\n\n") { (path, code) ->
         "# $path\n```${
-          /*escapeHtml4*/(path.split('.').last()).indent("  ")
-        }\n${/*escapeHtml4*/(code).indent("  ")}\n```"
+          /*escapeHtml4*/(path.split('.').last())/*.indent("  ")*/
+        }\n${/*escapeHtml4*/(code)/*.indent("  ")*/}\n```"
       }
 
       fun outputFn(task: SessionTask, design: String): StringBuilder? {
@@ -277,7 +276,7 @@ class WebDevAgent(
       }
       try {
         var task = ui.newTask()
-        task.add(message = renderMarkdown(codeSummary()))
+        task.add(message = renderMarkdown(codeSummary(), ui=ui))
         var design = codeReviewer.answer(listOf(element = codeSummary()), api = api)
         outputFn(task, design)
         var textInputHandle: StringBuilder? = null
@@ -288,9 +287,9 @@ class WebDevAgent(
           textInputHandle?.clear()
           task.complete()
           task = ui.newTask()
-          task.echo(renderMarkdown(userResponse))
+          task.echo(renderMarkdown(userResponse, ui=ui))
           val codeSummary = codeSummary()
-          task.add(renderMarkdown(codeSummary))
+          task.add(renderMarkdown(codeSummary, ui=ui))
           design = codeReviewer.respond(
             messages = codeReviewer.chatMessages(
               listOf(
@@ -332,7 +331,7 @@ class WebDevAgent(
         if (code.contains("```$language")) code = code.substringAfter("```$language").substringBefore("```")
       }
       try {
-        task.add(renderMarkdown("```${languages.first()}\n$code\n```"))
+        task.add(renderMarkdown("```${languages.first()}\n$code\n```", ui=ui))
         task.add("<a href='${task.saveFile(path, code.toByteArray(Charsets.UTF_8))}'>$path</a> Updated")
         codeFiles[path] = code
         val request1 = (request.toList() +
@@ -362,7 +361,7 @@ class WebDevAgent(
               responseAction(task, "Revising...", formHandle!!, formText) {
                 //val task = ui.newTask()
                 try {
-                  task.echo(renderMarkdown(feedback))
+                  task.echo(renderMarkdown(feedback, ui=ui))
                   draftResourceCode(
                     task, (request1.toList() + listOf(
                       code to ApiModel.Role.assistant,

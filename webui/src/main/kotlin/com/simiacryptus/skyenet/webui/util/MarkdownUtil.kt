@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.webui.util
 
+import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
+import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
@@ -7,7 +9,12 @@ import com.vladsch.flexmark.util.data.MutableDataSet
 import org.intellij.lang.annotations.Language
 
 object MarkdownUtil {
-  fun renderMarkdown(markdown: String, options: MutableDataSet = defaultOptions(), tabs : Boolean = true): String {
+  fun renderMarkdown(
+    markdown: String,
+    options: MutableDataSet = defaultOptions(),
+    tabs : Boolean = true,
+    ui: ApplicationInterface? = null,
+  ): String {
     if (markdown.isBlank()) return ""
     val parser = Parser.builder(options).build()
     val renderer = HtmlRenderer.builder(options).build()
@@ -29,19 +36,13 @@ object MarkdownUtil {
         |""".trimMargin()
     )
     //language=HTML
-    return if(tabs) """
-      |<div class="tabs-container">
-      |    <div class="tabs">
-      |        <button class="tab-button" data-for-tab="1">HTML</button>
-      |        <button class="tab-button" data-for-tab="2">Markdown</button>
-      |        <button class="tab-button" data-for-tab="3">Hide</button>
-      |    </div>
-      |    <div class="tab-content active" data-tab="1">$htmlContent</div>
-      |    <div class="tab-content" data-tab="2">
-      |        <pre><code class="language-markdown">${markdown.replace(Regex("<"), "&lt;").replace(Regex(">"), "&gt;")}</code></pre>
-      |    </div>
-      |</div>
-    """.trimMargin() else htmlContent
+    return if(tabs) {
+      displayMapInTabs(mapOf(
+        "HTML" to htmlContent,
+        "Markdown" to """<pre><code class="language-markdown">${markdown.replace(Regex("<"), "&lt;").replace(Regex(">"), "&gt;")}</code></pre>""",
+        "Hide" to "",
+      ), ui = ui)
+    } else htmlContent
   }
 
     private fun defaultOptions(): MutableDataSet {

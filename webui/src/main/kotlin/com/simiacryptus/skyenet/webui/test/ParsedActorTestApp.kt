@@ -29,7 +29,7 @@ open class ParsedActorTestApp<T : Any>(
         (api as ClientManager.MonitoredClient).budget = 2.00
         val message = ui.newTask()
         try {
-            message.echo(renderMarkdown(userMessage))
+            message.echo(renderMarkdown(userMessage, ui=ui))
             val response = actor.answer(listOf(userMessage), api = api)
             message.complete(
                 renderMarkdown(
@@ -38,7 +38,7 @@ open class ParsedActorTestApp<T : Any>(
                     |```
                     |${JsonUtil.toJson(response.obj)}
                     |```
-                    """.trimMargin().trim()
+                    """.trimMargin().trim(), ui=ui
                     )
             )
         } catch (e: Throwable) {

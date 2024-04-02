@@ -1,7 +1,9 @@
 package com.github.simiacryptus.aicoder.util
 
+import com.github.simiacryptus.aicoder.util.ApxPatchUtil.patch
+import com.github.simiacryptus.aicoder.util.DiffUtil.formatDiff
+import com.github.simiacryptus.aicoder.util.DiffUtil.generateDiff
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
-import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
@@ -134,24 +136,19 @@ object ApxPatchUtil {
 }
 
 fun SocketManagerBase.addApplyDiffLinks(
-  code: String,
+  code: StringBuilder,
   response: String,
-  fullPatch: MutableList<String> = mutableListOf(),
   handle: (String) -> Unit,
   task: SessionTask,
   ui: ApplicationInterface? = null,
 ): String {
-  val diffPattern = """(?s)(?<![^\n])```diff\n(.*?)\n```""".toRegex()
+  val diffPattern = """(?s)(?<![^\n])```diff\n.*?\n```""".toRegex()
   val matches = diffPattern.findAll(response).distinct()
   val withLinks = matches.fold(response) { markdown, diffBlock ->
     val diffVal = diffBlock.value
     val hrefLink = hrefLink("Apply Diff") {
       try {
-        if (fullPatch.contains(diffVal)) return@hrefLink
-        fullPatch.add(diffVal)
-        val newCode = fullPatch.fold(code) { lines, patch ->
-          ApxPatchUtil.patch(lines, patch)
-        }
+        val newCode = patch(code.toString(), diffVal)
         handle(newCode)
         task.complete("""<div class="user-message">Diff Applied</div>""")
       } catch (e: Throwable) {
@@ -160,11 +157,9 @@ fun SocketManagerBase.addApplyDiffLinks(
     }
     val reverseHrefLink = hrefLink("(Bottom to Top)") {
       try {
-        if (fullPatch.contains(diffVal)) return@hrefLink
-        fullPatch.add(diffVal)
         val reversedCode = code.lines().reversed().joinToString("\n")
         val reversedDiff = diffVal.lines().reversed().joinToString("\n")
-        val newReversedCode = ApxPatchUtil.patch(reversedCode, reversedDiff)
+        val newReversedCode = patch(reversedCode, reversedDiff)
         val newCode = newReversedCode.lines().reversed().joinToString("\n")
         handle(newCode)
         task.complete("""<div class="user-message">Diff Applied (Bottom to Top)</div>""")
@@ -172,7 +167,29 @@ fun SocketManagerBase.addApplyDiffLinks(
         task.error(ui, e)
       }
     }
-    markdown.replace(diffVal, diffVal + "\n" + hrefLink + "\n" + reverseHrefLink)
+    val test1 = formatDiff(
+      generateDiff(
+        code.lines(),
+        patch(code.toString(), diffVal).lines()
+      )
+    )
+    val test2 = formatDiff(
+      generateDiff(
+        code.lines(),
+        patch(
+          code.lines().reversed().joinToString("\n"),
+          diffVal.lines().reversed().joinToString("\n")
+        ).lines().reversed()
+      )
+    )
+    val newValue = displayMapInTabs(
+      mapOf(
+        "Diff" to renderMarkdown(diffVal, ui = ui, tabs = true),
+        "Verify" to renderMarkdown("```diff\n$test1\n```", ui = ui, tabs = true),
+        "Reverse" to renderMarkdown("```diff\n$test2\n```", ui = ui, tabs = true),
+      ), ui = ui
+    ) + "\n" + hrefLink + "\n" + reverseHrefLink
+    markdown.replace(diffVal, newValue)
   }
   return withLinks
 }
@@ -196,7 +213,7 @@ fun SocketManagerBase.addSaveLinks(
         task.error(null, e)
       }
     }
-    markdown.replace(codeValue + "```", codeValue?.let { /*escapeHtml4*/(it).indent("  ") } + "```\n" + hrefLink)
+    markdown.replace(codeValue + "```", codeValue?.let { /*escapeHtml4*/(it)/*.indent("  ")*/ } + "```\n" + hrefLink)
   }
   return withLinks
 }
@@ -280,24 +297,28 @@ fun SocketManagerBase.addApplyDiffLinks2(
     markdown.replace(
       codeblockRaw, displayMapInTabs(
         mapOf(
-          "New" to renderMarkdown(codeblockRaw),
-          "Old" to renderMarkdown("""
+          "New" to renderMarkdown(codeblockRaw, ui = ui),
+          "Old" to renderMarkdown(
+            """
           |```${codeLang}
           |${prevCode}
           |```
-          """.trimMargin()),
-          "Patch" to renderMarkdown("""
+          """.trimMargin(), ui = ui
+          ),
+          "Patch" to renderMarkdown(
+            """
           |```diff
           |${
-            DiffUtil.formatDiff(
-              DiffUtil.generateDiff(
-                prevCode.lines(),
-                codeValue.lines()
+              formatDiff(
+                generateDiff(
+                  prevCode.lines(),
+                  codeValue.lines()
+                )
               )
-            )
-          }
+            }
           |```
-          """.trimMargin()),
+          """.trimMargin(), ui = ui
+          ),
         )
       ) + "\n" + hrefLink
     )
@@ -316,16 +337,16 @@ private fun SocketManagerBase.renderDiffBlock(
 ): String {
   val filepath = path(root, filename)
   val prevCode = load(filepath, root, code)
-  val newCode = ApxPatchUtil.patch(prevCode, diffVal)
+  val newCode = patch(prevCode, diffVal)
   val echoDiff = try {
-    DiffUtil.formatDiff(
-      DiffUtil.generateDiff(
+    formatDiff(
+      generateDiff(
         prevCode.lines(),
         newCode.lines()
       )
     )
   } catch (e: Throwable) {
-    renderMarkdown("```\n${e.stackTraceToString()}\n```")
+    renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
   }
 
   val hrefLink = hrefLink("Apply Diff") {
@@ -337,7 +358,7 @@ private fun SocketManagerBase.renderDiffBlock(
       }
       handle(
         mapOf(
-          relativize.toString() to ApxPatchUtil.patch(
+          relativize.toString() to patch(
             prevCode,
             diffVal
           )
@@ -354,7 +375,7 @@ private fun SocketManagerBase.renderDiffBlock(
       val reversedDiff = diffVal.lines().reversed().joinToString("\n")
       val newReversedCodeMap = reversedCodeMap.mapValues { (file, prevCode) ->
         if (filename == file) {
-          ApxPatchUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
+          patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
         } else prevCode
       }
       handle(newReversedCodeMap)
@@ -363,10 +384,10 @@ private fun SocketManagerBase.renderDiffBlock(
       task.error(null, e)
     }
   }
-  val diffTask = ui?.newTask()
-  val prevCodeTask = ui?.newTask()
-  val newCodeTask = ui?.newTask()
-  val patchTask = ui?.newTask()
+  val diffTask = ui?.newTask(root = false)
+  val prevCodeTask = ui?.newTask(root = false)
+  val newCodeTask = ui?.newTask(root = false)
+  val patchTask = ui?.newTask(root = false)
   val inTabs = displayMapInTabs(
     mapOf(
       "Diff" to (diffTask?.placeholder ?: ""),
@@ -376,10 +397,20 @@ private fun SocketManagerBase.renderDiffBlock(
     )
   )
   SocketManagerBase.scheduledThreadPoolExecutor.schedule({
-    diffTask?.add(renderMarkdown(/*escapeHtml4*/(diffVal)))
-    newCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```"))
-    prevCodeTask?.add(renderMarkdown("# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```"))
-    patchTask?.add(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff}\n```"))
+    diffTask?.add(renderMarkdown(/*escapeHtml4*/(diffVal), ui = ui))
+    newCodeTask?.add(
+      renderMarkdown(
+        "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
+        ui = ui
+      )
+    )
+    prevCodeTask?.add(
+      renderMarkdown(
+        "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+        ui = ui
+      )
+    )
+    patchTask?.add(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff}\n```", ui = ui))
   }, 100, TimeUnit.MILLISECONDS)
   val newValue = inTabs + "\n" + hrefLink + "\n" + reverseHrefLink
   return newValue

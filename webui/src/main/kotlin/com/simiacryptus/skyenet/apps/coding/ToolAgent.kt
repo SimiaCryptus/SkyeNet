@@ -105,7 +105,7 @@ abstract class ToolAgent<T : Interpreter>(
           var openAPI = openAPIParsedActor().getParser(api).apply(servletImpl).let { openApi ->
             openApi.copy(paths = openApi.paths?.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
           }
-          task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI).indent("  ")}\n```"))
+          task.add(renderMarkdown("```json\n${JsonUtil.toJson(openAPI)/*.indent("  ")*/}\n```", ui=ui))
           for (i in 0..5) {
             try {
               OpenAPIGenerator.main(
@@ -130,7 +130,7 @@ abstract class ToolAgent<T : Interpreter>(
               |${e.errors.joinToString("\n") { "ERROR:" + it.toString() }}
               |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
             """.trimIndent()
-              task.hideable(ui, renderMarkdown("```\n${error.indent("  ")}\n```"))
+              task.hideable(ui, renderMarkdown("```\n${error/*.indent("  ")*/}\n```", ui=ui))
               openAPI = openAPIParsedActor().answer(
                 listOf(
                   servletImpl,
@@ -141,7 +141,7 @@ abstract class ToolAgent<T : Interpreter>(
                 val paths = HashMap(openApi.paths)
                 openApi.copy(paths = paths.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
               }
-              task.hideable(ui, renderMarkdown("```json\n${JsonUtil.toJson(openAPI).indent("  ")}\n```"))
+              task.hideable(ui, renderMarkdown("```json\n${JsonUtil.toJson(openAPI)/*.indent("  ")*/}\n```", ui=ui))
             }
           }
           if (ApplicationServices.authorizationManager.isAuthorized(
@@ -231,7 +231,7 @@ abstract class ToolAgent<T : Interpreter>(
     response: CodeResult = execWrap { actor.answer(request, api = api) },
     onComplete: (String) -> Unit
   ) {
-    task.hideable(ui, renderMarkdown("```kotlin\n${/*escapeHtml4*/(response.code).indent("  ")}\n```"))
+    task.hideable(ui, renderMarkdown("```kotlin\n${/*escapeHtml4*/(response.code)/*.indent("  ")*/}\n```", ui=ui))
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(
@@ -287,7 +287,7 @@ abstract class ToolAgent<T : Interpreter>(
           super.responseAction(task, "Revising...", formHandle!!, formText) {
             //val task = super.ui.newTask()
             try {
-              task.echo(renderMarkdown(feedback))
+              task.echo(renderMarkdown(feedback, ui=ui))
               val codeRequest = CodingActor.CodeRequest(
                 messages = request.messages +
                     listOf(
@@ -354,7 +354,7 @@ abstract class ToolAgent<T : Interpreter>(
     )
     // if ```html unwrap
     if (testPage.contains("```html")) testPage = testPage.substringAfter("```html").substringBefore("```")
-    task.add(renderMarkdown("```html\n$testPage\n```"))
+    task.add(renderMarkdown("```html\n$testPage\n```", ui=ui))
     task.complete(
       "<a href='${
         task.saveFile(

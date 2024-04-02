@@ -9,7 +9,6 @@ import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.actors.ActorSystem
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
-import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.Session
@@ -63,7 +62,7 @@ open class CodingAgent<T : Interpreter>(
     userMessage: String,
   ) {
     try {
-      mainTask.echo(renderMarkdown(userMessage))
+      mainTask.echo(renderMarkdown(userMessage, ui=ui))
       val codeRequest = codeRequest(listOf(userMessage to ApiModel.Role.user))
       start(codeRequest, mainTask)
     } catch (e: Throwable) {
@@ -76,10 +75,10 @@ open class CodingAgent<T : Interpreter>(
     codeRequest: CodingActor.CodeRequest,
     task: SessionTask = mainTask,
   ) {
-    val newTask = ui.newTask()
+    val newTask = ui.newTask(root = false)
     task.complete(newTask.placeholder)
     Retryable(ui, newTask) {
-      val newTask = ui.newTask()
+      val newTask = ui.newTask(root = false)
       scheduledThreadPoolExecutor.schedule({
         cachedThreadPoolExecutor.submit {
           val statusSB = newTask.add("Running...")
@@ -150,7 +149,7 @@ open class CodingAgent<T : Interpreter>(
       renderMarkdown(
         response.renderedResponse ?:
         //language=Markdown
-        "```${actor.language.lowercase(Locale.getDefault())}\n${response.code.trim()}\n```"
+        "```${actor.language.lowercase(Locale.getDefault())}\n${response.code.trim()}\n```", ui=ui
       )
     )
   }
@@ -246,7 +245,7 @@ open class CodingAgent<T : Interpreter>(
     response: CodeResult
   ) {
     try {
-      task.echo(renderMarkdown(feedback))
+      task.echo(renderMarkdown(feedback, ui=ui))
       start(codeRequest = codeRequest(
         messages = request.messages +
             listOf(
@@ -285,14 +284,14 @@ open class CodingAgent<T : Interpreter>(
     response: CodeResult
   ) {
     val message = when {
-      e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "")
+      e is ValidatedObject.ValidationError -> renderMarkdown(e.message ?: "", ui=ui)
       e is CodingActor.FailedToImplementException -> renderMarkdown(
         """
                   |**Failed to Implement** 
                   |
                   |${e.message}
                   |
-                  |""".trimMargin()
+                  |""".trimMargin(), ui=ui
       )
 
       else -> renderMarkdown(
@@ -300,9 +299,9 @@ open class CodingAgent<T : Interpreter>(
                   |**Error `${e.javaClass.name}`**
                   |
                   |```text
-                  |${e.stackTraceToString().indent("  ")}
+                  |${e.stackTraceToString()/*.indent("  ")*/}
                   |```
-                  |""".trimMargin()
+                  |""".trimMargin(), ui=ui
       )
     }
     task.add(message, true, "div", "error")
@@ -325,23 +324,23 @@ open class CodingAgent<T : Interpreter>(
       resultValue.isBlank() || resultValue.trim().lowercase() == "null" -> """
                 |# Output
                 |```text
-                |${resultOutput.let { /*escapeHtml4*/(it).indent("  ") }}
+                |${resultOutput.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
                 |```
                 """.trimMargin()
 
       else -> """
                 |# Result
                 |```
-                |${resultValue.let { /*escapeHtml4*/(it).indent("  ") }}
+                |${resultValue.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
                 |```
                 |
                 |# Output
                 |```text
-                |${resultOutput.let { /*escapeHtml4*/(it).indent("  ") }}
+                |${resultOutput.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
                 |```
                 """.trimMargin()
     }
-    task.add(renderMarkdown(result))
+    task.add(renderMarkdown(result, ui=ui))
     return result
   }
 
