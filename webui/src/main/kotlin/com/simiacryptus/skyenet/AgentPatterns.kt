@@ -8,7 +8,7 @@ object AgentPatterns {
   fun displayMapInTabs(
     map: Map<String, String>,
     ui: ApplicationInterface? = null,
-    split: Boolean = map.entries.map { it.value.length + it.key.length }.sum() > 1000
+    split: Boolean = map.entries.map { it.value.length + it.key.length }.sum() > 10000
   ) : String = if(split && ui != null) {
     val tasks = map.entries.map { (key, value) ->
       key to ui.newTask(root = false)
