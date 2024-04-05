@@ -96,7 +96,7 @@ let loadImages = "true";
             if (this.isPanning === false) return;
             const dx = event.clientX - this.startX;
             const dy = event.clientY - this.startY;
-            if(this.priorPan) {
+            if (this.priorPan) {
                 if (this.currentTransform.x) {
                     this.currentTransform.x = dx * moveScale + this.priorPan.x;
                 } else {
@@ -146,7 +146,7 @@ function applyToAllSvg() {
 
 function substituteMessages(outerMessageId, messageDiv) {
     Object.entries(messageMap).forEach(([innerMessageId, content]) => {
-        if(outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
+        if (outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
             if (element.innerHTML !== content) {
                 //console.log("Substituting message with id " + innerMessageId + " and content " + content);
                 element.innerHTML = content;
@@ -169,8 +169,8 @@ function onWebSocketText(event) {
     //     console.log("Ignoring message with id " + messageId + " and version " + messageVersion);
     //     return;
     // } else {
-        messageVersions[messageId] = messageVersion;
-        messageMap[messageId] = messageContent;
+    messageVersions[messageId] = messageVersion;
+    messageMap[messageId] = messageContent;
     // }
     // Cleanup: remove temporary event listeners
 
@@ -181,7 +181,7 @@ function onWebSocketText(event) {
             substituteMessages(messageId, messageDiv);
         }
     });
-    if(messageDivs.length == 0 && !messageId.startsWith("z")) {
+    if (messageDivs.length == 0 && !messageId.startsWith("z")) {
         messageDiv = document.createElement('div');
         messageDiv.className = 'message message-container'; // Add the message-container class
         messageDiv.id = messageId;
@@ -209,7 +209,7 @@ function onWebSocketText(event) {
         }
     }
     if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    try{
+    try {
         if (typeof Prism !== 'undefined') Prism.highlightAll();
     } catch (e) {
         console.log("Error highlighting code: " + e);
@@ -247,6 +247,8 @@ function updateTabs() {
             event.stopPropagation();
             const forTab = button.getAttribute('data-for-tab');
             let tabsParent = button.closest('.tabs-container');
+            tabsParent.querySelectorAll('.tab-button').forEach(tabButton => tabButton.classList.remove('active'));
+            button.classList.add('active');
             tabsParent.querySelectorAll('.tab-content').forEach(content => {
                 const contentParent = content.closest('.tabs-container');
                 if (contentParent === tabsParent) {

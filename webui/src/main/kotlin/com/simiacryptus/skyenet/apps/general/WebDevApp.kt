@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.apps.general
 
 import com.github.simiacryptus.aicoder.actions.generic.commonRoot
-import com.github.simiacryptus.aicoder.util.addApplyDiffLinks2
+import com.github.simiacryptus.aicoder.util.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ApiModel.Role
@@ -13,7 +13,6 @@ import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Acceptable
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.core.actors.*
-import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
@@ -249,7 +248,7 @@ class WebDevAgent(
       fun outputFn(task: SessionTask, design: String): StringBuilder? {
         //val task = ui.newTask()
         return task.complete(
-          ui.socketManager.addApplyDiffLinks2(
+          ui.socketManager.addApplyFileDiffLinks(
             root = codeFiles.keys.map { File(it).toPath() }.toTypedArray().commonRoot(),
             code = codeFiles,
             response = design,

@@ -10,7 +10,7 @@ plugins {
     `java-library`
     `scala`
     `maven-publish`
-    id("org.jetbrains.kotlin.jvm") version "1.9.21"
+    id("org.jetbrains.kotlin.jvm") version "2.0.0-Beta5"
     id("signing")
 }
 
