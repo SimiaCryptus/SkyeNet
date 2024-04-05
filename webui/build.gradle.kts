@@ -9,7 +9,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "1.9.21"
+    id("org.jetbrains.kotlin.jvm") version "2.0.0-Beta5"
     `maven-publish`
     id("signing")
     id("io.freefair.sass-base") version "8.4"
@@ -30,7 +30,7 @@ kotlin {
 //    jvmToolchain(17)
 }
 
-val kotlin_version = "1.9.21"
+val kotlin_version = "2.0.0-Beta5"
 val jetty_version = "11.0.18"
 val jackson_version = "2.15.3"
 dependencies {
