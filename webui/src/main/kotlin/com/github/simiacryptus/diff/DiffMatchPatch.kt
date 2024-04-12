@@ -1,4 +1,4 @@
-package com.github.simiacryptus.aicoder.util
+package com.github.simiacryptus.diff
 
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
@@ -564,8 +564,8 @@ open class DiffMatchPatch {
    * @param lineArray List of unique strings.
    */
   private fun diff_charsToLines(
-    diffs: List<Diff>,
-    lineArray: List<String>
+      diffs: List<Diff>,
+      lineArray: List<String>
   ) {
     var text: StringBuilder
     for (diff: Diff in diffs) {
@@ -2271,11 +2271,11 @@ open class DiffMatchPatch {
    * @param operation One of INSERT, DELETE or EQUAL.
    * @param text The text being applied.
    */(
-    /**
+      /**
      * One of: INSERT, DELETE or EQUAL.
      */
     var operation: Operation?,
-    /**
+      /**
      * The text associated with this diff operation.
      */
     var text: String?

@@ -1,6 +1,6 @@
-package com.github.simiacryptus.aicoder.util
+package com.github.simiacryptus.diff
 
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class DiffUtilTest {
@@ -27,7 +27,7 @@ class DiffUtilTest {
               line2
             + line3
         """.trimIndent()
-    assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent an addition.")
+    Assertions.assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent an addition.")
   }
 
 //  @Test
@@ -41,7 +41,7 @@ class DiffUtilTest {
             - line2
               line3
         """.trimIndent()
-    assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent a deletion.")
+    Assertions.assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent a deletion.")
   }
 
   @Test
@@ -56,7 +56,7 @@ class DiffUtilTest {
             + line3
               line4
         """.trimIndent()
-    assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent mixed changes.")
+      Assertions.assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent mixed changes.")
   }
 
 //  @Test
@@ -71,7 +71,7 @@ class DiffUtilTest {
             + changed_line2
               line3
         """.trimIndent()
-    assertEquals(expectedDiff, formattedDiff, "The diff should correctly include context lines.")
+    Assertions.assertEquals(expectedDiff, formattedDiff, "The diff should correctly include context lines.")
   }
 
   @Test
@@ -85,7 +85,7 @@ class DiffUtilTest {
              + changed_line1
                line2
          """.trimIndent()
-    assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent changes at the start.")
+      Assertions.assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent changes at the start.")
   }
 
   @Test
@@ -99,7 +99,7 @@ class DiffUtilTest {
              - line2
              + changed_line2
          """.trimIndent()
-    assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent changes at the end.")
+      Assertions.assertEquals(expectedDiff, formattedDiff, "The diff should correctly represent changes at the end.")
   }
 
 //  @Test
@@ -114,7 +114,11 @@ class DiffUtilTest {
              + changed_line2
                line3
          """.trimIndent()
-    assertEquals(expectedDiff, formattedDiff, "The diff should correctly handle cases with no context lines.")
+    Assertions.assertEquals(
+        expectedDiff,
+        formattedDiff,
+        "The diff should correctly handle cases with no context lines."
+    )
   }
 
   @Test

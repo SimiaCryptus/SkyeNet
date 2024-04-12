@@ -1,7 +1,8 @@
-package com.github.simiacryptus.aicoder.util
+package com.github.simiacryptus.diff
 
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentLinkedDeque
 
 object IterativePatchUtil {
 
@@ -30,46 +31,66 @@ object IterativePatchUtil {
     linkByLevenshteinDistance(sourceLines, patchLines)
 
     // Generate the patched text
-    return generatePatchedText(sourceLines, patchLines)
+    return generatePatchedTextUsingLinks(sourceLines, patchLines)
   }
 
-  private fun generatePatchedText(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
+  private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
     val patchedTextBuilder = StringBuilder()
+    var currentSourceLine: LineRecord? = sourceLines.firstOrNull()
+    var currentPatchLine: LineRecord? = patchLines.firstOrNull()
 
-    // Add unmatched code lines at the beginning
-    sourceLines
-      .takeWhile { it.matchingLine == null }
-      .forEach { patchedTextBuilder.appendln(it.line) }
-
-    // Iterate through patch lines and apply changes to the source
-    patchLines.forEach { patchLine ->
-      when (patchLine.type) {
-        LineType.ADD -> patchedTextBuilder.appendln(patchLine.line)
-        LineType.DELETE -> {
-          // Skip adding the line to the patched text
-        }
-
-        LineType.CONTEXT -> {
-          // For context lines, we need to find the corresponding line in the source
-          // If there's a matching line, we add the source line to maintain original formatting
-          // If not, we add the patch line (it could be a case where context lines don't match exactly due to trimming)
-          val sourceLine = sourceLines.find { it.index == patchLine.index && it.matchingLine == patchLine }
-          if (sourceLine != null) {
-            patchedTextBuilder.appendln(sourceLine.line)
-          } else {
-            patchedTextBuilder.appendln(patchLine.line)
+    while (currentSourceLine != null || currentPatchLine != null) {
+      when {
+        currentPatchLine == null -> {
+          // No more patch lines, add remaining source lines
+          currentSourceLine?.let {
+            patchedTextBuilder.appendln(it.line)
+            currentSourceLine = it.nextLine
           }
+        }
+        currentSourceLine == null -> {
+          // No more source lines, process remaining patch lines
+          processPatchLine(currentPatchLine, patchedTextBuilder)
+          currentPatchLine = currentPatchLine.nextLine
+        }
+        currentPatchLine.matchingLine == currentSourceLine -> {
+          // Lines match, add line from source to maintain formatting
+          patchedTextBuilder.appendln(currentSourceLine!!.line)
+          currentSourceLine = currentSourceLine!!.nextLine
+          currentPatchLine = currentPatchLine.nextLine
+        }
+        currentPatchLine.type == LineType.ADD -> {
+          // Patch line is an addition
+          processPatchLine(currentPatchLine, patchedTextBuilder)
+          currentPatchLine = currentPatchLine.nextLine
+        }
+        currentPatchLine.type == LineType.DELETE -> {
+          // Patch line is a deletion, skip the source line
+          currentSourceLine = currentSourceLine!!.nextLine
+          currentPatchLine = currentPatchLine.nextLine
+        }
+        else -> {
+          // Context or unmatched lines, add from source if no match found
+          if (currentPatchLine.matchingLine == null) {
+            patchedTextBuilder.appendln(currentPatchLine.line)
+          } else {
+            patchedTextBuilder.appendln(currentSourceLine!!.line)
+          }
+          currentSourceLine = currentSourceLine!!.nextLine
+          currentPatchLine = currentPatchLine.nextLine
         }
       }
     }
 
-    // Add unmatched code lines at the end
-    sourceLines.reversed()
-      .takeWhile { it.matchingLine == null }
-      .reversed()
-      .forEach { patchedTextBuilder.appendln(it.line) }
-
     return patchedTextBuilder.toString().trimEnd()
+  }
+
+  private fun processPatchLine(patchLine: LineRecord, builder: StringBuilder) {
+    when (patchLine.type) {
+      LineType.ADD -> builder.appendln(patchLine.line)
+      LineType.DELETE -> { /* Skip adding the line */ }
+      LineType.CONTEXT -> builder.appendln(patchLine.line)
+    }
   }
 
   private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {

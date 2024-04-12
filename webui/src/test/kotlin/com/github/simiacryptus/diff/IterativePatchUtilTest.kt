@@ -1,6 +1,6 @@
-package com.github.simiacryptus.aicoder.util
+package com.github.simiacryptus.diff
 
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class IterativePatchUtilTest {
@@ -18,7 +18,7 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
         val result = IterativePatchUtil.patch(source, patch)
-        assertEquals(source.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+        Assertions.assertEquals(source.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
     @Test
@@ -41,7 +41,7 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
         val result = IterativePatchUtil.patch(source, patch)
-        assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+        Assertions.assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
     @Test
@@ -63,7 +63,7 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
         val result = IterativePatchUtil.patch(source, patch)
-        assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+        Assertions.assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
   @Test
@@ -82,7 +82,7 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
     val result = IterativePatchUtil.patch(source, patch)
-    assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+      Assertions.assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
   }
   @Test
   fun testFromData() {
@@ -145,8 +145,9 @@ class IterativePatchUtilTest {
         }
         """.trimIndent()
     val result = IterativePatchUtil.patch(source, patch)
-    assertEquals(
-      expected.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " "),
-      result.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " "))
+      Assertions.assertEquals(
+          expected.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " "),
+          result.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " ")
+      )
   }
 }

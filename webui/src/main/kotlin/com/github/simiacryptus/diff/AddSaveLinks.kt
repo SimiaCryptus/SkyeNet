@@ -1,4 +1,4 @@
-package com.github.simiacryptus.aicoder.util
+package com.github.simiacryptus.diff
 
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase

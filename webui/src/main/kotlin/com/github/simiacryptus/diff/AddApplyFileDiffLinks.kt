@@ -1,4 +1,4 @@
-package com.github.simiacryptus.aicoder.util
+package com.github.simiacryptus.diff
 
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -19,7 +19,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
   ui: ApplicationInterface,
 ): String {
   val headerPattern = """(?s)(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
-  val diffPattern = """(?s)(?<![^\n])(```diff\n.*?\n```)""".toRegex() // capture filename
+  val diffPattern = """(?s)(?<![^\n])```diff\n(.*?)\n```""".toRegex() // capture filename
   val codeblockPattern = """(?s)(?<![^\n])```([^\n])(\n.*?\n)```""".toRegex() // capture filename
   val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
   val diffs: List<Pair<IntRange, String>> = diffPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
@@ -34,7 +34,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     val filename = header?.second ?: "Unknown"
     val diffVal = diffBlock.second
     val newValue = renderDiffBlock(root, filename, code, diffVal, handle, task, ui)
-    markdown.replace(diffVal, newValue)
+    markdown.replace("```diff\n$diffVal\n```", newValue)
   }
   val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
     val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
@@ -75,12 +75,12 @@ fun SocketManagerBase.addApplyFileDiffLinks(
             """
           |```diff
           |${
-              DiffUtil.formatDiff(
-                DiffUtil.generateDiff(
-                  prevCode.lines(),
-                  codeValue.lines()
+                DiffUtil.formatDiff(
+                    DiffUtil.generateDiff(
+                        prevCode.lines(),
+                        codeValue.lines()
+                    )
                 )
-              )
             }
           |```
           """.trimMargin(), ui = ui
@@ -104,14 +104,14 @@ private fun SocketManagerBase.renderDiffBlock(
 ): String {
   val filepath = path(root, filename)
   val prevCode = load(filepath, root, code)
-  val newCode = PatchUtil.patch(prevCode, diffVal)
+  val newCode = IterativePatchUtil.patch(prevCode, diffVal)
   val echoDiff = try {
-    DiffUtil.formatDiff(
-      DiffUtil.generateDiff(
-        prevCode.lines(),
-        newCode.lines()
+      DiffUtil.formatDiff(
+          DiffUtil.generateDiff(
+              prevCode.lines(),
+              newCode.lines()
+          )
       )
-    )
   } catch (e: Throwable) {
     MarkdownUtil.renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
   }
@@ -125,9 +125,9 @@ private fun SocketManagerBase.renderDiffBlock(
       }
       handle(
         mapOf(
-          relativize.toString() to PatchUtil.patch(
-            prevCode,
-            diffVal
+          relativize.toString() to IterativePatchUtil.patch(
+              prevCode,
+              diffVal
           )
         )
       )
@@ -142,7 +142,7 @@ private fun SocketManagerBase.renderDiffBlock(
       val reversedDiff = diffVal.lines().reversed().joinToString("\n")
       val newReversedCodeMap = reversedCodeMap.mapValues { (file, prevCode) ->
         if (filename == file) {
-          PatchUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
+          IterativePatchUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
         } else prevCode
       }
       handle(newReversedCodeMap)
@@ -155,7 +155,7 @@ private fun SocketManagerBase.renderDiffBlock(
   val prevCodeTask = ui?.newTask(root = false)
   val newCodeTask = ui?.newTask(root = false)
   val patchTask = ui?.newTask(root = false)
-  val inTabs = AgentPatterns.displayMapInTabs(
+     val inTabs = AgentPatterns.displayMapInTabs(
     mapOf(
       "Diff" to (diffTask?.placeholder ?: ""),
       "Code" to (prevCodeTask?.placeholder ?: ""),
@@ -164,7 +164,7 @@ private fun SocketManagerBase.renderDiffBlock(
     )
   )
   SocketManagerBase.scheduledThreadPoolExecutor.schedule({
-    diffTask?.add(MarkdownUtil.renderMarkdown(/*escapeHtml4*/(diffVal), ui = ui))
+    diffTask?.add(MarkdownUtil.renderMarkdown(/*escapeHtml4*/("```diff\n$diffVal\n```"), ui = ui))
     newCodeTask?.add(
       MarkdownUtil.renderMarkdown(
         "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
