@@ -75,6 +75,7 @@ class IterativePatchUtilTest {
         """.trimIndent()
     val patch = """
             line1
+          - line2
             line3
         """.trimIndent()
     val expected = """
