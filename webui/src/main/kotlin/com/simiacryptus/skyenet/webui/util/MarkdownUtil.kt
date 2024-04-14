@@ -99,61 +99,83 @@ object MarkdownUtil {
         return svgContent
     }
 
-    private fun fixupMermaidCode(code: String): String {
-        // Regex to find Mermaid labels that might need fixing
-        val labelRegexes = listOf(
-            Regex("""\[([^"][^\[\]]*)\]"""),
-        )
-        val nodeIdRegexes = listOf(
-            // start(Start)
-            """(?<![+\-"a-zA-Z0-9_])([a-zA-Z0-9_]+)\([^)]*\)""".toRegex(),
-            // checkAPIProvider{Check API Provider}
-            """([a-zA-Z0-9_]+)\{[^\{\}]*\}""".toRegex(),
-            // checkAPIProvider -->
-            """([a-zA-Z0-9_]+)\s*(?:\.\.>|:|-->|\*--)""".toRegex(),
-            // --> A
-            """(?:\.\.>|-->|\*--)\s*([a-zA-Z0-9_]+)""".toRegex(),
-            // parseResponse["Parse Response"]
-            """([a-zA-Z0-9_]+)\["[^\[\]]*"\]""".toRegex(),
-        )
-
-        // Function to fix individual labels
-        fun fixLabel(match: MatchResult): String {
-            val matchGroup = match.groups[1]!!
-            val label = matchGroup.value.trim()
-            val newValue = "\"${label.replace("\"", "'")}\""
-            val range1 = matchGroup.range
-            val range0 = match.range
-            return match.value.let {
-                val start = range1.first - range0.first
-                val end = start + (range1.last - range1.first) + 1
-                it.substring(0, start.coerceAtLeast(0)) + newValue + it.substring(end.coerceAtMost(it.length))
-            }
-        }
-
-        fun fixNodeId(match: MatchResult): String {
-            val matchGroup = match.groups[1]!!
-            val nodeId = matchGroup.value
-            val newValue = "`${nodeId.trim()}`"
-            val range1 = matchGroup.range
-            val range0 = match.range
-            return match.value.let {
-                val start = range1.first - range0.first
-                val end = start + (range1.last - range1.first) + 1
-                it.substring(0, start.coerceAtLeast(0)) + newValue + it.substring(end.coerceAtMost(it.length))
-            }
-        }
-
-        var replace = code
-        for (regex in labelRegexes) {
-            replace = regex.replace(replace, ::fixLabel)
-        }
-        for (regex in nodeIdRegexes) {
-            replace = regex.replace(replace, ::fixNodeId)
-        }
-        return replace
+    // Simplified parsing states
+    enum class State {
+        DEFAULT, IN_NODE, IN_EDGE, IN_LABEL, IN_KEYWORD
     }
+    fun fixupMermaidCode(code: String): String {
+        val stringBuilder = StringBuilder()
+        var index = 0
 
+
+        var currentState = State.DEFAULT
+        var labelStart = -1
+        val keywords = listOf("graph", "subgraph", "end", "classDef", "class", "click", "style")
+
+        while (index < code.length) {
+            when (currentState) {
+                State.DEFAULT -> {
+                    if (code.startsWith(keywords.find { code.startsWith(it, index) } ?: "", index)) {
+                        // Start of a keyword
+                        currentState = State.IN_KEYWORD
+                        stringBuilder.append(code[index])
+                    } else
+                    if (code[index] == '[' || code[index] == '(' || code[index] == '{') {
+                        // Possible start of a label
+                        currentState = State.IN_LABEL
+                        labelStart = index
+                    } else if (code[index].isWhitespace() || code[index] == '-') {
+                        // Continue in default state, possibly an edge
+                        stringBuilder.append(code[index])
+                    } else {
+                        // Start of a node
+                        currentState = State.IN_NODE
+                        stringBuilder.append(code[index])
+                    }
+                }
+                State.IN_KEYWORD -> {
+                    if (code[index].isWhitespace()) {
+                        // End of a keyword
+                        currentState = State.DEFAULT
+                    }
+                    stringBuilder.append(code[index])
+                }
+                State.IN_NODE -> {
+                    if (code[index] == '-' || code[index] == '>' || code[index].isWhitespace()) {
+                        // End of a node, start of an edge or space
+                        currentState = if (code[index].isWhitespace()) State.DEFAULT else State.IN_EDGE
+                        stringBuilder.append(code[index])
+                    } else {
+                        // Continue in node
+                        stringBuilder.append(code[index])
+                    }
+                }
+                State.IN_EDGE -> {
+                    if (!code[index].isWhitespace() && code[index] != '-' && code[index] != '>') {
+                        // End of an edge, start of a node
+                        currentState = State.IN_NODE
+                        stringBuilder.append(code[index])
+                    } else {
+                        // Continue in edge
+                        stringBuilder.append(code[index])
+                    }
+                }
+                State.IN_LABEL -> {
+                    if (code[index] == ']' || code[index] == ')' || code[index] == '}') {
+                        // End of a label
+                        val label = code.substring(labelStart + 1, index)
+                        val escapedLabel = "\"${label.replace("\"", "'")}\""
+                        stringBuilder.append(escapedLabel)
+                        stringBuilder.append(code[index])
+                        currentState = State.DEFAULT
+                    }
+                }
+            }
+            index++
+        }
+
+        return stringBuilder.toString()
+    }
     private fun defaultOptions(): MutableDataSet {
         val options = MutableDataSet()
         options.set(Parser.EXTENSIONS, listOf(TablesExtension.create()))
