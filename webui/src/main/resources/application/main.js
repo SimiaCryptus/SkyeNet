@@ -188,24 +188,24 @@ function onWebSocketText(event) {
         messageDiv.innerHTML = messageContent;
         if (messagesDiv) messagesDiv.appendChild(messageDiv);
         substituteMessages(messageId, messageDiv);
-        if (singleInput) {
-            const mainInput = document.getElementById('main-input');
-            if (mainInput) {
-                mainInput.style.display = 'none';
-            } else {
-                console.log("Error: Could not find .main-input");
-            }
+    }
+    if (singleInput) {
+        const mainInput = document.getElementById('main-input');
+        if (mainInput) {
+            mainInput.style.display = 'none';
+        } else {
+            console.log("Error: Could not find .main-input");
         }
-        if (stickyInput) {
-            const mainInput = document.getElementById('main-input');
-            if (mainInput) {
-                // Keep at top of screen
-                mainInput.style.position = 'sticky';
-                mainInput.style.zIndex = '1';
-                mainInput.style.top = '30px';
-            } else {
-                console.log("Error: Could not find .main-input");
-            }
+    }
+    if (stickyInput) {
+        const mainInput = document.getElementById('main-input');
+        if (mainInput) {
+            // Keep at top of screen
+            mainInput.style.position = 'sticky';
+            mainInput.style.zIndex = '1';
+            mainInput.style.top = '30px';
+        } else {
+            console.log("Error: Could not find .main-input");
         }
     }
     if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -499,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 console.error('There was a problem with the fetch operation:', error);
             }
+            return response.json();
         })
         .then(data => {
             if (data) {
