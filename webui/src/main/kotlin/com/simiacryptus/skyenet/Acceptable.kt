@@ -87,7 +87,7 @@ class Acceptable<T : Any>(
     tabIndex: Int?,
     tabContent: StringBuilder,
     design: T,
-  ) = ui.hrefLink("\uD83D\uDC4D") {
+  ) = ui.hrefLink("Accept", classname = "href-link cmd-button") {
     accept(tabIndex, tabContent, design)
   }
 
