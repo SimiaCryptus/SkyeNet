@@ -1,6 +1,6 @@
-package com.github.simiacryptus.aicoder.util
+package com.github.simiacryptus.diff
 
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 internal class ApxPatchUtilTest {
@@ -18,7 +18,7 @@ internal class ApxPatchUtilTest {
         """.trimIndent()
         val expected = "Added Line\nLine 1\nLine 2\nLine 3"
         val result = ApxPatchUtil.patch(source, patch)
-        assertEquals(expected, result)
+        Assertions.assertEquals(expected, result)
     }
 
     @Test
@@ -33,6 +33,6 @@ internal class ApxPatchUtilTest {
         """.trimIndent()
         val expected = "Line 1\nLine 3"
         val result = ApxPatchUtil.patch(source, patch)
-        assertEquals(expected, result)
+        Assertions.assertEquals(expected, result)
     }
 }

@@ -216,7 +216,7 @@ abstract class SocketManagerBase(
 
   fun hrefLink(
     linkText: String,
-    classname: String = """href-link""",
+    classname: String = "href-link",
     id: String? = null,
     handler: Consumer<Unit>
   ): String {

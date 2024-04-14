@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.apps.general
 
 import com.github.simiacryptus.aicoder.actions.generic.commonRoot
-import com.github.simiacryptus.aicoder.util.addApplyFileDiffLinks
+import com.github.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ApiModel.Role
@@ -249,27 +249,26 @@ class WebDevAgent(
         //val task = ui.newTask()
         return task.complete(
           ui.socketManager.addApplyFileDiffLinks(
-            root = codeFiles.keys.map { File(it).toPath() }.toTypedArray().commonRoot(),
-            code = codeFiles,
-            response = design,
-            handle = { newCodeMap ->
-              newCodeMap.forEach { (path, newCode) ->
-                val prev = codeFiles[path]
-                if (prev != newCode) {
-                  codeFiles[path] = newCode
-                  task.complete(
-                    "<a href='${
-                      task.saveFile(
-                        path,
-                        newCode.toByteArray(Charsets.UTF_8)
-                      )
-                    }'>$path</a> Updated"
-                  )
+              root = codeFiles.keys.map { File(it).toPath() }.toTypedArray().commonRoot(),
+              code = codeFiles,
+              response = design,
+              handle = { newCodeMap ->
+                newCodeMap.forEach { (path, newCode) ->
+                  val prev = codeFiles[path]
+                  if (prev != newCode) {
+                    codeFiles[path] = newCode
+                    task.complete(
+                      "<a href='${
+                        task.saveFile(
+                          path,
+                          newCode.toByteArray(Charsets.UTF_8)
+                        )
+                      }'>$path</a> Updated"
+                    )
+                  }
                 }
-              }
-            },
-            task = task,
-            ui = ui
+              },
+              ui = ui
           )
         )
       }

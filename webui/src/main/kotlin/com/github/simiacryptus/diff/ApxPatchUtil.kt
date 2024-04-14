@@ -1,4 +1,4 @@
-package com.github.simiacryptus.aicoder.util
+package com.github.simiacryptus.diff
 
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
