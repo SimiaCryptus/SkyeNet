@@ -1391,7 +1391,7 @@ of strings. If no command is specified, it defaults to `bash`.
 #### getLanguage
 
 ```kotlin
-final override fun getLanguage(): String
+ override fun getLanguage(): String
 ```
 
 Returns the programming language of the code to be interpreted. The language is specified in the `defs` map. If not
@@ -4040,7 +4040,7 @@ Initializes settings for a session by returning an instance of the `Settings` da
 at construction.
 
 ```kotlin
-override fun <T : Any> initSettings(session: Session): T? = Settings(actor = actor) as T
+override fun <T : Any> initSettings(session: Session): T = Settings(actor = actor) as T
 ```
 
 ##### userMessage

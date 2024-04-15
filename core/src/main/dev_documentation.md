@@ -3450,7 +3450,7 @@ interface Selenium : AutoCloseable {
     url: URL,
     currentFilename: String?,
     saveRoot: String
-  );
+  )
 }
 ```
 

@@ -2895,7 +2895,7 @@ context. This is typically done in the application's initialization code or thro
 @WebServlet("/welcome")
 public class CustomWelcomeServlet extends WelcomeServlet {
     public CustomWelcomeServlet() {
-        super(new ApplicationDirectory(...));
+        super(new ApplicationDirectory(...))
     }
 
     @Override
