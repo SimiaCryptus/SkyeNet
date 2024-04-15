@@ -20,127 +20,126 @@ import java.util.concurrent.TimeUnit
 
 open class ClientManager {
 
-  private data class SessionKey(val session: Session, val user: User?)
+    private data class SessionKey(val session: Session, val user: User?)
 
-  private val clientCache = mutableMapOf<SessionKey, OpenAIClient>()
-  private val poolCache = mutableMapOf<SessionKey, ThreadPoolExecutor>()
+    private val clientCache = mutableMapOf<SessionKey, OpenAIClient>()
+    private val poolCache = mutableMapOf<SessionKey, ThreadPoolExecutor>()
 
-  fun getClient(
-    session: Session,
-    user: User?,
-    dataStorage: StorageInterface?,
-  ): OpenAIClient {
-    val key = SessionKey(session, user)
-    return if (null == dataStorage) clientCache[key] ?: throw IllegalStateException("No data storage")
-    else clientCache.getOrPut(key) { createClient(session, user, dataStorage)!! }
-  }
-
-  protected open fun createPool(session: Session, user: User?, dataStorage: StorageInterface?) =
-    ThreadPoolExecutor(
-      0, Integer.MAX_VALUE,
-      500, TimeUnit.MILLISECONDS,
-      SynchronousQueue(),
-      RecordingThreadFactory(session, user)
-    )
-
-  fun getPool(
-    session: Session,
-    user: User?,
-    dataStorage: StorageInterface?,
-  ): ThreadPoolExecutor {
-    val key = SessionKey(session, user)
-    return poolCache.getOrPut(key) {
-      createPool(session, user, dataStorage)
-    }
-  }
-
-  inner class RecordingThreadFactory(
-    session: Session,
-    user: User?
-  ) : ThreadFactory {
-    private val inner = ThreadFactoryBuilder().setNameFormat("Session $session; User $user; #%d").build()
-    val threads = mutableSetOf<Thread>()
-    override fun newThread(r: Runnable): Thread {
-      inner.newThread(r).also {
-        threads.add(it)
-        return it
-      }
-    }
-  }
-
-  protected open fun createClient(
-    session: Session,
-    user: User?,
-    dataStorage: StorageInterface?,
-  ): OpenAIClient? {
-    if (user != null) {
-      val userSettings = ApplicationServices.userSettingsManager.getUserSettings(user)
-      val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/$session/openai.log")
-      logfile?.parentFile?.mkdirs()
-      val userApi =
-        if (userSettings.apiKeys.isNotEmpty())
-          MonitoredClient(
-            key = userSettings.apiKeys,
-            apiBase = userSettings.apiBase,
-            logfile = logfile,
-            session = session,
-            user = user,
-            workPool = getPool(session, user, dataStorage),
-          ) else null
-      if (userApi != null) return userApi
-    }
-    val canUseGlobalKey = ApplicationServices.authorizationManager.isAuthorized(
-      null, user, OperationType.GlobalKey
-    )
-    if (!canUseGlobalKey) throw RuntimeException("No API key")
-    val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/$session/openai.log")
-    logfile?.parentFile?.mkdirs()
-    return (if (ClientUtil.keyMap.isNotEmpty()) {
-      MonitoredClient(
-        key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
-        logfile = logfile,
-        session = session,
-        user = user,
-        workPool = getPool(session, user, dataStorage),
-      )
-    } else {
-      null
-    })!!
-  }
-
-  inner class MonitoredClient(
-    key: Map<APIProvider, String>,
-    logfile: File?,
-    private val session: Session,
-    private val user: User?,
-    apiBase: Map<APIProvider, String> = APIProvider.values().associate { it to (it.base ?: "") },
-    scheduledPool: ListeningScheduledExecutorService = HttpClientManager.scheduledPool,
-    workPool: ThreadPoolExecutor = HttpClientManager.workPool,
-    client: CloseableHttpClient = HttpClientManager.client
-  ) : OpenAIClient(
-    key = key,
-    logLevel = Level.DEBUG,
-    logStreams = listOfNotNull(
-      logfile?.outputStream()?.buffered()
-    ).toMutableList(),
-    scheduledPool = scheduledPool,
-    workPool = workPool,
-    client = client,
-    apiBase = apiBase,
-  ) {
-    var budget = 2.00
-    override fun authorize(request: HttpRequest, apiProvider: APIProvider) {
-      require(budget > 0.0) { "Budget Exceeded" }
-      super.authorize(request, ClientUtil.defaultApiProvider)
+    fun getClient(
+        session: Session,
+        user: User?,
+        dataStorage: StorageInterface?,
+    ): OpenAIClient {
+        val key = SessionKey(session, user)
+        return if (null == dataStorage) clientCache[key] ?: throw IllegalStateException("No data storage")
+        else clientCache.getOrPut(key) { createClient(session, user, dataStorage)!! }
     }
 
-    override fun onUsage(model: OpenAIModel?, tokens: ApiModel.Usage) {
-      ApplicationServices.usageManager.incrementUsage(session, user, model!!, tokens)
-      budget -= tokens.cost ?: 0.0
-      super.onUsage(model, tokens)
-    }
-  }
+    protected open fun createPool(session: Session, user: User?, dataStorage: StorageInterface?) =
+        ThreadPoolExecutor(
+            0, Integer.MAX_VALUE,
+            500, TimeUnit.MILLISECONDS,
+            SynchronousQueue(),
+            RecordingThreadFactory(session, user)
+        )
 
-  companion object {
-  }
+    fun getPool(
+        session: Session,
+        user: User?,
+        dataStorage: StorageInterface?,
+    ): ThreadPoolExecutor {
+        val key = SessionKey(session, user)
+        return poolCache.getOrPut(key) {
+            createPool(session, user, dataStorage)
+        }
+    }
+
+    inner class RecordingThreadFactory(
+        session: Session,
+        user: User?
+    ) : ThreadFactory {
+        private val inner = ThreadFactoryBuilder().setNameFormat("Session $session; User $user; #%d").build()
+        val threads = mutableSetOf<Thread>()
+        override fun newThread(r: Runnable): Thread {
+            inner.newThread(r).also {
+                threads.add(it)
+                return it
+            }
+        }
+    }
+
+    protected open fun createClient(
+        session: Session,
+        user: User?,
+        dataStorage: StorageInterface?,
+    ): OpenAIClient? {
+        if (user != null) {
+            val userSettings = ApplicationServices.userSettingsManager.getUserSettings(user)
+            val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/$session/openai.log")
+            logfile?.parentFile?.mkdirs()
+            val userApi =
+                if (userSettings.apiKeys.isNotEmpty())
+                    MonitoredClient(
+                        key = userSettings.apiKeys,
+                        apiBase = userSettings.apiBase,
+                        logfile = logfile,
+                        session = session,
+                        user = user,
+                        workPool = getPool(session, user, dataStorage),
+                    ) else null
+            if (userApi != null) return userApi
+        }
+        val canUseGlobalKey = ApplicationServices.authorizationManager.isAuthorized(
+            null, user, OperationType.GlobalKey
+        )
+        if (!canUseGlobalKey) throw RuntimeException("No API key")
+        val logfile = dataStorage?.getSessionDir(user, session)?.resolve(".sys/$session/openai.log")
+        logfile?.parentFile?.mkdirs()
+        return (if (ClientUtil.keyMap.isNotEmpty()) {
+            MonitoredClient(
+                key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
+                logfile = logfile,
+                session = session,
+                user = user,
+                workPool = getPool(session, user, dataStorage),
+            )
+        } else {
+            null
+        })!!
+    }
+
+    inner class MonitoredClient(
+        key: Map<APIProvider, String>,
+        logfile: File?,
+        private val session: Session,
+        private val user: User?,
+        apiBase: Map<APIProvider, String> = APIProvider.values().associate { it to (it.base ?: "") },
+        scheduledPool: ListeningScheduledExecutorService = HttpClientManager.scheduledPool,
+        workPool: ThreadPoolExecutor = HttpClientManager.workPool,
+        client: CloseableHttpClient = HttpClientManager.client
+    ) : OpenAIClient(
+        key = key,
+        logLevel = Level.DEBUG,
+        logStreams = listOfNotNull(
+            logfile?.outputStream()?.buffered()
+        ).toMutableList(),
+        scheduledPool = scheduledPool,
+        workPool = workPool,
+        client = client,
+        apiBase = apiBase,
+    ) {
+        var budget = 2.00
+        override fun authorize(request: HttpRequest, apiProvider: APIProvider) {
+            require(budget > 0.0) { "Budget Exceeded" }
+            super.authorize(request, ClientUtil.defaultApiProvider)
+        }
+
+        override fun onUsage(model: OpenAIModel?, tokens: ApiModel.Usage) {
+            ApplicationServices.usageManager.incrementUsage(session, user, model!!, tokens)
+            budget -= tokens.cost ?: 0.0
+            super.onUsage(model, tokens)
+        }
+    }
+
+    companion object
 }

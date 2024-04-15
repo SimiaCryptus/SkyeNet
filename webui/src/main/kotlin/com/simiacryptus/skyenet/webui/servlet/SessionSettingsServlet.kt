@@ -20,7 +20,7 @@ class SessionSettingsServlet(
             val session = Session(req.getParameter("sessionId"))
             val user = authenticationManager.getUser(req.getCookie())
             val settings = server.getSettings(session, user, settingsClass)
-            val json = if(settings != null) JsonUtil.toJson(settings) else ""
+            val json = if (settings != null) JsonUtil.toJson(settings) else ""
             //language=HTML
             resp.writer.write(
                 """

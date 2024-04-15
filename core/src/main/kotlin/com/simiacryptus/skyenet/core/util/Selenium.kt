@@ -3,11 +3,11 @@ package com.simiacryptus.skyenet.core.util
 import java.net.URL
 
 interface Selenium : AutoCloseable {
-  fun save(
-    url: URL,
-    currentFilename: String?,
-    saveRoot: String
-  )
+    fun save(
+        url: URL,
+        currentFilename: String?,
+        saveRoot: String
+    )
 //
 //  open fun setCookies(
 //    driver: WebDriver,

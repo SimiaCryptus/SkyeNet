@@ -18,6 +18,5 @@ class LogoutServlet : HttpServlet() {
         }
     }
 
-    companion object {
-    }
+    companion object
 }

@@ -23,10 +23,12 @@ class ImageActorInterceptor(
         vararg input: com.simiacryptus.jopenai.ApiModel.ChatMessage,
         model: OpenAIModel,
         api: API
-    ) = functionInterceptor.wrap(input.toList().toTypedArray(), model) {
-        messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage>,
+    ) = functionInterceptor.wrap(
+        input.toList().toTypedArray(),
+        model
+    ) { messages: Array<com.simiacryptus.jopenai.ApiModel.ChatMessage>,
         model: OpenAIModel ->
-            inner.response(*messages, model = model, api = api)
+        inner.response(*messages, model = model, api = api)
     }
 
     override fun render(text: String, api: API): BufferedImage = functionInterceptor.wrap(text) {

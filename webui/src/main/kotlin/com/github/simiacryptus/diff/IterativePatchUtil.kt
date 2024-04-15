@@ -1,7 +1,6 @@
 package com.github.simiacryptus.diff
 
 import org.apache.commons.text.similarity.LevenshteinDistance
-import org.slf4j.LoggerFactory
 
 object IterativePatchUtil {
 
@@ -16,7 +15,7 @@ object IterativePatchUtil {
     ) {
         override fun toString(): String {
             val sb = StringBuilder()
-            when(type) {
+            when (type) {
                 LineType.CONTEXT -> sb.append(" ")
                 LineType.ADD -> sb.append("+")
                 LineType.DELETE -> sb.append("-")
@@ -55,7 +54,7 @@ object IterativePatchUtil {
                 sourceLineBuffer.remove(it)
                 patchedTextBuilder.appendLine(it.line)
             }
-            if(sourceLineBuffer.isEmpty()) break
+            if (sourceLineBuffer.isEmpty()) break
             val codeLine = sourceLineBuffer.removeFirst()
             var patchLine = codeLine.matchingLine!!
             when (patchLine.type) {
@@ -68,8 +67,8 @@ object IterativePatchUtil {
                 }
             }
             while (patchLine.nextLine?.type == LineType.ADD) {
-                patchedTextBuilder.appendLine(patchLine?.nextLine?.line)
-                patchLine = patchLine?.nextLine!!
+                patchedTextBuilder.appendLine(patchLine.nextLine?.line)
+                patchLine = patchLine.nextLine!!
             }
         }
 
@@ -78,10 +77,12 @@ object IterativePatchUtil {
 
     private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
         val sourceLineMap = sourceLines.groupBy { it.line.trim() }
-        val patchLineMap = patchLines.filter { when(it.type) {
-            LineType.ADD -> false // ADD lines are not matched to source lines
-            else -> true
-        }}.groupBy { it.line.trim() }
+        val patchLineMap = patchLines.filter {
+            when (it.type) {
+                LineType.ADD -> false // ADD lines are not matched to source lines
+                else -> true
+            }
+        }.groupBy { it.line.trim() }
 
         sourceLineMap.keys.intersect(patchLineMap.keys).forEach { key ->
             val sourceLine = sourceLineMap[key]?.singleOrNull()
@@ -137,10 +138,12 @@ object IterativePatchUtil {
             var bestDistance = Int.MAX_VALUE
             var bestCombinedDistance = Int.MAX_VALUE
 
-            for (patchLine in patchLines.filter { when(it.type) {
-                LineType.ADD -> false // ADD lines are not matched to source lines
-                else -> true
-            }}) {
+            for (patchLine in patchLines.filter {
+                when (it.type) {
+                    LineType.ADD -> false // ADD lines are not matched to source lines
+                    else -> true
+                }
+            }) {
                 if (patchLine.matchingLine != null) continue // Skip lines that already have matches
 
                 val distance = levenshteinDistance.apply(sourceLine.line.trim(), patchLine.line.trim())
@@ -205,6 +208,5 @@ object IterativePatchUtil {
         )
     })
 
-    private val log = LoggerFactory.getLogger(ApxPatchUtil::class.java)
 }
 

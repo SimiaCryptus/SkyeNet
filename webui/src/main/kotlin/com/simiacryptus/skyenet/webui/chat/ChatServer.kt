@@ -42,7 +42,8 @@ abstract class ChatServer(private val resourceBase: String) {
                             if (sessions.containsKey(session)) {
                                 sessions[session]!!
                             } else {
-                                val user = authenticationManager.getUser(req.getCookie(AuthenticationInterface.AUTH_COOKIE))
+                                val user =
+                                    authenticationManager.getUser(req.getCookie(AuthenticationInterface.AUTH_COOKIE))
                                 val sessionState = newSession(user, session)
                                 sessions[session] = sessionState
                                 sessionState
@@ -70,7 +71,7 @@ abstract class ChatServer(private val resourceBase: String) {
     open fun configure(webAppContext: WebAppContext) {
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/default", defaultServlet), "/")
         webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/ws", webSocketHandler), "/ws")
-        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", newSessionServlet),"/newSession")
+        webAppContext.addServlet(ServletHolder(javaClass.simpleName + "/newSession", newSessionServlet), "/newSession")
     }
 
     companion object {

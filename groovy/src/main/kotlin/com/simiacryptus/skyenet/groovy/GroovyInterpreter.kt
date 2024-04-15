@@ -18,9 +18,9 @@ open class GroovyInterpreter(private val defs: java.util.Map<String, Object>) : 
         }
     }
 
-  override fun getLanguage(): String {
-    return "groovy"
-  }
+    override fun getLanguage(): String {
+        return "groovy"
+    }
 
     override fun getSymbols() = defs as Map<String, Any>
 

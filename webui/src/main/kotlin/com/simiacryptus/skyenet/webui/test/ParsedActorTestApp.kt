@@ -16,7 +16,7 @@ open class ParsedActorTestApp<T : Any>(
     applicationName: String = "ParsedActorTest_" + actor.resultClass?.simpleName,
     temperature: Double = 0.3,
 ) : ApplicationServer(
-  applicationName = applicationName,
+    applicationName = applicationName,
     path = "/parsedActorTest",
 ) {
     override fun userMessage(
@@ -29,7 +29,7 @@ open class ParsedActorTestApp<T : Any>(
         (api as ClientManager.MonitoredClient).budget = 2.00
         val message = ui.newTask()
         try {
-            message.echo(renderMarkdown(userMessage, ui=ui))
+            message.echo(renderMarkdown(userMessage, ui = ui))
             val response = actor.answer(listOf(userMessage), api = api)
             message.complete(
                 renderMarkdown(
@@ -38,8 +38,8 @@ open class ParsedActorTestApp<T : Any>(
                     |```
                     |${JsonUtil.toJson(response.obj)}
                     |```
-                    """.trimMargin().trim(), ui=ui
-                    )
+                    """.trimMargin().trim(), ui = ui
+                )
             )
         } catch (e: Throwable) {
             log.warn("Error", e)

@@ -63,7 +63,7 @@ open class ImageActor(
         return ImageIO.read(URL(url))
     }
 
-  override fun respond(input: List<String>, api: API, vararg messages: ChatMessage): ImageResponse {
+    override fun respond(input: List<String>, api: API, vararg messages: ChatMessage): ImageResponse {
         var text = response(*messages, api = api).choices.first().message?.content
             ?: throw RuntimeException("No response")
         while (imageModel.maxPrompt <= text.length) {

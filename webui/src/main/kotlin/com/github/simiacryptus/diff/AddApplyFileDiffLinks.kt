@@ -162,10 +162,10 @@ private fun SocketManagerBase.renderDiffBlock(
             applydiffTask.error(null, e)
         }
     })!!
-    val diffTask = ui?.newTask(root = false)
-    val prevCodeTask = ui?.newTask(root = false)
-    val newCodeTask = ui?.newTask(root = false)
-    val patchTask = ui?.newTask(root = false)
+    val diffTask = ui.newTask(root = false)
+    val prevCodeTask = ui.newTask(root = false)
+    val newCodeTask = ui.newTask(root = false)
+    val patchTask = ui.newTask(root = false)
     val inTabs = AgentPatterns.displayMapInTabs(
         mapOf(
             "Diff" to (diffTask?.placeholder ?: ""),

@@ -10,7 +10,8 @@ abstract class Expectation {
         private val log = LoggerFactory.getLogger(Expectation::class.java)
     }
 
-    open class VectorMatch(private val example: String, private val metric: DistanceType = DistanceType.Cosine) : Expectation() {
+    open class VectorMatch(private val example: String, private val metric: DistanceType = DistanceType.Cosine) :
+        Expectation() {
         override fun matches(api: OpenAIClient, response: String): Boolean {
             return true
         }
@@ -43,6 +44,7 @@ abstract class Expectation {
             if (!critical) return true
             return _matches(response)
         }
+
         override fun score(api: OpenAIClient, response: String): Double {
             return if (_matches(response)) 1.0 else 0.0
         }

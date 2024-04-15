@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 @Suppress("unused")
 open class Ears(
     val api: OpenAIClient,
-    private val secondsPerAudioPacket : Double = 0.25,
+    private val secondsPerAudioPacket: Double = 0.25,
 ) {
 
     interface CommandRecognizer {
@@ -70,7 +70,7 @@ open class Ears(
                         log.info("Command recognized: ${result.command}")
                         commandsProcessed.incrementAndGet()
                         buffer.clear()
-                        if(null != result.command) commandHandler(result.command)
+                        if (null != result.command) commandHandler(result.command)
                     }
                 }
             }

@@ -66,28 +66,29 @@ class IterativePatchUtilTest {
         Assertions.assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
-  @Test
-  fun testPatchRemoveLine() {
-    val source = """
+    @Test
+    fun testPatchRemoveLine() {
+        val source = """
             line1
             line2
             line3
         """.trimIndent()
-    val patch = """
+        val patch = """
             line1
           - line2
             line3
         """.trimIndent()
-    val expected = """
+        val expected = """
             line1
             line3
         """.trimIndent()
-    val result = IterativePatchUtil.patch(source, patch)
-      Assertions.assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
-  }
-  @Test
-  fun testFromData() {
-    val source = """
+        val result = IterativePatchUtil.patch(source, patch)
+        Assertions.assertEquals(expected.replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+    }
+
+    @Test
+    fun testFromData() {
+        val source = """
         function updateTabs() {
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.addEventListener('click', (event) => { // Ensure the event is passed as a parameter
@@ -108,7 +109,7 @@ class IterativePatchUtilTest {
             });
         }
         """.trimIndent()
-    val patch = """
+        val patch = """
         tabsParent.querySelectorAll('.tab-content').forEach(content => {
             const contentParent = content.closest('.tabs-container');
             if (contentParent === tabsParent) {
@@ -122,7 +123,7 @@ class IterativePatchUtilTest {
             }
         });
         """.trimIndent()
-    val expected = """
+        val expected = """
         function updateTabs() {
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.addEventListener('click', (event) => { // Ensure the event is passed as a parameter
@@ -145,10 +146,10 @@ class IterativePatchUtilTest {
             });
         }
         """.trimIndent()
-    val result = IterativePatchUtil.patch(source, patch)
-      Assertions.assertEquals(
-          expected.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " "),
-          result.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " ")
-      )
-  }
+        val result = IterativePatchUtil.patch(source, patch)
+        Assertions.assertEquals(
+            expected.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " "),
+            result.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " ")
+        )
+    }
 }

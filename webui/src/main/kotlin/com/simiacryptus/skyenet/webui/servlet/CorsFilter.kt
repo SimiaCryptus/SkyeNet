@@ -21,7 +21,10 @@ class CorsFilter : Filter {
             httpServletResponse.setHeader("Access-Control-Allow-Origin", "*")
             httpServletResponse.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT")
             httpServletResponse.setHeader("Access-Control-Max-Age", "3600")
-            httpServletResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, x-requested-with, authorization")
+            httpServletResponse.setHeader(
+                "Access-Control-Allow-Headers",
+                "Content-Type, x-requested-with, authorization"
+            )
         }
         try {
             chain.doFilter(request, response)

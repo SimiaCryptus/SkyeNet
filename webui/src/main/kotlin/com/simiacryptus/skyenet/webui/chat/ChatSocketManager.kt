@@ -14,67 +14,68 @@ import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 
 open class ChatSocketManager(
-  session: Session,
-  val model: ChatModels,
-  val userInterfacePrompt: String,
-  open val initialAssistantPrompt: String = "",
-  open val systemPrompt: String,
-  val api: OpenAIClient,
-  val temperature: Double = 0.3,
-  applicationClass: Class<out ApplicationServer>,
-  val storage: StorageInterface?,
+    session: Session,
+    val model: ChatModels,
+    val userInterfacePrompt: String,
+    open val initialAssistantPrompt: String = "",
+    open val systemPrompt: String,
+    val api: OpenAIClient,
+    val temperature: Double = 0.3,
+    applicationClass: Class<out ApplicationServer>,
+    val storage: StorageInterface?,
 ) : SocketManagerBase(session, storage, owner = null, applicationClass = applicationClass) {
 
-  init {
-    if (userInterfacePrompt.isNotBlank()) {
-      send("""aaa,<div class="initial-prompt">${MarkdownUtil.renderMarkdown(userInterfacePrompt)}</div>""")
+    init {
+        if (userInterfacePrompt.isNotBlank()) {
+            send("""aaa,<div class="initial-prompt">${MarkdownUtil.renderMarkdown(userInterfacePrompt)}</div>""")
+        }
     }
-  }
 
-  protected val messages by lazy {
-    val list = listOf(
-      ApiModel.ChatMessage(ApiModel.Role.system, systemPrompt.toContentList()),
-    ).toMutableList()
-    if (initialAssistantPrompt.isNotBlank()) list +=
-      ApiModel.ChatMessage(ApiModel.Role.assistant, initialAssistantPrompt.toContentList())
-    list
-  }
-
-  @Synchronized
-  override fun onRun(userMessage: String, socket: ChatSocket) {
-    val task = newTask()
-    val responseContents = renderResponse(userMessage, task)
-    task.echo(responseContents)
-    messages += ApiModel.ChatMessage(ApiModel.Role.user, userMessage.toContentList())
-    val messagesCopy = messages.toList()
-    try {
-      val ui = ApplicationInterface(this)
-      val process = { it: StringBuilder ->
-        val response = (api.chat(
-          ApiModel.ChatRequest(
-            messages = messagesCopy,
-            temperature = temperature,
-            model = model.modelName,
-          ), model
-        ).choices.first().message?.content.orEmpty())
-        messages.dropLastWhile { it.role == ApiModel.Role.assistant }
-        messages += ApiModel.ChatMessage(ApiModel.Role.assistant, response.toContentList())
-        val renderResponse = renderResponse(response, task)
-        onResponse(renderResponse, responseContents)
-        renderResponse
-      }
-      Retryable(ui, task, process).apply { set(label(size), process(container!!)) }
-    } catch (e: Exception) {
-      log.info("Error in chat", e)
-      task.error(ApplicationInterface(this), e)
+    protected val messages by lazy {
+        val list = listOf(
+            ApiModel.ChatMessage(ApiModel.Role.system, systemPrompt.toContentList()),
+        ).toMutableList()
+        if (initialAssistantPrompt.isNotBlank()) list +=
+            ApiModel.ChatMessage(ApiModel.Role.assistant, initialAssistantPrompt.toContentList())
+        list
     }
-  }
 
-  open fun renderResponse(response: String, task: SessionTask) = """<div>${MarkdownUtil.renderMarkdown(response)}</div>"""
+    @Synchronized
+    override fun onRun(userMessage: String, socket: ChatSocket) {
+        val task = newTask()
+        val responseContents = renderResponse(userMessage, task)
+        task.echo(responseContents)
+        messages += ApiModel.ChatMessage(ApiModel.Role.user, userMessage.toContentList())
+        val messagesCopy = messages.toList()
+        try {
+            val ui = ApplicationInterface(this)
+            val process = { it: StringBuilder ->
+                val response = (api.chat(
+                    ApiModel.ChatRequest(
+                        messages = messagesCopy,
+                        temperature = temperature,
+                        model = model.modelName,
+                    ), model
+                ).choices.first().message?.content.orEmpty())
+                messages.dropLastWhile { it.role == ApiModel.Role.assistant }
+                messages += ApiModel.ChatMessage(ApiModel.Role.assistant, response.toContentList())
+                val renderResponse = renderResponse(response, task)
+                onResponse(renderResponse, responseContents)
+                renderResponse
+            }
+            Retryable(ui, task, process).apply { set(label(size), process(container)) }
+        } catch (e: Exception) {
+            log.info("Error in chat", e)
+            task.error(ApplicationInterface(this), e)
+        }
+    }
 
-  open fun onResponse(response: String, responseContents: String) {}
+    open fun renderResponse(response: String, task: SessionTask) =
+        """<div>${MarkdownUtil.renderMarkdown(response)}</div>"""
 
-  companion object {
-    private val log = org.slf4j.LoggerFactory.getLogger(ChatSocketManager::class.java)
-  }
+    open fun onResponse(response: String, responseContents: String) {}
+
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(ChatSocketManager::class.java)
+    }
 }

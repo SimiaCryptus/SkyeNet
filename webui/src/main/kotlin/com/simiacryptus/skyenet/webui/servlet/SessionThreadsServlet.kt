@@ -100,25 +100,25 @@ class SessionThreadsServlet(
                     |<div class='pool-threads'>
                     |<h1>Thread Stacks</h1>
                     |${
-                    (pool.threadFactory as RecordingThreadFactory).threads.filter { it.isAlive }.joinToString("""<br/>""") { 
-                        thread ->
-                        """
+                    (pool.threadFactory as RecordingThreadFactory).threads.filter { it.isAlive }
+                        .joinToString("""<br/>""") { thread ->
+                            """
                         <div class='thread'>
                         <div class='thread-name'>${thread.name}</div>
                         <div class='stack-trace'>${
-                          thread.stackTrace.joinToString(separator = "\n")
-                          { stackTraceElement -> """<div class='stack-element'>$stackTraceElement</div>""" }
-                        }</div>
+                                thread.stackTrace.joinToString(separator = "\n")
+                                { stackTraceElement -> """<div class='stack-element'>$stackTraceElement</div>""" }
+                            }</div>
                         </div>
                         """
-                    }
-                    }
+                        }
+                }
                     |</div>
                     |</body>
                     |</html>
                     """.trimMargin()
             )
-          // (pool.threadFactory as RecordingThreadFactory).threads
+            // (pool.threadFactory as RecordingThreadFactory).threads
         } else {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
             resp.writer.write("Session ID is required")

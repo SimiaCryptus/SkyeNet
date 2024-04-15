@@ -17,7 +17,8 @@ class ZipServlet(val dataStorage: StorageInterface) : HttpServlet() {
         val path = req.parameterMap.get("path")?.find { it.isNotBlank() } ?: "/"
         FileServlet.parsePath(path) // Validate path
         val sessionDir = dataStorage.getSessionDir(
-            ApplicationServices.authenticationManager.getUser(req.getCookie()), session)
+            ApplicationServices.authenticationManager.getUser(req.getCookie()), session
+        )
         val file = File(sessionDir, path)
         val zipFile = File.createTempFile("skyenet", ".zip")
         try {

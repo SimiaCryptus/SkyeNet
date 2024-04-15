@@ -15,9 +15,11 @@ interface Interpreter {
             @Suppress("unused")
             fun square(x: Int): Int = x * x
         }
+
         private interface TestInterface {
             fun square(x: Int): Int
         }
+
         @JvmStatic
         fun test(factory: java.util.function.Function<Map<String, Any>, Interpreter>) {
             val testImpl = object : TestInterface {

@@ -11,14 +11,16 @@ open class SimpleActor(
     name: String? = null,
     model: ChatModels,
     temperature: Double = 0.3,
-) : BaseActor<List<String>,String>(
+) : BaseActor<List<String>, String>(
     prompt = prompt,
     name = name,
     model = model,
     temperature = temperature,
 ) {
 
-    override fun respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage): String = response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
+    override fun respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage): String =
+        response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
+
     override fun chatMessages(questions: List<String>) = arrayOf(
         ApiModel.ChatMessage(
             role = ApiModel.Role.system,

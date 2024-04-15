@@ -15,46 +15,47 @@ import jakarta.servlet.http.HttpServletResponse
 import org.intellij.lang.annotations.Language
 import java.nio.file.NoSuchFileException
 
-open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.application.ApplicationDirectory) :
-  HttpServlet() {
-  override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
-    val user = ApplicationServices.authenticationManager.getUser(req!!.getCookie())
-    val requestURI = req.requestURI ?: "/"
-    resp?.contentType = when (requestURI) {
-      "/" -> "text/html"
-      else -> ApplicationServer.getMimeType(requestURI)
+open class WelcomeServlet(private val parent: ApplicationDirectory) :
+    HttpServlet() {
+    override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
+        val user = ApplicationServices.authenticationManager.getUser(req!!.getCookie())
+        val requestURI = req.requestURI ?: "/"
+        resp?.contentType = when (requestURI) {
+            "/" -> "text/html"
+            else -> ApplicationServer.getMimeType(requestURI)
+        }
+        when {
+            requestURI == "/" -> resp?.writer?.write(homepage(user).trimIndent())
+            requestURI == "/index.html" -> resp?.writer?.write(homepage(user).trimIndent())
+            requestURI.startsWith("/userInfo") -> {
+                parent.userInfoServlet.doGet(req, resp!!)
+            }
+
+            else -> try {
+                val inputStream = parent.welcomeResources.addPath(requestURI)?.inputStream
+                inputStream?.copyTo(resp?.outputStream!!)
+            } catch (e: NoSuchFileException) {
+                resp?.sendError(404)
+            }
+        }
     }
-    when {
-      requestURI == "/" -> resp?.writer?.write(homepage(user).trimIndent())
-      requestURI == "/index.html" -> resp?.writer?.write(homepage(user).trimIndent())
-      requestURI.startsWith("/userInfo") -> {
-        parent.userInfoServlet.doGet(req, resp!!)
-      }
-      else -> try {
-        val inputStream = parent.welcomeResources.addPath(requestURI)?.inputStream
-        inputStream?.copyTo(resp?.outputStream!!)
-      } catch (e: NoSuchFileException) {
-        resp?.sendError(404)
-      }
+
+    override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
+        val requestURI = req?.requestURI ?: "/"
+        when {
+            requestURI.startsWith("/userSettings") -> parent.userSettingsServlet.doPost(req!!, resp!!)
+            else -> resp?.sendError(404)
+        }
     }
-  }
 
-  override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
-    val requestURI = req?.requestURI ?: "/"
-    when {
-      requestURI.startsWith("/userSettings") -> parent.userSettingsServlet.doPost(req!!, resp!!)
-      else -> resp?.sendError(404)
-    }
-  }
+    @Language("Markdown")
+    protected open val welcomeMarkdown = """""".trimIndent()
 
-  @Language("Markdown")
-  protected open val welcomeMarkdown = """""".trimIndent()
+    @Language("Markdown")
+    protected open val postAppMarkdown = """""".trimIndent()
 
-  @Language("Markdown")
-  protected open val postAppMarkdown = """""".trimIndent()
-
-  @Language("HTML")
-  protected open fun homepage(user: User?) = """
+    @Language("HTML")
+    protected open fun homepage(user: User?) = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -122,12 +123,12 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
     </html>
     """.trimIndent()
 
-  protected open fun appRow(
-    app: ApplicationDirectory.ChildWebApp,
-    user: User?
-  ) = when {
-    !authorizationManager.isAuthorized(app.server.javaClass, user, OperationType.Read) -> ""
-    else -> """
+    protected open fun appRow(
+        app: ApplicationDirectory.ChildWebApp,
+        user: User?
+    ) = when {
+        !authorizationManager.isAuthorized(app.server.javaClass, user, OperationType.Read) -> ""
+        else -> """
             <tr>
                 <td>
                     ${app.server.applicationName}
@@ -137,23 +138,23 @@ open class WelcomeServlet(private val parent: com.simiacryptus.skyenet.webui.app
                 </td>
                 <td>
                     ${
-                      when {
-                        !authorizationManager.isAuthorized(app.server.javaClass, user, OperationType.Public) -> ""
-                        else -> 
-                          """<a class="new-session-link" href="${app.path}/#${StorageInterface.newGlobalID()}">New Public Session</a>"""
-                      }
-                    }
+            when {
+                !authorizationManager.isAuthorized(app.server.javaClass, user, OperationType.Public) -> ""
+                else ->
+                    """<a class="new-session-link" href="${app.path}/#${StorageInterface.newGlobalID()}">New Public Session</a>"""
+            }
+        }
                 </td>
                 <td>
                     ${
-                      when {
-                        !authorizationManager.isAuthorized(app.server.javaClass, user, OperationType.Write) -> ""
-                        else -> 
-                          """<a class="new-session-link" href="${app.path}/#${StorageInterface.newUserID()}">New Private Session</a>"""
-                      }
-                    }
+            when {
+                !authorizationManager.isAuthorized(app.server.javaClass, user, OperationType.Write) -> ""
+                else ->
+                    """<a class="new-session-link" href="${app.path}/#${StorageInterface.newUserID()}">New Private Session</a>"""
+            }
+        }
                 </td>
             </tr>
         """.trimIndent()
-  }
+    }
 }

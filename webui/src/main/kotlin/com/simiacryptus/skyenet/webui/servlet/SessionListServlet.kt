@@ -11,9 +11,9 @@ import jakarta.servlet.http.HttpServletResponse
 import java.text.SimpleDateFormat
 
 class SessionListServlet(
-  private val dataStorage: StorageInterface,
-  private val prefix: String,
-  private val applicationServer: ApplicationServer
+    private val dataStorage: StorageInterface,
+    private val prefix: String,
+    private val applicationServer: ApplicationServer
 ) : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         resp.contentType = "text/html"
@@ -32,8 +32,8 @@ class SessionListServlet(
             """.trimIndent()
         }
         val title = """Sessions"""
-      //language=HTML
-      resp.writer.write(
+        //language=HTML
+        resp.writer.write(
             """
             <html>
             <head>
