@@ -12,7 +12,7 @@ import kotlin.io.path.readText
 
 fun SocketManagerBase.addApplyFileDiffLinks(
     root: Path,
-    code: Map<String, String>,
+    code: () -> Map<String, String>,
     response: String,
     handle: (Map<String, String>) -> Unit,
     ui: ApplicationInterface,
@@ -33,27 +33,24 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
         val filename = header?.second ?: "Unknown"
         val diffVal = diffBlock.second
-        val newValue = renderDiffBlock(root, filename, code, diffVal, handle, ui)
+        val newValue = renderDiffBlock(root, filename, code(), diffVal, handle, ui)
         markdown.replace("```diff\n$diffVal\n```", newValue)
     }
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
         val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
         val filename = header?.second ?: "Unknown"
-        val filepath = path(root, filename)
-        val prevCode = load(filepath, root, code)
+        val filepath: Path? = path(root, filename)
+        val prevCode = load(filepath)
         val codeLang = codeBlock.second.groupValues[1]
         val codeValue = codeBlock.second.groupValues[2]
         val commandTask = ui.newTask(false)
         lateinit var hrefLink: StringBuilder
         hrefLink = commandTask.complete(hrefLink("Save File", classname = "href-link cmd-button") {
             try {
-                handle(
-                    mapOf(
-                        filename to codeValue
-                    )
-                )
+                save(filepath, codeValue)
                 hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
                 commandTask.complete()
+                handle(mapOf(filename to codeValue))
                 //task.complete("""<div class="cmd-button">Saved ${filename}</div>""")
             } catch (e: Throwable) {
                 commandTask.error(null, e)
@@ -107,7 +104,7 @@ private fun SocketManagerBase.renderDiffBlock(
     ui: ApplicationInterface
 ): String {
     val filepath = path(root, filename)
-    val prevCode = load(filepath, root, code)
+    val prevCode = load(filepath)
     val newCode = IterativePatchUtil.patch(prevCode, diffVal)
     val echoDiff = try {
         DiffUtil.formatDiff(
@@ -196,19 +193,10 @@ private fun SocketManagerBase.renderDiffBlock(
 
 
 private fun load(
-    filepath: Path?,
-    root: Path,
-    code: Map<String, String>
+    filepath: Path?
 ) = try {
     if (true != filepath?.toFile()?.exists()) {
-        log.warn(
-            """
-          |File not found: $filepath
-          |Root: ${root.toAbsolutePath()}
-          |Files: 
-          |${code.keys.joinToString("\n") { "* $it" }}
-          """.trimMargin()
-        )
+        log.warn("""File not found: $filepath""".trimMargin())
         ""
     } else {
         filepath.readText(Charsets.UTF_8)
@@ -216,6 +204,19 @@ private fun load(
 } catch (e: Throwable) {
     log.error("Error reading file: $filepath", e)
     ""
+}
+
+private fun save(
+    filepath: Path?,
+    code: String
+) {
+    try {
+        if (null != filepath) {
+            filepath.toFile().writeText(code, Charsets.UTF_8)
+        }
+    } catch (e: Throwable) {
+        log.error("Error writing file: $filepath", e)
+    }
 }
 
 private fun path(root: Path, filename: String): Path? {

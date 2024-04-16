@@ -8,7 +8,7 @@ import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 
 fun SocketManagerBase.addApplyDiffLinks(
-    code: StringBuilder,
+    code: () -> String,
     response: String,
     handle: (String) -> Unit,
     task: SessionTask,
@@ -23,7 +23,7 @@ fun SocketManagerBase.addApplyDiffLinks(
         var reverseHrefLink: StringBuilder? = null
         hrefLink = applydiffTask.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
             try {
-                val newCode = IterativePatchUtil.patch(code.toString(), diffVal).replace("\r", "")
+                val newCode = IterativePatchUtil.patch(code(), diffVal).replace("\r", "")
                 handle(newCode)
                 reverseHrefLink?.clear()
                 hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
@@ -32,21 +32,21 @@ fun SocketManagerBase.addApplyDiffLinks(
                 task.error(ui, e)
             }
         })!!
-        val patch = IterativePatchUtil.patch(code.toString(), diffVal).replace("\r", "")
+        val patch = IterativePatchUtil.patch(code(), diffVal).replace("\r", "")
         val test1 = DiffUtil.formatDiff(
             DiffUtil.generateDiff(
-                code.toString().replace("\r", "").lines(),
+                code().replace("\r", "").lines(),
                 patch.lines()
             )
         )
         val patchRev = IterativePatchUtil.patch(
-            code.lines().reversed().joinToString("\n"),
+            code().lines().reversed().joinToString("\n"),
             diffVal.lines().reversed().joinToString("\n")
         ).replace("\r", "")
         if (patchRev != patch) {
             reverseHrefLink = applydiffTask.complete(hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
                 try {
-                    val reversedCode = code.lines().reversed().joinToString("\n")
+                    val reversedCode = code().lines().reversed().joinToString("\n")
                     val reversedDiff = diffVal.lines().reversed().joinToString("\n")
                     val newReversedCode = IterativePatchUtil.patch(reversedCode, reversedDiff).replace("\r", "")
                     val newCode = newReversedCode.lines().reversed().joinToString("\n")
@@ -61,7 +61,7 @@ fun SocketManagerBase.addApplyDiffLinks(
         }
         val test2 = DiffUtil.formatDiff(
             DiffUtil.generateDiff(
-                code.lines(),
+                code().lines(),
                 patchRev.lines().reversed()
             )
         )
