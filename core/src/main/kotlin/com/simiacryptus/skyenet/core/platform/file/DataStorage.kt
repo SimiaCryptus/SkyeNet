@@ -50,7 +50,7 @@ open class DataStorage(
         user: User?,
         session: Session
     ): File {
-        if(sessionPaths.containsKey(session)) {
+        if (sessionPaths.containsKey(session)) {
             return sessionPaths[session]!!
         }
         validateSessionId(session)
@@ -89,8 +89,8 @@ open class DataStorage(
     ): String {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, "settings.json", Map::class.java) ?: mapOf<String,String>()
-        if(settings.containsKey("name")) return settings["name"] as String
+        val settings = getJson(sessionDir, "settings.json", Map::class.java) ?: mapOf<String, String>()
+        if (settings.containsKey("name")) return settings["name"] as String
         val userMessage =
             messageFiles(session, sessionDir).entries.minByOrNull { it.key.lastModified() }?.value
         return if (null != userMessage) {
@@ -109,8 +109,8 @@ open class DataStorage(
     ): List<String> {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String,String>()
-        if(settings.containsKey("ids")) return settings["ids"].toString().split(",").toList()
+        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String, String>()
+        if (settings.containsKey("ids")) return settings["ids"].toString().split(",").toList()
         val ids = messageFiles(session, sessionDir).entries.sortedBy { it.key.lastModified() }
             .map { it.key.nameWithoutExtension }.toList()
         setJson(sessionDir, ".sys/$session/internal.json", settings.plus("ids" to ids.joinToString(",")))
@@ -128,15 +128,15 @@ open class DataStorage(
         setJson(sessionDir, ".sys/$session/internal.json", settings.plus("ids" to ids.joinToString(",")))
     }
 
-override fun getSessionTime(
+    override fun getSessionTime(
         user: User?,
         session: Session
     ): Date? {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String,String>()
+        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String, String>()
         val dateFormat = SimpleDateFormat.getDateTimeInstance()
-        if(settings.containsKey("time")) return dateFormat.parse(settings["time"] as String)
+        if (settings.containsKey("time")) return dateFormat.parse(settings["time"] as String)
         val file = messageFiles(session, sessionDir).entries.minByOrNull { it.key.lastModified() }?.key
         return if (null != file) {
             val date = Date(file.lastModified())
@@ -148,24 +148,25 @@ override fun getSessionTime(
         }
     }
 
-    private fun messageFiles(session: Session, sessionDir: File) = File(sessionDir, MESSAGE_DIR + "/$session").listFiles()
-        ?.filter { file -> file.isFile }
-        ?.map { messageFile ->
-            val fileText = messageFile.readText()
-            val split = fileText.split("<p>")
-            if (split.size < 2) {
-                //log.debug("Session {}: No messages", session)
-                messageFile to ""
-            } else {
-                val stringList = split[1].split("</p>")
-                if (stringList.isEmpty()) {
+    private fun messageFiles(session: Session, sessionDir: File) =
+        File(sessionDir, MESSAGE_DIR + "/$session").listFiles()
+            ?.filter { file -> file.isFile }
+            ?.map { messageFile ->
+                val fileText = messageFile.readText()
+                val split = fileText.split("<p>")
+                if (split.size < 2) {
                     //log.debug("Session {}: No messages", session)
                     messageFile to ""
                 } else {
-                    messageFile to stringList.first()
+                    val stringList = split[1].split("</p>")
+                    if (stringList.isEmpty()) {
+                        //log.debug("Session {}: No messages", session)
+                        messageFile to ""
+                    } else {
+                        messageFile to stringList.first()
+                    }
                 }
-            }
-        }?.filter { it.second.isNotEmpty() }?.toList()?.toMap() ?: mapOf()
+            }?.filter { it.second.isNotEmpty() }?.toList()?.toMap() ?: mapOf()
 
     override fun listSessions(
         user: User?
@@ -197,7 +198,7 @@ override fun getSessionTime(
     ) {
         validateSessionId(session)
         val file = File(File(this.getSessionDir(user, session), MESSAGE_DIR + "/$session"), "$messageId.json")
-        if(!file.exists()) {
+        if (!file.exists()) {
             file.parentFile.mkdirs()
             addMessageID(user, session, messageId)
         }
@@ -205,7 +206,7 @@ override fun getSessionTime(
         JsonUtil.objectMapper().writeValue(file, value)
     }
 
-    open protected fun addMessageID(
+    protected open fun addMessageID(
         user: User?,
         session: Session,
         messageId: String

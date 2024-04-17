@@ -26,15 +26,15 @@ import kotlin.reflect.typeOf
 
 abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
 
-  data class Tool(
-    val path: String,
-    val openApiDescription: OpenAPI,
-    val interpreterString: String,
-    val servletCode: String,
-  )
+    data class Tool(
+        val path: String,
+        val openApiDescription: OpenAPI,
+        val interpreterString: String,
+        val servletCode: String,
+    )
 
-  @Language("HTML")
-  private fun indexPage() = """
+    @Language("HTML")
+    private fun indexPage() = """
           <html>
           <head>
               <title>Tools</title>
@@ -67,8 +67,8 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
           </html>
         """.trimIndent()
 
-  @Language("HTML")
-  private fun toolDetailsPage(tool: Tool) = """
+    @Language("HTML")
+    private fun toolDetailsPage(tool: Tool) = """
           <html>
           <head>
               <title>Tool Details</title>
@@ -126,9 +126,9 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
           </html>
         """.trimIndent()
 
-  private val header
-    @Language("HTML")
-    get() = """
+    private val header
+        @Language("HTML")
+        get() = """
       <meta charset="UTF-8">
       <meta name='viewport' content='width=device-width,initial-scale=1'>
       <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
@@ -207,9 +207,9 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
       <script src="/main.js"></script>
       """.trimIndent()
 
-  private fun serveEditPage(req: HttpServletRequest, resp: HttpServletResponse, tool: Tool) {
-    resp.contentType = "text/html"
-    val formHtml = """
+    private fun serveEditPage(req: HttpServletRequest, resp: HttpServletResponse, tool: Tool) {
+        resp.contentType = "text/html"
+        val formHtml = """
         <html>
         <head>
             <title>Edit Tool: ${tool.path}</title>
@@ -232,193 +232,193 @@ abstract class ToolServlet(val app: ApplicationDirectory) : HttpServlet() {
         </body>
         </html>
     """.trimIndent()
-    resp.writer.write(formHtml)
-    resp.writer.close()
-  }
-
-  override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
-
-    val user = authenticationManager.getUser(req?.getCookie())
-    if (!authorizationManager.isAuthorized(ToolServlet.javaClass, user, OperationType.Admin)) {
-      resp?.sendError(403)
-      return
+        resp.writer.write(formHtml)
+        resp.writer.close()
     }
 
-    resp?.contentType = "text/html"
+    override fun doGet(req: HttpServletRequest?, resp: HttpServletResponse?) {
 
-    val path = req?.getParameter("path")
-    if (req?.getParameter("edit") != null) {
-      val tool = tools.find { it.path == path }
-      if (tool != null) {
-        serveEditPage(req, resp!!, tool)
-      } else {
-        resp!!.writer.write("Tool not found")
-      }
-      return
-    }
+        val user = authenticationManager.getUser(req?.getCookie())
+        if (!authorizationManager.isAuthorized(ToolServlet.javaClass, user, OperationType.Admin)) {
+            resp?.sendError(403)
+            return
+        }
 
-    if (req?.getParameter("delete") != null) {
-      val tool = tools.find { it.path == path }
-      if (tool != null) {
-        tools.remove(tool)
-        File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
-        resp!!.sendRedirect("?")
-      } else {
-        resp!!.writer.write("Tool not found")
-      }
-      return
-    }
+        resp?.contentType = "text/html"
 
-    if (req?.getParameter("export") != null) {
-      resp?.contentType = "application/json"
-      resp?.addHeader("Content-Disposition", "attachment; filename=\"tools.json\"")
-      resp?.writer?.write(JsonUtil.toJson(tools))
-      return
-    }
+        val path = req?.getParameter("path")
+        if (req?.getParameter("edit") != null) {
+            val tool = tools.find { it.path == path }
+            if (tool != null) {
+                serveEditPage(req, resp!!, tool)
+            } else {
+                resp!!.writer.write("Tool not found")
+            }
+            return
+        }
 
-    if (path != null) {
-      // Display details for a single tool
-      val tool = tools.find { it.path == path }
-      if (tool != null) {
-        resp?.writer?.write(toolDetailsPage(tool))
-      } else {
-        resp?.writer?.write("Tool not found")
-      }
-    } else {
-      // Display index page
-      resp?.writer?.write(indexPage())
-    }
-    resp?.writer?.close()
-  }
+        if (req?.getParameter("delete") != null) {
+            val tool = tools.find { it.path == path }
+            if (tool != null) {
+                tools.remove(tool)
+                File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
+                resp!!.sendRedirect("?")
+            } else {
+                resp!!.writer.write("Tool not found")
+            }
+            return
+        }
 
-  override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
-    req ?: return
-    resp ?: return
+        if (req?.getParameter("export") != null) {
+            resp?.contentType = "application/json"
+            resp?.addHeader("Content-Disposition", "attachment; filename=\"tools.json\"")
+            resp?.writer?.write(JsonUtil.toJson(tools))
+            return
+        }
 
-    val path = req.getParameter("path")
-    val tool = tools.find { it.path == path }
-    if (tool != null) {
-      tools.remove(tool)
-      val newpath = req.getParameter("newpath") ?: req.getParameter("path")
-      tools.add(
-        tool.copy(
-          path = newpath,
-          interpreterString = req.getParameter("interpreterString"),
-          servletCode = req.getParameter("servletCode"),
-          openApiDescription = JsonUtil.fromJson(req.getParameter("openApiDescription"), OpenAPI::class.java)
-        )
-      )
-      File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
-      resp.sendRedirect("?path=$newpath&editSuccess=true") // Redirect to the tool's detail page or an edit success page
-    } else {
-      if (req.getParameter("import") != null) {
-        val inputStream = req.getPart("file")?.inputStream
-        val toolsJson = inputStream?.bufferedReader().use { it?.readText() }
-        if (toolsJson != null) {
-          val importedTools: List<Tool> = JsonUtil.fromJson(toolsJson, typeOf<List<Tool>>().javaType)
-          tools.clear()
-          tools.addAll(importedTools)
-          File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
-          resp.sendRedirect("?importSuccess=true")
+        if (path != null) {
+            // Display details for a single tool
+            val tool = tools.find { it.path == path }
+            if (tool != null) {
+                resp?.writer?.write(toolDetailsPage(tool))
+            } else {
+                resp?.writer?.write("Tool not found")
+            }
         } else {
-          resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid file or format")
+            // Display index page
+            resp?.writer?.write(indexPage())
         }
-        return
-      }
-      resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Tool not found")
-    }
-  }
-
-  companion object {
-    private val userRoot by lazy {
-      File(
-        File(ApplicationServices.dataStorageRoot, ".skyenet"),
-        "tools"
-      ).apply { mkdirs() }
+        resp?.writer?.close()
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
-    val tools by lazy {
-      val file = File(userRoot, "tools.json")
-      if (file.exists()) try {
-        return@lazy JsonUtil.fromJson(file.readText(), typeOf<List<Tool>>().javaType)
-      } catch (e: Throwable) {
-        e.printStackTrace()
-      }
-      mutableListOf<Tool>()
+    override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
+        req ?: return
+        resp ?: return
+
+        val path = req.getParameter("path")
+        val tool = tools.find { it.path == path }
+        if (tool != null) {
+            tools.remove(tool)
+            val newpath = req.getParameter("newpath") ?: req.getParameter("path")
+            tools.add(
+                tool.copy(
+                    path = newpath,
+                    interpreterString = req.getParameter("interpreterString"),
+                    servletCode = req.getParameter("servletCode"),
+                    openApiDescription = JsonUtil.fromJson(req.getParameter("openApiDescription"), OpenAPI::class.java)
+                )
+            )
+            File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
+            resp.sendRedirect("?path=$newpath&editSuccess=true") // Redirect to the tool's detail page or an edit success page
+        } else {
+            if (req.getParameter("import") != null) {
+                val inputStream = req.getPart("file")?.inputStream
+                val toolsJson = inputStream?.bufferedReader().use { it?.readText() }
+                if (toolsJson != null) {
+                    val importedTools: List<Tool> = JsonUtil.fromJson(toolsJson, typeOf<List<Tool>>().javaType)
+                    tools.clear()
+                    tools.addAll(importedTools)
+                    File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
+                    resp.sendRedirect("?importSuccess=true")
+                } else {
+                    resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid file or format")
+                }
+                return
+            }
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Tool not found")
+        }
     }
 
-    fun addTool(element: Tool) {
-      tools += element
-      File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
+    companion object {
+        private val userRoot by lazy {
+            File(
+                File(ApplicationServices.dataStorageRoot, ".skyenet"),
+                "tools"
+            ).apply { mkdirs() }
+        }
+
+        @OptIn(ExperimentalStdlibApi::class)
+        val tools by lazy {
+            val file = File(userRoot, "tools.json")
+            if (file.exists()) try {
+                return@lazy JsonUtil.fromJson(file.readText(), typeOf<List<Tool>>().javaType)
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+            mutableListOf<Tool>()
+        }
+
+        fun addTool(element: Tool) {
+            tools += element
+            File(userRoot, "tools.json").writeText(JsonUtil.toJson(tools))
+        }
+
+        val apiKey = UUID.randomUUID().toString()
+        val instanceCache = mutableMapOf<Tool, HttpServlet>()
+
     }
 
-    val apiKey = UUID.randomUUID().toString()
-    val instanceCache = mutableMapOf<Tool, HttpServlet>()
+    override fun service(req: HttpServletRequest?, resp: HttpServletResponse?) {
+        req ?: return
+        resp ?: return
+        val path = req.servletPath ?: "/"
+        val tool = tools.find { it.path == path }
+        if (tool != null) {
+            // TODO: Isolate tools per user
+            val user = authenticationManager.getUser(req.getCookie())
+            val isAdmin = authorizationManager.isAuthorized(
+                ToolServlet.javaClass, user, OperationType.Admin
+            )
+            val isHeaderAuth = apiKey == req.getHeader("Authorization")?.removePrefix("Bearer ")
+            if (!isAdmin && !isHeaderAuth) {
+                resp.sendError(403)
+            } else {
+                try {
+                    val servlet = instanceCache.computeIfAbsent(tool) { construct(user!!, tool) }
+                    servlet.service(req, resp)
+                } catch (e: RuntimeException) {
+                    throw e
+                } catch (e: Throwable) {
+                    throw RuntimeException(e)
+                }
+            }
+        } else {
+            super.service(req, resp)
+        }
+    }
 
-  }
-
-  override fun service(req: HttpServletRequest?, resp: HttpServletResponse?) {
-    req ?: return
-    resp ?: return
-    val path = req.servletPath ?: "/"
-    val tool = tools.find { it.path == path }
-    if (tool != null) {
-      // TODO: Isolate tools per user
-      val user = authenticationManager.getUser(req.getCookie())
-      val isAdmin = authorizationManager.isAuthorized(
-        ToolServlet.javaClass, user, OperationType.Admin
-      )
-      val isHeaderAuth = apiKey == req.getHeader("Authorization")?.removePrefix("Bearer ")
-      if (!isAdmin && !isHeaderAuth) {
-        resp.sendError(403)
-      } else {
+    private fun construct(user: User, tool: Tool): HttpServlet {
+        val returnBuffer = ToolAgent.ServletBuffer()
+        val classLoader = Thread.currentThread().contextClassLoader
+        val prevCL = KotlinInterpreter.classLoader
+        KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader
         try {
-          val servlet = instanceCache.computeIfAbsent(tool) { construct(user!!, tool) }
-          servlet.service(req, resp)
-        } catch (e: RuntimeException) {
-          throw e
-        } catch (e: Throwable) {
-          throw RuntimeException(e)
+            WebAppClassLoader.runWithServerClassAccess<Any?> {
+                require(null != classLoader.loadClass("org.eclipse.jetty.server.Response"))
+                require(null != classLoader.loadClass("org.eclipse.jetty.server.Request"))
+                this.fromString(user, tool.interpreterString).let { (interpreterClass, symbols) ->
+                    val effectiveSymbols = (symbols + mapOf(
+                        "returnBuffer" to returnBuffer,
+                        "json" to JsonUtil,
+                    )).filterKeys { !it.isNullOrBlank() }
+                    interpreterClass.getConstructor(Map::class.java).newInstance(effectiveSymbols).run(tool.servletCode)
+                }
+            }
+        } finally {
+            KotlinInterpreter.classLoader = prevCL
         }
-      }
-    } else {
-      super.service(req, resp)
-    }
-  }
 
-  private fun construct(user: User, tool: Tool): HttpServlet {
-    val returnBuffer = ToolAgent.ServletBuffer()
-    val classLoader = Thread.currentThread().contextClassLoader
-    val prevCL = KotlinInterpreter.classLoader
-    KotlinInterpreter.classLoader = classLoader //req.javaClass.classLoader
-    try {
-      WebAppClassLoader.runWithServerClassAccess<Any?> {
-        require(null != classLoader.loadClass("org.eclipse.jetty.server.Response"))
-        require(null != classLoader.loadClass("org.eclipse.jetty.server.Request"))
-        this.fromString(user, tool.interpreterString).let { (interpreterClass, symbols) ->
-          val effectiveSymbols = (symbols + mapOf(
-            "returnBuffer" to returnBuffer,
-            "json" to JsonUtil,
-          )).filterKeys { !it.isNullOrBlank() }
-          interpreterClass.getConstructor(Map::class.java).newInstance(effectiveSymbols).run(tool.servletCode)
-        }
-      }
-    } finally {
-      KotlinInterpreter.classLoader = prevCL
+        val first = returnBuffer.first()
+        return first
     }
 
-    val first = returnBuffer.first()
-    return first
-  }
-
-  abstract fun fromString(user: User, str: String): InterpreterAndTools
+    abstract fun fromString(user: User, str: String): InterpreterAndTools
 
 }
 
 data class InterpreterAndTools(
-  val interpreterClass: Class<out Interpreter>,
-  val symbols: Map<String, Any> = mapOf(),
+    val interpreterClass: Class<out Interpreter>,
+    val symbols: Map<String, Any> = mapOf(),
 )
 
 

@@ -34,7 +34,7 @@ open class ActorOptimization(
         val retries: Int = 3
     )
 
-    open fun <I:List<String>,T:Any> runGeneticGenerations(
+    open fun <I : List<String>, T : Any> runGeneticGenerations(
         prompts: List<String>,
         testCases: List<TestCase>,
         actorFactory: (String) -> BaseActor<I, T>,
@@ -48,12 +48,14 @@ open class ActorOptimization(
             val scores = topPrompts.map { prompt ->
                 prompt to testCases.map { testCase ->
                     val actor = actorFactory(prompt)
-                    val answer = actor.respond(input = listOf(actor.prompt) as I, api = api, *(listOf(
-                        ApiModel.ChatMessage(
-                            role = ApiModel.Role.system,
-                            content = actor.prompt.toContentList()
-                        ),
-                    ) + testCase.userMessages).toTypedArray())
+                    val answer = actor.respond(
+                        input = listOf(actor.prompt) as I, api = api, *(listOf(
+                            ApiModel.ChatMessage(
+                                role = ApiModel.Role.system,
+                                content = actor.prompt.toContentList()
+                            ),
+                        ) + testCase.userMessages).toTypedArray()
+                    )
                     testCase.expectations.map { it.score(api, resultMapper(answer)) }.average()
                 }.average()
             }

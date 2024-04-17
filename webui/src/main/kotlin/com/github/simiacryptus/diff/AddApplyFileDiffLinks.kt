@@ -1,5 +1,6 @@
 package com.github.simiacryptus.diff
 
+import com.github.simiacryptus.diff.IterativePatchUtil.patch
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -12,9 +13,9 @@ import kotlin.io.path.readText
 
 fun SocketManagerBase.addApplyFileDiffLinks(
     root: Path,
-    code: Map<String, String>,
+    code: () -> Map<Path, String>,
     response: String,
-    handle: (Map<String, String>) -> Unit,
+    handle: (Map<Path, String>) -> Unit,
     ui: ApplicationInterface,
 ): String {
     val headerPattern = """(?s)(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
@@ -31,29 +32,26 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     }.map { it.range to it }.toList()
     val withPatchLinks: String = diffs.fold(response) { markdown, diffBlock ->
         val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
-        val filename = header?.second ?: "Unknown"
+        val filename = resolve(root, header?.second ?: "Unknown")
         val diffVal = diffBlock.second
-        val newValue = renderDiffBlock(root, filename, code, diffVal, handle, ui)
+        val newValue = renderDiffBlock(root, filename, code(), diffVal, handle, ui)
         markdown.replace("```diff\n$diffVal\n```", newValue)
     }
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
         val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
-        val filename = header?.second ?: "Unknown"
-        val filepath = path(root, filename)
-        val prevCode = load(filepath, root, code)
+        val filename = resolve(root, header?.second ?: "Unknown")
+        val filepath: Path? = path(root, filename)
+        val prevCode = load(filepath)
         val codeLang = codeBlock.second.groupValues[1]
         val codeValue = codeBlock.second.groupValues[2]
         val commandTask = ui.newTask(false)
         lateinit var hrefLink: StringBuilder
         hrefLink = commandTask.complete(hrefLink("Save File", classname = "href-link cmd-button") {
             try {
-                handle(
-                    mapOf(
-                        filename to codeValue
-                    )
-                )
+                save(filepath, codeValue)
                 hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
                 commandTask.complete()
+                handle(mapOf(File(filename).toPath() to codeValue))
                 //task.complete("""<div class="cmd-button">Saved ${filename}</div>""")
             } catch (e: Throwable) {
                 commandTask.error(null, e)
@@ -61,25 +59,23 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         })!!
 
         val codeblockRaw = """
-      ```${codeLang}
-      ${codeValue}
-      ```
-      """.trimIndent()
+          |```${codeLang}
+          |${codeValue}
+          |```
+          """.trimMargin()
         markdown.replace(
             codeblockRaw, AgentPatterns.displayMapInTabs(
                 mapOf(
                     "New" to MarkdownUtil.renderMarkdown(codeblockRaw, ui = ui),
-                    "Old" to MarkdownUtil.renderMarkdown(
-                        """
-          |```${codeLang}
-          |${prevCode}
-          |```
-          """.trimMargin(), ui = ui
+                    "Old" to MarkdownUtil.renderMarkdown("""
+                      |```${codeLang}
+                      |${prevCode}
+                      |```
+                      """.trimMargin(), ui = ui
                     ),
-                    "Patch" to MarkdownUtil.renderMarkdown(
-                        """
-          |```diff
-          |${
+                    "Patch" to MarkdownUtil.renderMarkdown("""
+                      |```diff
+                      |${
                             DiffUtil.formatDiff(
                                 DiffUtil.generateDiff(
                                     prevCode.lines(),
@@ -87,8 +83,8 @@ fun SocketManagerBase.addApplyFileDiffLinks(
                                 )
                             )
                         }
-          |```
-          """.trimMargin(), ui = ui
+                      |```
+                      """.trimMargin(), ui = ui
                     ),
                 )
             ) + "\n" + commandTask.placeholder
@@ -97,18 +93,41 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     return withSaveLinks
 }
 
+fun resolve(root: Path, filename: String): String {
+    var filepath = path(root, filename)
+    if (filepath?.toFile()?.exists() == false) filepath = null
+    if (null != filepath) return filepath.toString()
+    val files = root.toFile().recurseFiles().filter { it.name == filename.split('/', '\\').last() }
+    if (files.size == 1) {
+        filepath = files.first().toPath()
+    }
+    return root.relativize(filepath).toString()
+}
+
+fun File.recurseFiles(): List<File> {
+    val files = mutableListOf<File>()
+    if (isDirectory) {
+        listFiles()?.forEach {
+            files.addAll(it.recurseFiles())
+        }
+    } else {
+        files.add(this)
+    }
+    return files
+}
+
 
 private fun SocketManagerBase.renderDiffBlock(
     root: Path,
     filename: String,
-    code: Map<String, String>,
+    code: Map<Path, String>,
     diffVal: String,
-    handle: (Map<String, String>) -> Unit,
+    handle: (Map<Path, String>) -> Unit,
     ui: ApplicationInterface
 ): String {
     val filepath = path(root, filename)
-    val prevCode = load(filepath, root, code)
-    val newCode = IterativePatchUtil.patch(prevCode, diffVal)
+    val prevCode = load(filepath)
+    val newCode = patch(prevCode, diffVal)
     val echoDiff = try {
         DiffUtil.formatDiff(
             DiffUtil.generateDiff(
@@ -123,21 +142,16 @@ private fun SocketManagerBase.renderDiffBlock(
     val applydiffTask = ui.newTask(false)
     lateinit var hrefLink: StringBuilder
     lateinit var reverseHrefLink: StringBuilder
+    val relativize = try {
+        root.relativize(filepath)
+    } catch (e: Throwable) {
+        filepath
+    }
     hrefLink = applydiffTask.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
-            val relativize = try {
-                root.relativize(filepath)
-            } catch (e: Throwable) {
-                filepath
-            }
-            handle(
-                mapOf(
-                    relativize.toString() to IterativePatchUtil.patch(
-                        prevCode,
-                        diffVal
-                    )
-                )
-            )
+            val newCode = patch(prevCode, diffVal)
+            handle(mapOf(relativize!! to newCode))
+            filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
             reverseHrefLink.clear()
             hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
             applydiffTask.complete()
@@ -147,14 +161,12 @@ private fun SocketManagerBase.renderDiffBlock(
     })!!
     reverseHrefLink = applydiffTask.complete(hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
         try {
-            val reversedCodeMap = code.mapValues { (_, v) -> v.lines().reversed().joinToString("\n") }
-            val reversedDiff = diffVal.lines().reversed().joinToString("\n")
-            val newReversedCodeMap = reversedCodeMap.mapValues { (file, prevCode) ->
-                if (filename == file) {
-                    IterativePatchUtil.patch(prevCode, reversedDiff).lines().reversed().joinToString("\n")
-                } else prevCode
-            }
-            handle(newReversedCodeMap)
+            val newCode = patch(
+                prevCode.lines().reversed().joinToString("\n"),
+                diffVal.lines().reversed().joinToString("\n")
+            ).lines().reversed().joinToString("\n")
+            handle(mapOf(relativize!! to newCode))
+            filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
             hrefLink.clear()
             reverseHrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""")
             applydiffTask.complete()
@@ -162,10 +174,10 @@ private fun SocketManagerBase.renderDiffBlock(
             applydiffTask.error(null, e)
         }
     })!!
-    val diffTask = ui?.newTask(root = false)
-    val prevCodeTask = ui?.newTask(root = false)
-    val newCodeTask = ui?.newTask(root = false)
-    val patchTask = ui?.newTask(root = false)
+    val diffTask = ui.newTask(root = false)
+    val prevCodeTask = ui.newTask(root = false)
+    val newCodeTask = ui.newTask(root = false)
+    val patchTask = ui.newTask(root = false)
     val inTabs = AgentPatterns.displayMapInTabs(
         mapOf(
             "Diff" to (diffTask?.placeholder ?: ""),
@@ -196,19 +208,10 @@ private fun SocketManagerBase.renderDiffBlock(
 
 
 private fun load(
-    filepath: Path?,
-    root: Path,
-    code: Map<String, String>
+    filepath: Path?
 ) = try {
     if (true != filepath?.toFile()?.exists()) {
-        log.warn(
-            """
-          |File not found: $filepath
-          |Root: ${root.toAbsolutePath()}
-          |Files: 
-          |${code.keys.joinToString("\n") { "* $it" }}
-          """.trimMargin()
-        )
+        log.warn("""File not found: $filepath""".trimMargin())
         ""
     } else {
         filepath.readText(Charsets.UTF_8)
@@ -216,6 +219,19 @@ private fun load(
 } catch (e: Throwable) {
     log.error("Error reading file: $filepath", e)
     ""
+}
+
+private fun save(
+    filepath: Path?,
+    code: String
+) {
+    try {
+        if (null != filepath) {
+            filepath.toFile().writeText(code, Charsets.UTF_8)
+        }
+    } catch (e: Throwable) {
+        log.error("Error writing file: $filepath", e)
+    }
 }
 
 private fun path(root: Path, filename: String): Path? {
@@ -227,7 +243,7 @@ private fun path(root: Path, filename: String): Path? {
             root.resolve(filename)
         } catch (e: Throwable) {
             log.error("Error resolving file: $filename", e)
-            File(filename).toPath()
+            null
         }
     }
     return filepath

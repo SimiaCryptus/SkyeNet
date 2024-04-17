@@ -5,7 +5,8 @@ package com.simiacryptus.skyenet.groovy
 import com.simiacryptus.skyenet.interpreter.InterpreterTestBase
 
 class GroovyInterpreterTest : InterpreterTestBase() {
-    override fun newInterpreter(map: Map<String,Any>) = GroovyInterpreter(map.map { it.key to it.value as Object }.toMap().toJavaMap())
+    override fun newInterpreter(map: Map<String, Any>) =
+        GroovyInterpreter(map.map { it.key to it.value as Object }.toMap().toJavaMap())
 
 }
 

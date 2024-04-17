@@ -35,8 +35,7 @@ class ChatSocket(
         sessionState.removeSocket(this)
     }
 
-    companion object {
-    }
+    companion object
 }
 
 

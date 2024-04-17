@@ -20,130 +20,130 @@ import kotlin.script.experimental.jvm.util.scriptCompilationClasspathFromContext
 import kotlin.script.experimental.jvmhost.jsr223.KotlinJsr223ScriptEngineImpl
 
 open class KotlinInterpreter(
-  val defs: Map<String, Any> = mapOf(),
+    val defs: Map<String, Any> = mapOf(),
 ) : Interpreter {
 
-  final override fun getLanguage(): String = "Kotlin"
-  override fun getSymbols() = defs
+    final override fun getLanguage(): String = "Kotlin"
+    override fun getSymbols() = defs
 
-  open val scriptEngine: KotlinJsr223JvmScriptEngineBase
-    get() = object : KotlinJsr223JvmScriptEngineFactoryBase() {
-      override fun getScriptEngine() = KotlinJsr223ScriptEngineImpl(
-        this,
-        KotlinJsr223DefaultScriptCompilationConfiguration.with {
-          classLoader?.also { classLoader ->
-            jvm {
-              updateClasspath(
-                scriptCompilationClasspathFromContext(
-                  classLoader = classLoader,
-                  wholeClasspath = true,
-                  unpackJarCollections = false
+    open val scriptEngine: KotlinJsr223JvmScriptEngineBase
+        get() = object : KotlinJsr223JvmScriptEngineFactoryBase() {
+            override fun getScriptEngine() = KotlinJsr223ScriptEngineImpl(
+                this,
+                KotlinJsr223DefaultScriptCompilationConfiguration.with {
+                    classLoader?.also { classLoader ->
+                        jvm {
+                            updateClasspath(
+                                scriptCompilationClasspathFromContext(
+                                    classLoader = classLoader,
+                                    wholeClasspath = true,
+                                    unpackJarCollections = false
+                                )
+                            )
+                        }
+                    }
+                },
+                KotlinJsr223DefaultScriptEvaluationConfiguration.with {
+                    this.enableScriptsInstancesSharing()
+                }
+            ) {
+                ScriptArgsWithTypes(
+                    arrayOf(),
+                    arrayOf()
                 )
-              )
+            }.apply {
+                getBindings(ScriptContext.ENGINE_SCOPE).putAll(getSymbols())
             }
-          }
-        },
-        KotlinJsr223DefaultScriptEvaluationConfiguration.with {
-          this.enableScriptsInstancesSharing()
+        }.scriptEngine
+
+    override fun validate(code: String): Throwable? {
+        val wrappedCode = wrapCode(code)
+        return try {
+            scriptEngine.compile(wrappedCode)
+            null
+        } catch (ex: ScriptException) {
+            wrapException(ex, wrappedCode, code)
+        } catch (ex: Throwable) {
+            CodingActor.FailedToImplementException(
+                cause = ex,
+                language = "Kotlin",
+                code = code,
+            )
         }
-      ) {
-        ScriptArgsWithTypes(
-          arrayOf(),
-          arrayOf()
-        )
-      }.apply {
-        getBindings(ScriptContext.ENGINE_SCOPE).putAll(getSymbols())
-      }
-    }.scriptEngine
-
-  override fun validate(code: String): Throwable? {
-    val wrappedCode = wrapCode(code)
-    return try {
-      scriptEngine.compile(wrappedCode)
-      null
-    } catch (ex: ScriptException) {
-      wrapException(ex, wrappedCode, code)
-    } catch (ex: Throwable) {
-      CodingActor.FailedToImplementException(
-        cause = ex,
-        language = "Kotlin",
-        code = code,
-      )
     }
-  }
 
-  override fun run(code: String): Any? {
-    val wrappedCode = wrapCode(code)
-    log.debug(
-      """
+    override fun run(code: String): Any? {
+        val wrappedCode = wrapCode(code)
+        log.debug(
+            """
       |Running:
       |   ${wrappedCode.trimIndent().replace("\n", "\n\t")}
       |""".trimMargin().trim()
-    )
-    val bindings: Bindings?
-    val compile: CompiledScript
-    val scriptEngine: KotlinJsr223JvmScriptEngineBase
-    try {
-      scriptEngine = this.scriptEngine
-      compile = scriptEngine.compile(wrappedCode)
-      bindings = scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE)
-      return kotlinx.coroutines.runBlocking { compile.eval(bindings) }
-    } catch (ex: ScriptException) {
-      throw wrapException(ex, wrappedCode, code)
-    } catch (ex: Throwable) {
-      throw CodingActor.FailedToImplementException(
-        cause = ex,
-        language = "Kotlin",
-        code = code,
-      )
+        )
+        val bindings: Bindings?
+        val compile: CompiledScript
+        val scriptEngine: KotlinJsr223JvmScriptEngineBase
+        try {
+            scriptEngine = this.scriptEngine
+            compile = scriptEngine.compile(wrappedCode)
+            bindings = scriptEngine.getBindings(ScriptContext.ENGINE_SCOPE)
+            return kotlinx.coroutines.runBlocking { compile.eval(bindings) }
+        } catch (ex: ScriptException) {
+            throw wrapException(ex, wrappedCode, code)
+        } catch (ex: Throwable) {
+            throw CodingActor.FailedToImplementException(
+                cause = ex,
+                language = "Kotlin",
+                code = code,
+            )
+        }
     }
-  }
 
-  protected open fun wrapException(
-    cause: ScriptException,
-    wrappedCode: String,
-    code: String
-  ): CodingActor.FailedToImplementException {
-    var lineNumber = cause.lineNumber
-    var column = cause.columnNumber
-    if (lineNumber == -1 && column == -1) {
-      val match = Regex("\\(.*:(\\d+):(\\d+)\\)").find(cause.message ?: "")
-      if (match != null) {
-        lineNumber = match.groupValues[1].toInt()
-        column = match.groupValues[2].toInt()
-      }
+    protected open fun wrapException(
+        cause: ScriptException,
+        wrappedCode: String,
+        code: String
+    ): CodingActor.FailedToImplementException {
+        var lineNumber = cause.lineNumber
+        var column = cause.columnNumber
+        if (lineNumber == -1 && column == -1) {
+            val match = Regex("\\(.*:(\\d+):(\\d+)\\)").find(cause.message ?: "")
+            if (match != null) {
+                lineNumber = match.groupValues[1].toInt()
+                column = match.groupValues[2].toInt()
+            }
+        }
+        return CodingActor.FailedToImplementException(
+            cause = cause,
+            message = errorMessage(
+                code = wrappedCode,
+                line = lineNumber,
+                column = column,
+                message = cause.message ?: ""
+            ),
+            language = "Kotlin",
+            code = code,
+        )
     }
-    return CodingActor.FailedToImplementException(
-      cause = cause,
-      message = errorMessage(
-        code = wrappedCode,
-        line = lineNumber,
-        column = column,
-        message = cause.message ?: ""
-      ),
-      language = "Kotlin",
-      code = code,
-    )
-  }
 
-  override fun wrapCode(code: String): String {
-    val out = ArrayList<String>()
-    val (imports, otherCode) = code.split("\n").partition { it.trim().startsWith("import ") }
-    out.addAll(imports)
-    out.addAll(otherCode)
-    return out.joinToString("\n")
-  }
+    override fun wrapCode(code: String): String {
+        val out = ArrayList<String>()
+        val (imports, otherCode) = code.split("\n").partition { it.trim().startsWith("import ") }
+        out.addAll(imports)
+        out.addAll(otherCode)
+        return out.joinToString("\n")
+    }
 
 
-  companion object {
-    private val log = LoggerFactory.getLogger(KotlinInterpreter::class.java)
+    companion object {
+        private val log = LoggerFactory.getLogger(KotlinInterpreter::class.java)
 
-    fun errorMessage(
-      code: String,
-      line: Int,
-      column: Int,
-      message: String
-    ) = """
+        fun errorMessage(
+            code: String,
+            line: Int,
+            column: Int,
+            message: String
+        ) = """
         |```text
         |$message at line ${line} column ${column}
         |  ${if (line < 0) "" else code.split("\n")[line - 1]}
@@ -151,8 +151,8 @@ open class KotlinInterpreter(
         |```
         """.trimMargin().trim()
 
-    // TODO: Make this threadlocal with wrapper methods
-    var classLoader: ClassLoader? = KotlinInterpreter::class.java.classLoader
+        // TODO: Make this threadlocal with wrapper methods
+        var classLoader: ClassLoader? = KotlinInterpreter::class.java.classLoader
 
-  }
+    }
 }

@@ -9,7 +9,7 @@ import com.simiacryptus.skyenet.core.actors.opt.ActorOptimization
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 
-abstract class ActorTestBase<I: Any, R : Any> {
+abstract class ActorTestBase<I : Any, R : Any> {
 
     open val api = OpenAIClient(logLevel = Level.DEBUG)
 
@@ -59,7 +59,7 @@ abstract class ActorTestBase<I: Any, R : Any> {
 
     open fun answer(messages: Array<ApiModel.ChatMessage>): R = actor.respond(
         input = (messages.map { it.content?.first()?.text }) as I,
-        api=api,
+        api = api,
         *messages
     )
 

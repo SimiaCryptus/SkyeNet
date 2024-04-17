@@ -11,16 +11,15 @@ import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 
 class TensorflowProjector(
-  val api: API,
-  val dataStorage: StorageInterface,
-  val sessionID: Session,
-  val host: String,
-  val session: ApplicationInterface,
-  val userId: User?,
+    val api: API,
+    val dataStorage: StorageInterface,
+    val sessionID: Session,
+    val session: ApplicationInterface,
+    val userId: User?,
 ) {
 
     private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {
-        val vectors = words.map {word ->
+        val vectors = words.map { word ->
             word to (api as OpenAIClient).createEmbedding(
                 com.simiacryptus.jopenai.ApiModel.EmbeddingRequest(
                     model = EmbeddingModels.AdaEmbedding.modelName,

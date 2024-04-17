@@ -57,8 +57,8 @@ class UsageServlet : HttpServlet() {
                     <th>Cost</th>
                 </tr>
                 ${
-                    usage.entries.joinToString("\n") { (model, count) ->
-                        """
+                usage.entries.joinToString("\n") { (model, count) ->
+                    """
                         <tr class="table-row">
                             <td class="model-cell">$model</td>
                             <td class="prompt-cell">${count.prompt_tokens}</td>
@@ -66,8 +66,8 @@ class UsageServlet : HttpServlet() {
                             <td class="cost-cell">${"%.4f".format(count.cost ?: 0.0)}</td>
                         </tr>
                         """.trimIndent()
-                    }
                 }
+            }
             <tr class="table-row">
                 <td class="model-cell">Total</td>
                 <td class="prompt-cell">$totalPromptTokens</td>
@@ -80,8 +80,6 @@ class UsageServlet : HttpServlet() {
             """.trimIndent())
     }
 
-    companion object {
-
-    }
+    companion object
 }
 

@@ -20,15 +20,19 @@ class UserSettingsServlet : HttpServlet() {
         } else {
             val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
             val visibleSettings = settings.copy(
-                apiKeys = settings.apiKeys.mapValues { when(it.value) {
-                    "" -> ""
-                    else -> mask
-                } },
-                apiBase = settings.apiBase.mapValues { when(it.value) {
-                    null -> "https://api.openai.com/v1"
-                    "" -> "https://api.openai.com/v1"
-                    else -> settings.apiBase[it.key]!!
-                } },
+                apiKeys = settings.apiKeys.mapValues {
+                    when (it.value) {
+                        "" -> ""
+                        else -> mask
+                    }
+                },
+                apiBase = settings.apiBase.mapValues {
+                    when (it.value) {
+                        null -> "https://api.openai.com/v1"
+                        "" -> "https://api.openai.com/v1"
+                        else -> settings.apiBase[it.key]!!
+                    }
+                },
             )
             val json = JsonUtil.toJson(visibleSettings)
             //language=HTML
@@ -60,22 +64,25 @@ class UserSettingsServlet : HttpServlet() {
             val settings = JsonUtil.fromJson<UserSettings>(req.getParameter("settings"), UserSettings::class.java)
             val prevSettings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
             val reconstructedSettings = prevSettings.copy(
-                apiKeys = settings.apiKeys.mapValues { when(it.value) {
-                    "" -> ""
-                    mask -> prevSettings.apiKeys[it.key]!!
-                    else -> settings.apiKeys[it.key]!!
-                } },
-                apiBase = settings.apiBase.mapValues { when(it.value) {
-                    null -> "https://api.openai.com/v1"
-                    "" -> "https://api.openai.com/v1"
-                    else -> settings.apiBase[it.key]!!
-                } },
+                apiKeys = settings.apiKeys.mapValues {
+                    when (it.value) {
+                        "" -> ""
+                        mask -> prevSettings.apiKeys[it.key]!!
+                        else -> settings.apiKeys[it.key]!!
+                    }
+                },
+                apiBase = settings.apiBase.mapValues {
+                    when (it.value) {
+                        null -> "https://api.openai.com/v1"
+                        "" -> "https://api.openai.com/v1"
+                        else -> settings.apiBase[it.key]!!
+                    }
+                },
             )
             ApplicationServices.userSettingsManager.updateUserSettings(userinfo, reconstructedSettings)
             resp.sendRedirect("/")
         }
     }
 
-    companion object {
-    }
+    companion object
 }

@@ -15,15 +15,17 @@ open class SimpleActorTestApp(
     applicationName: String = "SimpleActorTest_" + actor.javaClass.simpleName,
     temperature: Double = 0.3,
 ) : ApplicationServer(
-  applicationName = applicationName,
+    applicationName = applicationName,
     path = "/simpleActorTest",
 ) {
 
     data class Settings(
         val actor: SimpleActor? = null,
     )
+
     override val settingsClass: Class<*> get() = Settings::class.java
-    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(session: Session): T? = Settings(actor=actor) as T
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : Any> initSettings(session: Session): T? = Settings(actor = actor) as T
 
     override fun userMessage(
         session: Session,
@@ -36,9 +38,9 @@ open class SimpleActorTestApp(
         val message = ui.newTask()
         try {
             val actor = getSettings<Settings>(session, user)?.actor ?: actor
-            message.echo(renderMarkdown(userMessage, ui=ui))
+            message.echo(renderMarkdown(userMessage, ui = ui))
             val response = actor.answer(listOf(userMessage), api = api)
-            message.complete(renderMarkdown(response, ui=ui))
+            message.complete(renderMarkdown(response, ui = ui))
         } catch (e: Throwable) {
             log.warn("Error", e)
             message.error(ui, e)

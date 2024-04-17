@@ -28,12 +28,11 @@ object MarkdownUtil {
         matches.forEach { match ->
             var mermaidCode = match.groups[1]!!.value
             // HTML Decode mermaidCode
-            mermaidCode = mermaidCode
             val fixedMermaidCode = fixupMermaidCode(mermaidCode)
             var mermaidDiagramHTML = """<pre class="mermaid">$fixedMermaidCode</pre>"""
             try {
                 val svg = renderMermaidToSVG(fixedMermaidCode)
-                if(null != ui) {
+                if (null != ui) {
                     val newTask = ui.newTask(false)
                     newTask.complete(svg)
                     mermaidDiagramHTML = newTask.placeholder
@@ -100,7 +99,7 @@ object MarkdownUtil {
         if (errorOutput.isNotEmpty()) {
             log.error("Mermaid CLI Error: $errorOutput")
         }
-        if(svgContent.isNullOrBlank()) {
+        if (svgContent.isNullOrBlank()) {
             throw RuntimeException("Mermaid CLI failed to generate SVG")
         }
         return svgContent
@@ -110,6 +109,7 @@ object MarkdownUtil {
     enum class State {
         DEFAULT, IN_NODE, IN_EDGE, IN_LABEL, IN_KEYWORD
     }
+
     fun fixupMermaidCode(code: String): String {
         val stringBuilder = StringBuilder()
         var index = 0
@@ -127,19 +127,20 @@ object MarkdownUtil {
                         currentState = State.IN_KEYWORD
                         stringBuilder.append(code[index])
                     } else
-                    if (code[index] == '[' || code[index] == '(' || code[index] == '{') {
-                        // Possible start of a label
-                        currentState = State.IN_LABEL
-                        labelStart = index
-                    } else if (code[index].isWhitespace() || code[index] == '-') {
-                        // Continue in default state, possibly an edge
-                        stringBuilder.append(code[index])
-                    } else {
-                        // Start of a node
-                        currentState = State.IN_NODE
-                        stringBuilder.append(code[index])
-                    }
+                        if (code[index] == '[' || code[index] == '(' || code[index] == '{') {
+                            // Possible start of a label
+                            currentState = State.IN_LABEL
+                            labelStart = index
+                        } else if (code[index].isWhitespace() || code[index] == '-') {
+                            // Continue in default state, possibly an edge
+                            stringBuilder.append(code[index])
+                        } else {
+                            // Start of a node
+                            currentState = State.IN_NODE
+                            stringBuilder.append(code[index])
+                        }
                 }
+
                 State.IN_KEYWORD -> {
                     if (code[index].isWhitespace()) {
                         // End of a keyword
@@ -147,6 +148,7 @@ object MarkdownUtil {
                     }
                     stringBuilder.append(code[index])
                 }
+
                 State.IN_NODE -> {
                     if (code[index] == '-' || code[index] == '>' || code[index].isWhitespace()) {
                         // End of a node, start of an edge or space
@@ -157,6 +159,7 @@ object MarkdownUtil {
                         stringBuilder.append(code[index])
                     }
                 }
+
                 State.IN_EDGE -> {
                     if (!code[index].isWhitespace() && code[index] != '-' && code[index] != '>') {
                         // End of an edge, start of a node
@@ -167,6 +170,7 @@ object MarkdownUtil {
                         stringBuilder.append(code[index])
                     }
                 }
+
                 State.IN_LABEL -> {
                     if (code[index] == ']' || code[index] == ')' || code[index] == '}') {
                         // End of a label
@@ -183,6 +187,7 @@ object MarkdownUtil {
 
         return stringBuilder.toString()
     }
+
     private fun defaultOptions(): MutableDataSet {
         val options = MutableDataSet()
         options.set(Parser.EXTENSIONS, listOf(TablesExtension.create()))

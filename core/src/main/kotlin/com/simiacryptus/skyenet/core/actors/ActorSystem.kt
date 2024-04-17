@@ -10,66 +10,66 @@ import com.simiacryptus.skyenet.core.util.JsonFunctionRecorder
 import java.io.File
 
 open class ActorSystem<T : Enum<*>>(
-  val actors: Map<String, BaseActor<*, *>>,
-  val dataStorage: StorageInterface,
-  val user: User?,
-  val session: Session
+    val actors: Map<String, BaseActor<*, *>>,
+    val dataStorage: StorageInterface,
+    val user: User?,
+    val session: Session
 ) {
-  private val sessionDir = dataStorage.getSessionDir(user, session)
-  protected val pool by lazy { ApplicationServices.clientManager.getPool(session, user, dataStorage) }
+    private val sessionDir = dataStorage.getSessionDir(user, session)
+    protected val pool by lazy { ApplicationServices.clientManager.getPool(session, user, dataStorage) }
 
-  private val actorMap = mutableMapOf<T, BaseActor<*, *>>()
+    private val actorMap = mutableMapOf<T, BaseActor<*, *>>()
 
-  fun getActor(actor: T): BaseActor<*, *> {
-    return synchronized(actorMap) {
-      actorMap.computeIfAbsent(actor) { innerActor ->
-        try {
-          val wrapper = getWrapper(actor.name)
-          when (val baseActor = actors[actor.name]) {
-            null -> throw RuntimeException("No actor for $actor")
-            is SimpleActor -> SimpleActorInterceptor(
-              inner = baseActor as SimpleActor,
-              functionInterceptor = wrapper
-            )
+    fun getActor(actor: T): BaseActor<*, *> {
+        return synchronized(actorMap) {
+            actorMap.computeIfAbsent(actor) { innerActor ->
+                try {
+                    val wrapper = getWrapper(actor.name)
+                    when (val baseActor = actors[actor.name]) {
+                        null -> throw RuntimeException("No actor for $actor")
+                        is SimpleActor -> SimpleActorInterceptor(
+                            inner = baseActor,
+                            functionInterceptor = wrapper
+                        )
 
-            is ParsedActor<*> -> ParsedActorInterceptor(
-              inner = (baseActor as ParsedActor<*>),
-              functionInterceptor = wrapper
-            )
+                        is ParsedActor<*> -> ParsedActorInterceptor(
+                            inner = baseActor,
+                            functionInterceptor = wrapper
+                        )
 
-            is CodingActor -> CodingActorInterceptor(
-              inner = baseActor as CodingActor,
-              functionInterceptor = wrapper
-            )
+                        is CodingActor -> CodingActorInterceptor(
+                            inner = baseActor,
+                            functionInterceptor = wrapper
+                        )
 
-            is ImageActor -> ImageActorInterceptor(
-              inner = baseActor as ImageActor,
-              functionInterceptor = wrapper
-            )
+                        is ImageActor -> ImageActorInterceptor(
+                            inner = baseActor,
+                            functionInterceptor = wrapper
+                        )
 
-            is TextToSpeechActor -> TextToSpeechActorInterceptor(
-              inner = baseActor as TextToSpeechActor,
-              functionInterceptor = wrapper
-            )
+                        is TextToSpeechActor -> TextToSpeechActorInterceptor(
+                            inner = baseActor,
+                            functionInterceptor = wrapper
+                        )
 
-            else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
-          }
-        } catch (e: Throwable) {
-          log.warn("Error creating actor $actor", e)
-          actors[actor.name]!!
+                        else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
+                    }
+                } catch (e: Throwable) {
+                    log.warn("Error creating actor $actor", e)
+                    actors[actor.name]!!
+                }
+            }
         }
-      }
     }
-  }
 
-  private val wrapperMap = mutableMapOf<String, FunctionWrapper>()
-  private fun getWrapper(name: String) = synchronized(wrapperMap) {
-    wrapperMap.getOrPut(name) {
-      FunctionWrapper(JsonFunctionRecorder(File(sessionDir, ".sys/$session/actors/$name")))
+    private val wrapperMap = mutableMapOf<String, FunctionWrapper>()
+    private fun getWrapper(name: String) = synchronized(wrapperMap) {
+        wrapperMap.getOrPut(name) {
+            FunctionWrapper(JsonFunctionRecorder(File(sessionDir, ".sys/$session/actors/$name")))
+        }
     }
-  }
 
-  companion object {
-    private val log = org.slf4j.LoggerFactory.getLogger(ActorSystem::class.java)
-  }
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(ActorSystem::class.java)
+    }
 }
