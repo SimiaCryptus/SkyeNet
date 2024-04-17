@@ -46,7 +46,9 @@ abstract class InterpreterTestBase {
         Assertions.assertEquals(null, result)
     }
 
-    class FooBar
+    class FooBar {
+        fun bar() = "Foo says Hello World"
+    }
 
     @Test
     fun `test run with tool Any`() {
