@@ -24,6 +24,7 @@ import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.file.Path
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -150,7 +151,7 @@ class WebDevAgent(
     private val javascriptActor by lazy { getActor(ActorTypes.JavascriptCodingActor) as SimpleActor }
     private val cssActor by lazy { getActor(ActorTypes.CssCodingActor) as SimpleActor }
     private val codeReviewer by lazy { getActor(ActorTypes.CodeReviewer) as SimpleActor }
-    private val codeFiles = mutableMapOf<String, String>()
+    private val codeFiles = mutableMapOf<Path, String>()
 
     fun start(
         userMessage: String,
@@ -214,7 +215,7 @@ class WebDevAgent(
                             )
                         ),
                         javascriptActor,
-                        path, "js", "javascript"
+                        File(path).toPath(), "js", "javascript"
                     )
 
                     "css" -> draftResourceCode(
@@ -227,7 +228,7 @@ class WebDevAgent(
                             )
                         ),
                         cssActor,
-                        path
+                        File(path).toPath()
                     )
 
                     "html" -> draftResourceCode(
@@ -240,7 +241,7 @@ class WebDevAgent(
                             )
                         ),
                         htmlActor,
-                        path
+                        File(path).toPath()
                     )
 
                     else -> task.add("Resource Type Not Supported: $path - $description")
@@ -249,7 +250,7 @@ class WebDevAgent(
             // Apply codeReviewer
             fun codeSummary() = codeFiles.entries.joinToString("\n\n") { (path, code) ->
                 "# $path\n```${
-                    /*escapeHtml4*/(path.split('.').last())/*.indent("  ")*/
+                    /*escapeHtml4*/(path.toString().split('.').last())/*.indent("  ")*/
                 }\n${/*escapeHtml4*/(code)/*.indent("  ")*/}\n```"
             }
 
@@ -257,7 +258,7 @@ class WebDevAgent(
                 //val task = ui.newTask()
                 return task.complete(
                     ui.socketManager.addApplyFileDiffLinks(
-                        root = codeFiles.keys.map { File(it).toPath() }.toTypedArray().commonRoot(),
+                        root = codeFiles.keys.map { it }.toTypedArray().commonRoot(),
                         code = { codeFiles },
                         response = design,
                         handle = { newCodeMap ->
@@ -317,8 +318,8 @@ class WebDevAgent(
         task: SessionTask,
         request: Array<ApiModel.ChatMessage>,
         actor: SimpleActor,
-        path: String,
-        vararg languages: String = arrayOf(path.split(".").last().lowercase()),
+        path: Path,
+        vararg languages: String = arrayOf(path.toString().split(".").last().lowercase()),
     ) {
         try {
             var code = actor.respond(emptyList(), api, *request)
@@ -327,7 +328,7 @@ class WebDevAgent(
             }
             try {
                 task.add(renderMarkdown("```${languages.first()}\n$code\n```", ui = ui))
-                task.add("<a href='${task.saveFile(path, code.toByteArray(Charsets.UTF_8))}'>$path</a> Updated")
+                task.add("<a href='${task.saveFile(path.toString(), code.toByteArray(Charsets.UTF_8))}'>$path</a> Updated")
                 codeFiles[path] = code
                 val request1 = (request.toList() +
                         listOf(

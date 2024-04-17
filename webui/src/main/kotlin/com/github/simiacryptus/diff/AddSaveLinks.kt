@@ -4,12 +4,14 @@ import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
+import java.io.File
+import java.nio.file.Path
 
 fun SocketManagerBase.addSaveLinks(
     response: String,
     task: SessionTask,
     ui: ApplicationInterface,
-    handle: (String, String) -> Unit,
+    handle: (Path, String) -> Unit,
 ): String {
     val diffPattern =
         """(?s)(?<![^\n])#+\s*(?:[^\n]+[:\-]\s+)?([^\n]+)(?:[^`]+`?)*\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
@@ -21,7 +23,7 @@ fun SocketManagerBase.addSaveLinks(
         lateinit var hrefLink: StringBuilder
         hrefLink = commandTask.complete(hrefLink("Save File", classname = "href-link cmd-button") {
             try {
-                handle(filename, codeValue)
+                handle(File(filename).toPath(), codeValue)
                 hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
                 commandTask.complete()
                 //task.complete("""<div class="cmd-button">Saved ${filename}</div>""")
