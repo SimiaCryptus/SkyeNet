@@ -27,8 +27,12 @@ open class TabbedDisplay(
 
     open fun renderTabButtons() = """
     <div class="tabs">${
-        tabs.toMap().keys.withIndex().joinToString("\n") { (idx, key: String) ->
-            """<button class="tab-button" data-for-tab="$idx">$key</button>"""
+        tabs.withIndex().joinToString("\n") { (idx, pair) ->
+            if (idx == selectedTab) {
+                """<button class="tab-button active" data-for-tab="$idx">${pair.first}</button>"""
+            } else {
+                """<button class="tab-button" data-for-tab="$idx">${pair.first}</button>"""
+            }
         }
     }</div>
     """.trimIndent()

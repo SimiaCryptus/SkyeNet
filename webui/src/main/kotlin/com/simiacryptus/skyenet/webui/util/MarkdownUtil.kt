@@ -45,7 +45,7 @@ object MarkdownUtil {
             val replacement = if (tabs) """
             |<div class="tabs-container">
             |  <div class="tabs">
-            |    <button class="tab-button" data-for-tab="1">Diagram</button>
+            |    <button class="tab-button active" data-for-tab="1">Diagram</button>
             |    <button class="tab-button" data-for-tab="2">Source</button>
             |  </div>
             |  <div class="tab-content active" data-tab="1">$mermaidDiagramHTML</div>
