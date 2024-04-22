@@ -25,7 +25,12 @@ object AgentPatterns {
     |<div class="tabs">
     |${
             map.keys.joinToString("\n") { key ->
-                """<button class="tab-button" data-for-tab="$key">$key</button>"""
+                """<button class="tab-button${
+                    when {
+                        key == map.keys.first() -> " active"
+                        else -> ""
+                    }
+                }" data-for-tab="$key">$key</button>"""
             }/*.indent("  ")*/
         }
     |</div>

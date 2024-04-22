@@ -28,11 +28,11 @@ kotlin {
 
 val junit_version = "5.10.1"
 val logback_version = "1.4.11"
-val jackson_version = "2.15.3"
+val jackson_version = "2.17.0"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.52")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.53")
 
     implementation("org.apache.commons:commons-text:1.11.0")
 
@@ -77,12 +77,12 @@ tasks {
 
     compileKotlin {
         compilerOptions {
-            javaParameters = true
+            javaParameters.set(true)
         }
     }
     compileTestKotlin {
         compilerOptions {
-            javaParameters = true
+            javaParameters.set(true)
         }
     }
     test {

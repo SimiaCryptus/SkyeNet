@@ -59,12 +59,12 @@ tasks {
 
     compileKotlin {
         compilerOptions {
-            javaParameters = true
+            javaParameters.set(true)
         }
     }
     compileTestKotlin {
         compilerOptions {
-            javaParameters = true
+            javaParameters.set(true)
         }
     }
     test {
