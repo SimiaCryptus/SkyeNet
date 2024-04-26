@@ -35,7 +35,7 @@ open class CodingAgent<T : Interpreter>(
     temperature: Double = 0.1,
     val details: String? = null,
     val model: ChatModels,
-    private val mainTask: SessionTask = ui.newTask(),
+    private val mainTask: SessionTask,
     val actorMap: Map<ActorTypes, CodingActor> = mapOf(
         ActorTypes.CodingActor to CodingActor(
             interpreter,
