@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 open class WebDevApp(
-    applicationName: String = "Web Dev Assistant v1.1",
+    applicationName: String = "Web Dev Assistant v1.2",
     open val symbols: Map<String, Any> = mapOf(),
     val temperature: Double = 0.1,
 ) : ApplicationServer(
