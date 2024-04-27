@@ -99,10 +99,8 @@ fun resolve(root: Path, filename: String): String {
     if (filepath?.toFile()?.exists() == false) filepath = null
     if (null != filepath) return filepath.toString()
     val files = root.toFile().recurseFiles().filter { it.name == filename.split('/', '\\').last() }
-    if (files.size == 1) {
-        filepath = files.first().toPath()
-    }
-    return root.relativize(filepath).toString()
+    if (files.size == 1) { filepath = files.first().toPath() }
+    return filepath?.let { root.relativize(it).toString() } ?: filename
 }
 
 fun File.recurseFiles(): List<File> {
