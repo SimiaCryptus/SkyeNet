@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.webui.servlet
 
+import com.simiacryptus.jopenai.models.APIProvider
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.UserSettingsInterface.UserSettings
@@ -21,19 +23,20 @@ class UserSettingsServlet : HttpServlet() {
             try {
                 val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
                 val visibleSettings = settings.copy(
-                    apiKeys = settings.apiKeys.mapValues {
-                        when (it.value) {
+                    apiKeys = APIProvider.values().map {
+                        it to when (settings.apiKeys[it]) {
+                            null -> ""
                             "" -> ""
                             else -> mask
                         }
-                    },
-                    apiBase = settings.apiBase.mapValues {
-                        when (it.value) {
-                            null -> "https://api.openai.com/v1"
-                            "" -> "https://api.openai.com/v1"
-                            else -> settings.apiBase[it.key]!!
-                        }
-                    },
+                    }.toMap(),
+                    apiBase = APIProvider.values().map {
+                        it to when (it.base) {
+                            null -> settings.apiBase[it]!!
+                            "" -> settings.apiBase[it]!!
+                            else -> it.base
+                        }!!
+                    }.toMap(),
                 )
                 val json = JsonUtil.toJson(visibleSettings)
                 //language=HTML

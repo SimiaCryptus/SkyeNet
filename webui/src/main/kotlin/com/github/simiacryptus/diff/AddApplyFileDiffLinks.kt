@@ -49,11 +49,12 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         hrefLink = commandTask.complete(hrefLink("Save File", classname = "href-link cmd-button") {
             try {
                 save(filepath, codeValue)
+                handle(mapOf(File(filename).toPath() to codeValue))
                 hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
                 commandTask.complete()
-                handle(mapOf(File(filename).toPath() to codeValue))
                 //task.complete("""<div class="cmd-button">Saved ${filename}</div>""")
             } catch (e: Throwable) {
+                hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
                 commandTask.error(null, e)
             }
         })!!
@@ -149,28 +150,30 @@ private fun SocketManagerBase.renderDiffBlock(
     }
     hrefLink = applydiffTask.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
-            val newCode = patch(prevCode, diffVal)
-            handle(mapOf(relativize!! to newCode))
+            val newCode = patch(load(filepath), diffVal)
             filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize!! to newCode))
             reverseHrefLink.clear()
             hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
             applydiffTask.complete()
         } catch (e: Throwable) {
+            hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
             applydiffTask.error(null, e)
         }
     })!!
     reverseHrefLink = applydiffTask.complete(hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
         try {
             val newCode = patch(
-                prevCode.lines().reversed().joinToString("\n"),
+                load(filepath).lines().reversed().joinToString("\n"),
                 diffVal.lines().reversed().joinToString("\n")
             ).lines().reversed().joinToString("\n")
-            handle(mapOf(relativize!! to newCode))
             filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize!! to newCode))
             hrefLink.clear()
             reverseHrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""")
             applydiffTask.complete()
         } catch (e: Throwable) {
+            reverseHrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
             applydiffTask.error(null, e)
         }
     })!!
@@ -226,9 +229,7 @@ private fun save(
     code: String
 ) {
     try {
-        if (null != filepath) {
-            filepath.toFile().writeText(code, Charsets.UTF_8)
-        }
+        filepath?.toFile()?.writeText(code, Charsets.UTF_8)
     } catch (e: Throwable) {
         log.error("Error writing file: $filepath", e)
     }

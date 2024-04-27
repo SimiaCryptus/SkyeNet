@@ -25,10 +25,12 @@ fun SocketManagerBase.addApplyDiffLinks(
             try {
                 val newCode = IterativePatchUtil.patch(code(), diffVal).replace("\r", "")
                 handle(newCode)
-                reverseHrefLink?.clear()
                 hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
                 applydiffTask.complete()
+                reverseHrefLink?.clear()
             } catch (e: Throwable) {
+                hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
+                applydiffTask.complete()
                 task.error(ui, e)
             }
         })!!
@@ -51,9 +53,9 @@ fun SocketManagerBase.addApplyDiffLinks(
                     val newReversedCode = IterativePatchUtil.patch(reversedCode, reversedDiff).replace("\r", "")
                     val newCode = newReversedCode.lines().reversed().joinToString("\n")
                     handle(newCode)
-                    hrefLink.clear()
                     reverseHrefLink!!.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""")
                     applydiffTask.complete()
+                    hrefLink.clear()
                 } catch (e: Throwable) {
                     task.error(ui, e)
                 }
