@@ -94,7 +94,13 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     return withSaveLinks
 }
 
+private val pattern_backticks = "`(.*)`".toRegex()
 fun resolve(root: Path, filename: String): String {
+    val filename = if(pattern_backticks.containsMatchIn(filename)) {
+        pattern_backticks.find(filename)!!.groupValues[1]
+    } else {
+        filename.trim()
+    }
     var filepath = path(root, filename)
     if (filepath?.toFile()?.exists() == false) filepath = null
     if (null != filepath) return filepath.toString()

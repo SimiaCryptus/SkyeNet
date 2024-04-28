@@ -14,10 +14,13 @@ fun SocketManagerBase.addSaveLinks(
     handle: (Path, String) -> Unit,
 ): String {
     val diffPattern =
+        """(?s)(?<![^\n])#+\s*([^\n]+)\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
+
+    val diffPattern2 =
         """(?s)(?<![^\n])#+\s*(?:[^\n]+[:\-]\s+)?([^\n]+)(?:[^`]+`?)*\n```[^\n]*\n(.*?)```""".toRegex() // capture filename
     val matches = diffPattern.findAll(response).distinct()
     val withLinks = matches.fold(response) { markdown, diffBlock ->
-        val filename = diffBlock.groupValues[1]
+        val filename = extractFilename(diffBlock.groupValues[1])
         val codeValue = diffBlock.groupValues[2]
         val commandTask = ui.newTask(false)
         lateinit var hrefLink: StringBuilder
@@ -26,14 +29,21 @@ fun SocketManagerBase.addSaveLinks(
                 handle(File(filename).toPath(), codeValue)
                 hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
                 commandTask.complete()
-                //task.complete("""<div class="cmd-button">Saved ${filename}</div>""")
             } catch (e: Throwable) {
                 task.error(null, e)
             }
         })!!
         markdown.replace(
             codeValue + "```",
-            codeValue.let { /*escapeHtml4*/(it)/*.indent("  ")*/ } + "```\n" + commandTask.placeholder)
+            codeValue + "```\n" + commandTask.placeholder)
     }
     return withLinks
+}
+
+private val pattern_backticks = "`(.*)`".toRegex()
+private fun extractFilename(filename: String) = when {
+    pattern_backticks.containsMatchIn(filename) -> {
+        pattern_backticks.find(filename)!!.groupValues[1]
+    }
+    else -> filename.trim()
 }
