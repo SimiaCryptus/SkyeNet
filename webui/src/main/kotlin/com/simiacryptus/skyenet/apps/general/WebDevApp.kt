@@ -177,7 +177,7 @@ class WebDevAgent(
         val toInput = { it: String -> listOf(it) }
         val architectureResponse = Discussable(
             task = task,
-            userMessage = userMessage,
+            userMessage = { userMessage },
             initialResponse = { it: String -> architectureDiscussionActor.answer(toInput(it), api = api) },
             outputFn = { design: ParsedResponse<PageResourceList> ->
                 //        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n```")
