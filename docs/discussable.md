@@ -1,8 +1,8 @@
-## Acceptable Class Documentation
+## Discussable Class Documentation
 
 ### Overview
 
-The `Acceptable` class in Kotlin is designed to facilitate user interactions within a session-based application,
+The `Discussable` class in Kotlin is designed to facilitate user interactions within a session-based application,
 particularly for tasks that require user confirmation or iterative refinement based on user feedback. It is highly
 useful in scenarios where an initial response needs to be generated based on user input, and then potentially revised
 multiple times based on further user interactions.
@@ -27,22 +27,22 @@ multiple times based on further user interactions.
   and their roles.
 - `atomicRef: AtomicReference<T> = AtomicReference()`: An atomic reference to hold the response object securely for
   concurrent access.
-- `semaphore: Semaphore = Semaphore(0)`: A semaphore to control the release of the response once it is accepted.
+- `semaphore: Semaphore = Semaphore(0)`: A semaphore to control the release of the response once it is discussed.
 - `heading: String`: A heading for the interaction, typically used for display purposes.
 
 ### Methods
 
 - `call()`: This is the main method that executes the interaction logic. It orchestrates the display of the initial
-  response, handles user feedback, and waits for the user to accept a final response.
+  response, handles user feedback, and waits for the user to discuss a final response.
 - `main(tabIndex: Int, task: SessionTask)`: Handles the main interaction logic for a specific tab in the user interface.
 - `feedbackForm(...)`: Generates a form for user feedback based on the current state of the response.
-- `accept(...)`: Handles the acceptance of the response, releasing the semaphore and setting the response in the atomic
+- `discuss(...)`: Handles the response, releasing the semaphore and setting the response in the atomic
   reference.
 
 ### Usage Example
 
 ```kotlin
-val acceptable = com.simiacryptus.skyenet.Acceptable(
+val discussable = com.simiacryptus.skyenet.Discussable(
     task = sessionTask,
     userMessage = "What is the weather like today?",
     initialResponse = { message -> weatherService.getWeather(message) },
@@ -54,17 +54,17 @@ val acceptable = com.simiacryptus.skyenet.Acceptable(
     heading = "Weather Inquiry"
 )
 
-val finalWeather = acceptable.call()
+val finalWeather = discussable.call()
 println("Final weather response: $finalWeather")
 ```
 
 ### Notes
 
-- The `Acceptable` class is designed to be flexible and reusable for different types of interactions where user
+- The `Discussable` class is designed to be flexible and reusable for different types of interactions where user
   confirmation is required.
 - It uses advanced Kotlin features like generics, lambdas, and concurrency utilities to provide a robust solution for
   interactive applications.
 - Proper error handling and user interface management are crucial for implementing a smooth user experience.
 
-This documentation provides a comprehensive overview of the `Acceptable` class, detailing its construction, methods, and
+This documentation provides a comprehensive overview of the `Discussable` class, detailing its construction, methods, and
 typical usage within an application that requires interactive user sessions.

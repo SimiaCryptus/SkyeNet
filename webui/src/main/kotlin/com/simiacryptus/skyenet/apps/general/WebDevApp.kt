@@ -10,7 +10,7 @@ import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.Acceptable
+import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.core.actors.*
 import com.simiacryptus.skyenet.core.platform.ClientManager
@@ -22,6 +22,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
@@ -79,7 +80,7 @@ class WebDevAgent(
     val ui: ApplicationInterface,
     val model: ChatModels,
     val tools: List<String> = emptyList(),
-    val actorMap: Map<ActorTypes, BaseActor<*, *>> = mapOf(
+    @Language("Markdown") val actorMap: Map<ActorTypes, BaseActor<*, *>> = mapOf(
         ActorTypes.HtmlCodingActor to SimpleActor(
             prompt = """
     You will translate the user request into a skeleton HTML file for a rich javascript application.
@@ -113,27 +114,43 @@ class WebDevAgent(
         ),
         ActorTypes.CodeReviewer to SimpleActor(
             prompt = """
-        Analyze the code summarized in the user's header-labeled code blocks.
-        Review, look for bugs, and provide fixes. 
-        Provide implementations for missing functions.
-        
-        Response should use one or more code patches in diff format within ```diff code blocks.
-        Each diff should be preceded by a header that identifies the file being modified.
-        The diff format should use + for line additions, - for line deletions.
-        The diff should include 2 lines of context before and after every change.
-        
-        Example:
-        
-        Explanation text
-        
-        ### scripts/filename.js
-        ```diff
-        - const b = 2;
-        + const a = 1;
-        ```
-        
-        Continued text
-      """.trimIndent(),
+        |Analyze the code summarized in the user's header-labeled code blocks.
+        |Review, look for bugs, and provide fixes. 
+        |Provide implementations for missing functions.
+        |
+        |Response should use one or more code patches in diff format within ```diff code blocks.
+        |Each diff should be preceded by a header that identifies the file being modified.
+        |The diff format should use + for line additions, - for line deletions.
+        |The diff should include 2 lines of context before and after every change.
+        |
+        |Example:
+        |
+        |Here are the patches:
+        |
+        |### src/utils/exampleUtils.js
+        |```diff
+        | // Utility functions for example feature
+        | const b = 2;
+        | function exampleFunction() {
+        |-   return b + 1;
+        |+   return b + 2;
+        | }
+        |```
+        |
+        |### tests/exampleUtils.test.js
+        |```diff
+        | // Unit tests for exampleUtils
+        | const assert = require('assert');
+        | const { exampleFunction } = require('../src/utils/exampleUtils');
+        | 
+        | describe('exampleFunction', () => {
+        |-   it('should return 3', () => {
+        |+   it('should return 4', () => {
+        |     assert.equal(exampleFunction(), 3);
+        |   });
+        | });
+        |```
+      """.trimMargin(),
             model = model,
         ),
     ),
@@ -158,7 +175,7 @@ class WebDevAgent(
     ) {
         val task = ui.newTask()
         val toInput = { it: String -> listOf(it) }
-        val architectureResponse = Acceptable(
+        val architectureResponse = Discussable(
             task = task,
             userMessage = userMessage,
             initialResponse = { it: String -> architectureDiscussionActor.answer(toInput(it), api = api) },

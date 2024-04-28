@@ -9,7 +9,7 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-class Acceptable<T : Any>(
+class Discussable<T : Any>(
     private val task: SessionTask,
     private val userMessage: String,
     private val initialResponse: (String) -> T,
