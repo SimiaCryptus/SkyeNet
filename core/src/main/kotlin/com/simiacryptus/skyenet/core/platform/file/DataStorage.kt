@@ -220,7 +220,12 @@ open class DataStorage(
         val files = dir.listFiles()?.flatMap { it.listFiles()?.toList() ?: listOf() }?.filter { sessionDir ->
             val operationDir = File(sessionDir, MESSAGE_DIR)
             if (!operationDir.exists()) false else {
-                val listFiles = operationDir.listFiles()?.filter { it.isFile && !it.name.startsWith("aaa") }
+                val listFiles = operationDir.listFiles()?.flatMap {
+                    when {
+                        it.isDirectory -> it.listFiles()?.toList() ?: listOf()
+                        else -> listOf(it)
+                    }
+                }?.filter { it.isFile && !it.name.startsWith("aaa") }
                 (listFiles?.size ?: 0) > 0
             }
         }?.sortedBy { it.lastModified() } ?: listOf()

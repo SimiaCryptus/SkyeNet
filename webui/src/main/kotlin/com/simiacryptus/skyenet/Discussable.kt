@@ -9,9 +9,9 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-class Acceptable<T : Any>(
+class Discussable<T : Any>(
     private val task: SessionTask,
-    private val userMessage: String,
+    private val userMessage: () -> String,
     private val initialResponse: (String) -> T,
     private val outputFn: (T) -> String,
     private val ui: ApplicationInterface,
@@ -49,6 +49,7 @@ class Acceptable<T : Any>(
     private fun main(tabIndex: Int, task: SessionTask) {
         try {
             val history = mutableListOf<Pair<String, Role>>()
+            val userMessage = userMessage()
             history.add(userMessage to Role.user)
             val design = initialResponse(userMessage)
             history.add(outputFn(design) to Role.assistant)

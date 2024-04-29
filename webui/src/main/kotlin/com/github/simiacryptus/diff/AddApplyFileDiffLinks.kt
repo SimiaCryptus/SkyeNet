@@ -49,11 +49,12 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         hrefLink = commandTask.complete(hrefLink("Save File", classname = "href-link cmd-button") {
             try {
                 save(filepath, codeValue)
+                handle(mapOf(File(filename).toPath() to codeValue))
                 hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
                 commandTask.complete()
-                handle(mapOf(File(filename).toPath() to codeValue))
                 //task.complete("""<div class="cmd-button">Saved ${filename}</div>""")
             } catch (e: Throwable) {
+                hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
                 commandTask.error(null, e)
             }
         })!!
@@ -93,15 +94,19 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     return withSaveLinks
 }
 
+private val pattern_backticks = "`(.*)`".toRegex()
 fun resolve(root: Path, filename: String): String {
+    val filename = if(pattern_backticks.containsMatchIn(filename)) {
+        pattern_backticks.find(filename)!!.groupValues[1]
+    } else {
+        filename.trim()
+    }
     var filepath = path(root, filename)
     if (filepath?.toFile()?.exists() == false) filepath = null
     if (null != filepath) return filepath.toString()
     val files = root.toFile().recurseFiles().filter { it.name == filename.split('/', '\\').last() }
-    if (files.size == 1) {
-        filepath = files.first().toPath()
-    }
-    return root.relativize(filepath).toString()
+    if (files.size == 1) { filepath = files.first().toPath() }
+    return filepath?.let { root.relativize(it).toString() } ?: filename
 }
 
 fun File.recurseFiles(): List<File> {
@@ -149,28 +154,30 @@ private fun SocketManagerBase.renderDiffBlock(
     }
     hrefLink = applydiffTask.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
-            val newCode = patch(prevCode, diffVal)
-            handle(mapOf(relativize!! to newCode))
+            val newCode = patch(load(filepath), diffVal)
             filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize!! to newCode))
             reverseHrefLink.clear()
             hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
             applydiffTask.complete()
         } catch (e: Throwable) {
+            hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
             applydiffTask.error(null, e)
         }
     })!!
     reverseHrefLink = applydiffTask.complete(hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
         try {
             val newCode = patch(
-                prevCode.lines().reversed().joinToString("\n"),
+                load(filepath).lines().reversed().joinToString("\n"),
                 diffVal.lines().reversed().joinToString("\n")
             ).lines().reversed().joinToString("\n")
-            handle(mapOf(relativize!! to newCode))
             filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize!! to newCode))
             hrefLink.clear()
             reverseHrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""")
             applydiffTask.complete()
         } catch (e: Throwable) {
+            reverseHrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
             applydiffTask.error(null, e)
         }
     })!!
@@ -226,9 +233,7 @@ private fun save(
     code: String
 ) {
     try {
-        if (null != filepath) {
-            filepath.toFile().writeText(code, Charsets.UTF_8)
-        }
+        filepath?.toFile()?.writeText(code, Charsets.UTF_8)
     } catch (e: Throwable) {
         log.error("Error writing file: $filepath", e)
     }

@@ -36,36 +36,40 @@ open class UsageManager(val root: File) : UsageInterface {
             try {
                 file.readLines().forEach { line ->
                     val (sessionId, user, model, value, direction) = line.split(",")
-                    val modelEnum = listOf(
-                        ChatModels.values(),
-                        CompletionModels.values(),
-                        EditModels.values(),
-                        EmbeddingModels.values()
-                    ).flatMap { it.values }.find { model == it.modelName }
-                        ?: throw RuntimeException("Unknown model $model")
-                    when (direction) {
-                        "input" -> incrementUsage(
-                            Session(sessionId),
-                            User(email = user),
-                            modelEnum,
-                            com.simiacryptus.jopenai.ApiModel.Usage(prompt_tokens = value.toInt())
-                        )
+                    try {
+                        val modelEnum = listOf(
+                            ChatModels.values(),
+                            CompletionModels.values(),
+                            EditModels.values(),
+                            EmbeddingModels.values()
+                        ).flatMap { it.values }.find { model == it.modelName }
+                            ?: throw RuntimeException("Unknown model $model")
+                        when (direction) {
+                            "input" -> incrementUsage(
+                                Session(sessionId),
+                                User(email = user),
+                                modelEnum,
+                                com.simiacryptus.jopenai.ApiModel.Usage(prompt_tokens = value.toInt())
+                            )
 
-                        "output" -> incrementUsage(
-                            Session(sessionId),
-                            User(email = user),
-                            modelEnum,
-                            com.simiacryptus.jopenai.ApiModel.Usage(completion_tokens = value.toInt())
-                        )
+                            "output" -> incrementUsage(
+                                Session(sessionId),
+                                User(email = user),
+                                modelEnum,
+                                com.simiacryptus.jopenai.ApiModel.Usage(completion_tokens = value.toInt())
+                            )
 
-                        "cost" -> incrementUsage(
-                            session = Session(sessionId = sessionId),
-                            user = User(email = user),
-                            model = modelEnum,
-                            tokens = com.simiacryptus.jopenai.ApiModel.Usage(cost = value.toDouble())
-                        )
+                            "cost" -> incrementUsage(
+                                session = Session(sessionId = sessionId),
+                                user = User(email = user),
+                                model = modelEnum,
+                                tokens = com.simiacryptus.jopenai.ApiModel.Usage(cost = value.toDouble())
+                            )
 
-                        else -> throw RuntimeException("Unknown direction $direction")
+                            else -> throw RuntimeException("Unknown direction $direction")
+                        }
+                    } catch (e: Exception) {
+                        log.debug("Error loading log line: ${e.message}")
                     }
                 }
             } catch (e: Exception) {

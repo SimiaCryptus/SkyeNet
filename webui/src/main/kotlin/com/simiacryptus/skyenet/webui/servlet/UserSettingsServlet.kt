@@ -1,5 +1,7 @@
 package com.simiacryptus.skyenet.webui.servlet
 
+import com.simiacryptus.jopenai.models.APIProvider
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.UserSettingsInterface.UserSettings
@@ -18,41 +20,60 @@ class UserSettingsServlet : HttpServlet() {
         if (null == userinfo) {
             resp.status = HttpServletResponse.SC_BAD_REQUEST
         } else {
-            val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
-            val visibleSettings = settings.copy(
-                apiKeys = settings.apiKeys.mapValues {
-                    when (it.value) {
-                        "" -> ""
-                        else -> mask
-                    }
-                },
-                apiBase = settings.apiBase.mapValues {
-                    when (it.value) {
-                        null -> "https://api.openai.com/v1"
-                        "" -> "https://api.openai.com/v1"
-                        else -> settings.apiBase[it.key]!!
-                    }
-                },
-            )
-            val json = JsonUtil.toJson(visibleSettings)
-            //language=HTML
-            resp.writer.write(
-                """
-                |<html>
-                |<head>
-                |    <title>Settings</title>
-                |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-                |</head>
-                |<body>
-                |<form action="/userSettings/" method="post">
-                |    <input type="hidden" name="action" value="save"/>
-                |    <textarea name="settings" style="width: 100%; height: 100px;">$json</textarea>
-                |    <input type="submit" value="Save"/>
-                |</form>
-                |</body>
-                |</html>
-                """.trimMargin()
-            )
+            try {
+                val settings = ApplicationServices.userSettingsManager.getUserSettings(userinfo)
+                val visibleSettings = settings.copy(
+                    apiKeys = APIProvider.values().map {
+                        it to when (settings.apiKeys[it]) {
+                            null -> ""
+                            "" -> ""
+                            else -> mask
+                        }
+                    }.toMap(),
+                    apiBase = APIProvider.values().map {
+                        it to when (it.base) {
+                            null -> settings.apiBase[it]!!
+                            "" -> settings.apiBase[it]!!
+                            else -> it.base
+                        }!!
+                    }.toMap(),
+                )
+                val json = JsonUtil.toJson(visibleSettings)
+                //language=HTML
+                resp.writer.write(
+                    """
+                    |<html>
+                    |<head>
+                    |    <title>Settings</title>
+                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+                    |</head>
+                    |<body>
+                    |<form action="/userSettings/" method="post">
+                    |    <input type="hidden" name="action" value="save"/>
+                    |    <textarea name="settings" style="width: 100%; height: 100px;">$json</textarea>
+                    |    <input type="submit" value="Save"/>
+                    |</form>
+                    |</body>
+                    |</html>
+                    """.trimMargin()
+                )
+            } catch (e: Exception) {
+                resp.status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+                // HTML error page
+                resp.writer.write("""
+                    |<html>
+                    |<head>
+                    |    <title>Error</title>
+                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+                    |</head>
+                    |<body>
+                    |<h1>Error</h1>
+                    |<pre>${e.message}</pre>
+                    |</body>
+                    |</html>
+                """.trimIndent())
+                resp
+            }
         }
     }
 
