@@ -1,4 +1,4 @@
-package com.github.simiacryptus.diff
+package com.simiacryptus.diff
 
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface

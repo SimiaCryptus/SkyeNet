@@ -1,6 +1,6 @@
-package com.github.simiacryptus.diff
+package com.simiacryptus.diff
 
-import com.github.simiacryptus.diff.PatchLineType.*
+import com.simiacryptus.diff.PatchLineType.*
 
 enum class PatchLineType {
     Added, Deleted, Unchanged

@@ -1,4 +1,4 @@
-package com.github.simiacryptus.diff
+package com.simiacryptus.diff
 
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder

@@ -1,6 +1,6 @@
-package com.github.simiacryptus.diff
+package com.simiacryptus.diff
 
-import com.github.simiacryptus.diff.IterativePatchUtil.patch
+import com.simiacryptus.diff.IterativePatchUtil.patch
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -77,12 +77,12 @@ fun SocketManagerBase.addApplyFileDiffLinks(
                     "Patch" to MarkdownUtil.renderMarkdown("""
                       |```diff
                       |${
-                            DiffUtil.formatDiff(
-                                DiffUtil.generateDiff(
-                                    prevCode.lines(),
-                                    codeValue.lines()
-                                )
+                        DiffUtil.formatDiff(
+                            DiffUtil.generateDiff(
+                                prevCode.lines(),
+                                codeValue.lines()
                             )
+                        )
                         }
                       |```
                       """.trimMargin(), ui = ui
