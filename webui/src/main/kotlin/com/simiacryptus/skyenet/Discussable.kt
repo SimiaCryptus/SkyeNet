@@ -52,8 +52,9 @@ class Discussable<T : Any>(
             val userMessage = userMessage()
             history.add(userMessage to Role.user)
             val design = initialResponse(userMessage)
-            history.add(outputFn(design) to Role.assistant)
-            val tabContent = task.add(outputFn(design))!!
+            val rendered = outputFn(design)
+            history.add(rendered to Role.assistant)
+            val tabContent = task.add(rendered)!!
             val feedbackForm = feedbackForm(tabIndex, tabContent, design, history, task)
             tabContent?.append("\n" + feedbackForm.placeholder)
             task.complete()

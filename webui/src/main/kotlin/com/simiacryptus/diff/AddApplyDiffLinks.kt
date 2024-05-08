@@ -1,4 +1,4 @@
-package com.github.simiacryptus.diff
+package com.simiacryptus.diff
 
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
 import com.simiacryptus.skyenet.set
