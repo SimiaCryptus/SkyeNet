@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.apps.general
 
 import com.github.simiacryptus.aicoder.actions.generic.commonRoot
-import com.github.simiacryptus.diff.addApplyFileDiffLinks
+import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ApiModel.Role

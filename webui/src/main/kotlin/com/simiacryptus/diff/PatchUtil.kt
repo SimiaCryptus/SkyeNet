@@ -1,3 +1,3 @@
-package com.github.simiacryptus.diff
+package com.simiacryptus.diff
 
 typealias PatchUtil = IterativePatchUtil
