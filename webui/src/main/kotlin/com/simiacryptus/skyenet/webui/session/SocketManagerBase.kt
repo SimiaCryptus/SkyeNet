@@ -25,7 +25,8 @@ abstract class SocketManagerBase(
     private val sockets: MutableMap<ChatSocket, org.eclipse.jetty.websocket.api.Session> = mutableMapOf()
     private val sendQueues: MutableMap<ChatSocket, Deque<String>> = mutableMapOf()
     private val messageVersions = HashMap<String, AtomicInteger>()
-    protected val pool get() = clientManager.getPool(session, owner, dataStorage)
+    val pool get() = clientManager.getPool(session, owner, dataStorage)
+    val scheduledThreadPoolExecutor get() = clientManager.getScheduledPool(session, owner, dataStorage)
     val sendQueue = ConcurrentLinkedDeque<String>()
 
     override fun removeSocket(socket: ChatSocket) {
@@ -267,6 +268,5 @@ abstract class SocketManagerBase(
                 ApplicationServices.authenticationManager.getUser(it)
             }
 
-        val scheduledThreadPoolExecutor = java.util.concurrent.Executors.newScheduledThreadPool(1)
     }
 }

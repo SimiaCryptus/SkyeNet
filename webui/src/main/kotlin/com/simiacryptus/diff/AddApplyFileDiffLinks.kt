@@ -4,8 +4,10 @@ import com.simiacryptus.diff.IterativePatchUtil.patch
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
+import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -34,7 +36,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
         val filename = resolve(root, header?.second ?: "Unknown")
         val diffVal = diffBlock.second
-        val newValue = renderDiffBlock(root, filename, code(), diffVal, handle, ui)
+        val newValue = renderDiffBlock(root, filename, diffVal, handle, ui)
         markdown.replace("```diff\n$diffVal\n```", newValue)
     }
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
@@ -67,22 +69,24 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         markdown.replace(
             codeblockRaw, AgentPatterns.displayMapInTabs(
                 mapOf(
-                    "New" to MarkdownUtil.renderMarkdown(codeblockRaw, ui = ui),
-                    "Old" to MarkdownUtil.renderMarkdown("""
+                    "New" to renderMarkdown(codeblockRaw, ui = ui),
+                    "Old" to renderMarkdown(
+                        """
                       |```${codeLang}
                       |${prevCode}
                       |```
                       """.trimMargin(), ui = ui
                     ),
-                    "Patch" to MarkdownUtil.renderMarkdown("""
+                    "Patch" to renderMarkdown(
+                        """
                       |```diff
                       |${
-                        DiffUtil.formatDiff(
-                            DiffUtil.generateDiff(
-                                prevCode.lines(),
-                                codeValue.lines()
+                            DiffUtil.formatDiff(
+                                DiffUtil.generateDiff(
+                                    prevCode.lines(),
+                                    codeValue.lines()
+                                )
                             )
-                        )
                         }
                       |```
                       """.trimMargin(), ui = ui
@@ -96,7 +100,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
 
 private val pattern_backticks = "`(.*)`".toRegex()
 fun resolve(root: Path, filename: String): String {
-    val filename = if(pattern_backticks.containsMatchIn(filename)) {
+    val filename = if (pattern_backticks.containsMatchIn(filename)) {
         pattern_backticks.find(filename)!!.groupValues[1]
     } else {
         filename.trim()
@@ -105,7 +109,9 @@ fun resolve(root: Path, filename: String): String {
     if (filepath?.toFile()?.exists() == false) filepath = null
     if (null != filepath) return filepath.toString()
     val files = root.toFile().recurseFiles().filter { it.name == filename.split('/', '\\').last() }
-    if (files.size == 1) { filepath = files.first().toPath() }
+    if (files.size == 1) {
+        filepath = files.first().toPath()
+    }
     return filepath?.let { root.relativize(it).toString() } ?: filename
 }
 
@@ -125,12 +131,151 @@ fun File.recurseFiles(): List<File> {
 private fun SocketManagerBase.renderDiffBlock(
     root: Path,
     filename: String,
-    code: Map<Path, String>,
     diffVal: String,
     handle: (Map<Path, String>) -> Unit,
     ui: ApplicationInterface
 ): String {
+
+    val diffTask = ui.newTask(root = false)
+    val prevCodeTask = ui.newTask(root = false)
+    val prevCodeTaskSB = prevCodeTask.add("")
+    val newCodeTask = ui.newTask(root = false)
+    val newCodeTaskSB = newCodeTask.add("")
+    val patchTask = ui.newTask(root = false)
+    val patchTaskSB = patchTask.add("")
+    val prevCode2Task = ui.newTask(root = false)
+    val prevCode2TaskSB = prevCode2Task.add("")
+    val newCode2Task = ui.newTask(root = false)
+    val newCode2TaskSB = newCode2Task.add("")
+    val patch2Task = ui.newTask(root = false)
+    val patch2TaskSB = patch2Task.add("")
+    val verifyFwdTabs = AgentPatterns.displayMapInTabs(
+        mapOf(
+            "Code" to (prevCodeTask?.placeholder ?: ""),
+            "Preview" to (newCodeTask?.placeholder ?: ""),
+            "Echo" to (patchTask?.placeholder ?: ""),
+        )
+    )
+    val verifyRevTabs = AgentPatterns.displayMapInTabs(
+        mapOf(
+            "Code" to (prevCode2Task?.placeholder ?: ""),
+            "Preview" to (newCode2Task?.placeholder ?: ""),
+            "Echo" to (patch2Task?.placeholder ?: ""),
+        )
+    )
+    val verifyTabs = AgentPatterns.displayMapInTabs(
+        mapOf(
+            "Forward" to verifyFwdTabs,
+            "Reverse" to verifyRevTabs,
+        )
+    )
+    val mainTabs = AgentPatterns.displayMapInTabs(
+        mapOf(
+            "Diff" to (diffTask?.placeholder ?: ""),
+            "Verify" to verifyTabs,
+        )
+    )
+
+
+    diffTask?.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
+
+
     val filepath = path(root, filename)
+    val relativize = try {
+        root.relativize(filepath)
+    } catch (e: Throwable) {
+        filepath
+    }
+    var filehash: Int? = 0
+
+    val applydiffTask = ui.newTask(false)
+    lateinit var hrefLink: StringBuilder
+    var isApplied = false
+
+    hrefLink = applydiffTask.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
+        try {
+            val newCode = patch(load(filepath), diffVal)
+            filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize!! to newCode))
+            hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
+            applydiffTask.complete()
+            isApplied = true
+        } catch (e: Throwable) {
+            hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
+            applydiffTask.error(null, e)
+        }
+    } + "\n" + hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
+        try {
+            val newCode2 = patch(
+                load(filepath).lines().reversed().joinToString("\n"),
+                diffVal.lines().reversed().joinToString("\n")
+            ).lines().reversed().joinToString("\n")
+            filepath?.toFile()?.writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize!! to newCode2))
+            hrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""")
+            applydiffTask.complete()
+            isApplied = true
+        } catch (e: Throwable) {
+            hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
+            applydiffTask.error(null, e)
+        }
+    })!!
+
+    lateinit var scheduledFn: () -> Unit
+    scheduledFn = {
+        val thisFilehash = try {
+            filepath?.toFile()?.readText().hashCode()
+        } catch (e: Throwable) {
+            null
+        }
+        if (!isApplied) {
+            if (thisFilehash != filehash) {
+                updateVerification(
+                    filepath,
+                    diffVal,
+                    ui,
+                    newCodeTaskSB,
+                    filename,
+                    newCodeTask,
+                    prevCodeTaskSB,
+                    prevCodeTask,
+                    patchTaskSB,
+                    patchTask,
+                    newCode2TaskSB,
+                    newCode2Task,
+                    prevCode2TaskSB,
+                    prevCode2Task,
+                    patch2TaskSB,
+                    patch2Task
+                )
+                filehash = thisFilehash
+                scheduledThreadPoolExecutor.schedule(scheduledFn, 1000, TimeUnit.MILLISECONDS)
+            }
+        }
+    }
+    scheduledThreadPoolExecutor.schedule(scheduledFn, 100, TimeUnit.MILLISECONDS)
+    val newValue = mainTabs + "\n" + applydiffTask.placeholder
+    return newValue
+}
+
+private fun updateVerification(
+    filepath: Path?,
+    diffVal: String,
+    ui: ApplicationInterface,
+    newCodeTaskSB: StringBuilder?,
+    filename: String,
+    newCodeTask: SessionTask,
+    prevCodeTaskSB: StringBuilder?,
+    prevCodeTask: SessionTask,
+    patchTaskSB: StringBuilder?,
+    patchTask: SessionTask,
+    newCode2TaskSB: StringBuilder?,
+    newCode2Task: SessionTask,
+    prevCode2TaskSB: StringBuilder?,
+    prevCode2Task: SessionTask,
+    patch2TaskSB: StringBuilder?,
+    patch2Task: SessionTask
+) {
     val prevCode = load(filepath)
     val newCode = patch(prevCode, diffVal)
     val echoDiff = try {
@@ -141,76 +286,58 @@ private fun SocketManagerBase.renderDiffBlock(
             )
         )
     } catch (e: Throwable) {
-        MarkdownUtil.renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
     }
 
-    val applydiffTask = ui.newTask(false)
-    lateinit var hrefLink: StringBuilder
-    lateinit var reverseHrefLink: StringBuilder
-    val relativize = try {
-        root.relativize(filepath)
-    } catch (e: Throwable) {
-        filepath
-    }
-    hrefLink = applydiffTask.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
-        try {
-            val newCode = patch(load(filepath), diffVal)
-            filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
-            handle(mapOf(relativize!! to newCode))
-            reverseHrefLink.clear()
-            hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
-            applydiffTask.complete()
-        } catch (e: Throwable) {
-            hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
-            applydiffTask.error(null, e)
-        }
-    })!!
-    reverseHrefLink = applydiffTask.complete(hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
-        try {
-            val newCode = patch(
-                load(filepath).lines().reversed().joinToString("\n"),
-                diffVal.lines().reversed().joinToString("\n")
-            ).lines().reversed().joinToString("\n")
-            filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
-            handle(mapOf(relativize!! to newCode))
-            hrefLink.clear()
-            reverseHrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""")
-            applydiffTask.complete()
-        } catch (e: Throwable) {
-            reverseHrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
-            applydiffTask.error(null, e)
-        }
-    })!!
-    val diffTask = ui.newTask(root = false)
-    val prevCodeTask = ui.newTask(root = false)
-    val newCodeTask = ui.newTask(root = false)
-    val patchTask = ui.newTask(root = false)
-    val inTabs = AgentPatterns.displayMapInTabs(
-        mapOf(
-            "Diff" to (diffTask?.placeholder ?: ""),
-            "Code" to (prevCodeTask?.placeholder ?: ""),
-            "Preview" to (newCodeTask?.placeholder ?: ""),
-            "Echo" to (patchTask?.placeholder ?: ""),
+    newCodeTaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
+            ui = ui, tabs = false
         )
     )
-    SocketManagerBase.scheduledThreadPoolExecutor.schedule({
-        diffTask?.complete(MarkdownUtil.renderMarkdown(/*escapeHtml4*/("```diff\n$diffVal\n```"), ui = ui))
-        newCodeTask?.complete(
-            MarkdownUtil.renderMarkdown(
-                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
-                ui = ui
+    newCodeTask.complete("")
+    prevCodeTaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+            ui = ui, tabs = false
+        )
+    )
+    prevCodeTask.complete("")
+    patchTaskSB?.set(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff}\n```", ui = ui, tabs = false))
+    patchTask.complete("")
+
+
+    val newCode2 = patch(
+        load(filepath).lines().reversed().joinToString("\n"),
+        diffVal.lines().reversed().joinToString("\n")
+    ).lines().reversed().joinToString("\n")
+    val echoDiff2 = try {
+        DiffUtil.formatDiff(
+            DiffUtil.generateDiff(
+                prevCode.lines(),
+                newCode2.lines(),
             )
         )
-        prevCodeTask?.complete(
-            MarkdownUtil.renderMarkdown(
-                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
-                ui = ui
-            )
+    } catch (e: Throwable) {
+        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+    }
+
+    newCode2TaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
+            ui = ui, tabs = false
         )
-        patchTask?.complete(MarkdownUtil.renderMarkdown("# $filename\n\n```diff\n  ${echoDiff}\n```", ui = ui))
-    }, 100, TimeUnit.MILLISECONDS)
-    val newValue = inTabs + "\n" + applydiffTask.placeholder
-    return newValue
+    )
+    newCode2Task.complete("")
+    prevCode2TaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+            ui = ui, tabs = false
+        )
+    )
+    prevCode2Task.complete("")
+    patch2TaskSB?.set(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff2}\n```", ui = ui, tabs = false))
+    patch2Task.complete("")
 }
 
 

@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 
 object AgentPatterns {
-    private val scheduledThreadPoolExecutor = java.util.concurrent.Executors.newScheduledThreadPool(1)
 
     fun displayMapInTabs(
         map: Map<String, String>,
@@ -13,7 +12,7 @@ object AgentPatterns {
         val tasks = map.entries.map { (key, value) ->
             key to ui.newTask(root = false)
         }.toMap()
-        scheduledThreadPoolExecutor.schedule({
+        ui.socketManager.scheduledThreadPoolExecutor.schedule({
             tasks.forEach { (key, task) ->
                 task.complete(map[key]!!)
             }
