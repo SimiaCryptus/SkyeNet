@@ -48,7 +48,6 @@ object IterativePatchUtil {
         linkByLevenshteinDistance(sourceLines, patchLines)
 
         // Generate the patched text using the established links
-        // Generate the patched text
         return generatePatchedTextUsingLinks(sourceLines, patchLines)
     }
 
@@ -62,6 +61,12 @@ object IterativePatchUtil {
         val patchedTextBuilder = StringBuilder()
         val sourceLineBuffer = sourceLines.toMutableList()
 
+        // Add any leading 'add' lines from the patch
+        while (patchLines.firstOrNull()?.type == LineType.ADD) {
+            patchedTextBuilder.appendLine(patchLines.removeFirst().line)
+        }
+
+        // Process the rest of the lines
         while (sourceLineBuffer.isNotEmpty()) {
             // Copy all lines until the next matched line
             sourceLineBuffer.takeWhile { it.matchingLine == null }.toTypedArray().forEach {
@@ -158,7 +163,7 @@ object IterativePatchUtil {
      */
     private fun linkByLevenshteinDistance(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
         val levenshteinDistance = LevenshteinDistance()
-        val maxDistance = 5 // Define a maximum acceptable distance. Adjust as needed.
+        val maxDistance = (sourceLines.size + patchLines.size) / 10 // Increase max distance to allow more flexibility
 
         // Iterate over source lines to find potential matches in the patch lines
         for (sourceLine in sourceLines) {
@@ -166,7 +171,7 @@ object IterativePatchUtil {
 
             var bestMatch: LineRecord? = null
             var bestDistance = Int.MAX_VALUE
-            var bestCombinedDistance = Int.MAX_VALUE
+            var bestProximity = Int.MAX_VALUE
 
             for (patchLine in patchLines.filter {
                 when (it.type) {
@@ -179,22 +184,22 @@ object IterativePatchUtil {
                 // Calculate the Levenshtein distance between unmatched source and patch lines
                 val distance = levenshteinDistance.apply(sourceLine.line.trim(), patchLine.line.trim())
                 if (distance <= maxDistance) {
-                    // Calculate combined distance, factoring in proximity to established links
-                    val combinedDistance = distance + calculateProximityDistance(sourceLine, patchLine)
-
-                    if (combinedDistance < bestCombinedDistance) {
-                        bestMatch = patchLine
-                        bestDistance = distance
-                        bestCombinedDistance = combinedDistance
+                    // Consider proximity to established links as a secondary factor
+                    val proximity = calculateProximityDistance(sourceLine, patchLine)
+                    if (distance < bestDistance || (distance == bestDistance && proximity < bestProximity)) {
+                        if (distance < bestDistance) {
+                            bestMatch = patchLine
+                            bestDistance = distance
+                            bestProximity = proximity
+                        }
                     }
                 }
-            }
 
-            // Establish the best match found, if any
-            if (bestMatch != null) {
-                // Establish the best match
-                sourceLine.matchingLine = bestMatch
-                bestMatch.matchingLine = sourceLine
+                // Establish the best match found, if any
+                if (bestMatch != null) {
+                    sourceLine.matchingLine = bestMatch
+                    bestMatch.matchingLine = sourceLine
+                }
             }
         }
     }
@@ -206,17 +211,42 @@ object IterativePatchUtil {
      * @return The proximity distance.
      */
     private fun calculateProximityDistance(sourceLine: LineRecord, patchLine: LineRecord): Int {
-        // Sum distances to the nearest established link from both source and patch lines
-        // Implement logic to calculate proximity distance based on the distance to the nearest established link
-        // This is a simplified example. You may need a more sophisticated approach based on your specific requirements.
-        var distance = 0
-        if (sourceLine.previousLine?.matchingLine != null || patchLine.previousLine?.matchingLine != null) {
-            distance += 1
+        // Find the nearest established link in both directions for source and patch lines
+        var sourceDistancePrev = 0
+        var sourceDistanceNext = 0
+        var patchDistancePrev = 0
+        var patchDistanceNext = 0
+
+        var currentSourceLine = sourceLine.previousLine
+        while (currentSourceLine != null) {
+            if (currentSourceLine.matchingLine != null) break
+            sourceDistancePrev++
+            currentSourceLine = currentSourceLine.previousLine
         }
-        if (sourceLine.nextLine?.matchingLine != null || patchLine.nextLine?.matchingLine != null) {
-            distance += 1
+
+        currentSourceLine = sourceLine.nextLine
+        while (currentSourceLine != null) {
+            if (currentSourceLine.matchingLine != null) break
+            sourceDistanceNext++
+            currentSourceLine = currentSourceLine.nextLine
         }
-        return distance
+
+        var currentPatchLine = patchLine.previousLine
+        while (currentPatchLine != null) {
+            if (currentPatchLine.matchingLine != null) break
+            patchDistancePrev++
+            currentPatchLine = currentPatchLine.previousLine
+        }
+
+        currentPatchLine = patchLine.nextLine
+        while (currentPatchLine != null) {
+            if (currentPatchLine.matchingLine != null) break
+            patchDistanceNext++
+            currentPatchLine = currentPatchLine.nextLine
+        }
+
+        // Calculate the total proximity distance as the sum of minimum distances in each direction
+        return minOf(sourceDistancePrev, patchDistancePrev) + minOf(sourceDistanceNext, patchDistanceNext)
     }
 
     /**
