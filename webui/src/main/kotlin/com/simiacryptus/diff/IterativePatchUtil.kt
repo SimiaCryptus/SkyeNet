@@ -64,7 +64,6 @@ object IterativePatchUtil {
 
         while (sourceLineBuffer.isNotEmpty()) {
             // Copy all lines until the next matched line
-            // Copy all lines until the next matched line
             sourceLineBuffer.takeWhile { it.matchingLine == null }.toTypedArray().forEach {
                 sourceLineBuffer.remove(it)
                 patchedTextBuilder.appendLine(it.line)
@@ -128,7 +127,6 @@ object IterativePatchUtil {
                 val patchLine = sourceLine.matchingLine ?: continue // Skip if there's no matching line
 
                 // Check the previous line for a potential match
-                // Check the previous line
                 if (sourceLine.previousLine != null && patchLine.previousLine != null) {
                     val sourcePrev = sourceLine.previousLine!!
                     val patchPrev = patchLine.previousLine!!
@@ -140,7 +138,6 @@ object IterativePatchUtil {
                 }
 
                 // Check the next line for a potential match
-                // Check the next line
                 if (sourceLine.nextLine != null && patchLine.nextLine != null) {
                     val sourceNext = sourceLine.nextLine!!
                     val patchNext = patchLine.nextLine!!
@@ -164,7 +161,6 @@ object IterativePatchUtil {
         val maxDistance = 5 // Define a maximum acceptable distance. Adjust as needed.
 
         // Iterate over source lines to find potential matches in the patch lines
-        // Iterate over source lines to find potential matches in the patch lines
         for (sourceLine in sourceLines) {
             if (sourceLine.matchingLine != null) continue // Skip lines that already have matches
 
@@ -183,7 +179,6 @@ object IterativePatchUtil {
                 // Calculate the Levenshtein distance between unmatched source and patch lines
                 val distance = levenshteinDistance.apply(sourceLine.line.trim(), patchLine.line.trim())
                 if (distance <= maxDistance) {
-                    // Calculate combined distance, factoring in proximity to established links
                     // Calculate combined distance, factoring in proximity to established links
                     val combinedDistance = distance + calculateProximityDistance(sourceLine, patchLine)
 
