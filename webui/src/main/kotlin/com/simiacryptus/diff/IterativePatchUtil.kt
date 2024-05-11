@@ -26,7 +26,14 @@ object IterativePatchUtil {
         }
     }
 
+    /**
+     * Applies a patch to the given source text.
+     * @param source The original text.
+     * @param patch The patch to apply.
+     * @return The text after the patch has been applied.
+     */
     fun patch(source: String, patch: String): String {
+        // Parse the source and patch texts into lists of line records
         val sourceLines = parseLines(source)
         val patchLines = parsePatchLines(patch)
 
@@ -40,15 +47,23 @@ object IterativePatchUtil {
         // Use this to establish the links based on a shortest-first policy and iterate until no more good matches are found.
         linkByLevenshteinDistance(sourceLines, patchLines)
 
+        // Generate the patched text using the established links
         // Generate the patched text
         return generatePatchedTextUsingLinks(sourceLines, patchLines)
     }
 
+    /**
+     * Generates the final patched text using the links established between the source and patch lines.
+     * @param sourceLines The source lines with established links.
+     * @param patchLines The patch lines with established links.
+     * @return The final patched text.
+     */
     private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
         val patchedTextBuilder = StringBuilder()
         val sourceLineBuffer = sourceLines.toMutableList()
 
         while (sourceLineBuffer.isNotEmpty()) {
+            // Copy all lines until the next matched line
             // Copy all lines until the next matched line
             sourceLineBuffer.takeWhile { it.matchingLine == null }.toTypedArray().forEach {
                 sourceLineBuffer.remove(it)
@@ -63,9 +78,11 @@ object IterativePatchUtil {
 
                 LineType.CONTEXT -> patchedTextBuilder.appendLine(codeLine.line)
                 LineType.ADD -> {
+                    // This should not happen as ADD lines should not be matched to source lines
                     throw IllegalStateException("ADD line is matched to source line")
                 }
             }
+            // Add lines marked as ADD in the patch following the current matched line
             while (patchLine.nextLine?.type == LineType.ADD) {
                 patchedTextBuilder.appendLine(patchLine.nextLine?.line)
                 patchLine = patchLine.nextLine!!
@@ -75,6 +92,11 @@ object IterativePatchUtil {
         return patchedTextBuilder.toString().trimEnd()
     }
 
+    /**
+     * Links lines between the source and the patch that are unique and match exactly.
+     * @param sourceLines The source lines.
+     * @param patchLines The patch lines.
+     */
     private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
         val sourceLineMap = sourceLines.groupBy { it.line.trim() }
         val patchLineMap = patchLines.filter {
@@ -94,6 +116,10 @@ object IterativePatchUtil {
         }
     }
 
+    /**
+     * Links lines that are adjacent to already linked lines and match exactly.
+     * @param sourceLines The source lines with some established links.
+     */
     private fun linkAdjacentMatchingLines(sourceLines: List<LineRecord>) {
         var foundMatch = true
         while (foundMatch) {
@@ -101,6 +127,7 @@ object IterativePatchUtil {
             for (sourceLine in sourceLines) {
                 val patchLine = sourceLine.matchingLine ?: continue // Skip if there's no matching line
 
+                // Check the previous line for a potential match
                 // Check the previous line
                 if (sourceLine.previousLine != null && patchLine.previousLine != null) {
                     val sourcePrev = sourceLine.previousLine!!
@@ -112,6 +139,7 @@ object IterativePatchUtil {
                     }
                 }
 
+                // Check the next line for a potential match
                 // Check the next line
                 if (sourceLine.nextLine != null && patchLine.nextLine != null) {
                     val sourceNext = sourceLine.nextLine!!
@@ -126,10 +154,16 @@ object IterativePatchUtil {
         }
     }
 
+    /**
+     * Establishes links between source and patch lines based on the Levenshtein distance and proximity to already established links.
+     * @param sourceLines The source lines.
+     * @param patchLines The patch lines.
+     */
     private fun linkByLevenshteinDistance(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
         val levenshteinDistance = LevenshteinDistance()
         val maxDistance = 5 // Define a maximum acceptable distance. Adjust as needed.
 
+        // Iterate over source lines to find potential matches in the patch lines
         // Iterate over source lines to find potential matches in the patch lines
         for (sourceLine in sourceLines) {
             if (sourceLine.matchingLine != null) continue // Skip lines that already have matches
@@ -146,8 +180,10 @@ object IterativePatchUtil {
             }) {
                 if (patchLine.matchingLine != null) continue // Skip lines that already have matches
 
+                // Calculate the Levenshtein distance between unmatched source and patch lines
                 val distance = levenshteinDistance.apply(sourceLine.line.trim(), patchLine.line.trim())
                 if (distance <= maxDistance) {
+                    // Calculate combined distance, factoring in proximity to established links
                     // Calculate combined distance, factoring in proximity to established links
                     val combinedDistance = distance + calculateProximityDistance(sourceLine, patchLine)
 
@@ -159,6 +195,7 @@ object IterativePatchUtil {
                 }
             }
 
+            // Establish the best match found, if any
             if (bestMatch != null) {
                 // Establish the best match
                 sourceLine.matchingLine = bestMatch
@@ -167,7 +204,14 @@ object IterativePatchUtil {
         }
     }
 
+    /**
+     * Calculates the proximity distance between a source line and a patch line based on their distance to the nearest established link.
+     * @param sourceLine The source line.
+     * @param patchLine The patch line.
+     * @return The proximity distance.
+     */
     private fun calculateProximityDistance(sourceLine: LineRecord, patchLine: LineRecord): Int {
+        // Sum distances to the nearest established link from both source and patch lines
         // Implement logic to calculate proximity distance based on the distance to the nearest established link
         // This is a simplified example. You may need a more sophisticated approach based on your specific requirements.
         var distance = 0
@@ -180,10 +224,20 @@ object IterativePatchUtil {
         return distance
     }
 
+    /**
+     * Parses the given text into a list of line records.
+     * @param text The text to parse.
+     * @return The list of line records.
+     */
     private fun parseLines(text: String) = setLinks(text.lines().mapIndexed { index, line ->
         LineRecord(index, line)
     })
 
+    /**
+     * Sets the previous and next line links for a list of line records.
+     * @param list The list of line records.
+     * @return The list with links set.
+     */
     private fun setLinks(list: List<LineRecord>): List<LineRecord> {
         for (i in 0 until list.size) {
             list[i].previousLine = if (i > 0) list[i - 1] else null
@@ -192,6 +246,11 @@ object IterativePatchUtil {
         return list
     }
 
+    /**
+     * Parses the patch text into a list of line records, identifying the type of each line (ADD, DELETE, CONTEXT).
+     * @param text The patch text to parse.
+     * @return The list of line records with types set.
+     */
     private fun parsePatchLines(text: String) = setLinks(text.lines().mapIndexed { index, line ->
         LineRecord(
             index = index, line = line.let {
@@ -209,4 +268,3 @@ object IterativePatchUtil {
     })
 
 }
-
