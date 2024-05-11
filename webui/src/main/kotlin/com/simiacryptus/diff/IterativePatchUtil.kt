@@ -62,6 +62,7 @@ object IterativePatchUtil {
         val sourceLineBuffer = sourceLines.toMutableList()
 
         // Add any leading 'add' lines from the patch
+        val patchLines = patchLines.toMutableList()
         while (patchLines.firstOrNull()?.type == LineType.ADD) {
             patchedTextBuilder.appendLine(patchLines.removeFirst().line)
         }
@@ -293,3 +294,4 @@ object IterativePatchUtil {
     })
 
 }
+
