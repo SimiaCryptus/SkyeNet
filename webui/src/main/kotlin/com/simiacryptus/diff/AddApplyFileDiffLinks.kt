@@ -192,34 +192,53 @@ private fun SocketManagerBase.renderDiffBlock(
     lateinit var hrefLink: StringBuilder
     var isApplied = false
 
-    hrefLink = applydiffTask.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
+    var originalCode = load(filepath)
+    lateinit var revert: String
+    val apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
-            val newCode = patch(load(filepath), diffVal)
+            originalCode = load(filepath)
+            val newCode = patch(originalCode, diffVal)
             filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
             handle(mapOf(relativize!! to newCode))
-            hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
+            hrefLink.set("""<div class="cmd-button">Diff Applied</div>""" + revert)
             applydiffTask.complete()
             isApplied = true
         } catch (e: Throwable) {
             hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
             applydiffTask.error(null, e)
         }
-    } + "\n" + hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
+    }
+    val apply2 = hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
         try {
+            originalCode = load(filepath)
             val newCode2 = patch(
-                load(filepath).lines().reversed().joinToString("\n"),
+                originalCode.lines().reversed().joinToString("\n"),
                 diffVal.lines().reversed().joinToString("\n")
             ).lines().reversed().joinToString("\n")
             filepath?.toFile()?.writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
             handle(mapOf(relativize!! to newCode2))
-            hrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""")
+            hrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""" + revert)
             applydiffTask.complete()
             isApplied = true
         } catch (e: Throwable) {
             hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
             applydiffTask.error(null, e)
         }
-    })!!
+    }
+    revert = hrefLink("Revert", classname = "href-link cmd-button") {
+        try {
+            save(filepath, originalCode)
+            handle(mapOf(relativize!! to originalCode))
+            hrefLink.set("""<div class="cmd-button">Reverted</div>""" + apply1 + apply2)
+            applydiffTask.complete()
+            isApplied = false
+        } catch (e: Throwable) {
+            hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
+            applydiffTask.error(null, e)
+        }
+    }
+
+    hrefLink = applydiffTask.complete(apply1 + "\n" + apply2)!!
 
     lateinit var scheduledFn: () -> Unit
     scheduledFn = {
