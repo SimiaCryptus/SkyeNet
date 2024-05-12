@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.core.platform
 
 import com.google.common.util.concurrent.ListeningScheduledExecutorService
+import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.HttpClientManager
@@ -13,10 +14,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
 import org.apache.hc.core5.http.HttpRequest
 import org.slf4j.event.Level
 import java.io.File
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 
 open class ClientManager {
 
@@ -24,6 +22,7 @@ open class ClientManager {
 
     private val clientCache = mutableMapOf<SessionKey, OpenAIClient>()
     private val poolCache = mutableMapOf<SessionKey, ThreadPoolExecutor>()
+    private val scheduledPoolCache = mutableMapOf<SessionKey, ListeningScheduledExecutorService>()
 
     fun getClient(
         session: Session,
@@ -42,6 +41,9 @@ open class ClientManager {
             SynchronousQueue(),
             RecordingThreadFactory(session, user)
         )
+    /*createScheduledPool*/
+    protected open fun createScheduledPool(session: Session, user: User?, dataStorage: StorageInterface?) =
+        MoreExecutors.listeningDecorator(ScheduledThreadPoolExecutor(1,))
 
     fun getPool(
         session: Session,
@@ -51,6 +53,17 @@ open class ClientManager {
         val key = SessionKey(session, user)
         return poolCache.getOrPut(key) {
             createPool(session, user, dataStorage)
+        }
+    }
+
+    fun getScheduledPool(
+        session: Session,
+        user: User?,
+        dataStorage: StorageInterface?,
+    ): ListeningScheduledExecutorService {
+        val key = SessionKey(session, user)
+        return scheduledPoolCache.getOrPut(key) {
+            createScheduledPool(session, user, dataStorage)
         }
     }
 

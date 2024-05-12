@@ -61,8 +61,6 @@ open class CodingAgent<T : Interpreter>(
             OperationType.Execute
         )
     }
-    val scheduledThreadPoolExecutor = java.util.concurrent.Executors.newScheduledThreadPool(1)
-    val cachedThreadPoolExecutor = java.util.concurrent.Executors.newCachedThreadPool()
 
     fun start(
         userMessage: String,
@@ -85,8 +83,8 @@ open class CodingAgent<T : Interpreter>(
         task.complete(newTask.placeholder)
         Retryable(ui, newTask) {
             val newTask = ui.newTask(root = false)
-            scheduledThreadPoolExecutor.schedule({
-                cachedThreadPoolExecutor.submit {
+            ui.socketManager.scheduledThreadPoolExecutor.schedule({
+                ui.socketManager.pool.submit {
                     val statusSB = newTask.add("Running...")
                     displayCode(newTask, codeRequest)
                     statusSB?.clear()

@@ -37,6 +37,7 @@ class Discussable<T : Any>(
                 val header = newTask.header("Retrying...")
                 this[label(idx)] = newTask.placeholder
                 main(idx, newTask)
+                this.selectedTab = idx
                 header?.clear()
                 newTask.complete()
             }
