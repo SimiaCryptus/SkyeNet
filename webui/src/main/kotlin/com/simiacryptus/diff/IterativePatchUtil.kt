@@ -135,8 +135,11 @@ object IterativePatchUtil {
                 // Check the previous line for a potential match
                 if (sourceLine.previousLine != null && patchLine.previousLine != null) {
                     val sourcePrev = sourceLine.previousLine!!
-                    val patchPrev = patchLine.previousLine!!
-                    if (patchPrev.type != LineType.ADD && sourcePrev.line.trim() == patchPrev.line.trim() && sourcePrev.matchingLine == null && patchPrev.matchingLine == null) {
+                    var patchPrev = patchLine.previousLine!!
+                    while (patchPrev.type == LineType.ADD && patchPrev.previousLine != null) {
+                        patchPrev = patchPrev.previousLine!!
+                    }
+                    if (sourcePrev.line.trim() == patchPrev.line.trim() && sourcePrev.matchingLine == null && patchPrev.matchingLine == null) {
                         sourcePrev.matchingLine = patchPrev
                         patchPrev.matchingLine = sourcePrev
                         foundMatch = true
@@ -146,8 +149,11 @@ object IterativePatchUtil {
                 // Check the next line for a potential match
                 if (sourceLine.nextLine != null && patchLine.nextLine != null) {
                     val sourceNext = sourceLine.nextLine!!
-                    val patchNext = patchLine.nextLine!!
-                    if (patchNext.type != LineType.ADD && sourceNext.line.trim() == patchNext.line.trim() && sourceNext.matchingLine == null && patchNext.matchingLine == null) {
+                    var patchNext = patchLine.nextLine!!
+                    while (patchNext.type == LineType.ADD && patchNext.nextLine != null) {
+                        patchNext = patchNext.nextLine!!
+                    }
+                    if (sourceNext.line.trim() == patchNext.line.trim() && sourceNext.matchingLine == null && patchNext.matchingLine == null) {
                         sourceNext.matchingLine = patchNext
                         patchNext.matchingLine = sourceNext
                         foundMatch = true
@@ -294,4 +300,3 @@ object IterativePatchUtil {
     })
 
 }
-
