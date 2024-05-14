@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.webui.servlet
 
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
@@ -8,6 +9,7 @@ import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationTy
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.file.DataStorage.Companion.SYS_DIR
 import com.simiacryptus.skyenet.core.util.Selenium
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
@@ -19,6 +21,8 @@ import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
 import java.io.File
 import java.net.URI
+import kotlin.reflect.jvm.javaType
+import kotlin.reflect.typeOf
 
 class SessionShareServlet(
     private val server: ApplicationServer,
@@ -45,12 +49,7 @@ class SessionShareServlet(
         val storageInterface = ApplicationServices.dataStorageFactory.invoke(File(File(".skyenet"), appName))
         val session = StorageInterface.parseSessionID(sessionID)
         val pool = ApplicationServices.clientManager.getPool(session, user, server.dataStorage)
-        val json = storageInterface.getJson(
-            if (session.isGlobal()) null else user,
-            session,
-            ".sys/$session/info.json",
-            Map::class.java
-        )
+        val json = JsonUtil.fromJson<Map<String,Any>>(SYS_DIR.resolve("${if (session.isGlobal()) "global" else user}/$session/info.json").apply { parentFile.mkdirs() }.readText(), typeOf<Map<String,Any>>().javaType)
         val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
         val previousShare = sessionSettings["shareId"]
         when {
@@ -91,10 +90,7 @@ class SessionShareServlet(
                     try {
                         log.info("Generating shareId: $shareId")
                         sessionSettings["shareId"] = shareId
-                        storageInterface.setJson(
-                            if (session.isGlobal()) null else user,
-                            session = session, filename = ".sys/$session/info.json", settings = sessionSettings
-                        )
+                        SYS_DIR.resolve("${if (session.isGlobal()) "global" else user}/$session/info.json").apply { parentFile.mkdirs() }.writeText(JsonUtil.toJson(sessionSettings))
 //            val selenium2S3 = Selenium2S3(
 //              pool = pool,
 //              cookies = cookies,
