@@ -231,37 +231,15 @@ function onWebSocketText(event) {
         console.log("Error running mermaid: " + e);
     }
     try {
-        updateTabs();
-    } catch (e) {
-        console.log("Error updating tabs: " + e);
-    }
-    try {
         applyToAllSvg();
     } catch (e) {
         console.log("Error applying SVG pan zoom: " + e);
     }
-}
-
-function updateTabs() {
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', (event) => { // Ensure the event is passed as a parameter
-            event.stopPropagation();
-            const forTab = button.getAttribute('data-for-tab');
-            let tabsParent = button.closest('.tabs-container');
-            tabsParent.querySelectorAll('.tab-button').forEach(tabButton => tabButton.classList.remove('active'));
-            button.classList.add('active');
-            tabsParent.querySelectorAll('.tab-content').forEach(content => {
-                const contentParent = content.closest('.tabs-container');
-                if (contentParent === tabsParent) {
-                    if (content.getAttribute('data-tab') === forTab) {
-                        content.classList.add('active');
-                    } else if (content.classList.contains('active')) {
-                        content.classList.remove('active')
-                    }
-                }
-            });
-        })
-    });
+    try {
+        updateTabs();
+    } catch (e) {
+        console.log("Error updating tabs: " + e);
+    }
 }
 
 function toggleVerbose() {
@@ -321,7 +299,6 @@ function refreshVerbose() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    updateTabs();
     if (typeof mermaid !== 'undefined') mermaid.run();
     applyToAllSvg();
 
@@ -488,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    updateTabs();
     document.getElementById("files").addEventListener("click", function (event) {
         event.preventDefault();
         const sessionId = getSessionId();
