@@ -11,7 +11,7 @@ function updateTabs() {
                 if (contentParent === tabsParent) {
                     if (content.getAttribute('data-tab') === forTab) {
                         content.classList.add('active');
-                    } else if (content.classList.contains('active')) {
+                    } else {
                         content.classList.remove('active')
                     }
                 }

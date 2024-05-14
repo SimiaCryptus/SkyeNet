@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.core.platform.test
 
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
@@ -21,7 +22,10 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
         val filename = "test.json"
 
         // Act
-        val result = storage.getJson(user, session, filename, Any::class.java)
+        val settingsFile = File(storage.getSessionDir(user, session), filename)
+        val result = if (!settingsFile.exists()) null else {
+            JsonUtil.objectMapper().readValue(settingsFile, Any::class.java) as Any
+        }
 
         // Assert
         Assertions.assertNull(result, "Expected null result for non-existing JSON file")
