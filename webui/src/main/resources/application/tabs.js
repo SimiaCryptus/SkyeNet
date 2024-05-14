@@ -11,18 +11,37 @@ function updateTabs() {
                 if (contentParent === tabsParent) {
                     if (content.getAttribute('data-tab') === forTab) {
                         content.classList.add('active');
+                       content.style.display = 'block'; // Ensure the content is displayed
                     } else {
                         content.classList.remove('active')
+                       content.style.display = 'none'; // Ensure the content is hidden
                     }
                 }
             });
+           // Ensure nested tabs are updated
+           updateNestedTabs(tabsParent);
         })
     });
 }
 
+function updateNestedTabs(tabsParent) {
+    tabsParent.querySelectorAll('.tab-content .tabs-container').forEach(nestedTabsContainer => {
+        const firstNestedButton = nestedTabsContainer.querySelector('.tab-button');
+        if (firstNestedButton) {
+            firstNestedButton.click();
+        }
+    });
+}
 document.addEventListener('DOMContentLoaded', () => {
     try {
         updateTabs();
+       // Set the initial active tab
+       document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+           const firstButton = tabsContainer.querySelector('.tab-button');
+           if (firstButton) {
+               firstButton.click();
+           }
+       });
     } catch (e) {
         console.log("Error updating tabs: " + e);
     }

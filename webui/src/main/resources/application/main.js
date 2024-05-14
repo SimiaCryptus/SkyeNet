@@ -306,6 +306,35 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         applyToAllSvg();
     }, 5000); // Adjust the interval as needed
+   
+   // Set the initial active tab after the DOM is fully loaded
+   document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+       const firstButton = tabsContainer.querySelector('.tab-button');
+       if (firstButton) {
+           firstButton.click();
+       }
+   });
+  
+  // Ensure all tabs are processed even if they are not initially displayed
+  document.querySelectorAll('.tab-content').forEach(content => {
+      if (!content.classList.contains('active')) {
+          content.style.display = 'none';
+      }
+  });
+  // Ensure nested tabs are updated when new content is added dynamically
+  document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+      updateNestedTabs(tabsContainer);
+  });
+   // Ensure tabs are updated when new content is added dynamically
+   const observer = new MutationObserver(() => {
+       document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+           const firstButton = tabsContainer.querySelector('.tab-button');
+           if (firstButton) {
+               firstButton.click();
+           }
+       });
+   });
+   observer.observe(document.body, { childList: true, subtree: true });
     function setTheme(theme) {
         document.getElementById('theme_style').href = theme + '.css';
         localStorage.setItem('theme', theme);
