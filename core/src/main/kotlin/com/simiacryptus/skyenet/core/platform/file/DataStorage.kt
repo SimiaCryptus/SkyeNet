@@ -14,26 +14,12 @@ open class DataStorage(
     private val dataDir: File
 ) : StorageInterface {
 
-    override fun <T> getJson(
-        user: User?,
-        session: Session,
-        filename: String,
-        clazz: Class<T>
-    ) = getJson(getSessionDir(user, session), filename, clazz)
-
-    private fun <T> getJson(sessionDir: File, filename: String, clazz: Class<T>): T? {
-        val settingsFile = File(sessionDir, filename)
-        return if (!settingsFile.exists()) null else {
-            JsonUtil.objectMapper().readValue(settingsFile, clazz) as T
-        }
-    }
-
     override fun getMessages(
         user: User?,
         session: Session
     ): LinkedHashMap<String, String> {
         validateSessionId(session)
-        val messageDir = File(this.getSessionDir(user, session), MESSAGE_DIR + "/$session")
+        val messageDir = SYS_DIR.resolve("${if (session.isGlobal()) "global" else user}/$session/messages/").apply { mkdirs() }
         val messages = LinkedHashMap<String, String>()
         getMessageIds(user, session).forEach { messageId ->
             val file = File(messageDir, "$messageId.json")
@@ -89,10 +75,15 @@ open class DataStorage(
     ): String {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, "settings.json", Map::class.java) ?: mapOf<String, String>()
+        val settings = run {
+            val settingsFile = File(sessionDir, "settings.json")
+            if (!settingsFile.exists()) null else {
+                JsonUtil.objectMapper().readValue(settingsFile, Map::class.java) as Map<*, *>
+            }
+        } ?: mapOf<String, String>()
         if (settings.containsKey("name")) return settings["name"] as String
         val userMessage =
-            messageFiles(session, sessionDir).entries.minByOrNull { it.key.lastModified() }?.value
+            messageFiles(session, user).entries.minByOrNull { it.key.lastModified() }?.value
         return if (null != userMessage) {
             setJson(sessionDir, "settings.json", settings.plus("name" to userMessage))
             //log.debug("Session {}: {}", session, userMessage)
@@ -109,11 +100,16 @@ open class DataStorage(
     ): List<String> {
         validateSessionId(session)
         val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String, String>()
+        val settings = run {
+            val settingsFile = File(SYS_DIR, "${if (session.isGlobal()) "global" else user}/$session/internal.json")
+            if (!settingsFile.exists()) null else {
+                JsonUtil.objectMapper().readValue(settingsFile, Map::class.java) as Map<*, *>
+            }
+        } ?: mapOf<String, String>()
         if (settings.containsKey("ids")) return settings["ids"].toString().split(",").toList()
-        val ids = messageFiles(session, sessionDir).entries.sortedBy { it.key.lastModified() }
+        val ids = messageFiles(session, user).entries.sortedBy { it.key.lastModified() }
             .map { it.key.nameWithoutExtension }.toList()
-        setJson(sessionDir, ".sys/$session/internal.json", settings.plus("ids" to ids.joinToString(",")))
+        setJson(SYS_DIR, "${if (session.isGlobal()) "global" else user}/$session/internal.json", settings.plus("ids" to ids.joinToString(",")))
         return ids
     }
 
@@ -123,9 +119,13 @@ open class DataStorage(
         ids: List<String>
     ) {
         validateSessionId(session)
-        val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String, String>()
-        setJson(sessionDir, ".sys/$session/internal.json", settings.plus("ids" to ids.joinToString(",")))
+        val settings = run {
+            val settingsFile = File(SYS_DIR, "${if (session.isGlobal()) "global" else user}/$session/internal.json")
+            if (!settingsFile.exists()) null else {
+                JsonUtil.objectMapper().readValue(settingsFile, Map::class.java) as Map<*, *>
+            }
+        } ?: mapOf<String, String>()
+        setJson(SYS_DIR, "${if (session.isGlobal()) "global" else user}/$session/internal.json", settings.plus("ids" to ids.joinToString(",")))
     }
 
     override fun getSessionTime(
@@ -133,14 +133,19 @@ open class DataStorage(
         session: Session
     ): Date? {
         validateSessionId(session)
-        val sessionDir = getSessionDir(user, session)
-        val settings = getJson(sessionDir, ".sys/$session/internal.json", Map::class.java) ?: mapOf<String, String>()
+        val settingsFile = SYS_DIR.resolve("${if (session.isGlobal()) "global" else user}/$session/internal.json")
+        val settings = run {
+            if (!settingsFile.exists()) null else {
+                JsonUtil.objectMapper().readValue(settingsFile, Map::class.java) as Map<*, *>
+            }
+        } ?: mapOf<String, String>()
         val dateFormat = SimpleDateFormat.getDateTimeInstance()
         if (settings.containsKey("time")) return dateFormat.parse(settings["time"] as String)
-        val file = messageFiles(session, sessionDir).entries.minByOrNull { it.key.lastModified() }?.key
+        val messageFiles = messageFiles(session, user)
+        val file = messageFiles.entries.minByOrNull { it.key.lastModified() }?.key
         return if (null != file) {
             val date = Date(file.lastModified())
-            setJson(sessionDir, ".sys/$session/internal.json", settings.plus("time" to dateFormat.format(date)))
+            setJson(SYS_DIR, "${if (session.isGlobal()) "global" else user}/$session/internal.json", settings.plus("time" to dateFormat.format(date)))
             date
         } else {
             //log.debug("Session {}: No messages", session)
@@ -148,8 +153,11 @@ open class DataStorage(
         }
     }
 
-    private fun messageFiles(session: Session, sessionDir: File) =
-        File(sessionDir, MESSAGE_DIR + "/$session").listFiles()
+    private fun messageFiles(
+        session: Session,
+        user: User?,
+    ) =
+        SYS_DIR.resolve("${if (session.isGlobal()) "global" else user}/$session/messages").apply { mkdirs() }.listFiles()
             ?.filter { file -> file.isFile }
             ?.map { messageFile ->
                 val fileText = messageFile.readText()
@@ -197,7 +205,7 @@ open class DataStorage(
         value: String
     ) {
         validateSessionId(session)
-        val file = File(File(this.getSessionDir(user, session), MESSAGE_DIR + "/$session"), "$messageId.json")
+        val file = SYS_DIR.resolve("${if (session.isGlobal()) "global" else user}/$session/messages/$messageId.json").apply { parentFile.mkdirs() }
         if (!file.exists()) {
             file.parentFile.mkdirs()
             addMessageID(user, session, messageId)
@@ -218,7 +226,7 @@ open class DataStorage(
 
     override fun listSessions(dir: File): List<String> {
         val files = dir.listFiles()?.flatMap { it.listFiles()?.toList() ?: listOf() }?.filter { sessionDir ->
-            val operationDir = File(sessionDir, MESSAGE_DIR)
+            val operationDir = File(sessionDir, "messages")
             if (!operationDir.exists()) false else {
                 val listFiles = operationDir.listFiles()?.flatMap {
                     when {
@@ -250,7 +258,7 @@ open class DataStorage(
 
     companion object {
 
-        private val MESSAGE_DIR = ".sys" + File.separator + "messages"
+        var SYS_DIR = File(".sys" + File.separator)
         val sessionPaths = mutableMapOf<Session, File>()
 
     }

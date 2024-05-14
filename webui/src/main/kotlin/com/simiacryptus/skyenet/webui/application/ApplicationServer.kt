@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.application
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
@@ -9,6 +10,7 @@ import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationTy
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.file.DataStorage.Companion.SYS_DIR
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.session.SocketManager
@@ -92,13 +94,17 @@ abstract class ApplicationServer(
         userId: User?,
         @Suppress("UNCHECKED_CAST") clazz: Class<T> = settingsClass as Class<T>
     ): T? {
-        var settings: T? = dataStorage.getJson(userId, session, ".sys/$session/settings.json", clazz)
+        val settingsFile = SYS_DIR.resolve("${if (session.isGlobal()) "global" else userId}/$session/settings.json")
+            .apply { parentFile.mkdirs() }
+        var settings: T? = if(settingsFile.exists()) JsonUtil.fromJson(settingsFile.readText(), clazz) else null
         if (null == settings) {
             val initSettings = initSettings<T>(session)
             if (null != initSettings) {
-                dataStorage.setJson(userId, session, ".sys/$session/settings.json", initSettings)
+                settingsFile.writeText(JsonUtil.toJson(initSettings))
             }
-            settings = dataStorage.getJson(userId, session, ".sys/$session/settings.json", clazz)
+            if(settingsFile.exists()) {
+                settings = JsonUtil.fromJson(settingsFile.readText(), clazz)
+            }
         }
         return settings
     }

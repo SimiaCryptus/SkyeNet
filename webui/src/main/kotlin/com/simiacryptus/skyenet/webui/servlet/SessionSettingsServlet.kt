@@ -3,11 +3,13 @@ package com.simiacryptus.skyenet.webui.servlet
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.file.DataStorage.Companion.SYS_DIR
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import java.io.File
 
 class SessionSettingsServlet(
     private val server: ApplicationServer,
@@ -55,10 +57,8 @@ class SessionSettingsServlet(
         } else {
             val session = Session(req.getParameter("sessionId"))
             val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), settingsClass)
-            server.dataStorage.setJson(
-                authenticationManager.getUser(req.getCookie()),
-                session, ".sys/$session/settings.json", settings
-            )
+            val user = authenticationManager.getUser(req.getCookie()) ?: "global"
+            SYS_DIR.resolve("$user/$session/settings.json").apply { parentFile.mkdirs() }.writeText(JsonUtil.toJson(settings))
             resp.sendRedirect("${req.contextPath}/#$session")
         }
     }

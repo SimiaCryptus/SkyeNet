@@ -40,6 +40,7 @@ abstract class ApplicationDirectory(
     data class ChildWebApp(
         val path: String,
         val server: ChatServer,
+        val thumbnail: String? = null,
     )
 
     private fun domainName(isServer: Boolean) =

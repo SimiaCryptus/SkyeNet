@@ -65,8 +65,17 @@ open class WelcomeServlet(private val parent: ApplicationDirectory) :
         <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
         <link id="theme_style" href="main.css" rel="stylesheet"/>
         <script src="main.js"></script>
+        <style>
+            .app-thumbnail {
+                width: 50px;
+                height: 50px;
+                object-fit: cover;
+                margin-right: 10px;
+            }
+        </style>
     </head>
     <body>
+    
     
     <div id="modal" class="modal">
         <div class="modal-content">
@@ -120,6 +129,18 @@ open class WelcomeServlet(private val parent: ApplicationDirectory) :
     </footer>
     
     </body>
+    <script>
+        function showImageModal(src) {
+            const modal = document.getElementById("modal");
+            const modalContent = document.getElementById("modal-content");
+            modalContent.innerHTML = '<img src="' + src + '" style="width: 100%;">';
+            modal.style.display = "block";
+        }
+
+        document.querySelector(".close").onclick = function() {
+            document.getElementById("modal").style.display = "none";
+        }
+    </script>
     </html>
     """.trimIndent()
 
@@ -131,6 +152,7 @@ open class WelcomeServlet(private val parent: ApplicationDirectory) :
         else -> """
             <tr>
                 <td>
+                    ${if(!app.thumbnail.isNullOrBlank()) """<img src="${app.thumbnail}" alt="${app.server.applicationName}" class="app-thumbnail"/>""" else ""}
                     ${app.server.applicationName}
                 </td>
                 <td>
@@ -157,4 +179,9 @@ open class WelcomeServlet(private val parent: ApplicationDirectory) :
             </tr>
         """.trimIndent()
     }
+
+
+    private fun imageElement(app: ApplicationDirectory.ChildWebApp) = """
+        <img src="${app.thumbnail}" alt="${app.server.applicationName}" class="app-thumbnail" onclick="showImageModal('${app.thumbnail}')"/>
+    """.trimIndent()
 }

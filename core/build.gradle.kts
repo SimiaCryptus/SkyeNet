@@ -32,7 +32,7 @@ val jackson_version = "2.17.0"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.55")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.56")
 
     implementation("org.apache.commons:commons-text:1.11.0")
 

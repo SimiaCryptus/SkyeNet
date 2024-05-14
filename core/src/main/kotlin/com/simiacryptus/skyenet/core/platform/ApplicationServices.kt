@@ -7,6 +7,7 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.file.*
 import com.simiacryptus.skyenet.core.util.Selenium
 import java.io.File
@@ -104,12 +105,6 @@ interface AuthorizationInterface {
 }
 
 interface StorageInterface {
-    fun <T> getJson(
-        user: User?,
-        session: Session,
-        filename: String,
-        clazz: Class<T>
-    ): T?
 
     fun getMessages(
         user: User?,

@@ -231,37 +231,15 @@ function onWebSocketText(event) {
         console.log("Error running mermaid: " + e);
     }
     try {
-        updateTabs();
-    } catch (e) {
-        console.log("Error updating tabs: " + e);
-    }
-    try {
         applyToAllSvg();
     } catch (e) {
         console.log("Error applying SVG pan zoom: " + e);
     }
-}
-
-function updateTabs() {
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', (event) => { // Ensure the event is passed as a parameter
-            event.stopPropagation();
-            const forTab = button.getAttribute('data-for-tab');
-            let tabsParent = button.closest('.tabs-container');
-            tabsParent.querySelectorAll('.tab-button').forEach(tabButton => tabButton.classList.remove('active'));
-            button.classList.add('active');
-            tabsParent.querySelectorAll('.tab-content').forEach(content => {
-                const contentParent = content.closest('.tabs-container');
-                if (contentParent === tabsParent) {
-                    if (content.getAttribute('data-tab') === forTab) {
-                        content.classList.add('active');
-                    } else if (content.classList.contains('active')) {
-                        content.classList.remove('active')
-                    }
-                }
-            });
-        })
-    });
+    try {
+        updateTabs();
+    } catch (e) {
+        console.log("Error updating tabs: " + e);
+    }
 }
 
 function toggleVerbose() {
@@ -321,7 +299,6 @@ function refreshVerbose() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    updateTabs();
     if (typeof mermaid !== 'undefined') mermaid.run();
     applyToAllSvg();
 
@@ -329,6 +306,35 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         applyToAllSvg();
     }, 5000); // Adjust the interval as needed
+   
+   // Set the initial active tab after the DOM is fully loaded
+   document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+       const firstButton = tabsContainer.querySelector('.tab-button');
+       if (firstButton) {
+           firstButton.click();
+       }
+   });
+  
+  // Ensure all tabs are processed even if they are not initially displayed
+  document.querySelectorAll('.tab-content').forEach(content => {
+      if (!content.classList.contains('active')) {
+          content.style.display = 'none';
+      }
+  });
+  // Ensure nested tabs are updated when new content is added dynamically
+  document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+      updateNestedTabs(tabsContainer);
+  });
+   // Ensure tabs are updated when new content is added dynamically
+   const observer = new MutationObserver(() => {
+       document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+           const firstButton = tabsContainer.querySelector('.tab-button');
+           if (firstButton) {
+               firstButton.click();
+           }
+       });
+   });
+   observer.observe(document.body, { childList: true, subtree: true });
     function setTheme(theme) {
         document.getElementById('theme_style').href = theme + '.css';
         localStorage.setItem('theme', theme);
@@ -488,6 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    updateTabs();
     document.getElementById("files").addEventListener("click", function (event) {
         event.preventDefault();
         const sessionId = getSessionId();

@@ -71,7 +71,7 @@ open class TabbedDisplay(
         return "${tabs.size + 1}"
     }
 
-    fun clear() {
+    open fun clear() {
         tabs.clear()
         update()
     }
@@ -80,7 +80,21 @@ open class TabbedDisplay(
         if (container != null) synchronized(container) {
             container.clear()
             container.append(render())
+            ensureActiveTab()
         }
         task.complete()
+    }
+
+    private fun ensureActiveTab() {
+        if (tabs.isNotEmpty() && (selectedTab < 0 || selectedTab >= tabs.size)) {
+            selectedTab = 0
+        }
+        tabs.forEachIndexed { index, _ ->
+            if (index == selectedTab) {
+                tabs[index].second.append("active")
+            } else {
+                tabs[index].second.clear()
+            }
+        }
     }
 }
