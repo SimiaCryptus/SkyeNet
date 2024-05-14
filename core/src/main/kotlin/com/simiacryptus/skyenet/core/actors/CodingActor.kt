@@ -23,7 +23,7 @@ open class CodingActor(
     name: String? = interpreterClass.simpleName,
     val details: String? = null,
     model: ChatModels,
-    val fallbackModel: ChatModels = ChatModels.GPT4Turbo,
+    val fallbackModel: ChatModels = ChatModels.GPT4o,
     temperature: Double = 0.1,
     val runtimeSymbols: Map<String, Any> = mapOf()
 ) : BaseActor<CodingActor.CodeRequest, CodingActor.CodeResult>(

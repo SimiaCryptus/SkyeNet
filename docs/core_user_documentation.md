@@ -350,7 +350,7 @@ To create an instance of `CodingActor`, you need to provide the following parame
 - `name`: An optional name for the actor.
 - `details`: Optional additional details to be included in the prompt sent to the OpenAI API.
 - `model`: The OpenAI model to be used for code generation (default is `ChatModels.GPT35Turbo`).
-- `fallbackModel`: A fallback OpenAI model to be used in case of failure with the primary model (default is `ChatModels.GPT4Turbo`).
+- `fallbackModel`: A fallback OpenAI model to be used in case of failure with the primary model (default is `ChatModels.GPT4o`).
 - `temperature`: The temperature parameter for the OpenAI API requests (default is `0.1`).
 - `runtimeSymbols`: Additional symbols to be added at runtime.
 

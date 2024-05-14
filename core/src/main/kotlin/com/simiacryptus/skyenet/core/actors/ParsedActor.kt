@@ -16,7 +16,7 @@ open class ParsedActor<T : Any>(
     val exampleInstance: T? = resultClass?.getConstructor()?.newInstance(),
     prompt: String = "",
     name: String? = resultClass?.simpleName,
-    model: ChatModels = ChatModels.GPT4Turbo,
+    model: ChatModels = ChatModels.GPT4o,
     temperature: Double = 0.3,
     val parsingModel: ChatModels = ChatModels.GPT35Turbo,
     val deserializerRetries: Int = 2,
