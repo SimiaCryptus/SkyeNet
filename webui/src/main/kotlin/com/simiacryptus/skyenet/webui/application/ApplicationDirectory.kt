@@ -10,6 +10,7 @@ import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.util.Selenium2S3
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
+import jakarta.servlet.http.HttpServlet
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.ContextHandlerCollection
 import org.eclipse.jetty.servlet.FilterHolder
@@ -47,13 +48,13 @@ abstract class ApplicationDirectory(
         if (isServer) "https://$publicName" else "http://$localName:$port"
 
     open val welcomeResources = ResourceCollection(allResources("welcome").map(::newResource))
-    open val userInfoServlet = UserInfoServlet()
-    open val userSettingsServlet = UserSettingsServlet()
-    open val logoutServlet = LogoutServlet()
-    open val usageServlet = UsageServlet()
-    open val proxyHttpServlet = ProxyHttpServlet()
-    open val apiKeyServlet = ApiKeyServlet()
-    open val welcomeServlet = WelcomeServlet(this)
+    open val userInfoServlet: HttpServlet = UserInfoServlet()
+    open val userSettingsServlet: HttpServlet = UserSettingsServlet()
+    open val logoutServlet: HttpServlet = LogoutServlet()
+    open val usageServlet: HttpServlet = UsageServlet()
+    open val proxyHttpServlet: HttpServlet = ProxyHttpServlet()
+    open val apiKeyServlet: HttpServlet = ApiKeyServlet()
+    open val welcomeServlet: HttpServlet = WelcomeServlet(this)
 //    abstract val toolServlet: ToolServlet?
 
     open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(

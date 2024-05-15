@@ -28,7 +28,7 @@ open class WelcomeServlet(private val parent: ApplicationDirectory) :
             requestURI == "/" -> resp?.writer?.write(homepage(user).trimIndent())
             requestURI == "/index.html" -> resp?.writer?.write(homepage(user).trimIndent())
             requestURI.startsWith("/userInfo") -> {
-                parent.userInfoServlet.doGet(req, resp!!)
+                parent.userInfoServlet.service(req, resp!!)
             }
 
             else -> try {
@@ -43,7 +43,7 @@ open class WelcomeServlet(private val parent: ApplicationDirectory) :
     override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
         val requestURI = req?.requestURI ?: "/"
         when {
-            requestURI.startsWith("/userSettings") -> parent.userSettingsServlet.doPost(req!!, resp!!)
+            requestURI.startsWith("/userSettings") -> parent.userSettingsServlet.service(req!!, resp!!)
             else -> resp?.sendError(404)
         }
     }
