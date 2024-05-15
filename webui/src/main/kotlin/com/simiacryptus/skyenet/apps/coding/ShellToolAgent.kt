@@ -17,7 +17,6 @@ import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
-import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.util.OpenAPI
@@ -230,11 +229,12 @@ abstract class ShellToolAgent<T : Interpreter>(
                             }
                         }
                         if (ApplicationServices.authorizationManager.isAuthorized(
-                                ToolAgent.javaClass,
+                                ShellToolAgent.javaClass,
                                 user,
                                 AuthorizationInterface.OperationType.Admin
                             )
                         ) {
+/*
                             ToolServlet.addTool(
                                 ToolServlet.Tool(
                                     path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
@@ -243,6 +243,7 @@ abstract class ShellToolAgent<T : Interpreter>(
                                     servletCode = servletImpl
                                 )
                             )
+*/
                         }
                         buildTestPage(openAPI, servletImpl, task)
                     }

@@ -54,7 +54,7 @@ abstract class ApplicationDirectory(
     open val proxyHttpServlet = ProxyHttpServlet()
     open val apiKeyServlet = ApiKeyServlet()
     open val welcomeServlet = WelcomeServlet(this)
-    abstract val toolServlet: ToolServlet?
+//    abstract val toolServlet: ToolServlet?
 
     open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(
         redirectUri = "$domainName/oauth2callback",
@@ -92,28 +92,7 @@ abstract class ApplicationDirectory(
             ApplicationServices.isLocked = true
             val server = start(
                 port,
-                *(listOfNotNull(
-                    newWebAppContext("/logout", logoutServlet),
-                    newWebAppContext("/proxy", proxyHttpServlet),
-                    toolServlet?.let { newWebAppContext("/tools", it) },
-                    newWebAppContext("/userInfo", userInfoServlet).let {
-                        authenticatedWebsite()?.configure(it, true) ?: it
-                    },
-                    newWebAppContext("/userSettings", userSettingsServlet).let {
-                        authenticatedWebsite()?.configure(it, true) ?: it
-                    },
-                    newWebAppContext("/usage", usageServlet).let {
-                        authenticatedWebsite()?.configure(it, true) ?: it
-                    },
-                    newWebAppContext("/apiKeys", apiKeyServlet).let {
-                        authenticatedWebsite()?.configure(it, true) ?: it
-                    },
-                    newWebAppContext("/", welcomeResources, "welcome", welcomeServlet).let {
-                        authenticatedWebsite()?.configure(it, false) ?: it
-                    },
-                ).toTypedArray() + childWebApps.map {
-                    newWebAppContext(it.path, it.server)
-                })
+                *(webAppContexts())
             )
             log.info("Server started successfully on port $port")
             try {
@@ -131,6 +110,29 @@ abstract class ApplicationDirectory(
             Thread.sleep(1000)
             exitProcess(0)
         }
+    }
+
+    open fun webAppContexts() = listOfNotNull(
+        newWebAppContext("/logout", logoutServlet),
+        newWebAppContext("/proxy", proxyHttpServlet),
+    //                    toolServlet?.let { newWebAppContext("/tools", it) },
+        newWebAppContext("/userInfo", userInfoServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+        },
+        newWebAppContext("/userSettings", userSettingsServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+        },
+        newWebAppContext("/usage", usageServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+        },
+        newWebAppContext("/apiKeys", apiKeyServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+        },
+        newWebAppContext("/", welcomeResources, "welcome", welcomeServlet).let {
+            authenticatedWebsite()?.configure(it, false) ?: it
+        },
+    ).toTypedArray() + childWebApps.map {
+        newWebAppContext(it.path, it.server)
     }
 
     open fun init(isServer: Boolean): ApplicationDirectory {

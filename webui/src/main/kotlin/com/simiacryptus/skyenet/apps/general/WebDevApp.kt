@@ -20,7 +20,6 @@ import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
-import com.simiacryptus.skyenet.webui.servlet.ToolServlet
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.intellij.lang.annotations.Language
@@ -235,10 +234,10 @@ class WebDevAgent(
 
 
         try {
-            val toolSpecs = tools.map { ToolServlet.tools.find { t -> t.path == it } }
-                .joinToString("\n\n") { it?.let { JsonUtil.toJson(it.openApiDescription) } ?: "" }
-            var messageWithTools = userMessage
-            if (toolSpecs.isNotBlank()) messageWithTools += "\n\nThese services are available:\n$toolSpecs"
+//            val toolSpecs = tools.map { ToolServlet.tools.find { t -> t.path == it } }
+//                .joinToString("\n\n") { it?.let { JsonUtil.toJson(it.openApiDescription) } ?: "" }
+//            var messageWithTools = userMessage
+//            if (toolSpecs.isNotBlank()) messageWithTools += "\n\nThese services are available:\n$toolSpecs"
             task.echo(
                 renderMarkdown(
                     "```json\n${JsonUtil.toJson(architectureResponse.obj)/*.indent("  ")*/}\n```",
@@ -259,7 +258,7 @@ class WebDevAgent(
                             task = task,
                             request = javascriptActor.chatMessages(
                                 listOf(
-                                    messageWithTools,
+//                                    messageWithTools,
                                     architectureResponse.text,
                                     "Render $path - $description"
                                 )
@@ -273,7 +272,7 @@ class WebDevAgent(
                             task = task,
                             request = cssActor.chatMessages(
                                 listOf(
-                                    messageWithTools,
+//                                    messageWithTools,
                                     architectureResponse.text,
                                     "Render $path - $description"
                                 )
@@ -286,7 +285,7 @@ class WebDevAgent(
                             task = task,
                             request = htmlActor.chatMessages(
                                 listOf(
-                                    messageWithTools,
+//                                    messageWithTools,
                                     architectureResponse.text,
                                     "Render $path - $description"
                                 )
@@ -299,7 +298,7 @@ class WebDevAgent(
                             task = task,
                             request = etcActor.chatMessages(
                                 listOf(
-                                    messageWithTools,
+//                                    messageWithTools,
                                     architectureResponse.text,
                                     "Render $path - $description"
                                 )
@@ -312,7 +311,7 @@ class WebDevAgent(
                             task = task,
                             request = etcActor.chatMessages(
                                 listOf(
-                                    messageWithTools,
+//                                    messageWithTools,
                                     architectureResponse.text,
                                     "Render $path - $description"
                                 )
@@ -325,7 +324,7 @@ class WebDevAgent(
                             task = task,
                             request = etcActor.chatMessages(
                                 listOf(
-                                    messageWithTools,
+//                                    messageWithTools,
                                     architectureResponse.text,
                                     "Render $path - $description"
                                 )
