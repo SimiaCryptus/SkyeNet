@@ -31,12 +31,14 @@ abstract class SocketManagerBase(
 
     override fun removeSocket(socket: ChatSocket) {
         synchronized(sockets) {
+            log.debug("Removing socket: {}", socket)
             sockets.remove(socket)?.close()
         }
     }
 
     override fun addSocket(socket: ChatSocket, session: org.eclipse.jetty.websocket.api.Session) {
         val user = getUser(session)
+        log.debug("Adding socket: {} for user: {}", socket, user)
         if (!ApplicationServices.authorizationManager.isAuthorized(
                 applicationClass = applicationClass,
                 user = user,
@@ -51,9 +53,11 @@ abstract class SocketManagerBase(
     private fun publish(
         out: String,
     ) {
+        log.debug("Publishing message: {}", out)
         synchronized(sockets) {
             sockets.keys.forEach { chatSocket ->
                 try {
+                    log.debug("Queueing message for socket: {}", chatSocket)
                     sendQueues.computeIfAbsent(chatSocket) { ConcurrentLinkedDeque() }.add(out)
                 } catch (e: Exception) {
                     log.info("Error sending message", e)
@@ -64,6 +68,7 @@ abstract class SocketManagerBase(
                         synchronized(deque) {
                             while (true) {
                                 val msg = deque.poll() ?: break
+                                log.debug("Sending message: {} to socket: {}", msg, chatSocket)
                                 chatSocket.remote.sendString(msg)
                             }
                             chatSocket.remote.flush()
@@ -82,6 +87,7 @@ abstract class SocketManagerBase(
     ): SessionTask {
         val operationID = randomID(root)
         var responseContents = divInitializer(operationID, cancelable)
+        log.debug("Creating new task with operationID: {}", operationID)
         send(responseContents)
         return SessionTaskImpl(operationID, responseContents, SessionTask.spinner)
     }
@@ -98,6 +104,7 @@ abstract class SocketManagerBase(
 
         override fun send(html: String) = this@SocketManagerBase.send(html)
         override fun saveFile(relativePath: String, data: ByteArray): String {
+            log.debug("Saving file at path: {}", relativePath)
             dataStorage?.getSessionDir(owner, session)?.let { dir ->
                 dir.mkdirs()
                 val resolve = dir.resolve(relativePath)
@@ -110,6 +117,7 @@ abstract class SocketManagerBase(
 
     fun send(out: String) {
         try {
+            log.debug("Sending message: {}", out)
             val split = out.split(',', ignoreCase = false, limit = 2)
             val messageID = split[0]
             val newValue = split[1]
@@ -149,12 +157,14 @@ abstract class SocketManagerBase(
     }
 
     final override fun getReplay(): List<String> {
+        log.debug("Getting replay messages")
         return messageStates.entries.map {
             "${it.key},${messageVersions.computeIfAbsent(it.key) { AtomicInteger(1) }.get()},${it.value}"
         }
     }
 
     private fun setMessage(key: String, value: String): Int {
+        log.debug("Setting message - Key: {}, Value: {}", key, value)
         if (messageStates.containsKey(key)) {
             if (messageStates[key] == value) {
                 return -1
@@ -169,6 +179,7 @@ abstract class SocketManagerBase(
     }
 
     final override fun onWebSocketText(socket: ChatSocket, message: String) {
+        log.debug("Received WebSocket message: {} from socket: {}", message, socket)
         if (canWrite(socket.user)) pool.submit {
             log.debug("{} - Received message: {}", session, message)
             try {
@@ -221,6 +232,7 @@ abstract class SocketManagerBase(
         id: String? = null,
         handler: Consumer<Unit>
     ): String {
+        log.debug("Creating href link with text: {}", linkText)
         val operationID = randomID()
         linkTriggers[operationID] = handler
         return """<a class="$classname" data-id="$operationID"${
@@ -232,6 +244,7 @@ abstract class SocketManagerBase(
     }
 
     fun textInput(handler: Consumer<String>): String {
+        log.debug("Creating text input")
         val operationID = randomID()
         txtTriggers[operationID] = handler
         //language=HTML
@@ -263,10 +276,11 @@ abstract class SocketManagerBase(
             if (!cancelable) """$operationID,""" else
                 """$operationID,<button class="cancel-button" data-id="$operationID">&times;</button>"""
 
-        fun getUser(session: org.eclipse.jetty.websocket.api.Session): User? =
-            session.upgradeRequest.cookies?.find { it.name == AuthenticationInterface.AUTH_COOKIE }?.value.let {
+        fun getUser(session: org.eclipse.jetty.websocket.api.Session): User? {
+            log.debug("Getting user from session: {}", session)
+            return session.upgradeRequest.cookies?.find { it.name == AuthenticationInterface.AUTH_COOKIE }?.value.let {
                 ApplicationServices.authenticationManager.getUser(it)
             }
-
+        }
     }
 }

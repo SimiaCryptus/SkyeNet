@@ -23,43 +23,48 @@ class Discussable<T : Any>(
 
     val tabs = object : TabbedDisplay(task) {
         override fun renderTabButtons() = """
-            |<div class="tabs">
-            |${
+<div class="tabs">
+${
             tabs.withIndex().joinToString("\n")
             { (index: Int, t: Pair<String, StringBuilder>) ->
                 """<button class="tab-button" data-for-tab="$index">${t.first}</button>"""
             }
         }
-            |${
+${
             ui.hrefLink("♻") {
-                val idx: Int = size
                 val newTask = ui.newTask(false)
                 val header = newTask.header("Retrying...")
-                this[label(idx)] = newTask.placeholder
+                val idx: Int = size
+                this.set(label(idx), newTask.placeholder)
                 main(idx, newTask)
                 this.selectedTab = idx
                 header?.clear()
                 newTask.complete()
             }
         } 
-            |</div>
+</div>
           """.trimMargin()
     }
     private val acceptGuard = AtomicBoolean(false)
 
     private fun main(tabIndex: Int, task: SessionTask) {
+        log.info("Starting main function for tabIndex: $tabIndex")
         try {
             val history = mutableListOf<Pair<String, Role>>()
             val userMessage = userMessage()
+            log.info("User message: $userMessage")
             history.add(userMessage to Role.user)
             val design = initialResponse(userMessage)
+            log.info("Initial response generated: $design")
             val rendered = outputFn(design)
+            log.info("Rendered output: $rendered")
             history.add(rendered to Role.assistant)
             val tabContent = task.add(rendered)!!
             val feedbackForm = feedbackForm(tabIndex, tabContent, design, history, task)
             tabContent?.append("\n" + feedbackForm.placeholder)
             task.complete()
         } catch (e: Throwable) {
+            log.error("Error in main function", e)
             task.error(ui, e)
             task.complete(ui.hrefLink("🔄 Retry") {
                 main(tabIndex = tabIndex, task = task)
@@ -74,6 +79,7 @@ class Discussable<T : Any>(
         history: List<Pair<String, Role>>,
         task: SessionTask,
     ) = ui.newTask(false).apply {
+        log.info("Creating feedback form for tabIndex: $tabIndex")
         val feedbackSB = add("<div />")!!
         feedbackSB.clear()
         feedbackSB.append(
@@ -94,6 +100,7 @@ class Discussable<T : Any>(
         feedbackSB: StringBuilder,
         feedbackTask: SessionTask,
     ) = ui.hrefLink("Accept", classname = "href-link cmd-button") {
+        log.info("Accept link clicked for tabIndex: $tabIndex")
         feedbackSB.clear()
         feedbackTask.complete()
         accept(tabIndex, tabContent, design)
@@ -109,6 +116,7 @@ class Discussable<T : Any>(
     ): String {
         val feedbackGuard = AtomicBoolean(false)
         return ui.textInput { userResponse ->
+            log.info("User response received: $userResponse")
             if (feedbackGuard.getAndSet(true)) return@textInput
             val prev = feedbackSB.toString()
             try {
@@ -116,6 +124,7 @@ class Discussable<T : Any>(
                 feedbackTask.complete()
                 feedback(tabContent, userResponse, history, design, task)
             } catch (e: Exception) {
+                log.error("Error processing user feedback", e)
                 task.error(ui, e)
                 feedbackSB.set(prev)
                 feedbackTask.complete()
@@ -133,16 +142,18 @@ class Discussable<T : Any>(
         design: T,
         task: SessionTask,
     ) {
+        log.info("Processing feedback for user response: $userResponse")
         var history = history
         history = history + (userResponse to Role.user)
         val newValue = (tabContent.toString()
-                        + "<div class=\"user-message\">"
-                        + renderMarkdown(userResponse, ui = ui)
-                        + "</div>")
+                + "<div class=\"user-message\">"
+                + renderMarkdown(userResponse, ui = ui)
+                + "</div>")
         tabContent.set(newValue)
         val stringBuilder = task.add("Processing...")
         tabs.update()
         val newDesign = reviseResponse(history)
+        log.info("Revised design: $newDesign")
         val newTask = ui.newTask(root = false)
         tabContent.set(newValue + "\n" + newTask.placeholder)
         tabs.update()
@@ -162,6 +173,7 @@ class Discussable<T : Any>(
     }
 
     private fun accept(tabIndex: Int?, tabContent: StringBuilder, design: T) {
+        log.info("Accepting design for tabIndex: $tabIndex")
         if (acceptGuard.getAndSet(true)) {
             return
         }
@@ -173,6 +185,7 @@ class Discussable<T : Any>(
                 tabs.update()
             }
         } catch (e: Exception) {
+            log.error("Error accepting design", e)
             task.error(ui, e)
             acceptGuard.set(false)
             throw e
@@ -182,18 +195,24 @@ class Discussable<T : Any>(
     }
 
     override fun call(): T {
+        log.info("Calling Discussable with heading: $heading")
         task.echo(heading)
         val idx = tabs.size
         val newTask = ui.newTask(false)
         val header = newTask.header("Processing...")
         tabs[tabs.label(idx)] = newTask.placeholder
         main(idx, newTask)
+        tabs.selectedTab = idx
         header?.clear()
         newTask.complete()
         semaphore.acquire()
+        log.info("Returning result from Discussable")
         return atomicRef.get()
     }
 
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(Discussable::class.java)
+    }
 }
 
 fun java.lang.StringBuilder.set(newValue: String) {

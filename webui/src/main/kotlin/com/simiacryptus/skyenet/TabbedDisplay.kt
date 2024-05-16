@@ -23,7 +23,10 @@ open class TabbedDisplay(
       </div>
     """.trimIndent()
 
-    val container: StringBuilder by lazy { task.add(render())!! }
+     val container: StringBuilder by lazy { 
+        log.debug("Initializing container with rendered content")
+         task.add(render())!! 
+     }
 
     open fun renderTabButtons() = """
     <div class="tabs">${
@@ -50,6 +53,7 @@ open class TabbedDisplay(
     operator fun set(name: String, content: String) =
         when (val index = find(name)) {
             null -> {
+                log.debug("Adding new tab: $name")
                 val stringBuilder = StringBuilder(content)
                 tabs.add(name to stringBuilder)
                 update()
@@ -57,6 +61,7 @@ open class TabbedDisplay(
             }
 
             else -> {
+                log.debug("Updating existing tab: $name")
                 val stringBuilder = tabs[index].second
                 stringBuilder.clear()
                 stringBuilder.append(content)
@@ -72,29 +77,21 @@ open class TabbedDisplay(
     }
 
     open fun clear() {
+        log.debug("Clearing all tabs")
         tabs.clear()
         update()
     }
 
     open fun update() {
+        log.debug("Updating container content")
         if (container != null) synchronized(container) {
+            if (tabs.isNotEmpty() && (selectedTab < 0 || selectedTab >= tabs.size)) {
+                selectedTab = 0
+            }
             container.clear()
             container.append(render())
-            ensureActiveTab()
         }
         task.complete()
     }
 
-    private fun ensureActiveTab() {
-        if (tabs.isNotEmpty() && (selectedTab < 0 || selectedTab >= tabs.size)) {
-            selectedTab = 0
-        }
-        tabs.forEachIndexed { index, _ ->
-            if (index == selectedTab) {
-                tabs[index].second.append("active")
-            } else {
-                tabs[index].second.clear()
-            }
-        }
-    }
 }

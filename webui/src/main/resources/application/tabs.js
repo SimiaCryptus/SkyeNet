@@ -5,7 +5,7 @@ function updateTabs() {
             const forTab = button.getAttribute('data-for-tab');
             let tabsParent = button.closest('.tabs-container');
             tabsParent.querySelectorAll('.tab-button').forEach(tabButton => {
-                if (tabButton.closest('.tabs-container') === tabsParent) tabButton.classList.remove('active')
+                if (tabButton.closest('.tabs-container') === tabsParent) tabButton.classList.remove('active');
             });
             button.classList.add('active');
             let selectedContent = null;
@@ -16,13 +16,13 @@ function updateTabs() {
                         content.style.display = 'block'; // Ensure the content is displayed
                         selectedContent = content;
                     } else {
-                        content.classList.remove('active')
+                        content.classList.remove('active');
                         content.style.display = 'none'; // Ensure the content is hidden
                     }
                 }
             });
             if (selectedContent !== null) updateNestedTabs(selectedContent);
-        })
+        });
     });
 }
 
