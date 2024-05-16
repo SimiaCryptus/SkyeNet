@@ -55,8 +55,9 @@ open class ActorSystem<T : Enum<*>>(
                         else -> throw RuntimeException("Unknown actor type: ${baseActor.javaClass}")
                     }
                 } catch (e: Throwable) {
-                    log.warn("Error creating actor $actor", e)
-                    actors[actor.name]!!
+                    val baseActor = actors[actor.name]!!
+                    log.warn("Error creating actor $actor, returning $baseActor", e)
+                    baseActor
                 }
             }
         }

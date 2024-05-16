@@ -10,6 +10,7 @@ import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.util.Selenium2S3
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.Servlet
+import jakarta.servlet.http.HttpServlet
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.ContextHandlerCollection
 import org.eclipse.jetty.servlet.FilterHolder
@@ -47,14 +48,14 @@ abstract class ApplicationDirectory(
         if (isServer) "https://$publicName" else "http://$localName:$port"
 
     open val welcomeResources = ResourceCollection(allResources("welcome").map(::newResource))
-    open val userInfoServlet = UserInfoServlet()
-    open val userSettingsServlet = UserSettingsServlet()
-    open val logoutServlet = LogoutServlet()
-    open val usageServlet = UsageServlet()
-    open val proxyHttpServlet = ProxyHttpServlet()
-    open val apiKeyServlet = ApiKeyServlet()
-    open val welcomeServlet = WelcomeServlet(this)
-    abstract val toolServlet: ToolServlet?
+    open val userInfoServlet: HttpServlet = UserInfoServlet()
+    open val userSettingsServlet: HttpServlet = UserSettingsServlet()
+    open val logoutServlet: HttpServlet = LogoutServlet()
+    open val usageServlet: HttpServlet = UsageServlet()
+    open val proxyHttpServlet: HttpServlet = ProxyHttpServlet()
+    open val apiKeyServlet: HttpServlet = ApiKeyServlet()
+    open val welcomeServlet: HttpServlet = WelcomeServlet(this)
+//    abstract val toolServlet: ToolServlet?
 
     open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(
         redirectUri = "$domainName/oauth2callback",
@@ -92,28 +93,7 @@ abstract class ApplicationDirectory(
             ApplicationServices.isLocked = true
             val server = start(
                 port,
-                *(listOfNotNull(
-                    newWebAppContext("/logout", logoutServlet),
-                    newWebAppContext("/proxy", proxyHttpServlet),
-                    toolServlet?.let { newWebAppContext("/tools", it) },
-                    newWebAppContext("/userInfo", userInfoServlet).let {
-                        authenticatedWebsite()?.configure(it, true) ?: it
-                    },
-                    newWebAppContext("/userSettings", userSettingsServlet).let {
-                        authenticatedWebsite()?.configure(it, true) ?: it
-                    },
-                    newWebAppContext("/usage", usageServlet).let {
-                        authenticatedWebsite()?.configure(it, true) ?: it
-                    },
-                    newWebAppContext("/apiKeys", apiKeyServlet).let {
-                        authenticatedWebsite()?.configure(it, true) ?: it
-                    },
-                    newWebAppContext("/", welcomeResources, "welcome", welcomeServlet).let {
-                        authenticatedWebsite()?.configure(it, false) ?: it
-                    },
-                ).toTypedArray() + childWebApps.map {
-                    newWebAppContext(it.path, it.server)
-                })
+                *(webAppContexts())
             )
             log.info("Server started successfully on port $port")
             try {
@@ -131,6 +111,29 @@ abstract class ApplicationDirectory(
             Thread.sleep(1000)
             exitProcess(0)
         }
+    }
+
+    open fun webAppContexts() = listOfNotNull(
+        newWebAppContext("/logout", logoutServlet),
+        newWebAppContext("/proxy", proxyHttpServlet),
+    //                    toolServlet?.let { newWebAppContext("/tools", it) },
+        newWebAppContext("/userInfo", userInfoServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+        },
+        newWebAppContext("/userSettings", userSettingsServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+        },
+        newWebAppContext("/usage", usageServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+        },
+        newWebAppContext("/apiKeys", apiKeyServlet).let {
+            authenticatedWebsite()?.configure(it, true) ?: it
+        },
+        newWebAppContext("/", welcomeResources, "welcome", welcomeServlet).let {
+            authenticatedWebsite()?.configure(it, false) ?: it
+        },
+    ).toTypedArray() + childWebApps.map {
+        newWebAppContext(it.path, it.server)
     }
 
     open fun init(isServer: Boolean): ApplicationDirectory {
