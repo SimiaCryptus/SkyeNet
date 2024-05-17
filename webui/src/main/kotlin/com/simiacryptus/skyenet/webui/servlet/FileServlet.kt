@@ -2,12 +2,9 @@ package com.simiacryptus.skyenet.webui.servlet
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.google.common.cache.RemovalListener
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
-import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.WriteListener
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -19,14 +16,16 @@ import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
 
-class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
+abstract class FileServlet() : HttpServlet() {
+
+    abstract fun getDir(
+            req: HttpServletRequest,
+        ) : File
 
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-        val pathSegments = parsePath(req.pathInfo ?: "/")
-        val session = Session(pathSegments.first())
-        val sessionDir =
-            dataStorage.getSessionDir(ApplicationServices.authenticationManager.getUser(req.getCookie()), session)
-        val file = File(sessionDir, pathSegments.drop(1).joinToString("/"))
+        val pathSegments = parsePath(req.pathInfo ?: req.servletPath ?: "/")
+        val dir = getDir(req)
+        val file = getFile(dir, pathSegments, req)
         when {
             !file.exists() -> {
                 resp.status = HttpServletResponse.SC_NOT_FOUND
@@ -71,10 +70,19 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
                     ?.joinToString("<br/>\n") {
                         """<a class="folder-item" href="${it.name}/">${it.name}</a>"""
                     } ?: ""
-                resp.writer.write(directoryHTML(req, session, pathSegments.drop(1).joinToString("/"), folders, files))
+                resp.writer.write(
+                    directoryHTML(
+                        getZipLink(req, pathSegments.drop(1).joinToString("/")),
+                        folders,
+                        files
+                    ).trimMargin()
+                )
             }
         }
     }
+
+    open fun getFile(dir: File, pathSegments: List<String>, req: HttpServletRequest) =
+        File(dir, pathSegments.drop(1).joinToString("/"))
 
     private fun writeSmall(channel: FileChannel, resp: HttpServletResponse, file: File, req: HttpServletRequest) {
         resp.contentType = ApplicationServer.getMimeType(file.name)
@@ -142,86 +150,85 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
         }
     }
 
-    private fun directoryHTML(
+    open fun getZipLink(
         req: HttpServletRequest,
-        session: Session,
-        filePath: String,
-        folders: String,
-        files: String
-    ) = """
-                        |<html>
-                        |<head>
-                        |<title>Files</title>
-                        |<style>
-                        |    body {
-                        |        font-family: 'Arial', sans-serif;
-                        |        background-color: #f4f4f4;
-                        |        color: #333;
-                        |        margin: 0;
-                        |        padding: 20px;
-                        |    }
-                        |
-                        |    .archive-title, .folders-title, .files-title {
-                        |        font-size: 24px;
-                        |        font-weight: bold;
-                        |        margin-top: 0;
-                        |    }
-                        |
-                        |    .zip-link {
-                        |        color: #0056b3;
-                        |        text-decoration: none;
-                        |        font-size: 16px;
-                        |        background-color: #e7f3ff;
-                        |        padding: 10px 15px;
-                        |        border-radius: 5px;
-                        |        display: inline-block;
-                        |        margin-top: 10px;
-                        |    }
-                        |
-                        |    .zip-link:hover {
-                        |        background-color: #d1e7ff;
-                        |    }
-                        |
-                        |    .folders-container, .files-container {
-                        |        background-color: white;
-                        |        border: 1px solid #ddd;
-                        |        padding: 15px;
-                        |        border-radius: 5px;
-                        |        margin-top: 20px;
-                        |    }
-                        |
-                        |    .folder-item, .file-item {
-                        |        color: #0056b3;
-                        |        text-decoration: none;
-                        |        display: block;
-                        |        margin-bottom: 10px;
-                        |        padding: 5px 0;
-                        |    }
-                        |
-                        |    .folder-item:hover, .file-item:hover {
-                        |        text-decoration: underline;
-                        |    }
-                        |
-                        |    h1 {
-                        |        border-bottom: 2px solid #ddd;
-                        |        padding-bottom: 10px;
-                        |    }
-                        |</style>
-                        |</head>
-                        |<body>
-                        |<h1 class="archive-title">Archive</h1>
-                        |<a href="${req.contextPath}/fileZip?session=$session&path=$filePath" class="zip-link">ZIP</a>
-                        |<h1 class="folders-title">Folders</h1>
-                        |<div class="folders-container">
-                        |$folders
-                        |</div>
-                        |<h1 class="files-title">Files</h1>
-                        |<div class="files-container">
-                        |$files
-                        |</div>
-                        |</body>
-                        |</html>
-                        """.trimMargin()
+        filePath: String
+    ) : String = ""
+
+    private fun directoryHTML(zipLink: String, folders: String, files: String) = """
+                                |<html>
+                                |<head>
+                                |<title>Files</title>
+                                |<style>
+                                |    body {
+                                |        font-family: 'Arial', sans-serif;
+                                |        background-color: #f4f4f4;
+                                |        color: #333;
+                                |        margin: 0;
+                                |        padding: 20px;
+                                |    }
+                                |
+                                |    .archive-title, .folders-title, .files-title {
+                                |        font-size: 24px;
+                                |        font-weight: bold;
+                                |        margin-top: 0;
+                                |    }
+                                |
+                                |    .zip-link {
+                                |        color: #0056b3;
+                                |        text-decoration: none;
+                                |        font-size: 16px;
+                                |        background-color: #e7f3ff;
+                                |        padding: 10px 15px;
+                                |        border-radius: 5px;
+                                |        display: inline-block;
+                                |        margin-top: 10px;
+                                |    }
+                                |
+                                |    .zip-link:hover {
+                                |        background-color: #d1e7ff;
+                                |    }
+                                |
+                                |    .folders-container, .files-container {
+                                |        background-color: white;
+                                |        border: 1px solid #ddd;
+                                |        padding: 15px;
+                                |        border-radius: 5px;
+                                |        margin-top: 20px;
+                                |    }
+                                |
+                                |    .folder-item, .file-item {
+                                |        color: #0056b3;
+                                |        text-decoration: none;
+                                |        display: block;
+                                |        margin-bottom: 10px;
+                                |        padding: 5px 0;
+                                |    }
+                                |
+                                |    .folder-item:hover, .file-item:hover {
+                                |        text-decoration: underline;
+                                |    }
+                                |
+                                |    h1 {
+                                |        border-bottom: 2px solid #ddd;
+                                |        padding-bottom: 10px;
+                                |    }
+                                |</style>
+                                |</head>
+                                |<body>
+                                |<h1 class="archive-title">Archive</h1>
+                                |${if(zipLink.isNullOrBlank()) "" else """<a href="$zipLink" class="zip-link">ZIP</a>"""}
+                                |<h1 class="folders-title">Folders</h1>
+                                |<div class="folders-container">
+                                |$folders
+                                |</div>
+                                |<h1 class="files-title">Files</h1>
+                                |<div class="files-container">
+                                |$files
+                                |</div>
+                                |</body>
+                                |</html>
+                                """
 
     companion object {
         val log = LoggerFactory.getLogger(FileServlet::class.java)
@@ -246,7 +253,7 @@ class FileServlet(val dataStorage: StorageInterface) : HttpServlet() {
             return pathSegments
         }
 
-        val channelCache = CacheBuilder
+        val channelCache: LoadingCache<File, FileChannel> = CacheBuilder
             .newBuilder().maximumSize(100)
             .expireAfterAccess(10, java.util.concurrent.TimeUnit.SECONDS)
             .removalListener(RemovalListener<File, FileChannel> { notification ->

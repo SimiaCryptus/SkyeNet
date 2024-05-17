@@ -9,6 +9,7 @@ import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.util.Selenium2S3
 import jakarta.servlet.DispatcherType
+import jakarta.servlet.MultipartConfigElement
 import jakarta.servlet.Servlet
 import jakarta.servlet.http.HttpServlet
 import org.eclipse.jetty.server.*
@@ -217,7 +218,9 @@ abstract class ApplicationDirectory(
         log.debug("New WebAppContext created for servlet at path: $path")
         context.resourceBase = "application"
         context.welcomeFiles = arrayOf("index.html")
-        context.addServlet(ServletHolder(servlet), "/")
+        val servletHolder = ServletHolder(servlet)
+        servletHolder.getRegistration().setMultipartConfig(MultipartConfigElement("./tmp"));
+        context.addServlet(servletHolder, "/")
         return context
     }
 
