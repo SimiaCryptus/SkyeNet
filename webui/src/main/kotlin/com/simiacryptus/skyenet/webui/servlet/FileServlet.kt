@@ -23,25 +23,34 @@ abstract class FileServlet() : HttpServlet() {
         ) : File
 
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+        log.info("Received GET request for path: ${req.pathInfo ?: req.servletPath}")
         val pathSegments = parsePath(req.pathInfo ?: req.servletPath ?: "/")
         val dir = getDir(req)
+        log.info("Serving directory: ${dir.absolutePath}")
         val file = getFile(dir, pathSegments, req)
+        log.info("Resolved file path: ${file.absolutePath}")
+
         when {
             !file.exists() -> {
+                log.warn("File not found: ${file.absolutePath}")
                 resp.status = HttpServletResponse.SC_NOT_FOUND
                 resp.writer.write("File not found")
             }
 
             file.isFile -> {
+                log.info("File found: ${file.absolutePath}")
                 var channel = channelCache.get(file)
                 while (!channel.isOpen) {
+                    log.warn("FileChannel is not open, refreshing cache for file: ${file.absolutePath}")
                     channelCache.refresh(file)
                     channel = channelCache.get(file)
                 }
                 try {
                     if (channel.size() > 1024 * 1024 * 1) {
+                        log.info("File is large, using writeLarge method for file: ${file.absolutePath}")
                         writeLarge(channel, resp, file, req)
                     } else {
+                        log.info("File is small, using writeSmall method for file: ${file.absolutePath}")
                         writeSmall(channel, resp, file, req)
                     }
                 } finally {
@@ -50,10 +59,12 @@ abstract class FileServlet() : HttpServlet() {
             }
 
             req.pathInfo?.endsWith("/") == false -> {
+                log.info("Redirecting to directory path: ${req.requestURI + "/"}")
                 resp.sendRedirect(req.requestURI + "/")
             }
 
             else -> {
+                log.info("Listing directory contents for: ${file.absolutePath}")
                 resp.contentType = "text/html"
                 resp.status = HttpServletResponse.SC_OK
                 val files = file.listFiles()
@@ -85,6 +96,7 @@ abstract class FileServlet() : HttpServlet() {
         File(dir, pathSegments.drop(1).joinToString("/"))
 
     private fun writeSmall(channel: FileChannel, resp: HttpServletResponse, file: File, req: HttpServletRequest) {
+        log.info("Writing small file: ${file.absolutePath}")
         resp.contentType = ApplicationServer.getMimeType(file.name)
         resp.status = HttpServletResponse.SC_OK
         val async = req.startAsync()
@@ -97,6 +109,7 @@ abstract class FileServlet() : HttpServlet() {
                         byteBuffer.clear()
                         val readBytes = channel.read(byteBuffer)
                         if (readBytes == -1) {
+                            log.info("Completed writing small file: ${file.absolutePath}")
                             async.complete()
                             channelCache.put(file, channel)
                             return
@@ -106,7 +119,7 @@ abstract class FileServlet() : HttpServlet() {
                 }
 
                 override fun onError(throwable: Throwable) {
-                    log.warn("Error writing file", throwable)
+                    log.error("Error writing small file: ${file.absolutePath}", throwable)
                     channelCache.put(file, channel)
                 }
             })
@@ -119,6 +132,7 @@ abstract class FileServlet() : HttpServlet() {
         file: File,
         req: HttpServletRequest
     ) {
+        log.info("Writing large file: ${file.absolutePath}")
         val mappedByteBuffer: MappedByteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
         resp.contentType = ApplicationServer.getMimeType(file.name)
         resp.status = HttpServletResponse.SC_OK
@@ -134,6 +148,7 @@ abstract class FileServlet() : HttpServlet() {
                         val end = mappedByteBuffer.position()
                         val readBytes = end - start
                         if (readBytes == 0) {
+                            log.info("Completed writing large file: ${file.absolutePath}")
                             async.complete()
                             channelCache.put(file, channel)
                             return
@@ -143,7 +158,7 @@ abstract class FileServlet() : HttpServlet() {
                 }
 
                 override fun onError(throwable: Throwable) {
-                    log.warn("Error writing file", throwable)
+                    log.error("Error writing large file: ${file.absolutePath}", throwable)
                     channelCache.put(file, channel)
                 }
             })
@@ -271,6 +286,7 @@ abstract class FileServlet() : HttpServlet() {
                 }
             }).build(object : CacheLoader<File, FileChannel>() {
                 override fun load(key: File): FileChannel {
+                    log.info("Opening FileChannel for file: ${key.absolutePath}")
                     return FileChannel.open(key.toPath(), StandardOpenOption.READ)
                 }
             })

@@ -1,15 +1,14 @@
 package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.file.DataStorage.Companion.SYS_DIR
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import java.io.File
 
 class SessionSettingsServlet(
     private val server: ApplicationServer,
@@ -23,6 +22,11 @@ class SessionSettingsServlet(
             val user = authenticationManager.getUser(req.getCookie())
             val settings = server.getSettings(session, user, settingsClass)
             val json = if (settings != null) JsonUtil.toJson(settings) else ""
+            if (req.parameterMap.containsKey("raw") && req.getParameter("raw") == "true") {
+                resp.contentType = "application/json"
+                resp.writer.write(json)
+                return
+            }
             //language=HTML
             resp.writer.write(
                 """
@@ -55,11 +59,18 @@ class SessionSettingsServlet(
             resp.status = HttpServletResponse.SC_BAD_REQUEST
             resp.writer.write("Session ID is required")
         } else {
-            val session = Session(req.getParameter("sessionId"))
-            val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), settingsClass)
-            val user = authenticationManager.getUser(req.getCookie()) ?: "global"
-            SYS_DIR.resolve("$user/$session/settings.json").apply { parentFile.mkdirs() }.writeText(JsonUtil.toJson(settings))
-            resp.sendRedirect("${req.contextPath}/#$session")
+            if (!req.parameterMap.containsKey("sessionId")) {
+                resp.status = HttpServletResponse.SC_BAD_REQUEST
+                resp.writer.write("Session ID is required")
+            } else {
+                val session = Session(req.getParameter("sessionId"))
+                val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), settingsClass)
+                val user = authenticationManager.getUser(req.getCookie()) ?: "global"
+                ApplicationServices.dataStorageRoot.resolve("$user/$session/settings.json")
+                    .apply { parentFile.mkdirs() }
+                    .writeText(JsonUtil.toJson(settings))
+                resp.sendRedirect("${req.contextPath}/#$session")
+            }
         }
     }
 }

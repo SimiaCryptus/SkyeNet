@@ -2,15 +2,11 @@ package com.simiacryptus.skyenet.webui.application
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
-import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
-import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.StorageInterface
-import com.simiacryptus.skyenet.core.platform.User
-import com.simiacryptus.skyenet.core.platform.file.DataStorage.Companion.SYS_DIR
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.session.SocketManager
@@ -25,7 +21,7 @@ abstract class ApplicationServer(
     final override val applicationName: String,
     val path: String,
     resourceBase: String = "application",
-    open val root: File = File(File(".skyenet"), applicationName),
+    open val root: File = ApplicationServices.dataStorageRoot,
     val showMenubar: Boolean = true,
 ) : ChatServer(resourceBase) {
 
@@ -94,8 +90,9 @@ abstract class ApplicationServer(
         userId: User?,
         @Suppress("UNCHECKED_CAST") clazz: Class<T> = settingsClass as Class<T>
     ): T? {
-        val settingsFile = SYS_DIR.resolve("${if (session.isGlobal()) "global" else userId}/$session/settings.json")
-            .apply { parentFile.mkdirs() }
+        val settingsFile =
+            ApplicationServices.dataStorageRoot.resolve("${if (session.isGlobal()) "global" else userId}/$session/settings.json")
+                .apply { parentFile.mkdirs() }
         var settings: T? = if(settingsFile.exists()) JsonUtil.fromJson(settingsFile.readText(), clazz) else null
         if (null == settings) {
             val initSettings = initSettings<T>(session)

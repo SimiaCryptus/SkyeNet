@@ -9,10 +9,13 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.ClientUtil
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.userSettingsManager
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
-import com.simiacryptus.skyenet.core.platform.file.DataStorage.Companion.SYS_DIR
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
 import org.apache.hc.core5.http.HttpRequest
+import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import java.io.File
 import java.util.concurrent.*
@@ -30,6 +33,7 @@ open class ClientManager {
         user: User?,
         dataStorage: StorageInterface?,
     ): OpenAIClient {
+        log.debug("Fetching client for session: {}, user: {}", session, user)
         val key = SessionKey(session, user)
         return if (null == dataStorage) clientCache[key] ?: throw IllegalStateException("No data storage")
         else clientCache.getOrPut(key) { createClient(session, user, dataStorage)!! }
@@ -42,15 +46,17 @@ open class ClientManager {
             SynchronousQueue(),
             RecordingThreadFactory(session, user)
         )
+
     /*createScheduledPool*/
     protected open fun createScheduledPool(session: Session, user: User?, dataStorage: StorageInterface?) =
-        MoreExecutors.listeningDecorator(ScheduledThreadPoolExecutor(1,))
+        MoreExecutors.listeningDecorator(ScheduledThreadPoolExecutor(1))
 
     fun getPool(
         session: Session,
         user: User?,
         dataStorage: StorageInterface?,
     ): ThreadPoolExecutor {
+        log.debug("Fetching thread pool for session: {}, user: {}", session, user)
         val key = SessionKey(session, user)
         return poolCache.getOrPut(key) {
             createPool(session, user, dataStorage)
@@ -62,6 +68,7 @@ open class ClientManager {
         user: User?,
         dataStorage: StorageInterface?,
     ): ListeningScheduledExecutorService {
+        log.debug("Fetching scheduled pool for session: {}, user: {}", session, user)
         val key = SessionKey(session, user)
         return scheduledPoolCache.getOrPut(key) {
             createScheduledPool(session, user, dataStorage)
@@ -69,12 +76,13 @@ open class ClientManager {
     }
 
     inner class RecordingThreadFactory(
-        session: Session,
-        user: User?
+        val session: Session,
+        val user: User?
     ) : ThreadFactory {
         private val inner = ThreadFactoryBuilder().setNameFormat("Session $session; User $user; #%d").build()
         val threads = mutableSetOf<Thread>()
         override fun newThread(r: Runnable): Thread {
+            log.debug("Creating new thread for session: {}, user: {}", session, user)
             inner.newThread(r).also {
                 threads.add(it)
                 return it
@@ -87,10 +95,13 @@ open class ClientManager {
         user: User?,
         dataStorage: StorageInterface?,
     ): OpenAIClient? {
+        log.debug("Creating client for session: {}, user: {}", session, user)
         if (user != null) {
-            val userSettings = ApplicationServices.userSettingsManager.getUserSettings(user)
-            val logfile = SYS_DIR?.resolve("${if (session.isGlobal()) "global" else user}/$session/openai.log")?.apply { parentFile?.mkdirs() }
+            val userSettings = userSettingsManager.getUserSettings(user)
+
+            val logfile = dataStorageFactory(dataStorageRoot).getSessionDir(user, session).resolve("openai.log").apply { mkdirs() }.resolve("openai.log")
             logfile?.parentFile?.mkdirs()
+            log.debug("Logfile: {}", logfile)
             val userApi =
                 if (userSettings.apiKeys.isNotEmpty())
                     MonitoredClient(
@@ -107,7 +118,8 @@ open class ClientManager {
             null, user, OperationType.GlobalKey
         )
         if (!canUseGlobalKey) throw RuntimeException("No API key")
-        val logfile = SYS_DIR?.resolve("${if (session.isGlobal()) "global" else user}/$session/openai.log")?.apply { parentFile?.mkdirs() }
+        val logfile = dataStorageRoot?.resolve("${if (session.isGlobal()) "global" else user}/$session/openai.log")
+            ?.apply { parentFile?.mkdirs() }
         logfile?.parentFile?.mkdirs()
         return (if (ClientUtil.keyMap.isNotEmpty()) {
             MonitoredClient(
@@ -144,16 +156,26 @@ open class ClientManager {
     ) {
         var budget = 2.00
         override fun authorize(request: HttpRequest, apiProvider: APIProvider) {
+            log.debug("Authorizing request for session: {}, user: {}, apiProvider: {}", session, user, apiProvider)
             require(budget > 0.0) { "Budget Exceeded" }
             super.authorize(request, ClientUtil.defaultApiProvider)
         }
 
         override fun onUsage(model: OpenAIModel?, tokens: ApiModel.Usage) {
+            log.debug(
+                "Usage recorded for session: {}, user: {}, model: {}, tokens: {}",
+                session,
+                user,
+                model,
+                tokens
+            )
             ApplicationServices.usageManager.incrementUsage(session, user, model!!, tokens)
             budget -= tokens.cost ?: 0.0
             super.onUsage(model, tokens)
         }
     }
 
-    companion object
+    companion object {
+        private val log = LoggerFactory.getLogger(ClientManager::class.java)
+    }
 }
