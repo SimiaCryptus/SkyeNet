@@ -240,6 +240,11 @@ function onWebSocketText(event) {
     } catch (e) {
         console.log("Error updating tabs: " + e);
     }
+
+    /* If appPostMessage is defined, call it */
+    if (typeof appPostMessage !== 'undefined') {
+        appPostMessage(event.data);
+    }
 }
 
 function toggleVerbose() {
