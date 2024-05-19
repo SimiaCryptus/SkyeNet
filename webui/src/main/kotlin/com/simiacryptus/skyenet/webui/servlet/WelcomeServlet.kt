@@ -63,8 +63,12 @@ open class WelcomeServlet(private val parent: ApplicationDirectory) :
         <meta name='viewport' content='width=device-width,initial-scale=1'>
         <title>SimiaCryptus Skyenet Apps</title>
         <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-        <link id="theme_style" href="main.css" rel="stylesheet"/>
+        <link id="theme_style" href="/main.css" rel="stylesheet"/>
+        <script src="functions.js"></script>
+        <script src="tabs.js"></script>
         <script src="main.js"></script>
+        <script src="theme.js"></script>
+        <script src="about.js"></script>
         <style>
             .app-thumbnail {
                 width: 50px;
