@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
@@ -64,11 +63,14 @@ class SessionSettingsServlet(
                 resp.writer.write("Session ID is required")
             } else {
                 val session = Session(req.getParameter("sessionId"))
-                val settings = JsonUtil.fromJson<Any>(req.getParameter("settings"), settingsClass)
-                val user = authenticationManager.getUser(req.getCookie()) ?: "global"
-                ApplicationServices.dataStorageRoot.resolve("$user/$session/settings.json")
-                    .apply { parentFile.mkdirs() }
-                    .writeText(JsonUtil.toJson(settings))
+                val settings = if (req.parameterNames.toList().contains("settings")) {
+                    JsonUtil.fromJson<Any>(req.getParameter("settings"), settingsClass)
+                } else {
+                    JsonUtil.fromJson<Any>(req.reader.readText(), settingsClass)
+                }
+                val user = authenticationManager.getUser(req.getCookie())
+                val settingsFile = server.getSettingsFile(session, user).apply { parentFile.mkdirs() }
+                settingsFile.writeText(JsonUtil.toJson(settings))
                 resp.sendRedirect("${req.contextPath}/#$session")
             }
         }

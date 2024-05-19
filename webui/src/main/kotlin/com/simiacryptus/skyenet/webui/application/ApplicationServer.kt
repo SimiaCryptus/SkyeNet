@@ -90,9 +90,7 @@ abstract class ApplicationServer(
         userId: User?,
         @Suppress("UNCHECKED_CAST") clazz: Class<T> = settingsClass as Class<T>
     ): T? {
-        val settingsFile =
-            ApplicationServices.dataStorageRoot.resolve("${if (session.isGlobal()) "global" else userId}/$session/settings.json")
-                .apply { parentFile.mkdirs() }
+        val settingsFile = getSettingsFile(session, userId)
         var settings: T? = if(settingsFile.exists()) JsonUtil.fromJson(settingsFile.readText(), clazz) else null
         if (null == settings) {
             val initSettings = initSettings<T>(session)
@@ -104,6 +102,16 @@ abstract class ApplicationServer(
             }
         }
         return settings
+    }
+
+    fun getSettingsFile(
+        session: Session,
+        userId: User?
+    ): File {
+        val settingsFile =
+            ApplicationServices.dataStorageRoot.resolve("${if (session.isGlobal()) "global" else userId}/$session/settings.json")
+                .apply { parentFile.mkdirs() }
+        return settingsFile
     }
 
     protected open fun sessionsServlet(path: String) =
