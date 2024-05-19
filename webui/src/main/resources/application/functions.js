@@ -20,6 +20,25 @@ async function fetchData(endpoint, useSession = true) {
     }
 }
 
+function getSessionId() {
+    if (!window.location.hash) {
+        fetch('newSession')
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                } else {
+                    throw new Error('Failed to get new session ID');
+                }
+            })
+            .then(sessionId => {
+                window.location.hash = sessionId;
+                connect(sessionId);
+            });
+    } else {
+        return window.location.hash.substring(1);
+    }
+}
+
 function showModal(endpoint, useSession = true) {
     fetchData(endpoint, useSession).then(r => {
         const modal = document.getElementById('modal');
