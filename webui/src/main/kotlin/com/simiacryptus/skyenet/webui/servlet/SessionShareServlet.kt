@@ -5,11 +5,11 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
 import com.simiacryptus.skyenet.core.platform.User
-import com.simiacryptus.skyenet.core.platform.file.DataStorage.Companion.SYS_DIR
 import com.simiacryptus.skyenet.core.util.Selenium
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
@@ -46,10 +46,12 @@ class SessionShareServlet(
 
         require(acceptHost(user, host)) { "Invalid url: $url" }
 
-        val storageInterface = ApplicationServices.dataStorageFactory.invoke(File(File(".skyenet"), appName))
+        val storageInterface = ApplicationServices.dataStorageFactory.invoke(File(dataStorageRoot, appName))
         val session = StorageInterface.parseSessionID(sessionID)
         val pool = ApplicationServices.clientManager.getPool(session, user, server.dataStorage)
-        val json = JsonUtil.fromJson<Map<String,Any>>(SYS_DIR.resolve("${if (session.isGlobal()) "global" else user}/$session/info.json").apply { parentFile.mkdirs() }.readText(), typeOf<Map<String,Any>>().javaType)
+        val json = JsonUtil.fromJson<Map<String,Any>>(
+            dataStorageRoot.resolve("${if (session.isGlobal()) "global" else user}/$session/info.json")
+                .apply { parentFile.mkdirs() }.readText(), typeOf<Map<String,Any>>().javaType)
         val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
         val previousShare = sessionSettings["shareId"]
         when {
@@ -90,7 +92,8 @@ class SessionShareServlet(
                     try {
                         log.info("Generating shareId: $shareId")
                         sessionSettings["shareId"] = shareId
-                        SYS_DIR.resolve("${if (session.isGlobal()) "global" else user}/$session/info.json").apply { parentFile.mkdirs() }.writeText(JsonUtil.toJson(sessionSettings))
+                        dataStorageRoot.resolve("${if (session.isGlobal()) "global" else user}/$session/info.json")
+                            .apply { parentFile.mkdirs() }.writeText(JsonUtil.toJson(sessionSettings))
 //            val selenium2S3 = Selenium2S3(
 //              pool = pool,
 //              cookies = cookies,

@@ -66,7 +66,7 @@ object ApplicationServices {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
         }
-    var usageManager: UsageInterface = UsageManager(File(dataStorageRoot, ".skyenet/usage"))
+    var usageManager: UsageInterface = UsageManager(File(dataStorageRoot, "usage"))
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value

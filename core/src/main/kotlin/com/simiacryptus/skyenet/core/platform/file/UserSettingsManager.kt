@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.core.platform.file
 
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.core.platform.UserSettingsInterface
 import com.simiacryptus.skyenet.core.platform.UserSettingsInterface.UserSettings
@@ -9,7 +10,7 @@ import java.io.File
 open class UserSettingsManager : UserSettingsInterface {
 
     private val userSettings = HashMap<User, UserSettings>()
-    private val userConfigDirectory = File(".skyenet/users")
+    private val userConfigDirectory by lazy { ApplicationServices.dataStorageRoot.resolve("users").apply { mkdirs() } }
 
     override fun getUserSettings(user: User): UserSettings {
         return userSettings.getOrPut(user) {

@@ -73,11 +73,14 @@ open class CodingActor(
                   |Each response should have EXACTLY ONE code block. Do not use inline blocks.
                   |$formatInstructions
                   |
-                  |Defined symbols include {${symbols.keys.joinToString(", ")}} described below:
+                  |Defined symbols include ${symbols.keys.joinToString(", ")} described below:
                   |
                   |```${this.describer.markupLanguage}
                   |${this.apiDescription}
                   |```
+                  |
+                  |DO NOT RE-DEFINE THESE SYMBOLS: ${symbols.keys.joinToString(", ")}
+                  |They are already defined for you.
                   |
                   |${details ?: ""}
                   |""".trimMargin().trim()
@@ -475,12 +478,12 @@ open class CodingActor(
 
         fun errorMessage(ex: ScriptException, code: String) = try {
             """
-      |```text
-      |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
-      |  ${if (ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}
-      |  ${if (ex.columnNumber > 0) " ".repeat(ex.columnNumber - 1) + "^" else ""}
-      |```
-      """.trimMargin().trim()
+          |```text
+          |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
+          |  ${if (ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}
+          |  ${if (ex.columnNumber > 0) " ".repeat(ex.columnNumber - 1) + "^" else ""}
+          |```
+          """.trimMargin().trim()
         } catch (_: Exception) {
             ex.message ?: ""
         }

@@ -1,25 +1,6 @@
 
 let socket;
 
-function getSessionId() {
-    if (!window.location.hash) {
-        fetch('newSession')
-            .then(response => {
-                if (response.ok) {
-                    return response.text();
-                } else {
-                    throw new Error('Failed to get new session ID');
-                }
-            })
-            .then(sessionId => {
-                window.location.hash = sessionId;
-                connect(sessionId);
-            });
-    } else {
-        return window.location.hash.substring(1);
-    }
-}
-
 function send(message) {
     console.log('Sending message:', message);
     if (socket.readyState !== 1) {

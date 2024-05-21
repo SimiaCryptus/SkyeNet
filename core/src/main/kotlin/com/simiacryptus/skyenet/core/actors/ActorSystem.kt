@@ -5,7 +5,6 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
-import com.simiacryptus.skyenet.core.platform.file.DataStorage.Companion.SYS_DIR
 import com.simiacryptus.skyenet.core.util.FunctionWrapper
 import com.simiacryptus.skyenet.core.util.JsonFunctionRecorder
 import java.io.File
@@ -68,7 +67,7 @@ open class ActorSystem<T : Enum<*>>(
         wrapperMap.getOrPut(name) {
             FunctionWrapper(JsonFunctionRecorder(
                 File(
-                    SYS_DIR,
+                    ApplicationServices.dataStorageRoot,
                     "${if (session.isGlobal()) "global" else user}/$session/actors/$name"
                 ).apply { mkdirs() }))
         }

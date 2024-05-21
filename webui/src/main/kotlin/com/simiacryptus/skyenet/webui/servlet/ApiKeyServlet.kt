@@ -299,10 +299,7 @@ class ApiKeyServlet : HttpServlet() {
 
     companion object {
         private val userRoot by lazy {
-            File(
-                File(ApplicationServices.dataStorageRoot, ".skyenet"),
-                "apiKeys"
-            ).apply { mkdirs() }
+            ApplicationServices.dataStorageRoot.resolve("apiKeys").apply { mkdirs() }
         }
 
         val apiKeyRecords by lazy {
