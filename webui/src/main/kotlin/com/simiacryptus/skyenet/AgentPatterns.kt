@@ -13,7 +13,7 @@ object AgentPatterns {
         val tasks = map.entries.map { (key, value) ->
             key to ui.newTask(root = false)
         }.toMap()
-        ui.socketManager.scheduledThreadPoolExecutor.schedule({
+        ui.socketManager?.scheduledThreadPoolExecutor?.schedule({
             tasks.forEach { (key, task) ->
                 task.complete(map[key]!!)
             }

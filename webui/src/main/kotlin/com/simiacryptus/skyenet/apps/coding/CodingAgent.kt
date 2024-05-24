@@ -83,8 +83,8 @@ open class CodingAgent<T : Interpreter>(
         task.complete(newTask.placeholder)
         Retryable(ui, newTask) {
             val newTask = ui.newTask(root = false)
-            ui.socketManager.scheduledThreadPoolExecutor.schedule({
-                ui.socketManager.pool.submit {
+            ui.socketManager?.scheduledThreadPoolExecutor!!.schedule({
+                ui.socketManager?.pool?.submit {
                     val statusSB = newTask.add("Running...")
                     displayCode(newTask, codeRequest)
                     statusSB?.clear()

@@ -365,7 +365,7 @@ class WebDevAgent(
             },
             outputFn = { code ->
                 renderMarkdown(
-                    ui.socketManager.addApplyFileDiffLinks(
+                    ui.socketManager!!.addApplyFileDiffLinks(
                         root = root.toPath(),
                         code = {
                             codeFiles.filter {
