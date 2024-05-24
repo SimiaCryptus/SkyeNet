@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.skyenet.webui.session.SessionTask
+import java.util.*
 
 open class TabbedDisplay(
     val task: SessionTask,
@@ -14,7 +15,7 @@ open class TabbedDisplay(
 
     val size: Int get() = tabs.size
     open fun render() = """
-    <div class="tabs-container">
+    <div class="tabs-container" id="${UUID.randomUUID()}">
       ${renderTabButtons()}
       ${
         tabs.withIndex().joinToString("\n")

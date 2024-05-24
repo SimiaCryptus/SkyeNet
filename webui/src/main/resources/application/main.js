@@ -4,9 +4,10 @@ let singleInput = false;
 let stickyInput = false;
 let loadImages = "true";
 let showMenubar = true;
+let messageDiv;
 
 function onWebSocketText(event) {
-    console.log('WebSocket message:', event);
+    console.debug('WebSocket message:', event);
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) return;
     const firstCommaIndex = event.data.indexOf(',');
@@ -14,14 +15,8 @@ function onWebSocketText(event) {
     const messageId = event.data.substring(0, firstCommaIndex);
     const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
     const messageContent = event.data.substring(secondCommaIndex + 1);
-    // if (messageVersion <= (messageVersions[messageId] || 0)) {
-    //     console.log("Ignoring message with id " + messageId + " and version " + messageVersion);
-    //     return;
-    // } else {
     messageVersions[messageId] = messageVersion;
     messageMap[messageId] = messageContent;
-    // }
-    // Cleanup: remove temporary event listeners
 
     const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
     messageDivs.forEach((messageDiv) => {
@@ -88,11 +83,6 @@ function onWebSocketText(event) {
     } catch (e) {
         console.log("Error updating tabs: " + e);
     }
-
-    /* If appPostMessage is defined, call it */
-    if (typeof appPostMessage !== 'undefined') {
-        appPostMessage(event.data);
-    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -104,6 +94,33 @@ document.addEventListener('DOMContentLoaded', () => {
         applyToAllSvg();
     }, 5000); // Adjust the interval as needed
 
+    // Restore the selected tabs from localStorage before adding event listeners
+     document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+         const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
+         if (savedTab) {
+             const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+             if (savedButton) {
+                savedButton.classList.add('active');
+                const forTab = savedButton.getAttribute('data-for-tab');
+                const selectedContent = tabsContainer.querySelector(`.tab-content[data-tab="${forTab}"]`);
+                if (selectedContent) {
+                    selectedContent.classList.add('active');
+                    selectedContent.style.display = 'block';
+                }
+                 console.log(`Restored saved tab: ${savedTab}`);
+             }
+         }
+     });
+    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
+        if (savedTab) {
+            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+            if (savedButton) {
+                savedButton.click();
+                console.log(`Restored saved tab: ${savedTab}`);
+            }
+        }
+    });
 
     const historyElement = document.getElementById('history');
     if (historyElement) historyElement.addEventListener('click', () => showModal('sessions'));
@@ -318,4 +335,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
     updateTabs();
+
+    // Restore the selected tabs from localStorage
+    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
+        if (savedTab) {
+            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+            if (savedButton) {
+                savedButton.click();
+                console.log(`Restored saved tab: ${savedTab}`);
+            }
+        }
+    });
 });

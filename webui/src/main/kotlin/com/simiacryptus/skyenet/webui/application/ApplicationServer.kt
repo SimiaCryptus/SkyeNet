@@ -51,8 +51,14 @@ abstract class ApplicationServer(
     protected open val deleteSessionServlet by lazy { ServletHolder("delete", DeleteSessionServlet(this)) }
     protected open val cancelSessionServlet by lazy { ServletHolder("cancel", CancelThreadsServlet(this)) }
 
-    override fun newSession(user: User?, session: Session): SocketManager =
-        object : ApplicationSocketManager(
+    override fun newSession(user: User?, session: Session): SocketManager {
+        dataStorage.setJson(user, session, "info.json", mapOf(
+            "session" to session.toString(),
+            "application" to applicationName,
+            "path" to path,
+            "startTime" to System.currentTimeMillis(),
+        ))
+        return object : ApplicationSocketManager(
             session = session,
             owner = user,
             dataStorage = dataStorage,
@@ -72,6 +78,7 @@ abstract class ApplicationServer(
                 api = api
             )
         }
+    }
 
     open fun userMessage(
         session: Session,
@@ -109,7 +116,7 @@ abstract class ApplicationServer(
         userId: User?
     ): File {
         val settingsFile =
-            ApplicationServices.dataStorageRoot.resolve("${if (session.isGlobal()) "global" else userId}/$session/settings.json")
+            dataStorage.getSessionDir(userId, session).resolve("settings.json")
                 .apply { parentFile.mkdirs() }
         return settingsFile
     }

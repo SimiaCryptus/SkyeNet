@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.core.platform.file
 
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.validateSessionId
@@ -9,6 +8,8 @@ import com.simiacryptus.skyenet.core.platform.User
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.reflect.jvm.javaType
+import kotlin.reflect.typeOf
 
 open class DataStorage(
     private val dataDir: File
@@ -21,7 +22,7 @@ open class DataStorage(
         validateSessionId(session)
         log.debug("Fetching messages for session: ${session.sessionId}, user: ${user?.email}")
         val messageDir =
-            ApplicationServices.dataStorageRoot.resolve("${if (session.isGlobal()) "global" else user}/$session/messages/")
+            getSessionDir(user, session).resolve("messages/")
                 .apply { mkdirs() }
         val messages = LinkedHashMap<String, String>()
         getMessageIds(user, session).forEach { messageId ->
@@ -48,8 +49,8 @@ open class DataStorage(
         return when (parts.size) {
             3 -> {
                 val root = when {
-                    parts[0] == "G" -> dataDir
-                    parts[0] == "U" -> userRoot(user)
+                    parts[0] == "G" -> dataDir.resolve("global")
+                    parts[0] == "U" -> dataDir.resolve("user-sessions/$user")
                     else -> throw IllegalArgumentException("Invalid session ID: $session")
                 }
                 val dateDir = File(root, parts[1])
@@ -59,8 +60,8 @@ open class DataStorage(
             }
 
             2 -> {
-                val dateDir = File(dataDir, parts[0])
-                val sessionDir = File(dateDir, parts[1])
+                val dateDir = dataDir.resolve("global").resolve(parts[0])
+                val sessionDir = dateDir.resolve(parts[1])
                 log.debug("Session directory for session: ${session.sessionId} is ${sessionDir.absolutePath}")
                 sessionDir
             }
@@ -105,10 +106,7 @@ open class DataStorage(
         log.debug("Fetching message IDs for session: ${session.sessionId}, user: ${user?.email}")
         val sessionDir = getSessionDir(user, session)
         val settings = run {
-            val settingsFile = File(
-                ApplicationServices.dataStorageRoot,
-                "${if (session.isGlobal()) "global" else user}/$session/internal.json"
-            )
+            val settingsFile = sessionDir.resolve("internal.json")
             if (!settingsFile.exists()) null else {
                 JsonUtil.objectMapper().readValue(settingsFile, Map::class.java) as Map<*, *>
             }
@@ -117,8 +115,8 @@ open class DataStorage(
         val ids = messageFiles(session, user).entries.sortedBy { it.key.lastModified() }
             .map { it.key.nameWithoutExtension }.toList()
         setJson(
-            ApplicationServices.dataStorageRoot,
-            "${if (session.isGlobal()) "global" else user}/$session/internal.json",
+            sessionDir,
+            "internal.json",
             settings.plus("ids" to ids.joinToString(","))
         )
         log.debug("Message IDs for session: ${session.sessionId} are $ids")
@@ -132,18 +130,16 @@ open class DataStorage(
     ) {
         validateSessionId(session)
         log.debug("Setting message IDs for session: ${session.sessionId}, user: ${user?.email} to $ids")
+        val sessionDir = getSessionDir(user, session)
         val settings = run {
-            val settingsFile = File(
-                ApplicationServices.dataStorageRoot,
-                "${if (session.isGlobal()) "global" else user}/$session/internal.json"
-            )
+            val settingsFile = sessionDir.resolve("internal.json")
             if (!settingsFile.exists()) null else {
                 JsonUtil.objectMapper().readValue(settingsFile, Map::class.java) as Map<*, *>
             }
         } ?: mapOf<String, String>()
         setJson(
-            ApplicationServices.dataStorageRoot,
-            "${if (session.isGlobal()) "global" else user}/$session/internal.json",
+            sessionDir,
+            "internal.json",
             settings.plus("ids" to ids.joinToString(","))
         )
     }
@@ -154,8 +150,8 @@ open class DataStorage(
     ): Date? {
         validateSessionId(session)
         log.debug("Fetching session time for session: ${session.sessionId}, user: ${user?.email}")
-        val settingsFile =
-            ApplicationServices.dataStorageRoot.resolve("${if (session.isGlobal()) "global" else user}/$session/internal.json")
+        val sessionDir = getSessionDir(user, session)
+        val settingsFile = sessionDir.resolve("internal.json")
         val settings = run {
             if (!settingsFile.exists()) null else {
                 JsonUtil.objectMapper().readValue(settingsFile, Map::class.java) as Map<*, *>
@@ -168,8 +164,8 @@ open class DataStorage(
         return if (null != file) {
             val date = Date(file.lastModified())
             setJson(
-                ApplicationServices.dataStorageRoot,
-                "${if (session.isGlobal()) "global" else user}/$session/internal.json",
+                sessionDir,
+                "internal.json",
                 settings.plus("time" to dateFormat.format(date))
             )
             log.debug("Session time for session: ${session.sessionId} is $date")
@@ -183,8 +179,9 @@ open class DataStorage(
     private fun messageFiles(
         session: Session,
         user: User?,
-    ) =
-        ApplicationServices.dataStorageRoot.resolve("${if (session.isGlobal()) "global" else user}/$session/messages")
+    ): Map<File, String> {
+
+        return getSessionDir(user, session).resolve("messages")
             .apply { mkdirs() }.listFiles()
             ?.filter { file -> file.isFile }
             ?.map { messageFile ->
@@ -203,13 +200,23 @@ open class DataStorage(
                     }
                 }
             }?.filter { it.second.isNotEmpty() }?.toList()?.toMap() ?: mapOf()
+    }
 
     override fun listSessions(
-        user: User?
+        user: User?,
+        path: String
     ): List<Session> {
         log.debug("Listing sessions for user: ${user?.email}")
-        val globalSessions = listSessions(dataDir)
-        val userSessions = if (user == null) listOf() else listSessions(userRoot(user))
+        val globalSessions = listSessions(dataDir.resolve("global"), path)
+        val userSessions = if (user == null) listOf() else listSessions(
+            dataDir.resolve("user-sessions").resolve(
+                if (user?.email != null) {
+                    user.email
+                } else {
+                    throw IllegalArgumentException("User required for private session")
+                }
+            ).apply { mkdirs() }, path
+        )
         log.debug("Found ${globalSessions.size} global sessions and ${userSessions.size} user sessions for user: ${user?.email}")
         return ((globalSessions.map {
             try {
@@ -235,8 +242,7 @@ open class DataStorage(
 
     private fun <T : Any> setJson(sessionDir: File, filename: String, settings: T): T {
         log.debug("Setting JSON for session directory: ${sessionDir.absolutePath}, filename: $filename")
-        val settingsFile = File(sessionDir, filename)
-        settingsFile.parentFile.mkdirs()
+        val settingsFile = sessionDir.resolve(filename).apply { parentFile.mkdirs() }
         JsonUtil.objectMapper().writeValue(settingsFile, settings)
         return settings
     }
@@ -250,7 +256,7 @@ open class DataStorage(
         validateSessionId(session)
         log.debug("Updating message for session: ${session.sessionId}, messageId: $messageId, user: ${user?.email}")
         val file =
-            ApplicationServices.dataStorageRoot.resolve("${if (session.isGlobal()) "global" else user}/$session/messages/$messageId.json")
+            getSessionDir(user, session).resolve("messages/$messageId.json")
                 .apply { parentFile.mkdirs() }
         if (!file.exists()) {
             file.parentFile.mkdirs()
@@ -270,32 +276,28 @@ open class DataStorage(
         }
     }
 
-    override fun listSessions(dir: File): List<String> {
+    override fun listSessions(dir: File, path: String): List<String> {
         log.debug("Listing sessions in directory: ${dir.absolutePath}")
-        val files = dir.listFiles()?.flatMap { it.listFiles()?.toList() ?: listOf() }?.filter { sessionDir ->
-            val operationDir = File(sessionDir, "messages")
-            if (!operationDir.exists()) false else {
-                val listFiles = operationDir.listFiles()?.flatMap {
-                    when {
-                        it.isDirectory -> it.listFiles()?.toList() ?: listOf()
-                        else -> listOf(it)
-                    }
-                }?.filter { it.isFile && !it.name.startsWith("aaa") }
-                (listFiles?.size ?: 0) > 0
-            }
-        }?.sortedBy { it.lastModified() } ?: listOf()
+        val files = dir.listFiles()
+            ?.flatMap { it.listFiles()?.toList() ?: listOf() }
+            ?.filter { sessionDir ->
+                val resolve = sessionDir.resolve("info.json")
+                if (!resolve.exists()) return@filter false
+                val infoJson = resolve.readText()
+                val infoData = JsonUtil.fromJson<Map<String, String>>(infoJson, typeOf<Map<String, String>>().javaType)
+                path == infoData["path"]
+            }?.sortedBy { it.lastModified() } ?: listOf()
         log.debug("Found ${files.size} sessions in directory: ${dir.absolutePath}")
         return files.map { it.parentFile.name + "-" + it.name }
     }
 
-    override fun userRoot(user: User?) = File(
-        File(dataDir, "users"),
+    override fun userRoot(user: User?) = dataDir.resolve("users").resolve(
         if (user?.email != null) {
             user.email
         } else {
             throw IllegalArgumentException("User required for private session")
         }
-    )
+    ).apply { mkdirs() }
 
     override fun deleteSession(user: User?, session: Session) {
         validateSessionId(session)

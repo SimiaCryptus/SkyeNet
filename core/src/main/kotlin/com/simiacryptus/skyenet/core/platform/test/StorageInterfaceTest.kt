@@ -92,7 +92,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
         val user = User(email = "test@example.com")
 
         // Act
-        val sessions = storage.listSessions(user)
+        val sessions = storage.listSessions(user, "",)
 
         // Assert
         Assertions.assertNotNull(sessions)
@@ -138,7 +138,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
         val directory = File(System.getProperty("user.dir")) // Example directory
 
         // Act
-        val sessionList = storage.listSessions(directory)
+        val sessionList = storage.listSessions(directory, "")
 
         // Assert
         Assertions.assertNotNull(sessionList)

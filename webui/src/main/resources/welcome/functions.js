@@ -191,7 +191,6 @@ function findAncestor(element, selector) {
 
 
 function applyToAllSvg() {
-    console.log("Applying SvgPanZoom to all SVG elements");
     document.querySelectorAll('svg').forEach(svg => {
         if (!svg.dataset.svgPanZoomInitialized) {
             new SvgPanZoom().init(svg);
