@@ -118,7 +118,7 @@ open class ClientManager {
             null, user, OperationType.GlobalKey
         )
         if (!canUseGlobalKey) throw RuntimeException("No API key")
-        val logfile = dataStorageRoot?.resolve("${if (session.isGlobal()) "global" else user}/$session/openai.log")
+        val logfile = dataStorageRoot?.resolve("${if (session.isGlobal()) "global" else "user-sessions/$user"}/$session/openai.log")
             ?.apply { parentFile?.mkdirs() }
         logfile?.parentFile?.mkdirs()
         return (if (ClientUtil.keyMap.isNotEmpty()) {

@@ -66,10 +66,8 @@ open class ActorSystem<T : Enum<*>>(
     private fun getWrapper(name: String) = synchronized(wrapperMap) {
         wrapperMap.getOrPut(name) {
             FunctionWrapper(JsonFunctionRecorder(
-                File(
-                    ApplicationServices.dataStorageRoot,
-                    "${if (session.isGlobal()) "global" else user}/$session/actors/$name"
-                ).apply { mkdirs() }))
+                dataStorage.getSessionDir(user, session).resolve("actors/$name").apply { mkdirs() }
+            ))
         }
     }
 

@@ -19,7 +19,7 @@ class SessionListServlet(
         resp.contentType = "text/html"
         resp.status = HttpServletResponse.SC_OK
         val user = authenticationManager.getUser(req.getCookie())
-        val sessions = dataStorage.listSessions(user)
+        val sessions = dataStorage.listSessions(user, req.contextPath)
         val sessionRows = sessions.joinToString("") { session ->
             val sessionName = dataStorage.getSessionName(user, session)
             val sessionTime = dataStorage.getSessionTime(user, session) ?: return@joinToString ""

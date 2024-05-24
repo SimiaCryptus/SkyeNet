@@ -7,7 +7,6 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
-import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.file.*
 import com.simiacryptus.skyenet.core.util.Selenium
 import java.io.File
@@ -127,7 +126,8 @@ interface StorageInterface {
     ): Date?
 
     fun listSessions(
-        user: User?
+        user: User?,
+        path: String,
     ): List<Session>
 
     fun <T : Any> setJson(
@@ -144,7 +144,7 @@ interface StorageInterface {
         value: String
     )
 
-    fun listSessions(dir: File): List<String>
+    fun listSessions(dir: File, path: String): List<String>
     fun userRoot(user: User?): File
     fun deleteSession(user: User?, session: Session)
     fun getMessageIds(

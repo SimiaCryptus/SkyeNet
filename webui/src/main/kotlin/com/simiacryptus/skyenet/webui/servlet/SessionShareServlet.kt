@@ -46,12 +46,11 @@ class SessionShareServlet(
 
         require(acceptHost(user, host)) { "Invalid url: $url" }
 
-        val storageInterface = ApplicationServices.dataStorageFactory.invoke(File(dataStorageRoot, appName))
+        val storageInterface = ApplicationServices.dataStorageFactory.invoke(dataStorageRoot)
         val session = StorageInterface.parseSessionID(sessionID)
         val pool = ApplicationServices.clientManager.getPool(session, user, server.dataStorage)
-        val json = JsonUtil.fromJson<Map<String,Any>>(
-            dataStorageRoot.resolve("${if (session.isGlobal()) "global" else user}/$session/info.json")
-                .apply { parentFile.mkdirs() }.readText(), typeOf<Map<String,Any>>().javaType)
+        val infoFile = storageInterface.getSessionDir(user, session).resolve("info.json").apply { parentFile.mkdirs() }
+        val json = if(infoFile.exists()) JsonUtil.fromJson<Map<String,Any>>(infoFile.readText(), typeOf<Map<String,Any>>().javaType) else mapOf()
         val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
         val previousShare = sessionSettings["shareId"]
         when {
@@ -92,12 +91,7 @@ class SessionShareServlet(
                     try {
                         log.info("Generating shareId: $shareId")
                         sessionSettings["shareId"] = shareId
-                        dataStorageRoot.resolve("${if (session.isGlobal()) "global" else user}/$session/info.json")
-                            .apply { parentFile.mkdirs() }.writeText(JsonUtil.toJson(sessionSettings))
-//            val selenium2S3 = Selenium2S3(
-//              pool = pool,
-//              cookies = cookies,
-//            )
+                        infoFile.writeText(JsonUtil.toJson(sessionSettings))
                         val selenium2S3: Selenium = ApplicationServices.seleniumFactory?.invoke(pool, cookies)!!
                         if (selenium2S3 is Selenium2S3) {
                             selenium2S3.loadImages = req.getParameter("loadImages")?.toBoolean() ?: false
