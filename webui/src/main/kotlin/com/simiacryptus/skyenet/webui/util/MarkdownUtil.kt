@@ -8,6 +8,7 @@ import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import org.apache.commons.text.StringEscapeUtils
 import java.nio.file.Files
+import java.util.*
 
 object MarkdownUtil {
     fun renderMarkdown(
@@ -43,7 +44,7 @@ object MarkdownUtil {
                 log.warn("Failed to render Mermaid diagram", e)
             }
             val replacement = if (tabs) """
-            |<div class="tabs-container">
+            |<div class="tabs-container" id="${UUID.randomUUID()}">
             |  <div class="tabs">
             |    <button class="tab-button active" data-for-tab="1">Diagram</button>
             |    <button class="tab-button" data-for-tab="2">Source</button>
