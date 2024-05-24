@@ -281,7 +281,9 @@ open class DataStorage(
         val files = dir.listFiles()
             ?.flatMap { it.listFiles()?.toList() ?: listOf() }
             ?.filter { sessionDir ->
-                val infoJson = sessionDir.resolve("info.json").readText()
+                val resolve = sessionDir.resolve("info.json")
+                if (!resolve.exists()) return@filter false
+                val infoJson = resolve.readText()
                 val infoData = JsonUtil.fromJson<Map<String, String>>(infoJson, typeOf<Map<String, String>>().javaType)
                 path == infoData["path"]
             }?.sortedBy { it.lastModified() } ?: listOf()
