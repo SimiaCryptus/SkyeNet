@@ -15,6 +15,8 @@ abstract class SessionTask(
     private val spinner: String = SessionTask.spinner
 ) {
 
+    open fun isInteractive() = true
+
     val placeholder: String get() = "<div id=\"$operationID\"></div>"
 
     private val currentText: String
