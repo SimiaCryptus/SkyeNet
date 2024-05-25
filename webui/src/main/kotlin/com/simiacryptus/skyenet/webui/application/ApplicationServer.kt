@@ -28,7 +28,7 @@ abstract class ApplicationServer(
     open val description: String = ""
     open val singleInput = true
     open val stickyInput = false
-    open val appInfo by lazy {
+    open val appInfo: Map<String, Any> by lazy {
         mapOf(
             "applicationName" to applicationName,
             "singleInput" to singleInput,
@@ -40,7 +40,9 @@ abstract class ApplicationServer(
 
     final override val dataStorage: StorageInterface by lazy { dataStorageFactory(root) }
 
-    protected open val appInfoServlet by lazy { ServletHolder("appInfo", AppInfoServlet(appInfo)) }
+    protected open val appInfoServlet by lazy { ServletHolder("appInfo", AppInfoServlet {
+        session -> sessionAppInfoMap[session] ?: appInfo
+    }) }
     protected open val userInfo by lazy { ServletHolder("userInfo", UserInfoServlet()) }
     protected open val usageServlet by lazy { ServletHolder("usage", UsageServlet()) }
     protected open val fileZip by lazy { ServletHolder("fileZip", ZipServlet(dataStorage)) }
@@ -176,6 +178,8 @@ abstract class ApplicationServer(
 
         fun HttpServletRequest.getCookie(name: String = AuthenticationInterface.AUTH_COOKIE) =
             cookies?.find { it.name == name }?.value
+
+        val sessionAppInfoMap = mutableMapOf<String, Map<String, Any>>()
 
     }
 

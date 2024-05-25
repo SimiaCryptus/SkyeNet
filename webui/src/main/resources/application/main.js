@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(url, "_blank");
     });
 
-    fetch('appInfo')
+    fetch('appInfo?session=' + sessionId)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
