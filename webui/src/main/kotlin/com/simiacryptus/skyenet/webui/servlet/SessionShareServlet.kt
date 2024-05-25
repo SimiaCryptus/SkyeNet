@@ -19,7 +19,6 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
-import java.io.File
 import java.net.URI
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.typeOf
@@ -48,7 +47,7 @@ class SessionShareServlet(
 
         val storageInterface = ApplicationServices.dataStorageFactory.invoke(dataStorageRoot)
         val session = StorageInterface.parseSessionID(sessionID)
-        val pool = ApplicationServices.clientManager.getPool(session, user, server.dataStorage)
+        val pool = ApplicationServices.clientManager.getPool(session, user)
         val infoFile = storageInterface.getSessionDir(user, session).resolve("info.json").apply { parentFile.mkdirs() }
         val json = if(infoFile.exists()) JsonUtil.fromJson<Map<String,Any>>(infoFile.readText(), typeOf<Map<String,Any>>().javaType) else mapOf()
         val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()

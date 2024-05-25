@@ -19,7 +19,7 @@ class SessionThreadsServlet(
         if (req.parameterMap.containsKey("sessionId")) {
             val session = Session(req.getParameter("sessionId"))
             val user = authenticationManager.getUser(req.getCookie())
-            val pool = clientManager.getPool(session, user, server.dataStorage)
+            val pool = clientManager.getPool(session, user)
             // Output all pool stack traces
             //language=HTML
             resp.writer.write(

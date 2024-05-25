@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.clientManager
@@ -74,7 +73,7 @@ class CancelThreadsServlet(
                 )
                 { "User $user is not authorized to cancel global sessions" }
             }
-            val pool = clientManager.getPool(session, user, server.dataStorage)
+            val pool = clientManager.getPool(session, user)
             pool.shutdownNow()
             (pool.threadFactory as RecordingThreadFactory).threads.filter { it.isAlive }.forEach { it.interrupt() }
             resp.sendRedirect("/")
