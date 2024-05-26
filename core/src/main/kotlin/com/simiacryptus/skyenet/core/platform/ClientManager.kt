@@ -31,12 +31,10 @@ open class ClientManager {
     fun getClient(
         session: Session,
         user: User?,
-        dataStorage: StorageInterface?,
     ): OpenAIClient {
         log.debug("Fetching client for session: {}, user: {}", session, user)
         val key = SessionKey(session, user)
-        return if (null == dataStorage) clientCache[key] ?: throw IllegalStateException("No data storage")
-        else clientCache.getOrPut(key) { createClient(session, user, dataStorage)!! }
+        return clientCache.getOrPut(key) { createClient(session, user)!! }
     }
 
     protected open fun createPool(session: Session, user: User?) =
@@ -92,7 +90,6 @@ open class ClientManager {
     protected open fun createClient(
         session: Session,
         user: User?,
-        dataStorage: StorageInterface?,
     ): OpenAIClient? {
         log.debug("Creating client for session: {}, user: {}", session, user)
         val sessionDir = dataStorageFactory(dataStorageRoot).getSessionDir(user, session).apply { mkdirs() }
