@@ -10,6 +10,7 @@ import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.ResultSet
+import java.sql.Timestamp
 import java.util.concurrent.atomic.AtomicInteger
 
 class HSQLUsageManager(private val dbFile: File) : UsageInterface {
@@ -36,7 +37,8 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
                 prompt_tokens INT,
                 completion_tokens INT,
                 cost DOUBLE,
-                PRIMARY KEY (session_id, api_key, model, prompt_tokens, completion_tokens, cost)
+               datetime TIMESTAMP,
+               PRIMARY KEY (session_id, api_key, model, prompt_tokens, completion_tokens, cost, datetime)
                 )
              """
         )
@@ -125,8 +127,8 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         logger.debug("Executing SQL statement to save usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
         val statement = connection.prepareStatement(
             """
-            INSERT INTO usage (session_id, api_key, model, prompt_tokens, completion_tokens, cost)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO usage (session_id, api_key, model, prompt_tokens, completion_tokens, cost, datetime)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """
         )
         statement.setString(1, usageKey.session.sessionId)
@@ -135,6 +137,7 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         statement.setInt(4, usageValues.inputTokens.get())
         statement.setInt(5, usageValues.outputTokens.get())
         statement.setDouble(6, usageValues.cost.get())
+       statement.setTimestamp(7, Timestamp(System.currentTimeMillis()))
         logger.debug("Executing statement: $statement")
         logger.debug("With parameters: ${usageKey.session.sessionId}, ${usageKey.apiKey}, ${usageKey.model.modelName}, ${usageValues.inputTokens.get()}, ${usageValues.outputTokens.get()}, ${usageValues.cost.get()}")
         statement.executeUpdate()
