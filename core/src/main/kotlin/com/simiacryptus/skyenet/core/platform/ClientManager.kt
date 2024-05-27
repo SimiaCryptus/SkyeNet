@@ -92,7 +92,7 @@ open class ClientManager {
         user: User?,
     ): OpenAIClient? {
         log.debug("Creating client for session: {}, user: {}", session, user)
-        val sessionDir = dataStorageFactory(dataStorageRoot).getSessionDir(user, session).apply { mkdirs() }
+        val sessionDir = dataStorageFactory(dataStorageRoot).getDataDir(user, session).apply { mkdirs() }
         if (user != null) {
             val userSettings = userSettingsManager.getUserSettings(user)
             val userApi =

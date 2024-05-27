@@ -115,6 +115,11 @@ interface StorageInterface {
         session: Session
     ): File
 
+    fun getDataDir(
+        user: User?,
+        session: Session
+    ): File
+
     fun getSessionName(
         user: User?,
         session: Session

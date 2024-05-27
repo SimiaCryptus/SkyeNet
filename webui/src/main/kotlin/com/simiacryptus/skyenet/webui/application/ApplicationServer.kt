@@ -118,7 +118,7 @@ abstract class ApplicationServer(
         userId: User?
     ): File {
         val settingsFile =
-            dataStorage.getSessionDir(userId, session).resolve("settings.json")
+            dataStorage.getDataDir(userId, session).resolve("settings.json")
                 .apply { parentFile.mkdirs() }
         return settingsFile
     }

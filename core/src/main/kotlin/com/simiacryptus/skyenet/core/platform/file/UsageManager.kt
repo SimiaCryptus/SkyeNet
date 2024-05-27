@@ -69,7 +69,7 @@ open class UsageManager(val root: File) : UsageInterface {
                             else -> throw RuntimeException("Unknown direction $direction")
                         }
                     } catch (e: Exception) {
-                        log.debug("Error loading log line: ${e.message}")
+                        //log.debug("Error loading log line: ${e.message}")
                     }
                 }
             } catch (e: Exception) {

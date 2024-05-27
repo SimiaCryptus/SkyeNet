@@ -65,7 +65,7 @@ open class ActorSystem<T : Enum<*>>(
     private fun getWrapper(name: String) = synchronized(wrapperMap) {
         wrapperMap.getOrPut(name) {
             FunctionWrapper(JsonFunctionRecorder(
-                dataStorage.getSessionDir(user, session).resolve("actors/$name").apply { mkdirs() }
+                dataStorage.getDataDir(user, session).resolve("actors/$name").apply { mkdirs() }
             ))
         }
     }

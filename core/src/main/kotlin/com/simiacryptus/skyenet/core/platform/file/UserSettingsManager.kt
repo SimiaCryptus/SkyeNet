@@ -23,7 +23,7 @@ open class UserSettingsManager : UserSettingsInterface {
                     log.warn("Error loading user settings for $user from $file", e)
                 }
             }
-            log.info("Creating new user settings for $user at $file")
+            log.info("Creating new user settings for $user at $file", RuntimeException())
             return@getOrPut UserSettings()
         }
     }
