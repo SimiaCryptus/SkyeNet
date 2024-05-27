@@ -65,7 +65,7 @@ object ApplicationServices {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
         }
-    var usageManager: UsageInterface = UsageManager(File(dataStorageRoot, "usage"))
+    var usageManager: UsageInterface = HSQLUsageManager(File(dataStorageRoot, "usage"))
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
