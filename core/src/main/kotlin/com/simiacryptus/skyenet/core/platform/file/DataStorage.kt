@@ -15,6 +15,10 @@ open class DataStorage(
     private val dataDir: File
 ) : StorageInterface {
 
+    init {
+        log.info("Data directory: ${dataDir.absolutePath}", RuntimeException())
+    }
+
     override fun getMessages(
         user: User?,
         session: Session

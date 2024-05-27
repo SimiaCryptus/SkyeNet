@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
+import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
@@ -38,7 +39,7 @@ abstract class ApplicationServer(
         )
     }
 
-    final override val dataStorage: StorageInterface by lazy { dataStorageFactory(root) }
+    final override val dataStorage: StorageInterface by lazy { dataStorageFactory(dataStorageRoot) }
 
     protected open val appInfoServlet by lazy { ServletHolder("appInfo", AppInfoServlet {
         session -> sessionAppInfoMap[session] ?: appInfo
