@@ -5,7 +5,7 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
-import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64

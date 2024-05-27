@@ -10,8 +10,8 @@ import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
-import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.userSettingsManager
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
 import org.apache.hc.core5.http.HttpRequest

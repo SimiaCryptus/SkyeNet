@@ -7,6 +7,8 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.isLocked
 import com.simiacryptus.skyenet.core.platform.file.*
 import com.simiacryptus.skyenet.core.util.Selenium
 import java.io.File
@@ -16,12 +18,21 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
-object ApplicationServices {
+object ApplicationServicesConfig {
+
     var isLocked: Boolean = false
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
         }
+    var dataStorageRoot: File = File(System.getProperty("user.home"), ".skyenet")
+        set(value) {
+            require(!isLocked) { "ApplicationServices is locked" }
+            field = value
+        }
+}
+
+object ApplicationServices {
     var authorizationManager: AuthorizationInterface = AuthorizationManager()
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
@@ -38,11 +49,6 @@ object ApplicationServices {
             field = value
         }
     var dataStorageFactory: (File) -> StorageInterface = { DataStorage(it) }
-        set(value) {
-            require(!isLocked) { "ApplicationServices is locked" }
-            field = value
-        }
-    var dataStorageRoot: File = File(System.getProperty("user.home"), ".skyenet")
         set(value) {
             require(!isLocked) { "ApplicationServices is locked" }
             field = value
