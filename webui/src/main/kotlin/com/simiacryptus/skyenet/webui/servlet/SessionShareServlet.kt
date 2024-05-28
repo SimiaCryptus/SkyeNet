@@ -5,7 +5,7 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
-import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
@@ -19,7 +19,6 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
-import java.io.File
 import java.net.URI
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.typeOf
@@ -46,10 +45,10 @@ class SessionShareServlet(
 
         require(acceptHost(user, host)) { "Invalid url: $url" }
 
-        val storageInterface = ApplicationServices.dataStorageFactory.invoke(dataStorageRoot)
+        val storageInterface = ApplicationServices.dataStorageFactory(dataStorageRoot)
         val session = StorageInterface.parseSessionID(sessionID)
-        val pool = ApplicationServices.clientManager.getPool(session, user, server.dataStorage)
-        val infoFile = storageInterface.getSessionDir(user, session).resolve("info.json").apply { parentFile.mkdirs() }
+        val pool = ApplicationServices.clientManager.getPool(session, user)
+        val infoFile = storageInterface.getDataDir(user, session).resolve("info.json").apply { parentFile.mkdirs() }
         val json = if(infoFile.exists()) JsonUtil.fromJson<Map<String,Any>>(infoFile.readText(), typeOf<Map<String,Any>>().javaType) else mapOf()
         val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
         val previousShare = sessionSettings["shareId"]

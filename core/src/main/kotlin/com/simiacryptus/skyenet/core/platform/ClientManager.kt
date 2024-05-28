@@ -10,8 +10,8 @@ import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
-import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.userSettingsManager
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
 import org.apache.hc.core5.http.HttpRequest
@@ -31,15 +31,13 @@ open class ClientManager {
     fun getClient(
         session: Session,
         user: User?,
-        dataStorage: StorageInterface?,
     ): OpenAIClient {
         log.debug("Fetching client for session: {}, user: {}", session, user)
         val key = SessionKey(session, user)
-        return if (null == dataStorage) clientCache[key] ?: throw IllegalStateException("No data storage")
-        else clientCache.getOrPut(key) { createClient(session, user, dataStorage)!! }
+        return clientCache.getOrPut(key) { createClient(session, user)!! }
     }
 
-    protected open fun createPool(session: Session, user: User?, dataStorage: StorageInterface?) =
+    protected open fun createPool(session: Session, user: User?) =
         ThreadPoolExecutor(
             0, Integer.MAX_VALUE,
             500, TimeUnit.MILLISECONDS,
@@ -54,12 +52,11 @@ open class ClientManager {
     fun getPool(
         session: Session,
         user: User?,
-        dataStorage: StorageInterface?,
     ): ThreadPoolExecutor {
         log.debug("Fetching thread pool for session: {}, user: {}", session, user)
         val key = SessionKey(session, user)
         return poolCache.getOrPut(key) {
-            createPool(session, user, dataStorage)
+            createPool(session, user)
         }
     }
 
@@ -93,24 +90,20 @@ open class ClientManager {
     protected open fun createClient(
         session: Session,
         user: User?,
-        dataStorage: StorageInterface?,
     ): OpenAIClient? {
         log.debug("Creating client for session: {}, user: {}", session, user)
+        val sessionDir = dataStorageFactory(dataStorageRoot).getDataDir(user, session).apply { mkdirs() }
         if (user != null) {
             val userSettings = userSettingsManager.getUserSettings(user)
-
-            val logfile = dataStorageFactory(dataStorageRoot).getSessionDir(user, session).resolve("openai.log").apply { mkdirs() }.resolve("openai.log")
-            logfile?.parentFile?.mkdirs()
-            log.debug("Logfile: {}", logfile)
             val userApi =
                 if (userSettings.apiKeys.isNotEmpty())
                     MonitoredClient(
                         key = userSettings.apiKeys,
                         apiBase = userSettings.apiBase,
-                        logfile = logfile,
+                        logfile = sessionDir.resolve("openai.log"),
                         session = session,
                         user = user,
-                        workPool = getPool(session, user, dataStorage),
+                        workPool = getPool(session, user),
                     ) else null
             if (userApi != null) return userApi
         }
@@ -118,16 +111,13 @@ open class ClientManager {
             null, user, OperationType.GlobalKey
         )
         if (!canUseGlobalKey) throw RuntimeException("No API key")
-        val logfile = dataStorageRoot?.resolve("${if (session.isGlobal()) "global" else "user-sessions/$user"}/$session/openai.log")
-            ?.apply { parentFile?.mkdirs() }
-        logfile?.parentFile?.mkdirs()
         return (if (ClientUtil.keyMap.isNotEmpty()) {
             MonitoredClient(
                 key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
-                logfile = logfile,
+                logfile = sessionDir?.resolve("openai.log"),
                 session = session,
                 user = user,
-                workPool = getPool(session, user, dataStorage),
+                workPool = getPool(session, user),
             )
         } else {
             null

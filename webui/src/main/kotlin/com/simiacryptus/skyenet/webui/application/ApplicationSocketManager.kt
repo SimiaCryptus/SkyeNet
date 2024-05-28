@@ -27,8 +27,7 @@ abstract class ApplicationSocketManager(
             socketManager = this,
             api = ApplicationServices.clientManager.getClient(
                 session,
-                socket.user,
-                dataStorage ?: throw IllegalStateException("No data storage")
+                socket.user
             )
         )
     }

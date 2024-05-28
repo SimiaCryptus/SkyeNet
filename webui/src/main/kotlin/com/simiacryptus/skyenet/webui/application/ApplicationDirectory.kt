@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.isLocked
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.util.Selenium2S3
@@ -91,7 +92,7 @@ abstract class ApplicationDirectory(
                     ""
                 }
             }
-            ApplicationServices.isLocked = true
+            isLocked = true
             val server = start(
                 port,
                 *(webAppContexts())

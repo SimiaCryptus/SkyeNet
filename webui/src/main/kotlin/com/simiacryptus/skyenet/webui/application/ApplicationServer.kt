@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
@@ -21,7 +22,7 @@ abstract class ApplicationServer(
     final override val applicationName: String,
     val path: String,
     resourceBase: String = "application",
-    open val root: File = ApplicationServices.dataStorageRoot,
+    open val root: File = dataStorageRoot,
     val showMenubar: Boolean = true,
 ) : ChatServer(resourceBase) {
 
@@ -38,7 +39,7 @@ abstract class ApplicationServer(
         )
     }
 
-    final override val dataStorage: StorageInterface by lazy { dataStorageFactory(root) }
+    final override val dataStorage: StorageInterface by lazy { dataStorageFactory(dataStorageRoot) }
 
     protected open val appInfoServlet by lazy { ServletHolder("appInfo", AppInfoServlet {
         session -> sessionAppInfoMap[session] ?: appInfo
@@ -118,7 +119,7 @@ abstract class ApplicationServer(
         userId: User?
     ): File {
         val settingsFile =
-            dataStorage.getSessionDir(userId, session).resolve("settings.json")
+            dataStorage.getDataDir(userId, session).resolve("settings.json")
                 .apply { parentFile.mkdirs() }
         return settingsFile
     }

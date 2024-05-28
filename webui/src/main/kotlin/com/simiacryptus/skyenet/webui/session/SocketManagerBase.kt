@@ -25,7 +25,7 @@ abstract class SocketManagerBase(
     private val sockets: MutableMap<ChatSocket, org.eclipse.jetty.websocket.api.Session> = mutableMapOf()
     private val sendQueues: MutableMap<ChatSocket, Deque<String>> = mutableMapOf()
     private val messageVersions = HashMap<String, AtomicInteger>()
-    val pool get() = clientManager.getPool(session, owner, dataStorage)
+    val pool get() = clientManager.getPool(session, owner)
     val scheduledThreadPoolExecutor get() = clientManager.getScheduledPool(session, owner, dataStorage)!!
     val sendQueue = ConcurrentLinkedDeque<String>()
 

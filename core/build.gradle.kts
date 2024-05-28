@@ -29,10 +29,12 @@ kotlin {
 val junit_version = "5.10.1"
 val logback_version = "1.4.11"
 val jackson_version = "2.17.0"
+val hsqldb_version = "2.7.2"
 
 dependencies {
 
     implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.57")
+    implementation(group = "org.hsqldb", name = "hsqldb", version = hsqldb_version)
 
     implementation("org.apache.commons:commons-text:1.11.0")
 

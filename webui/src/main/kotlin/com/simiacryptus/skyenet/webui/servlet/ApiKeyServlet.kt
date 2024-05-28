@@ -6,6 +6,7 @@ import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.userSettingsManager
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
@@ -299,7 +300,7 @@ class ApiKeyServlet : HttpServlet() {
 
     companion object {
         private val userRoot by lazy {
-            ApplicationServices.dataStorageRoot.resolve("apiKeys").apply { mkdirs() }
+            dataStorageRoot.resolve("apiKeys").apply { mkdirs() }
         }
 
         val apiKeyRecords by lazy {

@@ -195,19 +195,28 @@ ${
     }
 
     override fun call(): T {
-        log.info("Calling Discussable with heading: $heading")
-        task.echo(heading)
-        val idx = tabs.size
-        val newTask = ui.newTask(false)
-        val header = newTask.header("Processing...")
-        tabs[tabs.label(idx)] = newTask.placeholder
-        main(idx, newTask)
-        tabs.selectedTab = idx
-        header?.clear()
-        newTask.complete()
-        semaphore.acquire()
-        log.info("Returning result from Discussable")
-        return atomicRef.get()
+        try {
+            //log.info("Calling Discussable with heading: $heading")
+            task.echo(heading)
+            val idx = tabs.size
+            val newTask = ui.newTask(false)
+            val header = newTask.header("Processing...")
+            tabs[tabs.label(idx)] = newTask.placeholder
+            main(idx, newTask)
+            tabs.selectedTab = idx
+            header?.clear()
+            newTask.complete()
+            semaphore.acquire()
+            log.info("Returning result from Discussable")
+            return atomicRef.get()
+        } catch (e: Exception) {
+            log.warn("""
+                |Error in Discussable
+                |${e.message}
+            """.trimIndent(), e)
+            task.error(ui, e)
+            return null as T
+        }
     }
 
     companion object {

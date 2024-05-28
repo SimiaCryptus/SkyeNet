@@ -15,6 +15,10 @@ open class DataStorage(
     private val dataDir: File
 ) : StorageInterface {
 
+    init {
+        log.info("Data directory: ${dataDir.absolutePath}", RuntimeException())
+    }
+
     override fun getMessages(
         user: User?,
         session: Session
@@ -22,7 +26,7 @@ open class DataStorage(
         validateSessionId(session)
         log.debug("Fetching messages for session: ${session.sessionId}, user: ${user?.email}")
         val messageDir =
-            getSessionDir(user, session).resolve("messages/")
+            getDataDir(user, session).resolve("messages/")
                 .apply { mkdirs() }
         val messages = LinkedHashMap<String, String>()
         getMessageIds(user, session).forEach { messageId ->
@@ -39,12 +43,18 @@ open class DataStorage(
     override fun getSessionDir(
         user: User?,
         session: Session
+    ) = if (sessionPaths.containsKey(session)) {
+        sessionPaths[session]!!
+    } else {
+        getDataDir(user, session).apply { mkdirs() }
+    }
+
+    override fun getDataDir(
+        user: User?,
+        session: Session
     ): File {
-        if (sessionPaths.containsKey(session)) {
-            return sessionPaths[session]!!
-        }
         validateSessionId(session)
-        log.debug("Getting session directory for session: ${session.sessionId}, user: ${user?.email}")
+        log.debug("Getting data directory for session: ${session.sessionId}, user: ${user?.email}")
         val parts = session.sessionId.split("-")
         return when (parts.size) {
             3 -> {
@@ -78,7 +88,7 @@ open class DataStorage(
     ): String {
         validateSessionId(session)
         log.debug("Fetching session name for session: ${session.sessionId}, user: ${user?.email}")
-        val sessionDir = getSessionDir(user, session)
+        val sessionDir = getDataDir(user, session)
         val settings = run {
             val settingsFile = File(sessionDir, "settings.json")
             if (!settingsFile.exists()) null else {
@@ -104,7 +114,7 @@ open class DataStorage(
     ): List<String> {
         validateSessionId(session)
         log.debug("Fetching message IDs for session: ${session.sessionId}, user: ${user?.email}")
-        val sessionDir = getSessionDir(user, session)
+        val sessionDir = getDataDir(user, session)
         val settings = run {
             val settingsFile = sessionDir.resolve("internal.json")
             if (!settingsFile.exists()) null else {
@@ -130,7 +140,7 @@ open class DataStorage(
     ) {
         validateSessionId(session)
         log.debug("Setting message IDs for session: ${session.sessionId}, user: ${user?.email} to $ids")
-        val sessionDir = getSessionDir(user, session)
+        val sessionDir = getDataDir(user, session)
         val settings = run {
             val settingsFile = sessionDir.resolve("internal.json")
             if (!settingsFile.exists()) null else {
@@ -150,7 +160,7 @@ open class DataStorage(
     ): Date? {
         validateSessionId(session)
         log.debug("Fetching session time for session: ${session.sessionId}, user: ${user?.email}")
-        val sessionDir = getSessionDir(user, session)
+        val sessionDir = getDataDir(user, session)
         val settingsFile = sessionDir.resolve("internal.json")
         val settings = run {
             if (!settingsFile.exists()) null else {
@@ -181,7 +191,7 @@ open class DataStorage(
         user: User?,
     ): Map<File, String> {
 
-        return getSessionDir(user, session).resolve("messages")
+        return getDataDir(user, session).resolve("messages")
             .apply { mkdirs() }.listFiles()
             ?.filter { file -> file.isFile }
             ?.map { messageFile ->
@@ -238,7 +248,7 @@ open class DataStorage(
         session: Session,
         filename: String,
         settings: T
-    ) = setJson(getSessionDir(user, session), filename, settings)
+    ) = setJson(getDataDir(user, session), filename, settings)
 
     private fun <T : Any> setJson(sessionDir: File, filename: String, settings: T): T {
         log.debug("Setting JSON for session directory: ${sessionDir.absolutePath}, filename: $filename")
@@ -256,7 +266,7 @@ open class DataStorage(
         validateSessionId(session)
         log.debug("Updating message for session: ${session.sessionId}, messageId: $messageId, user: ${user?.email}")
         val file =
-            getSessionDir(user, session).resolve("messages/$messageId.json")
+            getDataDir(user, session).resolve("messages/$messageId.json")
                 .apply { parentFile.mkdirs() }
         if (!file.exists()) {
             file.parentFile.mkdirs()
@@ -302,7 +312,7 @@ open class DataStorage(
     override fun deleteSession(user: User?, session: Session) {
         validateSessionId(session)
         log.debug("Deleting session: ${session.sessionId}, user: ${user?.email}")
-        val sessionDir = getSessionDir(user, session)
+        val sessionDir = getDataDir(user, session)
         sessionDir.deleteRecursively()
     }
 

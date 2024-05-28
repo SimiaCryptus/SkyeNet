@@ -7,7 +7,6 @@ import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.core.util.FunctionWrapper
 import com.simiacryptus.skyenet.core.util.JsonFunctionRecorder
-import java.io.File
 
 open class ActorSystem<T : Enum<*>>(
     val actors: Map<String, BaseActor<*, *>>,
@@ -15,7 +14,7 @@ open class ActorSystem<T : Enum<*>>(
     val user: User?,
     val session: Session
 ) {
-    protected val pool by lazy { ApplicationServices.clientManager.getPool(session, user, dataStorage) }
+    protected val pool by lazy { ApplicationServices.clientManager.getPool(session, user) }
 
     private val actorMap = mutableMapOf<T, BaseActor<*, *>>()
 
@@ -66,7 +65,7 @@ open class ActorSystem<T : Enum<*>>(
     private fun getWrapper(name: String) = synchronized(wrapperMap) {
         wrapperMap.getOrPut(name) {
             FunctionWrapper(JsonFunctionRecorder(
-                dataStorage.getSessionDir(user, session).resolve("actors/$name").apply { mkdirs() }
+                dataStorage.getDataDir(user, session).resolve("actors/$name").apply { mkdirs() }
             ))
         }
     }
