@@ -15,18 +15,17 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class HSQLUsageManager(private val dbFile: File) : UsageInterface {
 
-    private val connection: Connection
-    private val logger: Logger = LoggerFactory.getLogger(HSQLUsageManager::class.java)
-
-    init {
+    private val connection: Connection by lazy {
         logger.info("Initializing HSQLUsageManager with database file: ${dbFile.absolutePath}")
         Class.forName("org.hsqldb.jdbc.JDBCDriver")
-        connection = DriverManager.getConnection("jdbc:hsqldb:file:${dbFile.absolutePath};shutdown=true", "SA", "")
+        val connection = DriverManager.getConnection("jdbc:hsqldb:file:${dbFile.absolutePath};shutdown=true", "SA", "")
         logger.debug("Database connection established: $connection")
-        createSchema()
+        createSchema(connection)
+        connection
     }
+    private val logger: Logger = LoggerFactory.getLogger(HSQLUsageManager::class.java)
 
-    private fun createSchema() {
+    private fun createSchema(connection: Connection) {
         logger.info("Creating database schema if not exists")
         connection.createStatement().executeUpdate(
             """
