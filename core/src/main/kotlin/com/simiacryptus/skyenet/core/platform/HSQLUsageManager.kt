@@ -147,7 +147,7 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         val summary = mutableMapOf<OpenAIModel, ApiModel.Usage>()
         while (resultSet.next()) {
             val string = resultSet.getString(1)
-            val model = openAIModel(string)
+            val model = openAIModel(string) ?: continue
             val usage = ApiModel.Usage(
                 prompt_tokens = resultSet.getInt(2),
                 completion_tokens = resultSet.getInt(3),
@@ -158,11 +158,11 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         return summary
     }
 
-    private fun openAIModel(string: String): OpenAIModel {
+    private fun openAIModel(string: String): OpenAIModel? {
         logger.debug("Retrieving OpenAI model for string: $string")
         val model = ChatModels.values().filter {
             it.key == string || it.value.modelName == string || it.value.name == string
-        }.toList().firstOrNull()?.second ?: throw RuntimeException("Unknown model $string")
+        }.toList().firstOrNull()?.second ?: return null
         logger.debug("OpenAI model retrieved: $model")
         return model
     }
