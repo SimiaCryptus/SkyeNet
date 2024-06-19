@@ -92,8 +92,6 @@ open class CodingAgent<T : Interpreter>(
                 }
             }, 100, TimeUnit.MILLISECONDS)
             newTask.placeholder
-        }.apply {
-            set(label(size), process(container))
         }
     }
 

@@ -167,8 +167,6 @@ ${
                 history = history,
                 task = newTask
             ).placeholder
-        }.apply {
-            set(label(size), process(container))
         }
     }
 

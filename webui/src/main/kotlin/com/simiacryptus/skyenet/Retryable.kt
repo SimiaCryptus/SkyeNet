@@ -9,6 +9,14 @@ open class Retryable(
     val process: (StringBuilder) -> String
 ) : TabbedDisplay(task) {
 
+    init {
+        init()
+    }
+
+    open fun init() {
+        set(label(size), process(container))
+    }
+
     override fun renderTabButtons(): String = """
     <div class="tabs">${
         tabs.withIndex().joinToString("\n") { (index, _) ->

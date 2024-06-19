@@ -63,7 +63,7 @@ open class ChatSocketManager(
                 onResponse(renderResponse, responseContents)
                 renderResponse
             }
-            Retryable(ui, task, process).apply { set(label(size), process(container)) }
+            Retryable(ui, task, process)
         } catch (e: Exception) {
             log.info("Error in chat", e)
             task.error(ApplicationInterface(this), e)
