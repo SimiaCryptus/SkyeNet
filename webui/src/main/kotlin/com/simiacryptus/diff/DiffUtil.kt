@@ -99,28 +99,39 @@ object DiffUtil {
      * @return A formatted string representing the diff.
      */
     fun formatDiff(patchLines: List<PatchLine>, contextLines: Int = 3): String {
-        val patchList = patchLines.withIndex().filter { (idx, lineDiff) ->
+        val patchList = mutableListOf<PatchLine>()
+        var inChange = false
+        var changeStart = 0
+        var changeEnd = 0
+
+        patchLines.forEachIndexed { idx, lineDiff ->
             when (lineDiff.type) {
-                Added -> true
-                Deleted -> true
+                Added, Deleted -> {
+                    if (!inChange) {
+                        inChange = true
+                        changeStart = maxOf(0, idx - contextLines)
+                        patchList.addAll(patchLines.subList(changeStart, idx))
+                    }
+                    changeEnd = minOf(patchLines.size, idx + contextLines + 1)
+                    patchList.add(lineDiff)
+                }
                 Unchanged -> {
-                    val distBackwards =
-                        patchLines.subList(0, idx).indexOfLast { it.type != Unchanged }
-                            .let { if (it == -1) null else idx - it }
-                    val distForwards = patchLines.subList(idx, patchLines.size).indexOfFirst { it.type != Unchanged }
-                        .let { if (it == -1) null else it }
-                    (null != distBackwards && distBackwards <= contextLines) || (null != distForwards && distForwards <= contextLines)
+                    if (inChange) {
+                        if (idx >= changeEnd) {
+                            inChange = false
+                            patchList.addAll(patchLines.subList(idx - contextLines, idx))
+                        }
+                    }
                 }
             }
-        }.map { it.value }.toTypedArray()
+        }
 
-        return patchList.withIndex().joinToString("\n") { (idx, lineDiff) ->
-            when {
-                idx == 0 -> ""
-                lineDiff.type != Unchanged || patchList[idx - 1].type != Unchanged -> ""
-                patchList[idx - 1].lineNumber + 1 < lineDiff.lineNumber -> "...\n"
-                else -> ""
-            } + when (lineDiff.type) {
+        if (inChange) {
+            patchList.addAll(patchLines.subList(changeEnd - contextLines, minOf(changeEnd, patchLines.size)))
+        }
+
+        return patchList.joinToString("\n") { lineDiff ->
+            when (lineDiff.type) {
                 Added -> "+ ${lineDiff.line}"
                 Deleted -> "- ${lineDiff.line}"
                 Unchanged -> "  ${lineDiff.line}"
