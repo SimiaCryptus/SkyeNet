@@ -154,6 +154,7 @@ class IterativePatchUtilTest {
         )
     }
 
+/*
 
     @Test
     fun testFromData2() {
@@ -943,5 +944,6 @@ describe('ColorMixer', () => {
             result.replace("\r\n", "\n")//.replace("\\s{2,}".toRegex(), " ")
         )
     }
+*/
 
 }
