@@ -22,7 +22,7 @@ abstract class SessionTask(
     private val currentText: String
         get() = buffer.filter { it.isNotBlank() }.joinToString("")
 
-    private fun append(
+    fun append(
         htmlToAppend: String,
         showSpinner: Boolean
     ): StringBuilder? {

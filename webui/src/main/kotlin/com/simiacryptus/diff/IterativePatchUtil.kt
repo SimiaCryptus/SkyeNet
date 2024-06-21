@@ -1,6 +1,7 @@
 package com.simiacryptus.diff
 
 import org.apache.commons.text.similarity.LevenshteinDistance
+import kotlin.math.floor
 
 object IterativePatchUtil {
 
@@ -26,14 +27,14 @@ object IterativePatchUtil {
         }
     }
 
-   /**
-    * Normalizes a line by removing all whitespace.
-    * @param line The line to normalize.
-    * @return The normalized line.
-    */
-   private fun normalizeLine(line: String): String {
-       return line.replace("\\s".toRegex(), "")
-   }
+    /**
+     * Normalizes a line by removing all whitespace.
+     * @param line The line to normalize.
+     * @return The normalized line.
+     */
+    private fun normalizeLine(line: String): String {
+        return line.replace("\\s".toRegex(), "")
+    }
 
     /**
      * Applies a patch to the given source text.
@@ -54,7 +55,7 @@ object IterativePatchUtil {
 
         // Step 3: Establish a distance metric for matches based on Levenshtein distance and distance to established links.
         // Use this to establish the links based on a shortest-first policy and iterate until no more good matches are found.
-//        linkByLevenshteinDistance(sourceLines, patchLines)
+        linkByLevenshteinDistance(sourceLines, patchLines)
 
         // Generate the patched text using the established links
         return generatePatchedTextUsingLinks(sourceLines, patchLines)
@@ -83,10 +84,11 @@ object IterativePatchUtil {
             when {
                 codeLine.matchingLine == null -> {
                     // If the line is not matched and is adjacent to a non-matched line, add it as a context line
-                    if(codeLine.nextLine?.matchingLine == null || codeLine.previousLine?.matchingLine == null) {
+                    if (codeLine.nextLine?.matchingLine == null || codeLine.previousLine?.matchingLine == null) {
                         patchedTextBuilder.appendLine(codeLine.line)
                     }
                 }
+
                 codeLine.matchingLine!!.type == LineType.DELETE -> null // Skip adding the line
                 codeLine.matchingLine!!.type == LineType.CONTEXT -> patchedTextBuilder.appendLine(codeLine.line)
                 codeLine.matchingLine!!.type == LineType.ADD -> throw IllegalStateException("ADD line is matched to source line")
@@ -95,7 +97,7 @@ object IterativePatchUtil {
             // Add lines marked as ADD in the patch following the current matched line
             var nextPatchLine = codeLine.matchingLine?.nextLine
             while (nextPatchLine != null && nextPatchLine.matchingLine == null) {
-                when(nextPatchLine.type) {
+                when (nextPatchLine.type) {
                     LineType.ADD -> patchedTextBuilder.appendLine(nextPatchLine.line)
                     LineType.CONTEXT -> patchedTextBuilder.appendLine(nextPatchLine.line)
                     LineType.DELETE -> null // Skip adding the line
@@ -148,27 +150,27 @@ object IterativePatchUtil {
                     while (patchPrev.type == LineType.ADD && patchPrev.previousLine != null) {
                         patchPrev = patchPrev.previousLine!!
                     }
-                    if (normalizeLine(sourcePrev.line!!) == normalizeLine(patchPrev.line!!) && sourcePrev.matchingLine == null && patchPrev.matchingLine == null) {
-                        if (sourcePrev.line.trim() == patchPrev.line!!.trim() && sourcePrev.matchingLine == null && patchPrev.matchingLine == null) {
+                    if (sourcePrev.matchingLine == null && patchPrev.matchingLine == null) { // Skip if there's already a match
+                        if (normalizeLine(sourcePrev.line!!) == normalizeLine(patchPrev.line!!)) { // Check if the lines match exactly
                             sourcePrev.matchingLine = patchPrev
                             patchPrev.matchingLine = sourcePrev
                             foundMatch = true
                         }
                     }
+                }
 
-                    // Check the next line for a potential match
-                    if (sourceLine.nextLine != null && patchLine.nextLine != null) {
-                        val sourceNext = sourceLine.nextLine!!
-                        var patchNext = patchLine.nextLine!!
-                        while (patchNext.type == LineType.ADD && patchNext.nextLine != null) {
-                            patchNext = patchNext.nextLine!!
-                        }
-                        if (normalizeLine(sourceNext.line!!) == normalizeLine(patchNext.line!!) && sourceNext.matchingLine == null && patchNext.matchingLine == null) {
-                            if (sourceNext.line.trim() == patchNext.line!!.trim() && sourceNext.matchingLine == null && patchNext.matchingLine == null) {
-                                sourceNext.matchingLine = patchNext
-                                patchNext.matchingLine = sourceNext
-                                foundMatch = true
-                            }
+                // Check the next line for a potential match
+                if (sourceLine.nextLine != null && patchLine.nextLine != null) {
+                    val sourceNext = sourceLine.nextLine!!
+                    var patchNext = patchLine.nextLine!!
+                    while (patchNext.type == LineType.ADD && patchNext.nextLine != null) {
+                        patchNext = patchNext.nextLine!!
+                    }
+                    if (sourceNext.matchingLine == null && patchNext.matchingLine == null) {
+                        if (normalizeLine(sourceNext.line!!) == normalizeLine(patchNext.line!!)) {
+                            sourceNext.matchingLine = patchNext
+                            patchNext.matchingLine = sourceNext
+                            foundMatch = true
                         }
                     }
                 }
@@ -183,7 +185,7 @@ object IterativePatchUtil {
      */
     private fun linkByLevenshteinDistance(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
         val levenshteinDistance = LevenshteinDistance()
-        val maxDistance = (sourceLines.size + patchLines.size) / 10 // Increase max distance to allow more flexibility
+        val maxProximity = (sourceLines.size + patchLines.size) / 10 // Increase max distance to allow more flexibility
 
         // Iterate over source lines to find potential matches in the patch lines
         for (sourceLine in sourceLines) {
@@ -200,18 +202,18 @@ object IterativePatchUtil {
                 }
             }) {
                 if (patchLine.matchingLine != null) continue // Skip lines that already have matches
-
+                val maxDistance = minOf(bestDistance, floor(patchLine.line!!.length.toDouble() / 2).toInt())
                 // Calculate the Levenshtein distance between unmatched source and patch lines
-                val distance = levenshteinDistance.apply(normalizeLine(sourceLine.line!!), normalizeLine(patchLine.line!!))
+                val distance =
+                    levenshteinDistance.apply(normalizeLine(sourceLine.line!!), normalizeLine(patchLine.line!!))
                 if (distance <= maxDistance) {
                     // Consider proximity to established links as a secondary factor
                     val proximity = calculateProximityDistance(sourceLine, patchLine)
+                    if(proximity > maxProximity) continue
                     if (distance < bestDistance || (distance == bestDistance && proximity < bestProximity)) {
-                        if (distance < bestDistance) {
-                            bestMatch = patchLine
-                            bestDistance = distance
-                            bestProximity = proximity
-                        }
+                        bestMatch = patchLine
+                        bestDistance = distance
+                        bestProximity = proximity
                     }
                 }
 

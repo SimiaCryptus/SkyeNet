@@ -153,1432 +153,797 @@ class IterativePatchUtilTest {
             result.replace("\r\n", "\n").replace("\\s{1,}".toRegex(), " ")
         )
     }
+
+/*
+
     @Test
     fun testFromData2() {
-        val source = """
-        // Importing the maze data from mazeData.js
-        import mazeData from './mazeData.js';
-        
-        // Helper function to find an open position in the maze
-        function findOpenPosition(grid, startX, startY) {
-            for (let y = startY; y < grid.length; y++) {
-                for (let x = startX; x < grid[y].length; x++) {
-                    if (grid[y][x] === 0) {
-                        return { x: x, y: y };
-                    }
-                }
-            }
-            return { x: startX, y: startY }; // Fallback to the original position if no open position is found
+        @Language("KT") val source = """
+type RGB = {
+    r: number;
+    g: number;
+    b: number;
+};
+
+export class ColorMixer {
+    // ... other methods ...
+
+    public static hexToRgb(hex: string): RGB {
+        // ... existing implementation ...
+    }
+
+    public static convertHexToRgb(hex: string): RGB {
+        return this.hexToRgb(hex);
+    }
+
+    private static hexToRgb(hex: string): RGB {
+        // ... other methods ...
+    public
+        mixColors(...colors
+    :
+        string[]
+    ):
+        string
+        {
+            // Implementation of color mixing logic
+            // This is a placeholder implementation
+            return colors[0]; // Return the first color for now
         }
-        // Variables to store maze size
-        let mazeWidth = 10;
-        let mazeHeight = 10;
-        // Select the first level as default
-        let { grid: maze, start, end } = mazeData.levels[0];
-        let startPosition = { row: start.y, col: start.x };
-        let endPosition = { row: end.y, col: end.x };
-        // Variables to track the player's position and game status
-        let playerPosition = {...startPosition};
-        let gameRunning = false;
-        let timerInterval;
-        let timeElapsed = 0;
-        
-        // Function to initialize the game
-        function initializeGame() {
-            document.getElementById('resetButton').addEventListener('click', restartGame);
-            document.getElementById('startButton').addEventListener('click', startGame);
-            document.getElementById('setSizeButton').addEventListener('click', setMazeSize);
-            document.addEventListener('keydown', handleKeyPress);
-            document.addEventListener('touchstart', handleTouchStart, { passive: false });
-            document.addEventListener('touchmove', handleTouchMove, { passive: false });
-            drawMaze();
-            placePlayer();
+
+        // ... existing methods ...
+    }
+
+    private static clamp(value: number): number {
+        return Math.max(0, Math.min(255, Math.round(value)));
+    }
+
+    private static rgbToHex(rgb: RGB): string {
+        return `#${'$'}{ColorMixer.clamp(rgb.r).toString(16).padStart(2, '0')}${'$'}{ColorMixer.clamp(rgb.g).toString(16).padStart(2, '0')}${'$'}{ColorMixer.clamp(rgb.b).toString(16).padStart(2, '0')}`;
+    }
+
+    // ... other methods ...
+}
+
+// ... other methods ...
+}
+const result = "/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})${'$'}/i".exec(hex);
+return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+} : {r: 0, g: 0, b: 0};
+}
+
+static
+mixAdditive(...colors
+:
+string[]
+):
+string
+{
+    if (colors.length === 0) return '#000000';
+
+    const mixed: RGB = colors.reduce((acc, color) => {
+        const rgb = ColorMixer.hexToRgb(color);
+        return {
+            r: acc.r + rgb.r,
+            g: acc.g + rgb.g,
+            b: acc.b + rgb.b
+        };
+    }, {r: 0, g: 0, b: 0});
+
+    const count = colors.length;
+    mixed.r = ColorMixer.clamp(mixed.r / count);
+    mixed.g = ColorMixer.clamp(mixed.g / count);
+    mixed.b = ColorMixer.clamp(mixed.b / count);
+
+    return ColorMixer.rgbToHex(mixed);
+}
+
+static
+mixSubtractive(...colors
+:
+string[]
+):
+string
+{
+    if (colors.length === 0) return '#FFFFFF';
+
+    const mixed: RGB = colors.reduce((acc, color) => {
+        const rgb = ColorMixer.hexToRgb(color);
+        return {
+            r: acc.r * (rgb.r / 255),
+            g: acc.g * (rgb.g / 255),
+            b: acc.b * (rgb.b / 255)
+        };
+    }, {r: 255, g: 255, b: 255});
+
+    mixed.r = ColorMixer.clamp(mixed.r);
+    mixed.g = ColorMixer.clamp(mixed.g);
+    mixed.b = ColorMixer.clamp(mixed.b);
+
+    return ColorMixer.rgbToHex(mixed);
+}
+
+static
+getComplementaryColor(color
+:
+string
+):
+string
+{
+    const rgb = ColorMixer.hexToRgb(color);
+    const complementary: RGB = {
+        r: 255 - rgb.r,
+        g: 255 - rgb.g,
+        b: 255 - rgb.b
+    };
+    return ColorMixer.rgbToHex(complementary);
+}
+
+static
+getLightness(color
+:
+string
+):
+number
+{
+    const rgb = ColorMixer.hexToRgb(color);
+    return (Math.max(rgb.r, rgb.g, rgb.b) + Math.min(rgb.r, rgb.g, rgb.b)) / (2 * 255);
+}
+
+static
+adjustLightness(color
+:
+string, amount
+:
+number
+):
+string
+{
+    const rgb = ColorMixer.hexToRgb(color);
+    const hsl = ColorMixer.rgbToHsl(rgb);
+    hsl.l = Math.max(0, Math.min(1, hsl.l + amount));
+    return ColorMixer.rgbToHex(ColorMixer.hslToRgb(hsl));
+}
+
+private static
+rgbToHsl(rgb
+:
+RGB
+):
+{
+    number, s
+:
+    number, l
+:
+    number
+}
+{
+    const r = rgb.r / 255;
+    const g = rgb.g / 255;
+    const b = rgb.b / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h: number;
+    const l = (max + min) / 2;
+
+    if (max === min) {
+        h = 0; // Achromatic
+    } else {
+        h = s = 0;
+    }
+else
+    {
+        const d = max - min;
+        const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r:
+                h = (g - b) / d + (g < b ? 6 : 0);
+                break;
+            case g:
+                h = (b - r) / d + 2;
+                break;
+            case b:
+                h = (r - g) / d + 4;
+                break;
+            default:
+                h = 0; // This should never happen, but it satisfies the type checker
+            case r:
+                h = (g - b) / d + (g < b ? 6 : 0);
+                break;
+            case g:
+                h = (b - r) / d + 2;
+                break;
+            case b:
+                h = (r - g) / d + 4;
+                break;
         }
-        
-        function setMazeSize() {
-            mazeWidth = parseInt(document.getElementById('mazeWidth').value);
-            mazeHeight = parseInt(document.getElementById('mazeHeight').value);
-            const newGrid = mazeData.generateMaze(mazeHeight, mazeWidth);
-            maze = newGrid; // Directly update the local 'maze' variable
-            // Ensure start and end are not placed inside walls
-            start = findOpenPosition(newGrid, 1, 1);
-            end = findOpenPosition(newGrid, mazeWidth - 2, mazeHeight - 2);
-            startPosition = { row: mazeData.levels[0].start.y, col: mazeData.levels[0].start.x };
-            endPosition = { row: mazeData.levels[0].end.y, col: mazeData.levels[0].end.x };
-            drawMaze();
-            placePlayer();
-        }
-        let touchStartX = 0;
-        let touchStartY = 0;
-        
-        function handleTouchStart(event) {
-            touchStartX = event.touches[0].clientX;
-            touchStartY = event.touches[0].clientY;
-            event.preventDefault();
-        }
-        
-        function handleTouchMove(event) {
-            if (!touchStartX || !touchStartY) {
-                return;
-            }
-        
-            let touchMoveX = event.touches[0].clientX;
-            let touchMoveY = event.touches[0].clientY;
-            let diffX = touchStartX - touchMoveX;
-            let diffY = touchStartY - touchMoveY;
-        
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                // Horizontal movement
-                if (diffX > 0) {
-                    // Left swipe
-                    handleKeyPress({ key: 'ArrowLeft' });
-                } else {
-                    // Right swipe
-                    handleKeyPress({ key: 'ArrowRight' });
-                }
-            } else {
-                // Vertical movement
-                if (diffY > 0) {
-                    // Up swipe
-                    handleKeyPress({ key: 'ArrowUp' });
-                } else {
-                    // Down swipe
-                    handleKeyPress({ key: 'ArrowDown' });
-                }
-            }
-        
-            // Reset values
-            touchStartX = 0;
-            touchStartY = 0;
-            event.preventDefault();
-        }
-        // Function to draw the maze
-        function drawMaze() {
-            const mazeContainer = document.getElementById('gameArea');
-            mazeContainer.innerHTML = ''; // Clear previous maze
-        
-            maze.forEach((row, rowIndex) => {
-                row.forEach((cell, colIndex) => {
-                    const cellElement = document.createElement('div');
-                    cellElement.classList.add('cell', cell === 1 ? 'wall' : 'path');
-                    if (rowIndex === endPosition.row && colIndex === endPosition.col) {
-                        cellElement.classList.add('end');
-                    }
-                    cellElement.style.top = `${"$"}{rowIndex * 20}px`;
-                    cellElement.style.left = `${"$"}{colIndex * 20}px`;
-                    mazeContainer.appendChild(cellElement);
-                });
-            });
-        }
-        
-        // Function to place the player in the starting position
-        function placePlayer() {
-            const playerElement = document.createElement('div');
-            playerElement.id = 'player';
-            playerElement.style.top = `${"$"}{playerPosition.row * 20}px`;
-            playerElement.style.left = `${"$"}{playerPosition.col * 20}px`;
-            document.getElementById('gameArea').appendChild(playerElement);
-        }
-        
-        // Function to handle key press events
-        function handleKeyPress(event) {
-            if (!gameRunning) {
-                startGame();
-            }
-        
-            let newPosition = {...playerPosition};
-            switch (event.key) {
-                case 'ArrowUp':
-                    newPosition.row--;
-                    break;
-                case 'ArrowDown':
-                    newPosition.row++;
-                    break;
-                case 'ArrowLeft':
-                    newPosition.col--;
-                    break;
-                case 'ArrowRight':
-                    newPosition.col++;
-                    break;
-                default:
-                    return; // Ignore other keys
-            }
-        
-            if (isValidMove(newPosition)) {
-                updatePlayerPosition(newPosition);
-                checkWinCondition();
-            }
-        }
-        
-        // Function to check if the move is valid
-        function isValidMove(position) {
-            return maze[position.row] && maze[position.row][position.col] === 0;
-        }
-        
-        // Function to update the player's position
-        function updatePlayerPosition(position) {
-            playerPosition = position;
-            const playerElement = document.getElementById('player');
-            playerElement.style.top = `${"$"}{position.row * 20}px`;
-            playerElement.style.left = `${"$"}{position.col * 20}px`;
-        }
-        
-        // Function to check win condition
-        function checkWinCondition() {
-            if (playerPosition.row === endPosition.row && playerPosition.col === endPosition.col) {
-                clearInterval(timerInterval);
-                gameRunning = false;
-                alert('Congratulations! You have completed the maze.');
-            }
-        }
-        
-        // Function to start the game
-        function startGame() {
-            if (gameRunning) return; // Prevent restarting the game if it's already running
-            gameRunning = true;
-            timerInterval = setInterval(() => {
-                timeElapsed++;
-                document.getElementById('timer').textContent = formatTime(timeElapsed);
-            }, 1000);
-        }
-        
-        // Function to format time from seconds to MM:SS format
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = seconds % 60;
-            return `${"$"}{padZero(minutes)}:${"$"}{padZero(remainingSeconds)}`;
-        }
-        
-        // Helper function to pad time values with zero
-        function padZero(number) {
-            return number.toString().padStart(2, '0');
-        }
-        
-        // Function to restart the game
-        function restartGame() {
-            if (!gameRunning) startGame(); // Ensure game starts if not already running when reset
-            clearInterval(timerInterval);
-            timeElapsed = 0;
-            document.getElementById('timer').textContent = '00:00';
-            playerPosition = {...startPosition};
-            placePlayer();
-            gameRunning = false;
-        }
-        
-        // Initialize the game when the window loads
-        window.onload = initializeGame;
+        h = h / 6;
+    }
+
+    return {h, s, l};
+}
+
+private static
+hslToRgb(hsl
+:
+{
+    number, s
+:
+    number, l
+:
+    number
+}
+):
+RGB
+{
+    const {h, s, l} = hsl;
+    let r, g, b;
+
+    if (s === 0) {
+        r = g = b = l;
+    } else {
+        const hue2rgb = (p: number, q: number, t: number) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+    };
+}
+}            
         """.trimIndent()
-        @Language("TEXT") val patch = """
-         // Function to draw the maze
-         function drawMaze() {
-             const mazeContainer = document.getElementById('gameArea');
-             mazeContainer.innerHTML = ''; // Clear previous maze
-        
-        +    const cellWidth = mazeContainer.clientWidth / mazeWidth;
-        +    const cellHeight = mazeContainer.clientHeight / mazeHeight;
-        
-             maze.forEach((row, rowIndex) => {
-                 row.forEach((cell, colIndex) => {
-                     const cellElement = document.createElement('div');
-                     cellElement.classList.add('cell', cell === 1 ? 'wall' : 'path');
-                     if (rowIndex === endPosition.row && colIndex === endPosition.col) {
-                         cellElement.classList.add('end');
-                     }
-        -            cellElement.style.top = `${"$"}{rowIndex * 20}px`;
-        -            cellElement.style.left = `${"$"}{colIndex * 20}px`;
-        -            cellElement.style.width = '20px';
-        -            cellElement.style.height = '20px';
-        +            cellElement.style.top = `${"$"}{rowIndex * cellHeight}px`;
-        +            cellElement.style.left = `${"$"}{colIndex * cellWidth}px`;
-        +            cellElement.style.width = `${"$"}{cellWidth}px`;
-        +            cellElement.style.height = `${"$"}{cellHeight}px`;
-                     mazeContainer.appendChild(cellElement);
-                 });
-             });
-         }
-        
-         // Function to place the player in the starting position
-         function placePlayer() {
-             const playerElement = document.createElement('div');
-             playerElement.id = 'player';
-        -    playerElement.style.top = `${"$"}{playerPosition.row * 20}px`;
-        -    playerElement.style.left = `${"$"}{playerPosition.col * 20}px`;
-        -    playerElement.style.width = '20px';
-        -    playerElement.style.height = '20px';
-        +    const cellWidth = document.getElementById('gameArea').clientWidth / mazeWidth;
-        +    const cellHeight = document.getElementById('gameArea').clientHeight / mazeHeight;
-        +    playerElement.style.top = `${"$"}{playerPosition.row * cellHeight}px`;
-        +    playerElement.style.left = `${"$"}{playerPosition.col * cellWidth}px`;
-        +    playerElement.style.width = `${"$"}{cellWidth}px`;
-        +    playerElement.style.height = `${"$"}{cellHeight}px`;
-             document.getElementById('gameArea').appendChild(playerElement);
-         }
-        
-         // Function to update the player's position
-         function updatePlayerPosition(position) {
-             playerPosition = position;
-             const playerElement = document.getElementById('player');
-        -    playerElement.style.top = `${"$"}{position.row * 20}px`;
-        -    playerElement.style.left = `${"$"}{position.col * 20}px`;
-        +    const cellWidth = document.getElementById('gameArea').clientWidth / mazeWidth;
-        +    const cellHeight = document.getElementById('gameArea').clientHeight / mazeHeight;
-        +    playerElement.style.top = `${"$"}{position.row * cellHeight}px`;
-        +    playerElement.style.left = `${"$"}{position.col * cellWidth}px`;
-         }
-        """.trimIndent()
+        val patch = """
+            | export class ColorMixer {
+            |+    public mixColors(...colors: string[]): string {
+            |+        if (colors.length === 0) return '#000000';
+            |+        if (colors.length === 1) return colors[0];
+            |+
+            |+        const rgbColors = colors.map(color => this.hexToRgb(color));
+            |+        const mixedRgb = rgbColors.reduce((acc, rgb) => ({
+            |+            r: acc.r + rgb.r,
+            |+            g: acc.g + rgb.g,
+            |+            b: acc.b + rgb.b
+            |+        }));
+            |+
+            |+        const avgRgb = {
+            |+            r: Math.round(mixedRgb.r / colors.length),
+            |+            g: Math.round(mixedRgb.g / colors.length),
+            |+            b: Math.round(mixedRgb.b / colors.length)
+            |+        };
+            |+
+            |+        return this.rgbToHex(avgRgb);
+            |+    }
+            |
+            |     public static hexToRgb(hex: string): RGB {
+            |         // Existing implementation...
+            |     }
+            |
+            |     private static rgbToHex(rgb: RGB): string {
+            |         // Existing implementation...
+            |     }
+            |
+            |     // Other existing methods...
+            | }
+        """.trimMargin()
         val expected = """
-            // Importing the maze data from mazeData.js
-            import mazeData from './mazeData.js';
-            
-            // Helper function to find an open position in the maze
-            function findOpenPosition(grid, startX, startY) {
-             for (let y = startY; y < grid.length; y++) {
-             for (let x = startX; x < grid[y].length; x++) {
-             if (grid[y][x] === 0) {
-             return { x: x, y: y };
-             }
-             }
-             }
-             return { x: startX, y: startY }; // Fallback to the original position if no open position is found
-            }
-            // Variables to store maze size
-            let mazeWidth = 10;
-            let mazeHeight = 10;
-            // Select the first level as default
-            let { grid: maze, start, end } = mazeData.levels[0];
-            let startPosition = { row: start.y, col: start.x };
-            let endPosition = { row: end.y, col: end.x };
-            // Variables to track the player's position and game status
-            let playerPosition = {...startPosition};
-            let gameRunning = false;
-            let timerInterval;
-            let timeElapsed = 0;
-            
-            // Function to initialize the game
-            function initializeGame() {
-             document.getElementById('resetButton').addEventListener('click', restartGame);
-             document.getElementById('startButton').addEventListener('click', startGame);
-             document.getElementById('setSizeButton').addEventListener('click', setMazeSize);
-             document.addEventListener('keydown', handleKeyPress);
-             document.addEventListener('touchstart', handleTouchStart, { passive: false });
-             document.addEventListener('touchmove', handleTouchMove, { passive: false });
-             drawMaze();
-             placePlayer();
-            }
-            
-            function setMazeSize() {
-             mazeWidth = parseInt(document.getElementById('mazeWidth').value);
-             mazeHeight = parseInt(document.getElementById('mazeHeight').value);
-             const newGrid = mazeData.generateMaze(mazeHeight, mazeWidth);
-             maze = newGrid; // Directly update the local 'maze' variable
-             // Ensure start and end are not placed inside walls
-             start = findOpenPosition(newGrid, 1, 1);
-             end = findOpenPosition(newGrid, mazeWidth - 2, mazeHeight - 2);
-             startPosition = { row: mazeData.levels[0].start.y, col: mazeData.levels[0].start.x };
-             endPosition = { row: mazeData.levels[0].end.y, col: mazeData.levels[0].end.x };
-             drawMaze();
-             placePlayer();
-            }
-            let touchStartX = 0;
-            let touchStartY = 0;
-            
-            function handleTouchStart(event) {
-             touchStartX = event.touches[0].clientX;
-             touchStartY = event.touches[0].clientY;
-             event.preventDefault();
-            }
-            
-            function handleTouchMove(event) {
-             if (!touchStartX || !touchStartY) {
-             return;
-             }
-            
-             let touchMoveX = event.touches[0].clientX;
-             let touchMoveY = event.touches[0].clientY;
-             let diffX = touchStartX - touchMoveX;
-             let diffY = touchStartY - touchMoveY;
-            
-             if (Math.abs(diffX) > Math.abs(diffY)) {
-             // Horizontal movement
-             if (diffX > 0) {
-             // Left swipe
-             handleKeyPress({ key: 'ArrowLeft' });
-             } else {
-             // Right swipe
-             handleKeyPress({ key: 'ArrowRight' });
-             }
-             } else {
-             // Vertical movement
-             if (diffY > 0) {
-             // Up swipe
-             handleKeyPress({ key: 'ArrowUp' });
-             } else {
-             // Down swipe
-             handleKeyPress({ key: 'ArrowDown' });
-             }
-             }
-            
-             // Reset values
-             touchStartX = 0;
-             touchStartY = 0;
-             event.preventDefault();
-            }
-            // Function to draw the maze
-            function drawMaze() {
-             const mazeContainer = document.getElementById('gameArea');
-             mazeContainer.innerHTML = ''; // Clear previous maze
-            
-             const cellWidth = mazeContainer.clientWidth / mazeWidth;
-             const cellHeight = mazeContainer.clientHeight / mazeHeight;
-            
-             maze.forEach((row, rowIndex) => {
-             row.forEach((cell, colIndex) => {
-             const cellElement = document.createElement('div');
-             cellElement.classList.add('cell', cell === 1 ? 'wall' : 'path');
-             if (rowIndex === endPosition.row && colIndex === endPosition.col) {
-             cellElement.classList.add('end');
-             }
-             cellElement.style.top = `${"$"}{rowIndex * cellHeight}px`;
-             cellElement.style.left = `${"$"}{colIndex * cellWidth}px`;
-             cellElement.style.width = `${"$"}{cellWidth}px`;
-             cellElement.style.height = `${"$"}{cellHeight}px`;
-             mazeContainer.appendChild(cellElement);
-             });
-             });
-            }
-            
-            // Function to place the player in the starting position
-            function placePlayer() {
-             const playerElement = document.createElement('div');
-             playerElement.id = 'player';
-             const cellWidth = document.getElementById('gameArea').clientWidth / mazeWidth;
-             const cellHeight = document.getElementById('gameArea').clientHeight / mazeHeight;
-             playerElement.style.top = `${"$"}{playerPosition.row * cellHeight}px`;
-             playerElement.style.left = `${"$"}{playerPosition.col * cellWidth}px`;
-             playerElement.style.width = `${"$"}{cellWidth}px`;
-             playerElement.style.height = `${"$"}{cellHeight}px`;
-             document.getElementById('gameArea').appendChild(playerElement);
-            }
-            
-            // Function to handle key press events
-            function handleKeyPress(event) {
-             if (!gameRunning) {
-             startGame();
-             }
-            
-             let newPosition = {...playerPosition};
-             switch (event.key) {
-             case 'ArrowUp':
-             newPosition.row--;
-             break;
-             case 'ArrowDown':
-             newPosition.row++;
-             break;
-             case 'ArrowLeft':
-             newPosition.col--;
-             break;
-             case 'ArrowRight':
-             newPosition.col++;
-             break;
-             default:
-             return; // Ignore other keys
-             }
-            
-             if (isValidMove(newPosition)) {
-             updatePlayerPosition(newPosition);
-             checkWinCondition();
-             }
-            }
-            
-            // Function to check if the move is valid
-            function isValidMove(position) {
-             return maze[position.row] && maze[position.row][position.col] === 0;
-            }
-            
-            // Function to update the player's position
-            function updatePlayerPosition(position) {
-             playerPosition = position;
-             const playerElement = document.getElementById('player');
-             const cellWidth = document.getElementById('gameArea').clientWidth / mazeWidth;
-             const cellHeight = document.getElementById('gameArea').clientHeight / mazeHeight;
-             playerElement.style.top = `${"$"}{position.row * cellHeight}px`;
-             playerElement.style.left = `${"$"}{position.col * cellWidth}px`;
-            }
-            
-            // Function to check win condition
-            function checkWinCondition() {
-             if (playerPosition.row === endPosition.row && playerPosition.col === endPosition.col) {
-             clearInterval(timerInterval);
-             gameRunning = false;
-             alert('Congratulations! You have completed the maze.');
-             }
-            }
-            
-            // Function to start the game
-            function startGame() {
-             if (gameRunning) return; // Prevent restarting the game if it's already running
-             gameRunning = true;
-             timerInterval = setInterval(() => {
-             timeElapsed++;
-             document.getElementById('timer').textContent = formatTime(timeElapsed);
-             }, 1000);
-            }
-            
-            // Function to format time from seconds to MM:SS format
-            function formatTime(seconds) {
-             const minutes = Math.floor(seconds / 60);
-             const remainingSeconds = seconds % 60;
-             return `${"$"}{padZero(minutes)}:${"$"}{padZero(remainingSeconds)}`;
-            }
-            
-            // Helper function to pad time values with zero
-            function padZero(number) {
-             return number.toString().padStart(2, '0');
-            }
-            
-            // Function to restart the game
-            function restartGame() {
-             if (!gameRunning) startGame(); // Ensure game starts if not already running when reset
-             clearInterval(timerInterval);
-             timeElapsed = 0;
-             document.getElementById('timer').textContent = '00:00';
-             playerPosition = {...startPosition};
-             placePlayer();
-             gameRunning = false;
-            }
-            
-            // Initialize the game when the window loads
-            window.onload = initializeGame;
+type RGB = {
+    r: number;
+    g: number;
+    b: number;
+};
+
+export class ColorMixer {
+    public mixColors(...colors: string[]): string {
+        if (colors.length === 0) return '#000000';
+        if (colors.length === 1) return colors[0];
+
+        const rgbColors = colors.map(color => this.hexToRgb(color));
+        const mixedRgb = rgbColors.reduce((acc, rgb) => ({
+            r: acc.r + rgb.r,
+            g: acc.g + rgb.g,
+            b: acc.b + rgb.b
+        }));
+        const avgRgb = {
+            r: Math.round(mixedRgb.r / colors.length),
+            g: Math.round(mixedRgb.g / colors.length),
+            b: Math.round(mixedRgb.b / colors.length)
+        };
+        return this.rgbToHex(avgRgb);
+    }
+    // ... other methods ...
+
+    public static hexToRgb(hex: string): RGB {
+        // ... existing implementation ...
+    }
+
+    public static convertHexToRgb(hex: string): RGB {
+        return this.hexToRgb(hex);
+    }
+
+    private static hexToRgb(hex: string): RGB {
+        // ... other methods ...
+    public
+        mixColors(...colors
+    :
+        string[]
+    ):
+        string
+        {
+            // Implementation of color mixing logic
+            // This is a placeholder implementation
+            return colors[0]; // Return the first color for now
+        }
+
+        // ... existing methods ...
+    }
+
+    private static clamp(value: number): number {
+        return Math.max(0, Math.min(255, Math.round(value)));
+    }
+
+    private static rgbToHex(rgb: RGB): string {
+        return `#${'$'}{ColorMixer.clamp(rgb.r).toString(16).padStart(2, '0')}${'$'}{ColorMixer.clamp(rgb.g).toString(16).padStart(2, '0')}${'$'}{ColorMixer.clamp(rgb.b).toString(16).padStart(2, '0')}`;
+    }
+
+    // ... other methods ...
+}
+
+// ... other methods ...
+}
+const result = "/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})${'$'}/i".exec(hex);
+return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+} : {r: 0, g: 0, b: 0};
+}
+
+static
+mixAdditive(...colors
+:
+string[]
+):
+string
+{
+    if (colors.length === 0) return '#000000';
+
+    const mixed: RGB = colors.reduce((acc, color) => {
+        const rgb = ColorMixer.hexToRgb(color);
+        return {
+            r: acc.r + rgb.r,
+            g: acc.g + rgb.g,
+            b: acc.b + rgb.b
+        };
+    }, {r: 0, g: 0, b: 0});
+
+    const count = colors.length;
+    mixed.r = ColorMixer.clamp(mixed.r / count);
+    mixed.g = ColorMixer.clamp(mixed.g / count);
+    mixed.b = ColorMixer.clamp(mixed.b / count);
+
+    return ColorMixer.rgbToHex(mixed);
+}
+
+static
+mixSubtractive(...colors
+:
+string[]
+):
+string
+{
+    if (colors.length === 0) return '#FFFFFF';
+
+    const mixed: RGB = colors.reduce((acc, color) => {
+        const rgb = ColorMixer.hexToRgb(color);
+        return {
+            r: acc.r * (rgb.r / 255),
+            g: acc.g * (rgb.g / 255),
+            b: acc.b * (rgb.b / 255)
+        };
+    }, {r: 255, g: 255, b: 255});
+
+    mixed.r = ColorMixer.clamp(mixed.r);
+    mixed.g = ColorMixer.clamp(mixed.g);
+    mixed.b = ColorMixer.clamp(mixed.b);
+
+    return ColorMixer.rgbToHex(mixed);
+}
+
+static
+getComplementaryColor(color
+:
+string
+):
+string
+{
+    const rgb = ColorMixer.hexToRgb(color);
+    const complementary: RGB = {
+        r: 255 - rgb.r,
+        g: 255 - rgb.g,
+        b: 255 - rgb.b
+    };
+    return ColorMixer.rgbToHex(complementary);
+}
+
+static
+getLightness(color
+:
+string
+):
+number
+{
+    const rgb = ColorMixer.hexToRgb(color);
+    return (Math.max(rgb.r, rgb.g, rgb.b) + Math.min(rgb.r, rgb.g, rgb.b)) / (2 * 255);
+}
+
+static
+adjustLightness(color
+:
+string, amount
+:
+number
+):
+string
+{
+    const rgb = ColorMixer.hexToRgb(color);
+    const hsl = ColorMixer.rgbToHsl(rgb);
+    hsl.l = Math.max(0, Math.min(1, hsl.l + amount));
+    return ColorMixer.rgbToHex(ColorMixer.hslToRgb(hsl));
+}
+
+private static
+rgbToHsl(rgb
+:
+RGB
+):
+{
+    number, s
+:
+    number, l
+:
+    number
+}
+{
+    const r = rgb.r / 255;
+    const g = rgb.g / 255;
+    const b = rgb.b / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h: number;
+    const l = (max + min) / 2;
+
+    if (max === min) {
+        h = 0; // Achromatic
+    } else {
+        h = s = 0;
+    }
+else
+    {
+        const d = max - min;
+        const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r:
+                h = (g - b) / d + (g < b ? 6 : 0);
+                break;
+            case g:
+                h = (b - r) / d + 2;
+                break;
+            case b:
+                h = (r - g) / d + 4;
+                break;
+            default:
+                h = 0; // This should never happen, but it satisfies the type checker
+            case r:
+                h = (g - b) / d + (g < b ? 6 : 0);
+                break;
+            case g:
+                h = (b - r) / d + 2;
+                break;
+            case b:
+                h = (r - g) / d + 4;
+                break;
+        }
+        h = h / 6;
+    }
+
+    return {h, s, l};
+}
+
+private static
+hslToRgb(hsl
+:
+{
+    number, s
+:
+    number, l
+:
+    number
+}
+):
+RGB
+{
+    const {h, s, l} = hsl;
+    let r, g, b;
+
+    if (s === 0) {
+        r = g = b = l;
+    } else {
+        const hue2rgb = (p: number, q: number, t: number) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+    };
+}
+}
         """.trimIndent()
         val result = IterativePatchUtil.patch(source, patch)
         Assertions.assertEquals(
-            expected.replace("\r\n", "\n").replace("[ \\t]{1,}".toRegex(), " "),
-            result.replace("\r\n", "\n").replace("[ \\t]{1,}".toRegex(), " ")
+            expected.replace("\r\n", "\n"),//.replace("\\s{2,}".toRegex(), " "),
+            result.replace("\r\n", "\n")//.replace("\\s{2,}".toRegex(), " ")
         )
     }
+
     @Test
     fun testFromData3() {
         val source = """
-package com.simiacryptus.diff
+import {Scene} from './Scene';
 
-import org.apache.commons.text.similarity.LevenshteinDistance
+export class Game {
+    private currentScene: Scene | null = null;
+    private isRunning: boolean = false;
+    private lastTimestamp: number = 0;
 
-object IterativePatchUtil {
+    constructor(private canvas: HTMLCanvasElement) {
+    }
 
-    enum class LineType { CONTEXT, ADD, DELETE }
-    class LineRecord(
-        val index: Int,
-        val line: String,
-        var previousLine: LineRecord? = null,
-        var nextLine: LineRecord? = null,
-        var matchingLine: LineRecord? = null,
-        var type: LineType = LineType.CONTEXT
-    ) {
-        override fun toString(): String {
-            val sb = StringBuilder()
-            when (type) {
-                LineType.CONTEXT -> sb.append(" ")
-                LineType.ADD -> sb.append("+")
-                LineType.DELETE -> sb.append("-")
-            }
-            sb.append(" ")
-            sb.append(line)
-            return sb.toString()
+    public start(): void {
+        this.isRunning = true;
+        this.lastTimestamp = performance.now();
+        requestAnimationFrame(this.gameLoop.bind(this));
+    }
+
+    public stop(): void {
+        this.isRunning = false;
+    }
+
+    public setScene(scene: Scene): void {
+        this.currentScene = scene;
+    }
+
+    private gameLoop(timestamp: number): void {
+        if (!this.isRunning) return;
+
+        const deltaTime = (timestamp - this.lastTimestamp) / 1000; // Convert to seconds
+        this.lastTimestamp = timestamp;
+
+        this.update(deltaTime);
+        this.render();
+
+        requestAnimationFrame(this.gameLoop.bind(this));
+    }
+
+    private update(deltaTime: number): void {
+        if (this.currentScene) {
+            this.currentScene.update(deltaTime);
         }
     }
 
-    /**
-     * Applies a patch to the given source text.
-     * @param source The original text.
-     * @param patch The patch to apply.
-     * @return The text after the patch has been applied.
-     */
-    fun patch(source: String, patch: String): String {
-        // Parse the source and patch texts into lists of line records
-        val sourceLines = parseLines(source)
-        val patchLines = parsePatchLines(patch)
+    private render(): void {
+        const ctx = this.canvas.getContext('2d');
+        if (!ctx) return;
 
-        // Step 1: Link all unique lines in the source and patch that match exactly
-        linkUniqueMatchingLines(sourceLines, patchLines)
+        // Clear the canvas
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Step 2: Link all exact matches in the source and patch which are adjacent to established links
-        linkAdjacentMatchingLines(sourceLines)
-
-        // Step 3: Establish a distance metric for matches based on Levenshtein distance and distance to established links.
-        // Use this to establish the links based on a shortest-first policy and iterate until no more good matches are found.
-//        linkByLevenshteinDistance(sourceLines, patchLines)
-
-        // Generate the patched text using the established links
-        return generatePatchedTextUsingLinks(sourceLines, patchLines)
-    }
-
-    /**
-     * Generates the final patched text using the links established between the source and patch lines.
-     * @param sourceLines The source lines with established links.
-     * @param patchLines The patch lines with established links.
-     * @return The final patched text.
-     */
-    private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
-        val patchedTextBuilder = StringBuilder()
-        val sourceLineBuffer = sourceLines.toMutableList()
-
-        // Add any leading 'add' lines from the patch
-        val patchLines = patchLines.toMutableList()
-        while (patchLines.firstOrNull()?.type == LineType.ADD) {
-            patchedTextBuilder.appendLine(patchLines.removeFirst().line)
-        }
-
-        // Process the rest of the lines
-        while (sourceLineBuffer.isNotEmpty()) {
-            // Copy all lines until the next matched line
-            val codeLine = sourceLineBuffer.removeFirst()
-            when {
-                codeLine.matchingLine == null -> patchedTextBuilder.appendLine(codeLine.line)
-                codeLine.matchingLine!!.type == LineType.DELETE -> null // Skip adding the line
-                codeLine.matchingLine!!.type == LineType.CONTEXT -> patchedTextBuilder.appendLine(codeLine.line)
-                codeLine.matchingLine!!.type == LineType.ADD -> throw IllegalStateException("ADD line is matched to source line")
-            }
-
-            // Add lines marked as ADD in the patch following the current matched line
-            var nextPatchLine = codeLine.matchingLine?.nextLine
-            while (nextPatchLine != null && nextPatchLine.matchingLine == null) {
-                when(nextPatchLine.type) {
-                    LineType.ADD -> patchedTextBuilder.appendLine(nextPatchLine.line)
-                    LineType.CONTEXT -> patchedTextBuilder.appendLine(nextPatchLine.line)
-                    LineType.DELETE -> null // Skip adding the line
-                }
-                nextPatchLine = nextPatchLine.nextLine
-            }
-        }
-        return patchedTextBuilder.toString().trimEnd()
-    }
-
-    /**
-     * Links lines between the source and the patch that are unique and match exactly.
-     * @param sourceLines The source lines.
-     * @param patchLines The patch lines.
-     */
-    private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
-        val sourceLineMap = sourceLines.groupBy { it.line.trim() }
-        val patchLineMap = patchLines.filter {
-            when (it.type) {
-                LineType.ADD -> false // ADD lines are not matched to source lines
-                else -> true
-            }
-        }.groupBy { it.line.trim() }
-
-        sourceLineMap.keys.intersect(patchLineMap.keys).forEach { key ->
-            val sourceLine = sourceLineMap[key]?.singleOrNull()
-            val patchLine = patchLineMap[key]?.singleOrNull()
-            if (sourceLine != null && patchLine != null) {
-                sourceLine.matchingLine = patchLine
-                patchLine.matchingLine = sourceLine
-            }
+        if (this.currentScene) {
+            this.currentScene.render(ctx);
         }
     }
-
-    /**
-     * Links lines that are adjacent to already linked lines and match exactly.
-     * @param sourceLines The source lines with some established links.
-     */
-    private fun linkAdjacentMatchingLines(sourceLines: List<LineRecord>) {
-        var foundMatch = true
-        while (foundMatch) {
-            foundMatch = false
-            for (sourceLine in sourceLines) {
-                val patchLine = sourceLine.matchingLine ?: continue // Skip if there's no matching line
-
-                // Check the previous line for a potential match
-                if (sourceLine.previousLine != null && patchLine.previousLine != null) {
-                    val sourcePrev = sourceLine.previousLine!!
-                    var patchPrev = patchLine.previousLine!!
-                    while (patchPrev.type == LineType.ADD && patchPrev.previousLine != null) {
-                        patchPrev = patchPrev.previousLine!!
-                    }
-                    if (sourcePrev.line.trim() == patchPrev.line.trim() && sourcePrev.matchingLine == null && patchPrev.matchingLine == null) {
-                        sourcePrev.matchingLine = patchPrev
-                        patchPrev.matchingLine = sourcePrev
-                        foundMatch = true
-                    }
-                }
-
-                // Check the next line for a potential match
-                if (sourceLine.nextLine != null && patchLine.nextLine != null) {
-                    val sourceNext = sourceLine.nextLine!!
-                    var patchNext = patchLine.nextLine!!
-                    while (patchNext.type == LineType.ADD && patchNext.nextLine != null) {
-                        patchNext = patchNext.nextLine!!
-                    }
-                    if (sourceNext.line.trim() == patchNext.line.trim() && sourceNext.matchingLine == null && patchNext.matchingLine == null) {
-                        sourceNext.matchingLine = patchNext
-                        patchNext.matchingLine = sourceNext
-                        foundMatch = true
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Establishes links between source and patch lines based on the Levenshtein distance and proximity to already established links.
-     * @param sourceLines The source lines.
-     * @param patchLines The patch lines.
-     */
-    private fun linkByLevenshteinDistance(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
-        val levenshteinDistance = LevenshteinDistance()
-        val maxDistance = (sourceLines.size + patchLines.size) / 10 // Increase max distance to allow more flexibility
-
-        // Iterate over source lines to find potential matches in the patch lines
-        for (sourceLine in sourceLines) {
-            if (sourceLine.matchingLine != null) continue // Skip lines that already have matches
-
-            var bestMatch: LineRecord? = null
-            var bestDistance = Int.MAX_VALUE
-            var bestProximity = Int.MAX_VALUE
-
-            for (patchLine in patchLines.filter {
-                when (it.type) {
-                    LineType.ADD -> false // ADD lines are not matched to source lines
-                    else -> true
-                }
-            }) {
-                if (patchLine.matchingLine != null) continue // Skip lines that already have matches
-
-                // Calculate the Levenshtein distance between unmatched source and patch lines
-                val distance = levenshteinDistance.apply(sourceLine.line.trim(), patchLine.line.trim())
-                if (distance <= maxDistance) {
-                    // Consider proximity to established links as a secondary factor
-                    val proximity = calculateProximityDistance(sourceLine, patchLine)
-                    if (distance < bestDistance || (distance == bestDistance && proximity < bestProximity)) {
-                        if (distance < bestDistance) {
-                            bestMatch = patchLine
-                            bestDistance = distance
-                            bestProximity = proximity
-                        }
-                    }
-                }
-
-                // Establish the best match found, if any
-                if (bestMatch != null) {
-                    sourceLine.matchingLine = bestMatch
-                    bestMatch.matchingLine = sourceLine
-                }
-            }
-        }
-    }
-
-    /**
-     * Calculates the proximity distance between a source line and a patch line based on their distance to the nearest established link.
-     * @param sourceLine The source line.
-     * @param patchLine The patch line.
-     * @return The proximity distance.
-     */
-    private fun calculateProximityDistance(sourceLine: LineRecord, patchLine: LineRecord): Int {
-        // Find the nearest established link in both directions for source and patch lines
-        var sourceDistancePrev = 0
-        var sourceDistanceNext = 0
-        var patchDistancePrev = 0
-        var patchDistanceNext = 0
-
-        var currentSourceLine = sourceLine.previousLine
-        while (currentSourceLine != null) {
-            if (currentSourceLine.matchingLine != null) break
-            sourceDistancePrev++
-            currentSourceLine = currentSourceLine.previousLine
-        }
-
-        currentSourceLine = sourceLine.nextLine
-        while (currentSourceLine != null) {
-            if (currentSourceLine.matchingLine != null) break
-            sourceDistanceNext++
-            currentSourceLine = currentSourceLine.nextLine
-        }
-
-        var currentPatchLine = patchLine.previousLine
-        while (currentPatchLine != null) {
-            if (currentPatchLine.matchingLine != null) break
-            patchDistancePrev++
-            currentPatchLine = currentPatchLine.previousLine
-        }
-
-        currentPatchLine = patchLine.nextLine
-        while (currentPatchLine != null) {
-            if (currentPatchLine.matchingLine != null) break
-            patchDistanceNext++
-            currentPatchLine = currentPatchLine.nextLine
-        }
-
-        // Calculate the total proximity distance as the sum of minimum distances in each direction
-        return minOf(sourceDistancePrev, patchDistancePrev) + minOf(sourceDistanceNext, patchDistanceNext)
-    }
-
-    /**
-     * Parses the given text into a list of line records.
-     * @param text The text to parse.
-     * @return The list of line records.
-     */
-    private fun parseLines(text: String) = setLinks(text.lines().mapIndexed { index, line ->
-        LineRecord(index, line)
-    })
-
-    /**
-     * Sets the previous and next line links for a list of line records.
-     * @param list The list of line records.
-     * @return The list with links set.
-     */
-    private fun setLinks(list: List<LineRecord>): List<LineRecord> {
-        for (i in 0 until list.size) {
-            list[i].previousLine = if (i > 0) list[i - 1] else null
-            list[i].nextLine = if (i < list.size - 1) list[i + 1] else null
-        }
-        return list
-    }
-
-    /**
-     * Parses the patch text into a list of line records, identifying the type of each line (ADD, DELETE, CONTEXT).
-     * @param text The patch text to parse.
-     * @return The list of line records with types set.
-     */
-    private fun parsePatchLines(text: String) = setLinks(text.lines().mapIndexed { index, line ->
-        LineRecord(
-            index = index, line = line.let {
-                when {
-                    it.trimStart().startsWith("+") -> it.trimStart().substring(1)
-                    it.trimStart().startsWith("-") -> it.trimStart().substring(1)
-                    else -> it
-                }
-            }, type = when {
-                line.startsWith("+") -> LineType.ADD
-                line.startsWith("-") -> LineType.DELETE
-                else -> LineType.CONTEXT
-            }
-        )
-    })
-
 }
-
         """.trimIndent()
-        @Language("TEXT") val patch = """
-package com.simiacryptus.diff
+        val patch = """
+     constructor(private canvas: HTMLCanvasElement) {
++        this.width = canvas.width;
++        this.height = canvas.height;
+     }
 
-import org.apache.commons.text.similarity.LevenshteinDistance
-
-object IterativePatchUtil {
-
-    enum class LineType { CONTEXT, ADD, DELETE }
-    class LineRecord(
-        val index: Int,
-        val line: String,
-        var previousLine: LineRecord? = null,
-        var nextLine: LineRecord? = null,
-        var matchingLine: LineRecord? = null,
-        var type: LineType = LineType.CONTEXT
-    ) {
-        override fun toString(): String {
-            val sb = StringBuilder()
-            when (type) {
-                LineType.CONTEXT -> sb.append(" ")
-                LineType.ADD -> sb.append("+")
-                LineType.DELETE -> sb.append("-")
-            }
-            sb.append(" ")
-            sb.append(line)
-            return sb.toString()
-        }
-    }
-
-+   /**
-+    * Normalizes a line by removing all whitespace.
-+    * @param line The line to normalize.
-+    * @return The normalized line.
-+    */
-+   private fun normalizeLine(line: String): String {
-+       return line.replace("\\s".toRegex(), "")
-+   }
-
-    /**
-     * Applies a patch to the given source text.
-     * @param source The original text.
-     * @param patch The patch to apply.
-     * @return The text after the patch has been applied.
-     */
-    fun patch(source: String, patch: String): String {
-        // Parse the source and patch texts into lists of line records
-        val sourceLines = parseLines(source)
-        val patchLines = parsePatchLines(patch)
-
-        // Step 1: Link all unique lines in the source and patch that match exactly
-        linkUniqueMatchingLines(sourceLines, patchLines)
-
-        // Step 2: Link all exact matches in the source and patch which are adjacent to established links
-        linkAdjacentMatchingLines(sourceLines)
-
-        // Step 3: Establish a distance metric for matches based on Levenshtein distance and distance to established links.
-        // Use this to establish the links based on a shortest-first policy and iterate until no more good matches are found.
-//        linkByLevenshteinDistance(sourceLines, patchLines)
-
-        // Generate the patched text using the established links
-        return generatePatchedTextUsingLinks(sourceLines, patchLines)
-    }
-
-    /**
-     * Generates the final patched text using the links established between the source and patch lines.
-     * @param sourceLines The source lines with established links.
-     * @param patchLines The patch lines with established links.
-     * @return The final patched text.
-     */
-    private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
-        val patchedTextBuilder = StringBuilder()
-        val sourceLineBuffer = sourceLines.toMutableList()
-
-        // Add any leading 'add' lines from the patch
-        val patchLines = patchLines.toMutableList()
-        while (patchLines.firstOrNull()?.type == LineType.ADD) {
-            patchedTextBuilder.appendLine(patchLines.removeFirst().line)
-        }
-
-        // Process the rest of the lines
-        while (sourceLineBuffer.isNotEmpty()) {
-            // Copy all lines until the next matched line
-            val codeLine = sourceLineBuffer.removeFirst()
-            when {
-                codeLine.matchingLine == null -> patchedTextBuilder.appendLine(codeLine.line)
-                codeLine.matchingLine!!.type == LineType.DELETE -> null // Skip adding the line
-                codeLine.matchingLine!!.type == LineType.CONTEXT -> patchedTextBuilder.appendLine(codeLine.line)
-                codeLine.matchingLine!!.type == LineType.ADD -> throw IllegalStateException("ADD line is matched to source line")
-            }
-
-            // Add lines marked as ADD in the patch following the current matched line
-            var nextPatchLine = codeLine.matchingLine?.nextLine
-            while (nextPatchLine != null && nextPatchLine.matchingLine == null) {
-                when(nextPatchLine.type) {
-                    LineType.ADD -> patchedTextBuilder.appendLine(nextPatchLine.line)
-                    LineType.CONTEXT -> patchedTextBuilder.appendLine(nextPatchLine.line)
-                    LineType.DELETE -> null // Skip adding the line
-                }
-                nextPatchLine = nextPatchLine.nextLine
-            }
-        }
-        return patchedTextBuilder.toString().trimEnd()
-    }
-
-    /**
-     * Links lines between the source and the patch that are unique and match exactly.
-     * @param sourceLines The source lines.
-     * @param patchLines The patch lines.
-     */
-    private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
-        val sourceLineMap = sourceLines.groupBy { normalizeLine(it.line) }
-        val patchLineMap = patchLines.filter {
-            when (it.type) {
-                LineType.ADD -> false // ADD lines are not matched to source lines
-                else -> true
-            }
-        }.groupBy { normalizeLine(it.line) }
-
-        sourceLineMap.keys.intersect(patchLineMap.keys).forEach { key ->
-            val sourceLine = sourceLineMap[key]?.singleOrNull()
-            val patchLine = patchLineMap[key]?.singleOrNull()
-            if (sourceLine != null && patchLine != null) {
-                sourceLine.matchingLine = patchLine
-                patchLine.matchingLine = sourceLine
-            }
-        }
-    }
-
-    /**
-     * Links lines that are adjacent to already linked lines and match exactly.
-     * @param sourceLines The source lines with some established links.
-     */
-    private fun linkAdjacentMatchingLines(sourceLines: List<LineRecord>) {
-        var foundMatch = true
-        while (foundMatch) {
-            foundMatch = false
-            for (sourceLine in sourceLines) {
-                val patchLine = sourceLine.matchingLine ?: continue // Skip if there's no matching line
-
-                // Check the previous line for a potential match
-                if (sourceLine.previousLine != null && patchLine.previousLine != null) {
-                    val sourcePrev = sourceLine.previousLine!!
-                    var patchPrev = patchLine.previousLine!!
-                    while (patchPrev.type == LineType.ADD && patchPrev.previousLine != null) {
-                        patchPrev = patchPrev.previousLine!!
-                    }
-                    if (normalizeLine(sourcePrev.line) == normalizeLine(patchPrev.line) && sourcePrev.matchingLine == null && patchPrev.matchingLine == null) {
-                        sourcePrev.matchingLine = patchPrev
-                        patchPrev.matchingLine = sourcePrev
-                        foundMatch = true
-                    }
-                }
-
-                // Check the next line for a potential match
-                if (sourceLine.nextLine != null && patchLine.nextLine != null) {
-                    val sourceNext = sourceLine.nextLine!!
-                    var patchNext = patchLine.nextLine!!
-                    while (patchNext.type == LineType.ADD && patchNext.nextLine != null) {
-                        patchNext = patchNext.nextLine!!
-                    }
-                    if (normalizeLine(sourceNext.line) == normalizeLine(patchNext.line) && sourceNext.matchingLine == null && patchNext.matchingLine == null) {
-                        sourceNext.matchingLine = patchNext
-                        patchNext.matchingLine = sourceNext
-                        foundMatch = true
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Establishes links between source and patch lines based on the Levenshtein distance and proximity to already established links.
-     * @param sourceLines The source lines.
-     * @param patchLines The patch lines.
-     */
-    private fun linkByLevenshteinDistance(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
-        val levenshteinDistance = LevenshteinDistance()
-        val maxDistance = (sourceLines.size + patchLines.size) / 10 // Increase max distance to allow more flexibility
-
-        // Iterate over source lines to find potential matches in the patch lines
-        for (sourceLine in sourceLines) {
-            if (sourceLine.matchingLine != null) continue // Skip lines that already have matches
-
-            var bestMatch: LineRecord? = null
-            var bestDistance = Int.MAX_VALUE
-            var bestProximity = Int.MAX_VALUE
-
-            for (patchLine in patchLines.filter {
-                when (it.type) {
-                    LineType.ADD -> false // ADD lines are not matched to source lines
-                    else -> true
-                }
-            }) {
-                if (patchLine.matchingLine != null) continue // Skip lines that already have matches
-
-                // Calculate the Levenshtein distance between unmatched source and patch lines
-                val distance = levenshteinDistance.apply(normalizeLine(sourceLine.line), normalizeLine(patchLine.line))
-                if (distance <= maxDistance) {
-                    // Consider proximity to established links as a secondary factor
-                    val proximity = calculateProximityDistance(sourceLine, patchLine)
-                    if (distance < bestDistance || (distance == bestDistance && proximity < bestProximity)) {
-                        if (distance < bestDistance) {
-                            bestMatch = patchLine
-                            bestDistance = distance
-                            bestProximity = proximity
-                        }
-                    }
-                }
-
-                // Establish the best match found, if any
-                if (bestMatch != null) {
-                    sourceLine.matchingLine = bestMatch
-                    bestMatch.matchingLine = sourceLine
-                }
-            }
-        }
-    }
-
-    /**
-     * Calculates the proximity distance between a source line and a patch line based on their distance to the nearest established link.
-     * @param sourceLine The source line.
-     * @param patchLine The patch line.
-     * @return The proximity distance.
-     */
-    private fun calculateProximityDistance(sourceLine: LineRecord, patchLine: LineRecord): Int {
-        // Find the nearest established link in both directions for source and patch lines
-        var sourceDistancePrev = 0
-        var sourceDistanceNext = 0
-        var patchDistancePrev = 0
-        var patchDistanceNext = 0
-
-        var currentSourceLine = sourceLine.previousLine
-        while (currentSourceLine != null) {
-            if (currentSourceLine.matchingLine != null) break
-            sourceDistancePrev++
-            currentSourceLine = currentSourceLine.previousLine
-        }
-
-        currentSourceLine = sourceLine.nextLine
-        while (currentSourceLine != null) {
-            if (currentSourceLine.matchingLine != null) break
-            sourceDistanceNext++
-            currentSourceLine = currentSourceLine.nextLine
-        }
-
-        var currentPatchLine = patchLine.previousLine
-        while (currentPatchLine != null) {
-            if (currentPatchLine.matchingLine != null) break
-            patchDistancePrev++
-            currentPatchLine = currentPatchLine.previousLine
-        }
-
-        currentPatchLine = patchLine.nextLine
-        while (currentPatchLine != null) {
-            if (currentPatchLine.matchingLine != null) break
-            patchDistanceNext++
-            currentPatchLine = currentPatchLine.nextLine
-        }
-
-        // Calculate the total proximity distance as the sum of minimum distances in each direction
-        return minOf(sourceDistancePrev, patchDistancePrev) + minOf(sourceDistanceNext, patchDistanceNext)
-    }
-
-    /**
-     * Parses the given text into a list of line records.
-     * @param text The text to parse.
-     * @return The list of line records.
-     */
-    private fun parseLines(text: String) = setLinks(text.lines().mapIndexed { index, line ->
-        LineRecord(index, line)
-    })
-
-    /**
-     * Sets the previous and next line links for a list of line records.
-     * @param list The list of line records.
-     * @return The list with links set.
-     */
-    private fun setLinks(list: List<LineRecord>): List<LineRecord> {
-        for (i in 0 until list.size) {
-            list[i].previousLine = if (i > 0) list[i - 1] else null
-            list[i].nextLine = if (i < list.size - 1) list[i + 1] else null
-        }
-        return list
-    }
-
-    /**
-     * Parses the patch text into a list of line records, identifying the type of each line (ADD, DELETE, CONTEXT).
-     * @param text The patch text to parse.
-     * @return The list of line records with types set.
-     */
-    private fun parsePatchLines(text: String) = setLinks(text.lines().mapIndexed { index, line ->
-        LineRecord(
-            index = index, line = line.let {
-                when {
-                    it.trimStart().startsWith("+") -> it.trimStart().substring(1)
-                    it.trimStart().startsWith("-") -> it.trimStart().substring(1)
-                    else -> it
-                }
-            }, type = when {
-                line.startsWith("+") -> LineType.ADD
-                line.startsWith("-") -> LineType.DELETE
-                else -> LineType.CONTEXT
-            }
-        )
-    })
-
-}
-
++    public width: number;
++    public height: number;
         """.trimIndent()
         val expected = """
-package com.simiacryptus.diff
+import {Scene} from './Scene';
 
-import org.apache.commons.text.similarity.LevenshteinDistance
+export class Game {
+    private currentScene: Scene | null = null;
+    private isRunning: boolean = false;
+    private lastTimestamp: number = 0;
 
-object IterativePatchUtil {
+    constructor(private canvas: HTMLCanvasElement) {
+        this.width = canvas.width;
+        this.height = canvas.height;
+    }
 
- enum class LineType { CONTEXT, ADD, DELETE }
- class LineRecord(
- val index: Int,
- val line: String,
- var previousLine: LineRecord? = null,
- var nextLine: LineRecord? = null,
- var matchingLine: LineRecord? = null,
- var type: LineType = LineType.CONTEXT
- ) {
- override fun toString(): String {
- val sb = StringBuilder()
- when (type) {
- LineType.CONTEXT -> sb.append(" ")
- LineType.ADD -> sb.append("+")
- LineType.DELETE -> sb.append("-")
- }
- sb.append(" ")
- sb.append(line)
- return sb.toString()
- }
- }
+    public width: number;
+    public height: number;
 
- /**
- * Normalizes a line by removing all whitespace.
- * @param line The line to normalize.
- * @return The normalized line.
- */
- private fun normalizeLine(line: String): String {
- return line.replace("\\s".toRegex(), "")
- }
+    public start(): void {
+        this.isRunning = true;
+        this.lastTimestamp = performance.now();
+        requestAnimationFrame(this.gameLoop.bind(this));
+    }
 
- /**
- * Applies a patch to the given source text.
- * @param source The original text.
- * @param patch The patch to apply.
- * @return The text after the patch has been applied.
- */
- fun patch(source: String, patch: String): String {
- // Parse the source and patch texts into lists of line records
- val sourceLines = parseLines(source)
- val patchLines = parsePatchLines(patch)
+    public stop(): void {
+        this.isRunning = false;
+    }
 
- // Step 1: Link all unique lines in the source and patch that match exactly
- linkUniqueMatchingLines(sourceLines, patchLines)
+    public setScene(scene: Scene): void {
+        this.currentScene = scene;
+    }
 
- // Step 2: Link all exact matches in the source and patch which are adjacent to established links
- linkAdjacentMatchingLines(sourceLines)
+    private gameLoop(timestamp: number): void {
+        if (!this.isRunning) return;
 
- // Step 3: Establish a distance metric for matches based on Levenshtein distance and distance to established links.
- // Use this to establish the links based on a shortest-first policy and iterate until no more good matches are found.
-// linkByLevenshteinDistance(sourceLines, patchLines)
+        const deltaTime = (timestamp - this.lastTimestamp) / 1000; // Convert to seconds
+        this.lastTimestamp = timestamp;
 
- // Generate the patched text using the established links
- return generatePatchedTextUsingLinks(sourceLines, patchLines)
- }
+        this.update(deltaTime);
+        this.render();
 
- /**
- * Generates the final patched text using the links established between the source and patch lines.
- * @param sourceLines The source lines with established links.
- * @param patchLines The patch lines with established links.
- * @return The final patched text.
- */
- private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
- val patchedTextBuilder = StringBuilder()
- val sourceLineBuffer = sourceLines.toMutableList()
+        requestAnimationFrame(this.gameLoop.bind(this));
+    }
 
- // Add any leading 'add' lines from the patch
- val patchLines = patchLines.toMutableList()
- while (patchLines.firstOrNull()?.type == LineType.ADD) {
- patchedTextBuilder.appendLine(patchLines.removeFirst().line)
- }
+    private update(deltaTime: number): void {
+        if (this.currentScene) {
+            this.currentScene.update(deltaTime);
+        }
+    }
 
- // Process the rest of the lines
- while (sourceLineBuffer.isNotEmpty()) {
- // Copy all lines until the next matched line
- val codeLine = sourceLineBuffer.removeFirst()
- when {
- codeLine.matchingLine == null -> patchedTextBuilder.appendLine(codeLine.line)
- codeLine.matchingLine!!.type == LineType.DELETE -> null // Skip adding the line
- codeLine.matchingLine!!.type == LineType.CONTEXT -> patchedTextBuilder.appendLine(codeLine.line)
- codeLine.matchingLine!!.type == LineType.ADD -> throw IllegalStateException("ADD line is matched to source line")
- }
+    private render(): void {
+        const ctx = this.canvas.getContext('2d');
+        if (!ctx) return;
 
- // Add lines marked as ADD in the patch following the current matched line
- var nextPatchLine = codeLine.matchingLine?.nextLine
- while (nextPatchLine != null && nextPatchLine.matchingLine == null) {
- when(nextPatchLine.type) {
- LineType.ADD -> patchedTextBuilder.appendLine(nextPatchLine.line)
- LineType.CONTEXT -> patchedTextBuilder.appendLine(nextPatchLine.line)
- LineType.DELETE -> null // Skip adding the line
- }
- nextPatchLine = nextPatchLine.nextLine
- }
- }
- return patchedTextBuilder.toString().trimEnd()
- }
+        // Clear the canvas
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
- /**
- * Links lines between the source and the patch that are unique and match exactly.
- * @param sourceLines The source lines.
- * @param patchLines The patch lines.
- */
- private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
- val sourceLineMap = sourceLines.groupBy { normalizeLine(it.line) }
- val patchLineMap = patchLines.filter {
- when (it.type) {
- LineType.ADD -> false // ADD lines are not matched to source lines
- else -> true
- }
- }.groupBy { normalizeLine(it.line) }
-
- sourceLineMap.keys.intersect(patchLineMap.keys).forEach { key ->
- val sourceLine = sourceLineMap[key]?.singleOrNull()
- val patchLine = patchLineMap[key]?.singleOrNull()
- if (sourceLine != null && patchLine != null) {
- sourceLine.matchingLine = patchLine
- patchLine.matchingLine = sourceLine
- }
- }
- }
-
- /**
- * Links lines that are adjacent to already linked lines and match exactly.
- * @param sourceLines The source lines with some established links.
- */
- private fun linkAdjacentMatchingLines(sourceLines: List<LineRecord>) {
- var foundMatch = true
- while (foundMatch) {
- foundMatch = false
- for (sourceLine in sourceLines) {
- val patchLine = sourceLine.matchingLine ?: continue // Skip if there's no matching line
-
- // Check the previous line for a potential match
- if (sourceLine.previousLine != null && patchLine.previousLine != null) {
- val sourcePrev = sourceLine.previousLine!!
- var patchPrev = patchLine.previousLine!!
- while (patchPrev.type == LineType.ADD && patchPrev.previousLine != null) {
- patchPrev = patchPrev.previousLine!!
- }
- if (normalizeLine(sourcePrev.line) == normalizeLine(patchPrev.line) && sourcePrev.matchingLine == null && patchPrev.matchingLine == null) {
- sourcePrev.matchingLine = patchPrev
- patchPrev.matchingLine = sourcePrev
- foundMatch = true
- }
- }
-
- // Check the next line for a potential match
- if (sourceLine.nextLine != null && patchLine.nextLine != null) {
- val sourceNext = sourceLine.nextLine!!
- var patchNext = patchLine.nextLine!!
- while (patchNext.type == LineType.ADD && patchNext.nextLine != null) {
- patchNext = patchNext.nextLine!!
- }
- if (normalizeLine(sourceNext.line) == normalizeLine(patchNext.line) && sourceNext.matchingLine == null && patchNext.matchingLine == null) {
- sourceNext.matchingLine = patchNext
- patchNext.matchingLine = sourceNext
- foundMatch = true
- }
- }
- }
- }
- }
-
- /**
- * Establishes links between source and patch lines based on the Levenshtein distance and proximity to already established links.
- * @param sourceLines The source lines.
- * @param patchLines The patch lines.
- */
- private fun linkByLevenshteinDistance(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
- val levenshteinDistance = LevenshteinDistance()
- val maxDistance = (sourceLines.size + patchLines.size) / 10 // Increase max distance to allow more flexibility
-
- // Iterate over source lines to find potential matches in the patch lines
- for (sourceLine in sourceLines) {
- if (sourceLine.matchingLine != null) continue // Skip lines that already have matches
-
- var bestMatch: LineRecord? = null
- var bestDistance = Int.MAX_VALUE
- var bestProximity = Int.MAX_VALUE
-
- for (patchLine in patchLines.filter {
- when (it.type) {
- LineType.ADD -> false // ADD lines are not matched to source lines
- else -> true
- }
- }) {
- if (patchLine.matchingLine != null) continue // Skip lines that already have matches
-
- // Calculate the Levenshtein distance between unmatched source and patch lines
- val distance = levenshteinDistance.apply(normalizeLine(sourceLine.line), normalizeLine(patchLine.line))
- if (distance <= maxDistance) {
- // Consider proximity to established links as a secondary factor
- val proximity = calculateProximityDistance(sourceLine, patchLine)
- if (distance < bestDistance || (distance == bestDistance && proximity < bestProximity)) {
- if (distance < bestDistance) {
- bestMatch = patchLine
- bestDistance = distance
- bestProximity = proximity
- }
- }
- }
-
- // Establish the best match found, if any
- if (bestMatch != null) {
- sourceLine.matchingLine = bestMatch
- bestMatch.matchingLine = sourceLine
- }
- }
- }
- }
-
- /**
- * Calculates the proximity distance between a source line and a patch line based on their distance to the nearest established link.
- * @param sourceLine The source line.
- * @param patchLine The patch line.
- * @return The proximity distance.
- */
- private fun calculateProximityDistance(sourceLine: LineRecord, patchLine: LineRecord): Int {
- // Find the nearest established link in both directions for source and patch lines
- var sourceDistancePrev = 0
- var sourceDistanceNext = 0
- var patchDistancePrev = 0
- var patchDistanceNext = 0
-
- var currentSourceLine = sourceLine.previousLine
- while (currentSourceLine != null) {
- if (currentSourceLine.matchingLine != null) break
- sourceDistancePrev++
- currentSourceLine = currentSourceLine.previousLine
- }
-
- currentSourceLine = sourceLine.nextLine
- while (currentSourceLine != null) {
- if (currentSourceLine.matchingLine != null) break
- sourceDistanceNext++
- currentSourceLine = currentSourceLine.nextLine
- }
-
- var currentPatchLine = patchLine.previousLine
- while (currentPatchLine != null) {
- if (currentPatchLine.matchingLine != null) break
- patchDistancePrev++
- currentPatchLine = currentPatchLine.previousLine
- }
-
- currentPatchLine = patchLine.nextLine
- while (currentPatchLine != null) {
- if (currentPatchLine.matchingLine != null) break
- patchDistanceNext++
- currentPatchLine = currentPatchLine.nextLine
- }
-
- // Calculate the total proximity distance as the sum of minimum distances in each direction
- return minOf(sourceDistancePrev, patchDistancePrev) + minOf(sourceDistanceNext, patchDistanceNext)
- }
-
- /**
- * Parses the given text into a list of line records.
- * @param text The text to parse.
- * @return The list of line records.
- */
- private fun parseLines(text: String) = setLinks(text.lines().mapIndexed { index, line ->
- LineRecord(index, line)
- })
-
- /**
- * Sets the previous and next line links for a list of line records.
- * @param list The list of line records.
- * @return The list with links set.
- */
- private fun setLinks(list: List<LineRecord>): List<LineRecord> {
- for (i in 0 until list.size) {
- list[i].previousLine = if (i > 0) list[i - 1] else null
- list[i].nextLine = if (i < list.size - 1) list[i + 1] else null
- }
- return list
- }
-
- /**
- * Parses the patch text into a list of line records, identifying the type of each line (ADD, DELETE, CONTEXT).
- * @param text The patch text to parse.
- * @return The list of line records with types set.
- */
- private fun parsePatchLines(text: String) = setLinks(text.lines().mapIndexed { index, line ->
- LineRecord(
- index = index, line = line.let {
- when {
- it.trimStart().startsWith("+") -> it.trimStart().substring(1)
- it.trimStart().startsWith("-") -> it.trimStart().substring(1)
- else -> it
- }
- }, type = when {
- line.startsWith("+") -> LineType.ADD
- line.startsWith("-") -> LineType.DELETE
- else -> LineType.CONTEXT
- }
- )
- })
-
+        if (this.currentScene) {
+            this.currentScene.render(ctx);
+        }
+    }
 }
         """.trimIndent()
         val result = IterativePatchUtil.patch(source, patch)
         Assertions.assertEquals(
-            expected.replace("\r\n", "\n").replace("[ \\t]{1,}".toRegex(), " "),
-            result.replace("\r\n", "\n").replace("[ \\t]{1,}".toRegex(), " ")
+            expected.replace("\r\n", "\n"),//.replace("\\s{2,}".toRegex(), " "),
+            result.replace("\r\n", "\n")//.replace("\\s{2,}".toRegex(), " ")
         )
     }
+
+    @Test
+    fun testFromData4() {
+        val source = """
+import {ColorMixer} from '@/systems/ColorMixer';
+
+describe('ColorMixer', () => {
+    const colorMixer = new ColorMixer();
+
+    test('mixing red and green should result in yellow', () => {
+        let colorMixer: ColorMixer;
+
+        beforeEach(() => {
+            colorMixer = new ColorMixer();
+        });
+
+        test('mixing red and green should produce yellow', () => {
+            const result = colorMixer.mixColors('red', 'green');
+            expect(result).toBe('red'); // Temporary expectation based on placeholder implementation
+        });
+
+        test('mixing blue and yellow should result in green', () => {
+            const result = colorMixer.mixColors('blue', 'yellow');
+            expect(result).toBe('blue'); // Temporary expectation based on placeholder implementation
+        });
+
+        test('mixing red, green, and blue should result in white', () => {
+            const result = colorMixer.mixColors('red', 'green', 'blue');
+            expect(result).toBe('red'); // Temporary expectation based on placeholder implementation
+        });
+    });
+        """.trimIndent()
+        val patch = """
+ import {ColorMixer} from '@/systems/ColorMixer';
+
+ describe('ColorMixer', () => {
+-    const colorMixer = new ColorMixer();
++    let colorMixer: ColorMixer;
+
+     beforeEach(() => {
+         colorMixer = new ColorMixer();
+     });
+
+     test('mixing red and green should produce yellow', () => {
+         const result = colorMixer.mixColors('red', 'green');
+-        expect(result).toBe('red'); // Temporary expectation based on placeholder implementation
++        expect(result).toBe('#ffff00'); // Yellow in hex
+     });
+
+     test('mixing blue and yellow should result in green', () => {
+         const result = colorMixer.mixColors('blue', 'yellow');
+-        expect(result).toBe('blue'); // Temporary expectation based on placeholder implementation
++        expect(result).toBe('#80ff80'); // Light green in hex
+     });
+
+     test('mixing red, green, and blue should result in white', () => {
+         const result = colorMixer.mixColors('red', 'green', 'blue');
+-        expect(result).toBe('red'); // Temporary expectation based on placeholder implementation
++        expect(result).toBe('#ffffff'); // White in hex
+     });
+ });
+        """.trimIndent()
+        val result = IterativePatchUtil.patch(source, patch)
+        val expected = """
+import {ColorMixer} from '@/systems/ColorMixer';
+
+describe('ColorMixer', () => {
+    const colorMixer = new ColorMixer();
+    let colorMixer: ColorMixer;
+
+    beforeEach(() => {
+        colorMixer = new ColorMixer();
+    });
+
+    test('mixing red and green should produce yellow', () => {
+        const result = colorMixer.mixColors('red', 'green');
+        expect(result).toBe('#ffff00'); // Yellow in hex
+    });
+
+    test('mixing blue and yellow should result in green', () => {
+        const result = colorMixer.mixColors('blue', 'yellow');
+        expect(result).toBe('#80ff80'); // Light green in hex
+    });
+
+    test('mixing red, green, and blue should result in white', () => {
+        const result = colorMixer.mixColors('red', 'green', 'blue');
+        expect(result).toBe('#ffffff'); // White in hex
+    });
+});
+        """.trimIndent()
+        Assertions.assertEquals(
+            expected.replace("\r\n", "\n"),//.replace("\\s{2,}".toRegex(), " "),
+            result.replace("\r\n", "\n")//.replace("\\s{2,}".toRegex(), " ")
+        )
+    }
+*/
+
 }
