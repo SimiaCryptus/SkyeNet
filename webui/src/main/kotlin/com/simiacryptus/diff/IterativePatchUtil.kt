@@ -55,7 +55,7 @@ object IterativePatchUtil {
 
         // Step 3: Establish a distance metric for matches based on Levenshtein distance and distance to established links.
         // Use this to establish the links based on a shortest-first policy and iterate until no more good matches are found.
-        linkByLevenshteinDistance(sourceLines, patchLines)
+        //linkByLevenshteinDistance(sourceLines, patchLines)
 
         // Generate the patched text using the established links
         return generatePatchedTextUsingLinks(sourceLines, patchLines)
@@ -70,6 +70,11 @@ object IterativePatchUtil {
     private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
         val patchedTextBuilder = StringBuilder()
         val sourceLineBuffer = sourceLines.toMutableList()
+
+        // Add any leading lines from the source that are not in the patch
+        while (sourceLineBuffer.firstOrNull()?.matchingLine == null) {
+            patchedTextBuilder.appendLine(sourceLineBuffer.removeFirst().line)
+        }
 
         // Add any leading 'add' lines from the patch
         val patchLines = patchLines.toMutableList()
@@ -108,6 +113,7 @@ object IterativePatchUtil {
         return patchedTextBuilder.toString().trimEnd()
     }
 
+     // ... rest of the file remains unchanged
     /**
      * Links lines between the source and the patch that are unique and match exactly.
      * @param sourceLines The source lines.

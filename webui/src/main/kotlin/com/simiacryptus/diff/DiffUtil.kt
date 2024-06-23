@@ -37,55 +37,65 @@ object DiffUtil {
      * @return A list of DiffResult indicating the differences.
      */
     fun generateDiff(original: List<String>, modified: List<String>): List<PatchLine> {
-        if (original == modified) return modified.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }
-        val original = original.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }.toMutableList()
-        val modified = modified.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }.toMutableList()
+        val originalLines = original.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }
+        val modifiedLines = modified.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }
         val patchLines = mutableListOf<PatchLine>()
+        var i = 0
+        var j = 0
 
-        while (original.isNotEmpty() && modified.isNotEmpty()) {
-            val originalLine = original.first()
-            val modifiedLine = modified.first()
+        while (i < originalLines.size && j < modifiedLines.size) {
+            val originalLine = originalLines[i]
+            val modifiedLine = modifiedLines[j]
 
             if (originalLine == modifiedLine) {
                 patchLines.add(PatchLine(Unchanged, originalLine.lineNumber, originalLine.line))
-                original.removeAt(0)
-                modified.removeAt(0)
+                i++
+                j++
             } else {
-                val originalIndex = original.indexOf(modifiedLine).let { if (it == -1) null else it }
-                val modifiedIndex = modified.indexOf(originalLine).let { if (it == -1) null else it }
+                val originalIndex = originalLines.subList(i, originalLines.size).indexOf(modifiedLine).let { if (it == -1) null else it + i }
+                val modifiedIndex = modifiedLines.subList(j, modifiedLines.size).indexOf(originalLine).let { if (it == -1) null else it + j }
 
                 if (originalIndex != null && modifiedIndex != null) {
                     if (originalIndex < modifiedIndex) {
-                        while (original.first() != modifiedLine) {
-                            patchLines.add(PatchLine(Deleted, original.first().lineNumber, original.first().line))
-                            original.removeAt(0)
+                        while (i < originalIndex) {
+                            patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, originalLines[i].line))
+                            i++
                         }
                     } else {
-                        while (modified.first() != originalLine) {
-                            patchLines.add(PatchLine(Added, modified.first().lineNumber, modified.first().line))
-                            modified.removeAt(0)
+                        while (j < modifiedIndex) {
+                            patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modifiedLines[j].line))
+                            j++
                         }
                     }
                 } else if (originalIndex != null) {
-                    while (original.first() != modifiedLine) {
-                        patchLines.add(PatchLine(Deleted, original.first().lineNumber, original.first().line))
-                        original.removeAt(0)
+                    while (i < originalIndex) {
+                        patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, originalLines[i].line))
+                        i++
                     }
                 } else if (modifiedIndex != null) {
-                    while (modified.first() != originalLine) {
-                        patchLines.add(PatchLine(Added, modified.first().lineNumber, modified.first().line))
-                        modified.removeAt(0)
+                    while (j < modifiedIndex) {
+                        patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modifiedLines[j].line))
+                        j++
                     }
                 } else {
-                    patchLines.add(PatchLine(Deleted, originalLine.lineNumber, originalLine.line))
-                    original.removeAt(0)
-                    patchLines.add(PatchLine(Added, modifiedLine.lineNumber, modifiedLine.line))
-                    modified.removeAt(0)
+                    patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, originalLines[i].line))
+                    patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modifiedLines[j].line))
+                    i++
+                    j++
                 }
             }
         }
-        patchLines.addAll(original.map { PatchLine(Deleted, it.lineNumber, it.line) })
-        patchLines.addAll(modified.map { PatchLine(Added, it.lineNumber, it.line) })
+        
+        while (i < originalLines.size) {
+            patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, originalLines[i].line))
+            i++
+        }
+        
+        while (j < modifiedLines.size) {
+            patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modifiedLines[j].line))
+            j++
+        }
+        
         return patchLines
     }
 
@@ -99,28 +109,39 @@ object DiffUtil {
      * @return A formatted string representing the diff.
      */
     fun formatDiff(patchLines: List<PatchLine>, contextLines: Int = 3): String {
-        val patchList = patchLines.withIndex().filter { (idx, lineDiff) ->
+        val patchList = mutableListOf<PatchLine>()
+        var inChange = false
+        var changeStart = 0
+        var changeEnd = 0
+
+        patchLines.forEachIndexed { idx, lineDiff ->
             when (lineDiff.type) {
-                Added -> true
-                Deleted -> true
+                Added, Deleted -> {
+                    if (!inChange) {
+                        inChange = true
+                        changeStart = maxOf(0, idx - contextLines)
+                        patchList.addAll(patchLines.subList(changeStart, idx).filter { it.type == Unchanged })
+                    }
+                    changeEnd = minOf(patchLines.size, idx + contextLines + 1)
+                    patchList.add(lineDiff)
+                }
                 Unchanged -> {
-                    val distBackwards =
-                        patchLines.subList(0, idx).indexOfLast { it.type != Unchanged }
-                            .let { if (it == -1) null else idx - it }
-                    val distForwards = patchLines.subList(idx, patchLines.size).indexOfFirst { it.type != Unchanged }
-                        .let { if (it == -1) null else it }
-                    (null != distBackwards && distBackwards <= contextLines) || (null != distForwards && distForwards <= contextLines)
+                    if (inChange) {
+                        if (idx >= changeEnd) {
+                            inChange = false
+                            patchList.addAll(patchLines.subList(maxOf(changeEnd, idx - contextLines), idx))
+                        }
+                    }
                 }
             }
-        }.map { it.value }.toTypedArray()
+        }
 
-        return patchList.withIndex().joinToString("\n") { (idx, lineDiff) ->
-            when {
-                idx == 0 -> ""
-                lineDiff.type != Unchanged || patchList[idx - 1].type != Unchanged -> ""
-                patchList[idx - 1].lineNumber + 1 < lineDiff.lineNumber -> "...\n"
-                else -> ""
-            } + when (lineDiff.type) {
+        if (inChange) {
+            patchList.addAll(patchLines.subList(maxOf(changeEnd - contextLines, patchList.size), minOf(changeEnd, patchLines.size)))
+        }
+
+        return patchList.joinToString("\n") { lineDiff ->
+            when (lineDiff.type) {
                 Added -> "+ ${lineDiff.line}"
                 Deleted -> "- ${lineDiff.line}"
                 Unchanged -> "  ${lineDiff.line}"
