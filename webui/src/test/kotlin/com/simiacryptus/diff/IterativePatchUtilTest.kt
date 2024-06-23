@@ -1,6 +1,5 @@
 package com.simiacryptus.diff
 
-import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
