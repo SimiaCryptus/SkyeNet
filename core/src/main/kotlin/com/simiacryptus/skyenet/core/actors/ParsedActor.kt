@@ -98,8 +98,8 @@ open class ParsedActor<T : Any>(
                 }
 
                 // if input is wrapped in a ```json block, remove the block
-                if (contentUnwrapped.startsWith("```json") && contentUnwrapped.endsWith("```")) {
-                    contentUnwrapped = contentUnwrapped.substring(7, contentUnwrapped.length - 3)
+                if (contentUnwrapped.startsWith("```json")) {
+                    contentUnwrapped = contentUnwrapped.substring(7, contentUnwrapped.lastIndexOf("```"))
                 }
 
                 contentUnwrapped.let {

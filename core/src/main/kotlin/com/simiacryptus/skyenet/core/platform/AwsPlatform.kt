@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.core.platform
 
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.regions.Region

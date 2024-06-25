@@ -56,7 +56,7 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     override fun incrementUsage(session: Session, apiKey: String?, model: OpenAIModel, tokens: ApiModel.Usage) {
-        logger.info("Incrementing usage for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
+        logger.debug("Incrementing usage for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
         val usageKey = UsageInterface.UsageKey(session, apiKey, model)
         val usageValues = getUsageValues(usageKey)
         usageValues.addAndGet(tokens)
@@ -100,8 +100,7 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     private fun getUsageValues(usageKey: UsageInterface.UsageKey): UsageInterface.UsageValues {
-        logger.info("Getting usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
-        //logger.debug("Executing SQL query to get usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
+        logger.debug("Getting usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
         val statement = connection.prepareStatement(
             """
             SELECT COALESCE(SUM(prompt_tokens), 0), COALESCE(SUM(completion_tokens), 0), COALESCE(SUM(cost), 0)
@@ -122,8 +121,7 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     private fun saveUsageValues(usageKey: UsageInterface.UsageKey, usageValues: UsageInterface.UsageValues) {
-        logger.info("Saving usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
-        logger.debug("Executing SQL statement to save usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
+        logger.debug("Saving usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
         val statement = connection.prepareStatement(
             """
             INSERT INTO usage (session_id, api_key, model, prompt_tokens, completion_tokens, cost, datetime)
