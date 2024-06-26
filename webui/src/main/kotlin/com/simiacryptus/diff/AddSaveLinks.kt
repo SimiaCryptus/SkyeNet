@@ -8,10 +8,10 @@ import java.io.File
 import java.nio.file.Path
 
 fun SocketManagerBase.addSaveLinks(
+    root: Path,
     response: String,
     task: SessionTask,
     ui: ApplicationInterface,
-    handle: (Path, String) -> Unit,
 ): String {
     val diffPattern = """(?s)(?<![^\n])#+\s*([^\n]+)\n```[^\n]*\n(.*?)```""".toRegex()
     val matches = diffPattern.findAll(response).distinct()
@@ -29,7 +29,11 @@ fun SocketManagerBase.addSaveLinks(
         lateinit var hrefLink: StringBuilder
         hrefLink = commandTask.complete(hrefLink("Save File", classname = "href-link cmd-button") {
             try {
-                handle(File(filename).toPath(), codeValue)
+                File(filename).toPath()
+                root.resolve(File(filename).toPath()).toFile().apply {
+                    parentFile.mkdirs()
+                    writeText(codeValue, Charsets.UTF_8)
+                }
                 hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
                 commandTask.complete()
             } catch (e: Throwable) {
@@ -38,7 +42,8 @@ fun SocketManagerBase.addSaveLinks(
         })!!
         markdown.replace(
             codeValue + "```",
-            codeValue + "```\n" + commandTask.placeholder)
+            codeValue + "```\n" + commandTask.placeholder
+        )
     }
     return withLinks
 }
