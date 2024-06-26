@@ -37,8 +37,8 @@ object DiffUtil {
      * @return A list of DiffResult indicating the differences.
      */
     fun generateDiff(original: List<String>, modified: List<String>): List<PatchLine> {
-        val originalLines = original.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }
-        val modifiedLines = modified.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }
+        val originalLines = original.mapIndexed { i, v -> PatchLine(Unchanged, i, v) }
+        val modifiedLines = modified.mapIndexed { i, v -> PatchLine(Unchanged, i, v) }
         val patchLines = mutableListOf<PatchLine>()
         var i = 0
         var j = 0
@@ -120,7 +120,7 @@ object DiffUtil {
                     if (!inChange) {
                         inChange = true
                         changeStart = maxOf(0, idx - contextLines)
-                        patchList.addAll(patchLines.subList(changeStart, idx).filter { it.type == Unchanged })
+                        patchList.addAll(patchLines.subList(changeStart, idx))
                     }
                     changeEnd = minOf(patchLines.size, idx + contextLines + 1)
                     patchList.add(lineDiff)
