@@ -96,7 +96,7 @@ object IterativePatchUtil {
 
                 codeLine.matchingLine!!.type == LineType.DELETE -> null // Skip adding the line
                 codeLine.matchingLine!!.type == LineType.CONTEXT -> patchedTextBuilder.appendLine(codeLine.line)
-                codeLine.matchingLine!!.type == LineType.ADD -> throw IllegalStateException("ADD line is matched to source line")
+                codeLine.matchingLine!!.type == LineType.ADD -> patchedTextBuilder.appendLine(codeLine.line)
             }
 
             // Add lines marked as ADD in the patch following the current matched line
@@ -123,7 +123,7 @@ object IterativePatchUtil {
         val sourceLineMap = sourceLines.groupBy { normalizeLine(it.line!!) }
         val patchLineMap = patchLines.filter {
             when (it.type) {
-                LineType.ADD -> false // ADD lines are not matched to source lines
+                //LineType.ADD -> false // ADD lines are not matched to source lines
                 else -> true
             }
         }.groupBy { normalizeLine(it.line!!) }
