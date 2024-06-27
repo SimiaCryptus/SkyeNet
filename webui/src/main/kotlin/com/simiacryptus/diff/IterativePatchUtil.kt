@@ -1,6 +1,5 @@
 package com.simiacryptus.diff
 
-import com.simiacryptus.diff.IterativePatchUtil.LineRecord
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import kotlin.math.floor
@@ -32,8 +31,6 @@ object IterativePatchUtil {
         }
     }
 
-     // ... (other functions remain unchanged)
- 
     /**
      * Normalizes a line by removing all whitespace.
      * @param line The line to normalize.
@@ -158,7 +155,7 @@ object IterativePatchUtil {
         val sourceLineMap = sourceLines.groupBy { normalizeLine(it.line!!) }
         val patchLineMap = patchLines.filter {
             when (it.type) {
-                //LineType.ADD -> false // ADD lines are not matched to source lines
+                LineType.ADD -> false // ADD lines are not matched to source lines
                 else -> true
             }
         }.groupBy { normalizeLine(it.line!!) }
