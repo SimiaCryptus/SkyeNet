@@ -83,7 +83,7 @@ object IterativePatchUtil {
 
         // Add any leading lines from the source that are not in the patch
         while (sourceLineBuffer.firstOrNull()?.matchingLine == null) {
-            val line = sourceLineBuffer.removeFirst()
+            val line = sourceLineBuffer.removeFirstOrNull() ?: break
             patchedTextBuilder.appendLine(line.line)
             log.debug("Added leading source line: ${line}")
         }
@@ -92,7 +92,7 @@ object IterativePatchUtil {
         // Add any leading 'add' lines from the patch
         val patchLines = patchLines.toMutableList()
         while (patchLines.firstOrNull()?.type == LineType.ADD) {
-            val line = patchLines.removeFirst()
+            val line = patchLines.removeFirstOrNull() ?: break
             patchedTextBuilder.appendLine(line.line)
             log.debug("Added leading patch line: ${line}")
         }

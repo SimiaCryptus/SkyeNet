@@ -27,11 +27,14 @@ function onWebSocketText(event) {
     });
     if (messageDivs.length == 0 && !messageId.startsWith("z")) {
         messageDiv = document.createElement('div');
-        messageDiv.className = 'message message-container'; // Add the message-container class
+        messageDiv.className = 'message message-container ' + (messageId.startsWith('u') ? 'user-message' : 'response-message');
         messageDiv.id = messageId;
         messageDiv.innerHTML = messageContent;
         if (messagesDiv) messagesDiv.appendChild(messageDiv);
         substituteMessages(messageId, messageDiv);
+
+        // Scroll to the new message with smooth behavior
+        messageDiv.scrollIntoView({behavior: 'smooth', block: 'end'});
     }
     if (singleInput) {
         const mainInput = document.getElementById('main-input');
@@ -95,11 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 5000); // Adjust the interval as needed
 
     // Restore the selected tabs from localStorage before adding event listeners
-     document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
-         const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
-         if (savedTab) {
-             const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
-             if (savedButton) {
+    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
+        if (savedTab) {
+            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+            if (savedButton) {
                 savedButton.classList.add('active');
                 const forTab = savedButton.getAttribute('data-for-tab');
                 const selectedContent = tabsContainer.querySelector(`.tab-content[data-tab="${forTab}"]`);
@@ -107,10 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectedContent.classList.add('active');
                     selectedContent.style.display = 'block';
                 }
-                 console.log(`Restored saved tab: ${savedTab}`);
-             }
-         }
-     });
+                console.log(`Restored saved tab: ${savedTab}`);
+            }
+        }
+    });
     document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
         const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
         if (savedTab) {
@@ -159,8 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
         connect(undefined, onWebSocketText);
     }
 
-    window.addEventListener('click', (event) => {
-        if (event.target === document.getElementById('modal')) {
+    document.addEventListener('click', (event) => {
+        const modal = document.getElementById('modal');
+        if (event.target === modal) {
             closeModal();
         }
     });
@@ -169,6 +173,17 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         send(messageInput.value);
         messageInput.value = '';
+
+        // Disable the send button and add a loading spinner
+        const sendButton = form.querySelector('.ws-control');
+        sendButton.disabled = true;
+        sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+        // Re-enable the button after a short delay (you may want to do this when you receive a response instead)
+        setTimeout(() => {
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+        }, 2000);
     });
 
     if (messageInput) {
@@ -248,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let filesElement = document.getElementById("files");
-    if(filesElement) filesElement.addEventListener("click", function (event) {
+    if (filesElement) filesElement.addEventListener("click", function (event) {
         event.preventDefault();
         const sessionId = getSessionId();
         const url = "fileIndex/" + sessionId + "/";
