@@ -79,13 +79,13 @@ open class CodingActor(
                   |${this.apiDescription}
                   |```
                   |
-                  |DO NOT RE-DEFINE THESE SYMBOLS: ${symbols.keys.joinToString(", ")}
+                  |THESE VARIABLES ARE READ-ONLY: ${symbols.keys.joinToString(", ")}
                   |They are already defined for you.
                   |
                   |${details ?: ""}
                   |""".trimMargin().trim()
             } else """
-                |You are a coding assistant allows users actions to be enacted using $language and the script context.
+                |You are a coding assistant allowing users actions to be enacted using $language and the script context.
                 |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
                 |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
                 |Each response should have EXACTLY ONE code block. Do not use inline blocks.
@@ -120,7 +120,7 @@ open class CodingActor(
         }
         if (questions.codePrefix.isNotBlank()) {
             chatMessages = (chatMessages.dropLast(1) + listOf(
-                ChatMessage(Role.assistant, questions.codePrefix.toContentList())
+                ChatMessage(Role.assistant, "Code Prefix:\n```\n${questions.codePrefix}\n```".toContentList())
             ) + chatMessages.last()).toTypedArray<ChatMessage>()
         }
         return chatMessages

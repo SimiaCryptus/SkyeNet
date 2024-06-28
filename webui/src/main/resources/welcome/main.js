@@ -14,6 +14,33 @@ document.addEventListener('DOMContentLoaded', () => {
         applyToAllSvg();
     }, 5000); // Adjust the interval as needed
 
+    // Restore the selected tabs from localStorage before adding event listeners
+    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
+        if (savedTab) {
+            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+            if (savedButton) {
+                savedButton.classList.add('active');
+                const forTab = savedButton.getAttribute('data-for-tab');
+                const selectedContent = tabsContainer.querySelector(`.tab-content[data-tab="${forTab}"]`);
+                if (selectedContent) {
+                    selectedContent.classList.add('active');
+                    selectedContent.style.display = 'block';
+                }
+                console.log(`Restored saved tab: ${savedTab}`);
+            }
+        }
+    });
+    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
+        if (savedTab) {
+            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+            if (savedButton) {
+                savedButton.click();
+                console.log(`Restored saved tab: ${savedTab}`);
+            }
+        }
+    });
 
     const historyElement = document.getElementById('history');
     if (historyElement) historyElement.addEventListener('click', () => showModal('sessions'));

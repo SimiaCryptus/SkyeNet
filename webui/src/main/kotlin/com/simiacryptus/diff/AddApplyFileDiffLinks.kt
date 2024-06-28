@@ -427,4 +427,55 @@ fun findFile(root: Path, filename: String): Path? {
     }
 }
 
+@Suppress("unused")
+fun applyFileDiffs(
+    root: Path,
+    response: String,
+): String {
+    val headerPattern = """(?s)(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
+    val diffPattern = """(?s)(?<![^\n])```diff\n(.*?)\n```""".toRegex() // capture filename
+    val codeblockPattern = """(?s)(?<![^\n])```([^\n])(\n.*?\n)```""".toRegex() // capture filename
+    val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
+    val diffs: List<Pair<IntRange, String>> =
+        diffPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
+    val codeblocks = codeblockPattern.findAll(response).filter {
+        when (it.groupValues[1]) {
+            "diff" -> false
+            else -> true
+        }
+    }.map { it.range to it }.toList()
+    diffs.forEach { diffBlock ->
+        val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
+        val filename = resolve(root, header?.second ?: "Unknown")
+        val diffVal = diffBlock.second
+        val filepath = root.resolve(filename)
+        try {
+            val originalCode = filepath.readText(Charsets.UTF_8)
+            val newCode = patch(originalCode, diffVal)
+            filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+        } catch (e: Throwable) {
+            log.warn("Error", e)
+        }
+    }
+    codeblocks.forEach { codeBlock ->
+        val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
+        val filename = resolve(root, header?.second ?: "Unknown")
+        val filepath: Path? = root.resolve(filename)
+        val codeValue = codeBlock.second.groupValues[2]
+        lateinit var hrefLink: StringBuilder
+        try {
+            try {
+                filepath?.toFile()?.writeText(codeValue, Charsets.UTF_8)
+            } catch (e: Throwable) {
+                log.error("Error writing file: $filepath", e)
+            }
+            hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
+        } catch (e: Throwable) {
+            log.error("Error", e)
+        }
+    }
+    return response
+}
+
+
 private val log = org.slf4j.LoggerFactory.getLogger(PatchUtil::class.java)

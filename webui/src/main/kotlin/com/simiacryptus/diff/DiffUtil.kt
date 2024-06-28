@@ -1,6 +1,7 @@
 package com.simiacryptus.diff
 
 import com.simiacryptus.diff.PatchLineType.*
+import org.slf4j.LoggerFactory
 
 enum class PatchLineType {
     Added, Deleted, Unchanged
@@ -27,6 +28,9 @@ data class PatchLine(
 }
 
 object DiffUtil {
+     // ... (previous code remains unchanged)
+ 
+    private val log = LoggerFactory.getLogger(DiffUtil::class.java)
 
     /**
      * Generates a list of DiffResult representing the differences between two lists of strings.
@@ -37,65 +41,75 @@ object DiffUtil {
      * @return A list of DiffResult indicating the differences.
      */
     fun generateDiff(original: List<String>, modified: List<String>): List<PatchLine> {
-        val originalLines = original.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }
-        val modifiedLines = modified.withIndex().map { (i, v) -> PatchLine(Unchanged, i, v) }
+        val originalLines = original.mapIndexed { i, v -> PatchLine(Unchanged, i, v.trim()) }
+        val modifiedLines = modified.mapIndexed { i, v -> PatchLine(Unchanged, i, v.trim()) }
         val patchLines = mutableListOf<PatchLine>()
         var i = 0
         var j = 0
+
+        log.debug("Starting diff generation. Original size: ${original.size}, Modified size: ${modified.size}")
 
         while (i < originalLines.size && j < modifiedLines.size) {
             val originalLine = originalLines[i]
             val modifiedLine = modifiedLines[j]
 
+            log.trace("Comparing lines - Original: $originalLine, Modified: $modifiedLine")
             if (originalLine == modifiedLine) {
-                patchLines.add(PatchLine(Unchanged, originalLine.lineNumber, originalLine.line))
+                patchLines.add(PatchLine(Unchanged, originalLine.lineNumber, original[i]))
                 i++
                 j++
             } else {
                 val originalIndex = originalLines.subList(i, originalLines.size).indexOf(modifiedLine).let { if (it == -1) null else it + i }
                 val modifiedIndex = modifiedLines.subList(j, modifiedLines.size).indexOf(originalLine).let { if (it == -1) null else it + j }
+                log.debug("Mismatch found. Original index: $originalIndex, Modified index: $modifiedIndex")
 
                 if (originalIndex != null && modifiedIndex != null) {
-                    if (originalIndex < modifiedIndex) {
+                    log.debug("Both indices found. Choosing shorter path.")
+                     if (originalIndex - i < modifiedIndex - j) {
                         while (i < originalIndex) {
-                            patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, originalLines[i].line))
+                            patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, original[i]))
                             i++
                         }
                     } else {
                         while (j < modifiedIndex) {
-                            patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modifiedLines[j].line))
+                            patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modified[j]))
                             j++
                         }
                     }
                 } else if (originalIndex != null) {
+                    log.debug("Original index found. Deleting lines until match.")
                     while (i < originalIndex) {
-                        patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, originalLines[i].line))
+                        patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, original[i]))
                         i++
                     }
                 } else if (modifiedIndex != null) {
+                    log.debug("Modified index found. Adding lines until match.")
                     while (j < modifiedIndex) {
-                        patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modifiedLines[j].line))
+                        patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modified[j]))
                         j++
                     }
                 } else {
-                    patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, originalLines[i].line))
-                    patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modifiedLines[j].line))
+                    patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, original[i]))
+                    patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modified[j]))
                     i++
                     j++
                 }
             }
         }
-        
+
+        log.debug("Processing remaining lines. Original: ${originalLines.size - i}, Modified: ${modifiedLines.size - j}")
         while (i < originalLines.size) {
-            patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, originalLines[i].line))
+            patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, original[i]))
             i++
         }
-        
+
         while (j < modifiedLines.size) {
-            patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modifiedLines[j].line))
+            patchLines.add(PatchLine(Added, modifiedLines[j].lineNumber, modified[j]))
             j++
         }
-        
+
+        log.info("Diff generation completed. Total patch lines: ${patchLines.size}")
+
         return patchLines
     }
 
@@ -109,43 +123,41 @@ object DiffUtil {
      * @return A formatted string representing the diff.
      */
     fun formatDiff(patchLines: List<PatchLine>, contextLines: Int = 3): String {
-        val patchList = mutableListOf<PatchLine>()
-        var inChange = false
-        var changeStart = 0
-        var changeEnd = 0
+        val formattedLines = mutableListOf<String>()
+        var lastPrintedLine = -1
 
-        patchLines.forEachIndexed { idx, lineDiff ->
-            when (lineDiff.type) {
-                Added, Deleted -> {
-                    if (!inChange) {
-                        inChange = true
-                        changeStart = maxOf(0, idx - contextLines)
-                        patchList.addAll(patchLines.subList(changeStart, idx).filter { it.type == Unchanged })
-                    }
-                    changeEnd = minOf(patchLines.size, idx + contextLines + 1)
-                    patchList.add(lineDiff)
-                }
-                Unchanged -> {
-                    if (inChange) {
-                        if (idx >= changeEnd) {
-                            inChange = false
-                            patchList.addAll(patchLines.subList(maxOf(changeEnd, idx - contextLines), idx))
-                        }
+        log.debug("Starting diff formatting. Total lines: ${patchLines.size}, Context lines: $contextLines")
+
+        patchLines.forEachIndexed { index, lineDiff ->
+            if (lineDiff.type != Unchanged || 
+                (index > 0 && patchLines[index - 1].type != Unchanged) ||
+                (index < patchLines.size - 1 && patchLines[index + 1].type != Unchanged)) {
+
+                // Print context lines before the change
+                val contextStart = maxOf(lastPrintedLine + 1, index - contextLines)
+                for (i in contextStart until index) {
+                    if (i > lastPrintedLine) {
+                        formattedLines.add("  ${patchLines[i].line}")
+                        lastPrintedLine = i
                     }
                 }
+
+                // Print the change
+                val prefix = when (lineDiff.type) {
+                    Added -> "+ "
+                    Deleted -> "- "
+                    Unchanged -> "  "
+                }
+                formattedLines.add("$prefix${lineDiff.line}")
+                lastPrintedLine = index
+
             }
         }
 
-        if (inChange) {
-            patchList.addAll(patchLines.subList(maxOf(changeEnd - contextLines, patchList.size), minOf(changeEnd, patchLines.size)))
-        }
+        log.info("Diff formatting completed. Total formatted lines: ${formattedLines.size}")
 
-        return patchList.joinToString("\n") { lineDiff ->
-            when (lineDiff.type) {
-                Added -> "+ ${lineDiff.line}"
-                Deleted -> "- ${lineDiff.line}"
-                Unchanged -> "  ${lineDiff.line}"
-            }
-        }
+        val formattedDiff = formattedLines.joinToString("\n")
+        log.debug("Formatted diff:\n$formattedDiff")
+        return formattedDiff
     }
 }
