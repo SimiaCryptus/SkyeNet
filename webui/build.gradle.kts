@@ -44,6 +44,10 @@ dependencies {
     compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
     compileOnly("org.jsoup:jsoup:1.17.2")
 
+
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.zxing:javase:3.5.3")
+
     implementation("org.openapitools:openapi-generator:7.3.0")
     implementation("org.openapitools:openapi-generator-cli:7.3.0")
 

@@ -22,10 +22,25 @@ import org.apache.http.impl.client.HttpClients
 import java.net.URI
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.typeOf
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.client.j2se.MatrixToImageWriter
+import java.io.ByteArrayOutputStream
+import java.util.Base64
 
 class SessionShareServlet(
     private val server: ApplicationServer,
 ) : HttpServlet() {
+
+    private fun generateQRCodeDataURL(url: String): String {
+        val qrCodeWriter = QRCodeWriter()
+        val bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, 200, 200)
+        val outputStream = ByteArrayOutputStream()
+        MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream)
+        val imageBytes = outputStream.toByteArray()
+        val base64Image = Base64.getEncoder().encodeToString(imageBytes)
+        return "data:image/png;base64,$base64Image"
+    }
 
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
 
@@ -49,31 +64,38 @@ class SessionShareServlet(
         val session = StorageInterface.parseSessionID(sessionID)
         val pool = ApplicationServices.clientManager.getPool(session, user)
         val infoFile = storageInterface.getDataDir(user, session).resolve("info.json").apply { parentFile.mkdirs() }
-        val json = if(infoFile.exists()) JsonUtil.fromJson<Map<String,Any>>(infoFile.readText(), typeOf<Map<String,Any>>().javaType) else mapOf()
+        val json = if (infoFile.exists()) JsonUtil.fromJson<Map<String, Any>>(
+            infoFile.readText(),
+            typeOf<Map<String, Any>>().javaType
+        ) else mapOf()
         val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
         val previousShare = sessionSettings["shareId"]
+        var shareURL = url(appName, previousShare ?: long64())
+        var qrCodeDataURL = generateQRCodeDataURL(shareURL)
         when {
-            null != previousShare && validateUrl(url(appName, previousShare)) -> {
+            null != previousShare && validateUrl(shareURL) -> {
                 log.info("Reusing shareId: $previousShare")
 
                 resp.contentType = "text/html"
                 resp.status = HttpServletResponse.SC_OK
                 //language=HTML
                 resp.writer.write(
-                    """
-        |<html>
-        |<head>
-        |    <title>Save Session</title>
-        |    <style>
-        |    </style>
-        |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-        |</head>
-        |<body>
-        |    <h1>Sharing URL</h1>
-        |    <p><a href="${url(appName, previousShare)}" target='_blank'>${url(appName, previousShare)}</a></p>
-        |</body>
-        |</html>
-        """.trimMargin()
+                    """<html>
+                    |<head>
+                    |    <title>Save Session</title>
+                    |    <style>
+                    |    </style>
+                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+                    |</head>
+                    |<body>
+                    |    <h1>Sharing URL</h1>
+                    |    <p><a href="shareURL" target='_blank'>shareURL</a></p>
+                    |    <body>
+                    |    <h1>Sharing URL</h1>
+                    |    <p><a href="$shareURL" target='_blank'>$shareURL</a></p>
+                    |    <img src="$qrCodeDataURL" alt="QR Code for $shareURL">
+                    |</body>
+                    |""".trimMargin()
                 )
             }
 
@@ -110,22 +132,25 @@ class SessionShareServlet(
                 resp.contentType = "text/html"
                 resp.status = HttpServletResponse.SC_OK
                 //language=HTML
+                shareURL = url(appName, shareId)
+                qrCodeDataURL = generateQRCodeDataURL(shareURL)
                 resp.writer.write(
                     """
-          |<html>
-          |<head>
-          |    <title>Saving Session</title>
-          |    <style>
-          |    </style>
-          |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-          |</head>
-          |<body>
-          |    <h1>Saving Session... This page will soon be ready!</h1>
-          |    <p><a href="${url(appName, shareId)}" target='_blank'>${url(appName, shareId)}</a></p>
-          |    <p>To monitor progress, you can use the session threads page</p>
-          |</body>
-          |</html>
-          """.trimMargin()
+                    |<html>
+                    |<head>
+                    |    <title>Saving Session</title>
+                    |    <style>
+                    |    </style>
+                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+                    |</head>
+                    |<body>
+                    |    <h1>Saving Session... This page will soon be ready!</h1>
+                    |    <p><a href="$shareURL" target='_blank'>$shareURL</a></p>
+                    |    <img src="$qrCodeDataURL" alt="QR Code for $shareURL">
+                    |    <p>To monitor progress, you can use the session threads page</p>
+                    |</body>
+                    |</html>
+                    """.trimMargin()
                 )
             }
         }
@@ -158,4 +183,3 @@ class SessionShareServlet(
         var domain = System.getProperty("domain", "apps.simiacrypt.us")
     }
 }
-
