@@ -1,21 +1,21 @@
 package com.simiacryptus.diff
 
-import com.simiacryptus.diff.IterativePatchUtil.patch
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
-import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import org.apache.commons.codec.digest.Md5Crypt
 import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.readText
 
+private fun String.reverseLines(): String = lines().reversed().joinToString("\n")
+
 fun SocketManagerBase.addApplyFileDiffLinks(
     root: Path,
-    code: () -> Map<Path, String>,
     response: String,
     handle: (Map<Path, String>) -> Unit,
     ui: ApplicationInterface,
@@ -175,10 +175,8 @@ private fun SocketManagerBase.renderDiffBlock(
             "Verify" to verifyTabs,
         )
     )
-
-
+    
     diffTask?.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
-
 
     val filepath = path(root, filename)
     val relativize = try {
@@ -186,7 +184,7 @@ private fun SocketManagerBase.renderDiffBlock(
     } catch (e: Throwable) {
         filepath
     }
-    var filehash: Int? = 0
+    var filehash: String = ""
 
     val applydiffTask = ui.newTask(false)
     lateinit var hrefLink: StringBuilder
@@ -194,12 +192,13 @@ private fun SocketManagerBase.renderDiffBlock(
 
     var originalCode = load(filepath)
     lateinit var revert: String
-    val apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
+    var newCode = patch(originalCode, diffVal)
+    var apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
             originalCode = load(filepath)
-            val newCode = patch(originalCode, diffVal)
-            filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
-            handle(mapOf(relativize!! to newCode))
+            newCode = patch(originalCode, diffVal)
+            filepath?.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize!! to newCode.newCode))
             hrefLink.set("""<div class="cmd-button">Diff Applied</div>""" + revert)
             applydiffTask.complete()
             isApplied = true
@@ -208,13 +207,57 @@ private fun SocketManagerBase.renderDiffBlock(
             applydiffTask.error(null, e)
         }
     }
+    if(!newCode.isValid) {
+        apply1 += hrefLink("Fix Patch", classname = "href-link cmd-button") {
+            try {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            } catch (e: Throwable) {
+                log.error("Error in fix patch", e)
+            }
+        }
+    }
     val apply2 = hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
         try {
             originalCode = load(filepath)
-            val newCode2 = patch(
-                originalCode.lines().reversed().joinToString("\n"),
-                diffVal.lines().reversed().joinToString("\n")
-            ).lines().reversed().joinToString("\n")
+            val originalLines = originalCode.reverseLines()
+            val diffLines = diffVal.reverseLines()
+            val patch1 = patch(originalLines, diffLines)
+            val newCode2 = patch1.newCode.reverseLines()
             filepath?.toFile()?.writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
             handle(mapOf(relativize!! to newCode2))
             hrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""" + revert)
@@ -241,122 +284,119 @@ private fun SocketManagerBase.renderDiffBlock(
     hrefLink = applydiffTask.complete(apply1 + "\n" + apply2)!!
 
     lateinit var scheduledFn: () -> Unit
+    var lastModifiedTime: Long = -1
     scheduledFn = {
-        val thisFilehash = try {
-            filepath?.toFile()?.readText().hashCode()
-        } catch (e: Throwable) {
-            null
-        }
-        if (!isApplied) {
-            if (thisFilehash != filehash) {
-                updateVerification(
-                    filepath,
-                    diffVal,
-                    ui,
-                    newCodeTaskSB,
-                    filename,
-                    newCodeTask,
-                    prevCodeTaskSB,
-                    prevCodeTask,
-                    patchTaskSB,
-                    patchTask,
-                    newCode2TaskSB,
-                    newCode2Task,
-                    prevCode2TaskSB,
-                    prevCode2Task,
-                    patch2TaskSB,
+        try {
+            val currentModifiedTime = Files.getLastModifiedTime(filepath).toMillis()
+            if (currentModifiedTime != lastModifiedTime) {
+                lastModifiedTime = currentModifiedTime
+                val thisFilehash = Md5Crypt.md5Crypt(filepath?.toFile()?.readText()?.toByteArray())
+                if (!isApplied && thisFilehash != filehash) {
+                    val prevCode = load(filepath)
+                    val newCode = patch(prevCode, diffVal)
+                    val echoDiff = try {
+                        DiffUtil.formatDiff(
+                            DiffUtil.generateDiff(
+                                prevCode.lines(),
+                                newCode.newCode.lines()
+                            )
+                        )
+                    } catch (e: Throwable) {
+                        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+                    }
+                    newCodeTaskSB?.set(
+                        renderMarkdown(
+                            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
+                            ui = ui, tabs = false
+                        )
+                    )
+                    newCodeTask.complete("")
+                    prevCodeTaskSB?.set(
+                        renderMarkdown(
+                            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+                            ui = ui, tabs = false
+                        )
+                    )
+                    prevCodeTask.complete("")
+                    patchTaskSB?.set(
+                        renderMarkdown(
+                            "# $filename\n\n```diff\n  ${echoDiff}\n```",
+                            ui = ui,
+                            tabs = false
+                        )
+                    )
+                    patchTask.complete("")
+                    val newCode2 = patch(
+                        load(filepath).reverseLines(),
+                        diffVal.reverseLines()
+                    ).newCode.lines().reversed().joinToString("\n")
+                    val echoDiff2 = try {
+                        DiffUtil.formatDiff(
+                            DiffUtil.generateDiff(
+                                prevCode.lines(),
+                                newCode2.lines(),
+                            )
+                        )
+                    } catch (e: Throwable) {
+                        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+                    }
+                    newCode2TaskSB?.set(
+                        renderMarkdown(
+                            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
+                            ui = ui, tabs = false
+                        )
+                    )
+                    newCode2Task.complete("")
+                    prevCode2TaskSB?.set(
+                        renderMarkdown(
+                            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+                            ui = ui, tabs = false
+                        )
+                    )
+                    prevCode2Task.complete("")
+                    patch2TaskSB?.set(
+                        renderMarkdown(
+                            "# $filename\n\n```diff\n  ${echoDiff2}\n```",
+                            ui = ui,
+                            tabs = false
+                        )
+                    )
                     patch2Task
-                )
-                filehash = thisFilehash
+                        .complete("")
+                    filehash = thisFilehash
+                }
+            }
+            if (!isApplied) {
                 scheduledThreadPoolExecutor.schedule(scheduledFn, 1000, TimeUnit.MILLISECONDS)
             }
+        } catch (e: Throwable) {
+            log.error("Error in scheduled function", e)
         }
     }
-    scheduledThreadPoolExecutor.schedule(scheduledFn, 100, TimeUnit.MILLISECONDS)
+    scheduledThreadPoolExecutor.schedule(scheduledFn, 1000, TimeUnit.MILLISECONDS)
     val newValue = mainTabs + "\n" + applydiffTask.placeholder
     return newValue
 }
 
-private fun updateVerification(
-    filepath: Path?,
-    diffVal: String,
-    ui: ApplicationInterface,
-    newCodeTaskSB: StringBuilder?,
-    filename: String,
-    newCodeTask: SessionTask,
-    prevCodeTaskSB: StringBuilder?,
-    prevCodeTask: SessionTask,
-    patchTaskSB: StringBuilder?,
-    patchTask: SessionTask,
-    newCode2TaskSB: StringBuilder?,
-    newCode2Task: SessionTask,
-    prevCode2TaskSB: StringBuilder?,
-    prevCode2Task: SessionTask,
-    patch2TaskSB: StringBuilder?,
-    patch2Task: SessionTask
-) {
-    val prevCode = load(filepath)
-    val newCode = patch(prevCode, diffVal)
-    val echoDiff = try {
-        DiffUtil.formatDiff(
-            DiffUtil.generateDiff(
-                prevCode.lines(),
-                newCode.lines()
-            )
-        )
-    } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
-    }
-
-    newCodeTaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
-            ui = ui, tabs = false
-        )
-    )
-    newCodeTask.complete("")
-    prevCodeTaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
-            ui = ui, tabs = false
-        )
-    )
-    prevCodeTask.complete("")
-    patchTaskSB?.set(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff}\n```", ui = ui, tabs = false))
-    patchTask.complete("")
-
-
-    val newCode2 = patch(
-        load(filepath).lines().reversed().joinToString("\n"),
-        diffVal.lines().reversed().joinToString("\n")
-    ).lines().reversed().joinToString("\n")
-    val echoDiff2 = try {
-        DiffUtil.formatDiff(
-            DiffUtil.generateDiff(
-                prevCode.lines(),
-                newCode2.lines(),
-            )
-        )
-    } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
-    }
-
-    newCode2TaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
-            ui = ui, tabs = false
-        )
-    )
-    newCode2Task.complete("")
-    prevCode2TaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
-            ui = ui, tabs = false
-        )
-    )
-    prevCode2Task.complete("")
-    patch2TaskSB?.set(renderMarkdown("# $filename\n\n```diff\n  ${echoDiff2}\n```", ui = ui, tabs = false))
-    patch2Task.complete("")
+private val patch = { code: String, diff: String ->
+    val isCurlyBalanced = FileValidationUtils.isCurlyBalanced(code)
+    val isSquareBalanced = FileValidationUtils.isSquareBalanced(code)
+    val isParenthesisBalanced = FileValidationUtils.isParenthesisBalanced(code)
+    val isQuoteBalanced = FileValidationUtils.isQuoteBalanced(code)
+    val isSingleQuoteBalanced = FileValidationUtils.isSingleQuoteBalanced(code)
+    var newCode = IterativePatchUtil.patch(code, diff)
+    newCode = newCode.replace("\r", "")
+    val isCurlyBalancedNew = FileValidationUtils.isCurlyBalanced(newCode)
+    val isSquareBalancedNew = FileValidationUtils.isSquareBalanced(newCode)
+    val isParenthesisBalancedNew = FileValidationUtils.isParenthesisBalanced(newCode)
+    val isQuoteBalancedNew = FileValidationUtils.isQuoteBalanced(newCode)
+    val isSingleQuoteBalancedNew = FileValidationUtils.isSingleQuoteBalanced(newCode)
+    val isError = ((isCurlyBalanced && !isCurlyBalancedNew) ||
+            (isSquareBalanced && !isSquareBalancedNew) ||
+            (isParenthesisBalanced && !isParenthesisBalancedNew) ||
+            (isQuoteBalanced && !isQuoteBalancedNew) ||
+            (isSingleQuoteBalanced && !isSingleQuoteBalancedNew))
+    PatchResult(newCode, !isError)
 }
 
 
@@ -452,7 +492,7 @@ fun applyFileDiffs(
         try {
             val originalCode = filepath.readText(Charsets.UTF_8)
             val newCode = patch(originalCode, diffVal)
-            filepath?.toFile()?.writeText(newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            filepath?.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
         } catch (e: Throwable) {
             log.warn("Error", e)
         }

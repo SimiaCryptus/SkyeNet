@@ -14,47 +14,70 @@ fun SocketManagerBase.addApplyDiffLinks(
     task: SessionTask,
     ui: ApplicationInterface,
 ): String {
+
+
+    val patch = { code: String, diff: String ->
+        val isCurlyBalanced = FileValidationUtils.isCurlyBalanced(code)
+        val isSquareBalanced = FileValidationUtils.isSquareBalanced(code)
+        val isParenthesisBalanced = FileValidationUtils.isParenthesisBalanced(code)
+        val isQuoteBalanced = FileValidationUtils.isQuoteBalanced(code)
+        val isSingleQuoteBalanced = FileValidationUtils.isSingleQuoteBalanced(code)
+        var newCode = IterativePatchUtil.patch(code, diff)
+        newCode = newCode.replace("\r", "")
+        val isCurlyBalancedNew = FileValidationUtils.isCurlyBalanced(newCode)
+        val isSquareBalancedNew = FileValidationUtils.isSquareBalanced(newCode)
+        val isParenthesisBalancedNew = FileValidationUtils.isParenthesisBalanced(newCode)
+        val isQuoteBalancedNew = FileValidationUtils.isQuoteBalanced(newCode)
+        val isSingleQuoteBalancedNew = FileValidationUtils.isSingleQuoteBalanced(newCode)
+        val isError = ((isCurlyBalanced && !isCurlyBalancedNew) ||
+                (isSquareBalanced && !isSquareBalancedNew) ||
+                (isParenthesisBalanced && !isParenthesisBalancedNew) ||
+                (isQuoteBalanced && !isQuoteBalancedNew) ||
+                (isSingleQuoteBalanced && !isSingleQuoteBalancedNew))
+        PatchResult(newCode, !isError)
+    }
+
     val diffPattern = """(?s)(?<![^\n])```diff\n(.*?)\n```""".toRegex()
     val matches = diffPattern.findAll(response).distinct()
     val withLinks = matches.fold(response) { markdown, diffBlock ->
         val diffVal: String = diffBlock.groupValues[1]
-        val applydiffTask = ui.newTask(false)
+        val buttons = ui.newTask(false)
         lateinit var hrefLink: StringBuilder
         var reverseHrefLink: StringBuilder? = null
-        hrefLink = applydiffTask.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
+        hrefLink = buttons.complete(hrefLink("Apply Diff", classname = "href-link cmd-button") {
             try {
-                val newCode = IterativePatchUtil.patch(code(), diffVal).replace("\r", "")
-                handle(newCode)
+                val newCode = patch(code(), diffVal)
+                handle(newCode.newCode)
                 hrefLink.set("""<div class="cmd-button">Diff Applied</div>""")
-                applydiffTask.complete()
+                buttons.complete()
                 reverseHrefLink?.clear()
             } catch (e: Throwable) {
                 hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
-                applydiffTask.complete()
+                buttons.complete()
                 task.error(ui, e)
             }
         })!!
-        val patch = IterativePatchUtil.patch(code(), diffVal).replace("\r", "")
+        val patch = patch(code(), diffVal).newCode
         val test1 = DiffUtil.formatDiff(
             DiffUtil.generateDiff(
                 code().replace("\r", "").lines(),
                 patch.lines()
             )
         )
-        val patchRev = IterativePatchUtil.patch(
+        val patchRev = patch(
             code().lines().reversed().joinToString("\n"),
             diffVal.lines().reversed().joinToString("\n")
-        ).replace("\r", "")
+        ).newCode
         if (patchRev != patch) {
-            reverseHrefLink = applydiffTask.complete(hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
+            reverseHrefLink = buttons.complete(hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
                 try {
                     val reversedCode = code().lines().reversed().joinToString("\n")
                     val reversedDiff = diffVal.lines().reversed().joinToString("\n")
-                    val newReversedCode = IterativePatchUtil.patch(reversedCode, reversedDiff).replace("\r", "")
+                    val newReversedCode = patch(reversedCode, reversedDiff).newCode
                     val newCode = newReversedCode.lines().reversed().joinToString("\n")
                     handle(newCode)
                     reverseHrefLink!!.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""")
-                    applydiffTask.complete()
+                    buttons.complete()
                     hrefLink.clear()
                 } catch (e: Throwable) {
                     task.error(ui, e)
@@ -73,7 +96,7 @@ fun SocketManagerBase.addApplyDiffLinks(
                     "Diff" to renderMarkdown("```diff\n$diffVal\n```", ui = ui, tabs = true),
                     "Verify" to renderMarkdown("```diff\n$test1\n```", ui = ui, tabs = true),
                 ), ui = ui, split = true
-            ) + "\n" + applydiffTask.placeholder
+            ) + "\n" + buttons.placeholder
         } else {
             displayMapInTabs(
                 mapOf(
@@ -81,7 +104,7 @@ fun SocketManagerBase.addApplyDiffLinks(
                     "Verify" to renderMarkdown("```diff\n$test1\n```", ui = ui, tabs = true),
                     "Reverse" to renderMarkdown("```diff\n$test2\n```", ui = ui, tabs = true),
                 ), ui = ui, split = true
-            ) + "\n" + applydiffTask.placeholder
+            ) + "\n" + buttons.placeholder
         }
         markdown.replace(diffBlock.value, newValue)
     }

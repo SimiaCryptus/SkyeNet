@@ -367,13 +367,6 @@ class WebDevAgent(
                 renderMarkdown(
                     ui.socketManager!!.addApplyFileDiffLinks(
                         root = root.toPath(),
-                        code = {
-                            codeFiles.filter {
-                                if (it.name.lowercase().endsWith(".png")) return@filter false
-                                if (it.name.lowercase().endsWith(".jpg")) return@filter false
-                                true
-                            }.map { it to root.resolve(it.toFile()).readText() }.toMap()
-                        },
                         response = code,
                         handle = { newCodeMap ->
                             newCodeMap.forEach { (path, newCode) ->
