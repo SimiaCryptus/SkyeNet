@@ -373,7 +373,8 @@ class WebDevAgent(
                                 task.complete("<a href='${"fileIndex/$session/$path"}'>$path</a> Updated")
                             }
                         },
-                        ui = ui
+                        ui = ui,
+                        api = api
                     )
                 )
             },

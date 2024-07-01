@@ -1,6 +1,10 @@
 package com.simiacryptus.diff
 
+import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.AgentPatterns
+import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
@@ -19,6 +23,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     response: String,
     handle: (Map<Path, String>) -> Unit,
     ui: ApplicationInterface,
+    api: API,
 ): String {
     val headerPattern = """(?s)(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
     val diffPattern = """(?s)(?<![^\n])```diff\n(.*?)\n```""".toRegex() // capture filename
@@ -36,7 +41,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
         val filename = resolve(root, header?.second ?: "Unknown")
         val diffVal = diffBlock.second
-        val newValue = renderDiffBlock(root, filename, diffVal, handle, ui)
+        val newValue = renderDiffBlock(root, filename, diffVal, handle, ui, api)
         markdown.replace("```diff\n$diffVal\n```", newValue)
     }
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
@@ -133,7 +138,8 @@ private fun SocketManagerBase.renderDiffBlock(
     filename: String,
     diffVal: String,
     handle: (Map<Path, String>) -> Unit,
-    ui: ApplicationInterface
+    ui: ApplicationInterface,
+    api: API?
 ): String {
 
     val diffTask = ui.newTask(root = false)
@@ -143,6 +149,7 @@ private fun SocketManagerBase.renderDiffBlock(
     val newCodeTaskSB = newCodeTask.add("")
     val patchTask = ui.newTask(root = false)
     val patchTaskSB = patchTask.add("")
+    val fixTask = ui.newTask(root = false)
     val prevCode2Task = ui.newTask(root = false)
     val prevCode2TaskSB = prevCode2Task.add("")
     val newCode2Task = ui.newTask(root = false)
@@ -154,6 +161,7 @@ private fun SocketManagerBase.renderDiffBlock(
             "Code" to (prevCodeTask?.placeholder ?: ""),
             "Preview" to (newCodeTask?.placeholder ?: ""),
             "Echo" to (patchTask?.placeholder ?: ""),
+            "Fix" to (fixTask?.placeholder ?: ""),
         )
     )
     val verifyRevTabs = AgentPatterns.displayMapInTabs(
@@ -175,10 +183,11 @@ private fun SocketManagerBase.renderDiffBlock(
             "Verify" to verifyTabs,
         )
     )
-    
+
     diffTask?.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
 
     val filepath = path(root, filename)
+    val prevCode = load(filepath)
     val relativize = try {
         root.relativize(filepath)
     } catch (e: Throwable) {
@@ -213,39 +222,82 @@ private fun SocketManagerBase.renderDiffBlock(
 
 
 
+                val patchFixer = SimpleActor(
+                    prompt = """
+                        |You are a helpful AI that helps people with coding.
+                        |
+                        |Response should use one or more code patches in diff format within ```diff code blocks.
+                        |Each diff should be preceded by a header that identifies the file being modified.
+                        |The diff format should use + for line additions, - for line deletions.
+                        |The diff should include 2 lines of context before and after every change.
+                        |
+                        |Example:
+                        |
+                        |Here are the patches:
+                        |
+                        |### src/utils/exampleUtils.js
+                        |```diff
+                        | // Utility functions for example feature
+                        | const b = 2;
+                        | function exampleFunction() {
+                        |-   return b + 1;
+                        |+   return b + 2;
+                        | }
+                        |```
+                        |
+                        |### tests/exampleUtils.test.js
+                        |```diff
+                        | // Unit tests for exampleUtils
+                        | const assert = require('assert');
+                        | const { exampleFunction } = require('../src/utils/exampleUtils');
+                        | 
+                        | describe('exampleFunction', () => {
+                        |-   it('should return 3', () => {
+                        |+   it('should return 4', () => {
+                        |     assert.equal(exampleFunction(), 3);
+                        |   });
+                        | });
+                        |```
+                        """.trimMargin(),
+                    model = ChatModels.GPT4o,
+                    temperature = 0.3
+                )
 
+                val echoDiff = try {
+                    DiffUtil.formatDiff(
+                        DiffUtil.generateDiff(
+                            prevCode.lines(),
+                            newCode.newCode.lines()
+                        )
+                    )
+                } catch (e: Throwable) {
+                    renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+                }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                var answer = patchFixer.answer(
+                    listOf(
+                        """
+                        |Code:
+                        |```${filename.split('.').lastOrNull() ?: ""}
+                        |$prevCode
+                        |```
+                        |
+                        |Patch:
+                        |```diff
+                        |$diffVal
+                        |```
+                        |
+                        |Effective Patch:
+                        |```diff
+                        |  $echoDiff
+                        |```
+                        |
+                        |Please provide a fix for the diff above in the form of a diff patch.
+                        """.trimMargin()
+                    ), api as OpenAIClient
+                )
+                answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
+                fixTask.complete(answer)
             } catch (e: Throwable) {
                 log.error("Error in fix patch", e)
             }
@@ -292,7 +344,6 @@ private fun SocketManagerBase.renderDiffBlock(
                 lastModifiedTime = currentModifiedTime
                 val thisFilehash = Md5Crypt.md5Crypt(filepath?.toFile()?.readText()?.toByteArray())
                 if (!isApplied && thisFilehash != filehash) {
-                    val prevCode = load(filepath)
                     val newCode = patch(prevCode, diffVal)
                     val echoDiff = try {
                         DiffUtil.formatDiff(
