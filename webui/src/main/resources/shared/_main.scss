@@ -413,11 +413,10 @@ pre.response-message {
 #footer {
   position: fixed;
   bottom: 0;
-  width: 100vw;
+  right: 5px;
   text-align: right;
   z-index: 1000;
   padding: 10px;
-  background-color: $toolbar-bg-color;
 
   a {
     color: $footer-link-color;

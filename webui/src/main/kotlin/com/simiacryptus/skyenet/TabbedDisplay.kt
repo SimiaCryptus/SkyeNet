@@ -18,7 +18,7 @@ open class TabbedDisplay(
     <div class="tabs-container" id="${UUID.randomUUID()}">
       ${renderTabButtons()}
       ${
-        tabs.withIndex().joinToString("\n")
+        tabs.toTypedArray().withIndex().joinToString("\n")
         { (idx, t) -> renderContentTab(t, idx) }
     }
       </div>
@@ -31,7 +31,7 @@ open class TabbedDisplay(
 
     open fun renderTabButtons() = """
     <div class="tabs">${
-        tabs.withIndex().joinToString("\n") { (idx, pair) ->
+        tabs.toTypedArray().withIndex().joinToString("\n") { (idx, pair) ->
             if (idx == selectedTab) {
                 """<button class="tab-button active" data-for-tab="$idx">${pair.first}</button>"""
             } else {

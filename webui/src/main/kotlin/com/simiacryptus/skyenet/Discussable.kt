@@ -37,7 +37,7 @@ ${
                 val idx: Int = size
                 this.set(label(idx), newTask.placeholder)
                 main(idx, newTask)
-                this.selectedTab = idx
+                //this.selectedTab = idx
                 header?.clear()
                 newTask.complete()
             }
@@ -176,7 +176,7 @@ ${
             return
         }
         try {
-            if (null != tabIndex) tabs.selectedTab = tabIndex
+            //if (null != tabIndex) tabs.selectedTab = tabIndex
             tabContent.apply {
                 val prevTab = toString()
                 set(prevTab)
@@ -201,7 +201,7 @@ ${
             val header = newTask.header("Processing...")
             tabs[tabs.label(idx)] = newTask.placeholder
             main(idx, newTask)
-            tabs.selectedTab = idx
+            //tabs.selectedTab = idx
             header?.clear()
             newTask.complete()
             semaphore.acquire()
