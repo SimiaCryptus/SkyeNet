@@ -45,7 +45,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         val header = headers.lastOrNull { it.first.endInclusive < block.range.start }
         val filename = resolve(root, header?.second ?: "Unknown")
         when  {
-            !File(filename).exists() -> false
+            !root.toFile().resolve(filename).exists() -> false
             //block.groupValues[1] == "diff" -> true
             else -> true
         }
@@ -55,7 +55,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         val header = headers.lastOrNull { it.first.endInclusive < block.range.start }
         val filename = resolve(root, header?.second ?: "Unknown")
         when  {
-            File(filename).exists() -> false
+            root.toFile().resolve(filename).exists() -> false
             block.groupValues[1] == "diff" -> false
             else -> true
         }
@@ -65,7 +65,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         val filename = resolve(root, header?.second ?: "Unknown")
         val diffVal = diffBlock.second
         val newValue = renderDiffBlock(root, filename, diffVal, handle, ui, api)
-        markdown.replace("```diff\n$diffVal\n```", newValue)
+        markdown.replace("```[^\n]*\n$diffVal\n```", newValue)
     }
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
         val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
@@ -134,12 +134,12 @@ fun resolve(root: Path, filename: String): String {
         filename.trim()
     }
     var filepath = path(root, filename)
-    if (filepath?.toFile()?.exists() == false) filepath = null
-    if (null != filepath) return filepath.toString()
+    if (filepath?.toFile()?.exists() == false) filepath = null // reset if file not found
+    if (null != filepath) return filepath.let { root.relativize(it).toString() }.toString() // return if file found
+
+    // if file not found, search for file in the root directory
     val files = root.toFile().recurseFiles().filter { it.name == filename.split('/', '\\').last() }
-    if (files.size == 1) {
-        filepath = files.first().toPath()
-    }
+    if (files.size == 1) filepath = files.first().toPath() // if only one file found, return it
     return filepath?.let { root.relativize(it).toString() } ?: filename
 }
 
@@ -533,12 +533,14 @@ private fun path(root: Path, filename: String): Path? {
 fun findFile(root: Path, filename: String): Path? {
     return try {
         when {
+            root.resolve(filename).toFile().exists() -> root.resolve(filename)
+
             /* filename is absolute */
             filename.startsWith("/") -> {
                 val resolve = File(filename)
                 if (resolve.exists()) resolve.toPath() else findFile(root, filename.removePrefix("/"))
             }
-            /* win absolute */
+            /* windows absolute */
             filename.indexOf(":\\") == 1 -> {
                 val resolve = File(filename)
                 if (resolve.exists()) resolve.toPath() else findFile(
@@ -547,7 +549,6 @@ fun findFile(root: Path, filename: String): Path? {
                 )
             }
 
-            root.resolve(filename).toFile().exists() -> root.resolve(filename)
             null != root.parent && root != root.parent -> findFile(root.parent, filename)
             else -> null
         }
