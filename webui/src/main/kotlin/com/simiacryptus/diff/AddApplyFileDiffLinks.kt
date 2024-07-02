@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.AgentPatterns
+import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -25,15 +26,37 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     ui: ApplicationInterface,
     api: API,
 ): String {
+    val initiator = "(?s)```[\\w]*\n".toRegex()
+    if(response.contains(initiator) && !response.split(initiator, 2)[1].contains("\n```(?![^\n])".toRegex())) {
+        // Single diff block without the closing ``` due to LLM limitations... add it back
+        return addApplyFileDiffLinks(
+            root,
+            response + "\n```",
+            handle,
+            ui,
+            api
+        )
+    }
     val headerPattern = """(?s)(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
-    val diffPattern = """(?s)(?<![^\n])```diff\n(.*?)\n```""".toRegex() // capture filename
-    val codeblockPattern = """(?s)(?<![^\n])```([^\n])(\n.*?\n)```""".toRegex() // capture filename
+    val codeblockPattern = """(?s)(?<![^\n])```([^\n]*)(\n.*?\n)```""".toRegex() // capture filename
     val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
-    val diffs: List<Pair<IntRange, String>> =
-        diffPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
-    val codeblocks = codeblockPattern.findAll(response).filter {
-        when (it.groupValues[1]) {
-            "diff" -> false
+    val findAll = codeblockPattern.findAll(response).toList()
+    val diffs: List<Pair<IntRange, String>> = findAll.filter { block ->
+        val header = headers.lastOrNull { it.first.endInclusive < block.range.start }
+        val filename = resolve(root, header?.second ?: "Unknown")
+        when  {
+            !File(filename).exists() -> false
+            //block.groupValues[1] == "diff" -> true
+            else -> true
+        }
+    }.map { it.range to it.groupValues[2] }.toList()
+
+    val codeblocks = findAll.filter { block ->
+        val header = headers.lastOrNull { it.first.endInclusive < block.range.start }
+        val filename = resolve(root, header?.second ?: "Unknown")
+        when  {
+            File(filename).exists() -> false
+            block.groupValues[1] == "diff" -> false
             else -> true
         }
     }.map { it.range to it }.toList()
@@ -72,7 +95,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
           |```
           """.trimMargin()
         markdown.replace(
-            codeblockRaw, AgentPatterns.displayMapInTabs(
+            codeblockRaw, displayMapInTabs(
                 mapOf(
                     "New" to renderMarkdown(codeblockRaw, ui = ui),
                     "Old" to renderMarkdown(
@@ -156,35 +179,10 @@ private fun SocketManagerBase.renderDiffBlock(
     val newCode2TaskSB = newCode2Task.add("")
     val patch2Task = ui.newTask(root = false)
     val patch2TaskSB = patch2Task.add("")
-    val verifyFwdTabs = AgentPatterns.displayMapInTabs(
-        mapOf(
-            "Code" to (prevCodeTask?.placeholder ?: ""),
-            "Preview" to (newCodeTask?.placeholder ?: ""),
-            "Echo" to (patchTask?.placeholder ?: ""),
-            "Fix" to (fixTask?.placeholder ?: ""),
-        )
-    )
-    val verifyRevTabs = AgentPatterns.displayMapInTabs(
-        mapOf(
-            "Code" to (prevCode2Task?.placeholder ?: ""),
-            "Preview" to (newCode2Task?.placeholder ?: ""),
-            "Echo" to (patch2Task?.placeholder ?: ""),
-        )
-    )
-    val verifyTabs = AgentPatterns.displayMapInTabs(
-        mapOf(
-            "Forward" to verifyFwdTabs,
-            "Reverse" to verifyRevTabs,
-        )
-    )
-    val mainTabs = AgentPatterns.displayMapInTabs(
-        mapOf(
-            "Diff" to (diffTask?.placeholder ?: ""),
-            "Verify" to verifyTabs,
-        )
-    )
 
-    diffTask?.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
+
+
+
 
     val filepath = path(root, filename)
     val prevCode = load(filepath)
@@ -202,6 +200,45 @@ private fun SocketManagerBase.renderDiffBlock(
     var originalCode = load(filepath)
     lateinit var revert: String
     var newCode = patch(originalCode, diffVal)
+
+
+
+    val verifyFwdTabs = if(!newCode.isValid) displayMapInTabs(
+        mapOf(
+            "Code" to (prevCodeTask?.placeholder ?: ""),
+            "Preview" to (newCodeTask?.placeholder ?: ""),
+            "Echo" to (patchTask?.placeholder ?: ""),
+            "Fix" to (fixTask?.placeholder ?: ""),
+        )
+    ) else displayMapInTabs(
+        mapOf(
+            "Code" to (prevCodeTask?.placeholder ?: ""),
+            "Preview" to (newCodeTask?.placeholder ?: ""),
+            "Echo" to (patchTask?.placeholder ?: ""),
+        )
+    )
+    val verifyRevTabs = displayMapInTabs(
+        mapOf(
+            "Code" to (prevCode2Task?.placeholder ?: ""),
+            "Preview" to (newCode2Task?.placeholder ?: ""),
+            "Echo" to (patch2Task?.placeholder ?: ""),
+        )
+    )
+    val verifyTabs = displayMapInTabs(
+        mapOf(
+            "Forward" to verifyFwdTabs,
+            "Reverse" to verifyRevTabs,
+        )
+    )
+    val mainTabs = displayMapInTabs(
+        mapOf(
+            "Diff" to (diffTask?.placeholder ?: ""),
+            "Verify" to verifyTabs,
+        )
+    )
+
+    diffTask?.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
+
     var apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
             originalCode = load(filepath)
@@ -217,10 +254,9 @@ private fun SocketManagerBase.renderDiffBlock(
         }
     }
     if(!newCode.isValid) {
-        apply1 += hrefLink("Fix Patch", classname = "href-link cmd-button") {
+        val fixPatchLink = hrefLink("Fix Patch", classname = "href-link cmd-button") {
             try {
-
-
+                val header = fixTask.header("Attempting to fix patch...")
 
                 val patchFixer = SimpleActor(
                     prompt = """
@@ -297,11 +333,14 @@ private fun SocketManagerBase.renderDiffBlock(
                     ), api as OpenAIClient
                 )
                 answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
+                header?.clear()
                 fixTask.complete(answer)
             } catch (e: Throwable) {
                 log.error("Error in fix patch", e)
             }
         }
+        //apply1 += fixPatchLink
+        fixTask.complete(fixPatchLink)
     }
     val apply2 = hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
         try {
