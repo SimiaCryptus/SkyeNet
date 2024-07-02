@@ -15,6 +15,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 import kotlin.io.path.readText
 
 private fun String.reverseLines(): String = lines().reversed().joinToString("\n")
@@ -37,7 +38,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
             api
         )
     }
-    val headerPattern = """(?s)(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
+    val headerPattern = """(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
     val codeblockPattern = """(?s)(?<![^\n])```([^\n]*)(\n.*?\n)```""".toRegex() // capture filename
     val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
     val findAll = codeblockPattern.findAll(response).toList()
@@ -65,7 +66,8 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         val filename = resolve(root, header?.second ?: "Unknown")
         val diffVal = diffBlock.second
         val newValue = renderDiffBlock(root, filename, diffVal, handle, ui, api)
-        markdown.replace("```[^\n]*\n$diffVal\n```", newValue)
+        val regex = "(?s)```[^\n]*\n?${Pattern.quote(diffVal)}\n?```".toRegex()
+        markdown.replace(regex, newValue)
     }
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
         val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
