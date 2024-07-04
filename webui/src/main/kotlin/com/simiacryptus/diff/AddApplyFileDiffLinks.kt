@@ -111,12 +111,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
                         """
                       |```diff
                       |${
-                            DiffUtil.formatDiff(
-                                DiffUtil.generateDiff(
-                                    prevCode.lines(),
-                                    codeValue.lines()
-                                )
-                            )
+                            IterativePatchUtil.generatePatch(prevCode, codeValue)
                         }
                       |```
                       """.trimMargin(), ui = ui
@@ -302,12 +297,7 @@ private fun SocketManagerBase.renderDiffBlock(
                 )
 
                 val echoDiff = try {
-                    DiffUtil.formatDiff(
-                        DiffUtil.generateDiff(
-                            prevCode.lines(),
-                            newCode.newCode.lines()
-                        )
-                    )
+                    IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
                 } catch (e: Throwable) {
                     renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
                 }
@@ -387,12 +377,7 @@ private fun SocketManagerBase.renderDiffBlock(
                 if (!isApplied && thisFilehash != filehash) {
                     val newCode = patch(prevCode, diffVal)
                     val echoDiff = try {
-                        DiffUtil.formatDiff(
-                            DiffUtil.generateDiff(
-                                prevCode.lines(),
-                                newCode.newCode.lines()
-                            )
-                        )
+                        IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
                     } catch (e: Throwable) {
                         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
                     }
@@ -423,12 +408,7 @@ private fun SocketManagerBase.renderDiffBlock(
                         diffVal.reverseLines()
                     ).newCode.lines().reversed().joinToString("\n")
                     val echoDiff2 = try {
-                        DiffUtil.formatDiff(
-                            DiffUtil.generateDiff(
-                                prevCode.lines(),
-                                newCode2.lines(),
-                            )
-                        )
+                        IterativePatchUtil.generatePatch(prevCode, newCode2)
                     } catch (e: Throwable) {
                         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
                     }

@@ -58,12 +58,7 @@ fun SocketManagerBase.addApplyDiffLinks(
             }
         })!!
         val patch = patch(code(), diffVal).newCode
-        val test1 = DiffUtil.formatDiff(
-            DiffUtil.generateDiff(
-                code().replace("\r", "").lines(),
-                patch.lines()
-            )
-        )
+        val test1 = IterativePatchUtil.generatePatch(code().replace("\r", ""), patch)
         val patchRev = patch(
             code().lines().reversed().joinToString("\n"),
             diffVal.lines().reversed().joinToString("\n")

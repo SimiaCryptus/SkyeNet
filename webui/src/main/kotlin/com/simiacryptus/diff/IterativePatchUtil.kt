@@ -1,21 +1,28 @@
 package com.simiacryptus.diff
 
-import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
-import kotlin.math.floor
 
 object IterativePatchUtil {
-
     private val log = LoggerFactory.getLogger(IterativePatchUtil::class.java)
 
     enum class LineType { CONTEXT, ADD, DELETE }
+
+    // Tracks the nesting depth of different bracket types
+    data class LineMetrics(
+        var parenthesesDepth: Int = 0,
+        var squareBracketsDepth: Int = 0,
+        var curlyBracesDepth: Int = 0
+    )
+
+    // Represents a single line in the source or patch text
     class LineRecord(
         val index: Int,
         val line: String?,
         var previousLine: LineRecord? = null,
         var nextLine: LineRecord? = null,
         var matchingLine: LineRecord? = null,
-        var type: LineType = LineType.CONTEXT
+        var type: LineType = LineType.CONTEXT,
+        var metrics: LineMetrics = LineMetrics()
     ) {
         override fun toString(): String {
             val sb = StringBuilder()
@@ -27,6 +34,7 @@ object IterativePatchUtil {
             }
             sb.append(" ")
             sb.append(line)
+            sb.append(" [({:${metrics.parenthesesDepth}, [:${metrics.squareBracketsDepth}, {:${metrics.curlyBracesDepth}]")
             return sb.toString()
         }
     }
@@ -41,12 +49,92 @@ object IterativePatchUtil {
     }
 
     /**
+     * Generates an optimal patch by comparing two code files.
+     * @param oldCode The original code.
+     * @param newCode The new code.
+     * @return The generated patch as a string.
+     */
+    fun generatePatch(oldCode: String, newCode: String): String {
+        log.info("Generating patch")
+        // Compare old and new code to establish links between matching lines
+        val (oldLines, newLines) = compare(oldCode, newCode)
+        // Create a patch string based on the comparison results
+        return createPatchFromComparison(oldLines, newLines)
+    }
+
+    /**
+     * Creates a patch string from the comparison of old and new code lines.
+     * @param oldLines The old code lines with established links.
+     * @param newLines The new code lines with established links.
+     * @return The generated patch as a string.
+     */
+    private fun createPatchFromComparison(oldLines: List<LineRecord>, newLines: List<LineRecord>): String {
+        log.debug("Creating patch from comparison")
+        val patchBuilder = StringBuilder()
+        var oldIndex = 0
+        var newIndex = 0
+
+        // Iterate through both old and new lines to create the patch
+        while (oldIndex < oldLines.size || newIndex < newLines.size) {
+            when {
+                oldIndex >= oldLines.size -> {
+                    // Remaining lines in new code are additions
+                    patchBuilder.append("+ ${newLines[newIndex].line}\n")
+                    newIndex++
+                }
+
+                newIndex >= newLines.size -> {
+                    // Remaining lines in old code are deletions
+                    patchBuilder.append("- ${oldLines[oldIndex].line}\n")
+                    oldIndex++
+                }
+
+                oldLines[oldIndex].matchingLine == newLines[newIndex] -> {
+                    // Matching lines are context
+                    patchBuilder.append("  ${oldLines[oldIndex].line}\n")
+                    oldIndex++
+                    newIndex++
+                }
+
+                else -> {
+                    // Non-matching lines are either deletions or additions
+                    if (oldLines[oldIndex].matchingLine == null) {
+                        patchBuilder.append("- ${oldLines[oldIndex].line}\n")
+                        oldIndex++
+                    } else {
+                        patchBuilder.append("+ ${newLines[newIndex].line}\n")
+                        newIndex++
+                    }
+                }
+            }
+        }
+
+        log.debug("Patch creation completed")
+        return patchBuilder.toString()
+    }
+
+    /**
      * Applies a patch to the given source text.
      * @param source The original text.
      * @param patch The patch to apply.
      * @return The text after the patch has been applied.
      */
     fun patch(source: String, patch: String): String {
+        // Compare source and patch to establish links between matching lines
+        val (sourceLines, patchLines) = compare(source, patch)
+
+        // Generate the patched text using the established links
+        log.info("Generating patched text using established links")
+        val generatePatchedTextUsingLinks = generatePatchedTextUsingLinks(sourceLines, patchLines)
+
+        log.info("Patch process completed")
+        return generatePatchedTextUsingLinks
+    }
+
+    private fun compare(
+        source: String,
+        patch: String
+    ): Pair<List<LineRecord>, List<LineRecord>> {
         log.info("Starting patch process")
         // Parse the source and patch texts into lists of line records
         val sourceLines = parseLines(source)
@@ -60,14 +148,7 @@ object IterativePatchUtil {
         // Step 2: Link all exact matches in the source and patch which are adjacent to established links
         log.info("Step 2: Linking adjacent matching lines")
         linkAdjacentMatchingLines(sourceLines)
-
-        // Step 3: Establish a distance metric for matches based on Levenshtein distance and distance to established links.
-        //linkByLevenshteinDistance(sourceLines, patchLines)
-
-        // Generate the patched text using the established links
-        log.info("Generating patched text using established links")
-        log.info("Patch process completed")
-        return generatePatchedTextUsingLinks(sourceLines, patchLines)
+        return Pair(sourceLines, patchLines)
     }
 
     /**
@@ -77,72 +158,94 @@ object IterativePatchUtil {
      * @return The final patched text.
      */
     private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
-        val patchedTextBuilder = StringBuilder()
-        val sourceLineBuffer = sourceLines.toMutableList()
         log.debug("Starting to generate patched text")
 
-        // Add any leading lines from the source that are not in the patch
-        while (sourceLineBuffer.firstOrNull()?.matchingLine == null) {
-            val line = sourceLineBuffer.removeFirstOrNull() ?: break
-            patchedTextBuilder.appendLine(line.line)
-            log.debug("Added leading source line: ${line}")
-        }
-        log.debug("Added ${patchedTextBuilder.lines().size} leading lines from source")
-
-        // Add any leading 'add' lines from the patch
-        val patchLines = patchLines.toMutableList()
-        while (patchLines.firstOrNull()?.type == LineType.ADD) {
-            val line = patchLines.removeFirstOrNull() ?: break
-            patchedTextBuilder.appendLine(line.line)
-            log.debug("Added leading patch line: ${line}")
-        }
-
-        log.debug("Added ${patchedTextBuilder.lines().size} leading 'add' lines from patch")
-
-        // Process the rest of the lines
-        while (sourceLineBuffer.isNotEmpty()) {
-            // Copy all lines until the next matched line
-            val codeLine = sourceLineBuffer.removeFirst()
-            when {
-                codeLine.matchingLine == null -> {
-                    // If the line is not matched and is adjacent to a non-matched line, add it as a context line
-                    log.debug("Processing unmatched line: ${codeLine}")
-                    if (codeLine.nextLine?.matchingLine == null || codeLine.previousLine?.matchingLine == null) {
-                        patchedTextBuilder.appendLine(codeLine.line)
-                        log.debug("Added unmatched line: ${codeLine}")
-                    }
+        // Recursive function to generate patched text
+        fun generatePatchedText(
+            sourceLines: List<LineRecord>,
+            patchLines: List<LineRecord>,
+            patchedText: List<String>,
+            currentMetrics: LineMetrics = LineMetrics()
+        ): List<String> {
+            // Base cases for recursion
+            if (sourceLines.isEmpty() && patchLines.isEmpty()) {
+                return patchedText
+            }
+            if (patchLines.isEmpty()) {
+                // Add remaining source lines, checking for bracket mismatches
+                return patchedText + sourceLines.mapNotNull { line ->
+                    updateMetrics(currentMetrics, line.line ?: "")
+                    line.line
                 }
-
-                codeLine.matchingLine!!.type == LineType.DELETE -> log.debug("Skipped deleted line: ${codeLine}")
-                codeLine.matchingLine!!.type == LineType.CONTEXT -> {
-                    patchedTextBuilder.appendLine(codeLine.line)
-                    log.debug("Added context line: ${codeLine}")
-                }
-                codeLine.matchingLine!!.type == LineType.ADD -> {
-                    patchedTextBuilder.appendLine(codeLine.line)
-                    log.debug("Added modified line: ${codeLine}")
+            }
+            if (sourceLines.isEmpty()) {
+                // Add remaining patch lines that are additions
+                return patchedText + patchLines.filter { it.type == LineType.ADD }.mapNotNull { line ->
+                    updateMetrics(currentMetrics, line.line ?: "")
+                    line.line
                 }
             }
 
-            // Add lines marked as ADD in the patch following the current matched line
-            var nextPatchLine = codeLine.matchingLine?.nextLine
-            while (nextPatchLine != null && nextPatchLine.matchingLine == null) {
-                when (nextPatchLine.type) {
-                    LineType.ADD -> {
-                        patchedTextBuilder.appendLine(nextPatchLine.line)
-                        log.debug("Added new line from patch: ${nextPatchLine}")
-                    }
-                    LineType.CONTEXT -> {
-                        patchedTextBuilder.appendLine(nextPatchLine.line)
-                        log.debug("Added context line from patch: ${nextPatchLine}")
-                    }
-                    LineType.DELETE -> log.debug("Skipped deleted line from patch: ${nextPatchLine}")
+            val codeLine = sourceLines.first()
+            val patchLine = patchLines.first()
+
+            // Helper function to add a line and update metrics
+            fun addLine(line: String?): List<String> {
+                updateMetrics(currentMetrics, line ?: "")
+                return patchedText + (line ?: "")
+            }
+
+            // Main logic for generating patched text
+            return when {
+                patchLine.type == LineType.ADD -> {
+                    log.debug("Added new line from patch: $patchLine")
+                    generatePatchedText(sourceLines, patchLines.drop(1), addLine(patchLine.line), currentMetrics)
                 }
-                nextPatchLine = nextPatchLine.nextLine
+
+                codeLine.matchingLine == patchLine && patchLine.type == LineType.DELETE -> {
+                    log.debug("Skipped deleted line: $codeLine")
+                    generatePatchedText(sourceLines.drop(1), patchLines.drop(1), patchedText, currentMetrics)
+                }
+
+                codeLine.matchingLine == patchLine -> {
+                    if (codeLine.metrics != currentMetrics) {
+                        log.warn("Bracket mismatch detected in matched line: ${codeLine.index}")
+                    }
+                    generatePatchedText(sourceLines.drop(1), patchLines.drop(1), addLine(codeLine.line), currentMetrics)
+                }
+
+                codeLine.matchingLine != null -> when(patchLine.type) {
+                    LineType.CONTEXT -> generatePatchedText(sourceLines, patchLines.drop(1), addLine(patchLine.line), currentMetrics)
+                    else -> generatePatchedText(sourceLines, patchLines.drop(1), patchedText, currentMetrics)
+                }
+
+                else -> {
+                    log.debug("Added unmatched source line: $codeLine")
+                    if (codeLine.metrics != currentMetrics) {
+                        log.warn("Bracket mismatch detected in unmatched source line: ${codeLine.index}")
+                    }
+                    generatePatchedText(sourceLines.drop(1), patchLines, addLine(codeLine.line), currentMetrics)
+                }
             }
         }
+
+        val result = generatePatchedText(sourceLines, patchLines, emptyList())
         log.debug("Finished generating patched text")
-        return patchedTextBuilder.toString().trimEnd()
+        return result.joinToString("\n")
+    }
+
+    // Updates the bracket metrics for a given line
+    private fun updateMetrics(metrics: LineMetrics, line: String) {
+        line.forEach { char ->
+            when (char) {
+                '(' -> metrics.parenthesesDepth++
+                ')' -> metrics.parenthesesDepth = maxOf(0, metrics.parenthesesDepth - 1)
+                '[' -> metrics.squareBracketsDepth++
+                ']' -> metrics.squareBracketsDepth = maxOf(0, metrics.squareBracketsDepth - 1)
+                '{' -> metrics.curlyBracesDepth++
+                '}' -> metrics.curlyBracesDepth = maxOf(0, metrics.curlyBracesDepth - 1)
+            }
+        }
     }
 
     /**
@@ -152,7 +255,9 @@ object IterativePatchUtil {
      */
     private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
         log.debug("Starting to link unique matching lines")
+        // Group source lines by their normalized content
         val sourceLineMap = sourceLines.groupBy { normalizeLine(it.line!!) }
+        // Group patch lines by their normalized content, excluding ADD lines
         val patchLineMap = patchLines.filter {
             when (it.type) {
                 LineType.ADD -> false // ADD lines are not matched to source lines
@@ -161,6 +266,7 @@ object IterativePatchUtil {
         }.groupBy { normalizeLine(it.line!!) }
         log.debug("Created source and patch line maps")
 
+        // Find intersecting keys (matching lines) and link them
         sourceLineMap.keys.intersect(patchLineMap.keys).forEach { key ->
             val sourceLine = sourceLineMap[key]?.singleOrNull()
             val patchLine = patchLineMap[key]?.singleOrNull()
@@ -180,6 +286,7 @@ object IterativePatchUtil {
     private fun linkAdjacentMatchingLines(sourceLines: List<LineRecord>) {
         log.debug("Starting to link adjacent matching lines")
         var foundMatch = true
+        // Continue linking until no more matches are found
         while (foundMatch) {
             log.debug("Starting new iteration to find adjacent matches")
             foundMatch = false
@@ -190,6 +297,7 @@ object IterativePatchUtil {
                 if (sourceLine.previousLine != null && patchLine.previousLine != null) {
                     val sourcePrev = sourceLine.previousLine!!
                     var patchPrev = patchLine.previousLine!!
+                    // Skip ADD lines in the patch when looking for matches
                     while (patchPrev.type == LineType.ADD && patchPrev.previousLine != null) {
                         patchPrev = patchPrev.previousLine!!
                     }
@@ -207,6 +315,7 @@ object IterativePatchUtil {
                 if (sourceLine.nextLine != null && patchLine.nextLine != null) {
                     val sourceNext = sourceLine.nextLine!!
                     var patchNext = patchLine.nextLine!!
+                    // Skip ADD lines in the patch when looking for matches
                     while (patchNext.type == LineType.ADD && patchNext.nextLine != null) {
                         patchNext = patchNext.nextLine!!
                     }
@@ -224,116 +333,16 @@ object IterativePatchUtil {
         log.debug("Finished linking adjacent matching lines")
     }
 
-     // ... (other functions remain unchanged)
- 
-    /**
-     * Establishes links between source and patch lines based on the Levenshtein distance and proximity to already established links.
-     * @param sourceLines The source lines.
-     * @param patchLines The patch lines.
-     */
-    private fun linkByLevenshteinDistance(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
-        log.debug("Starting to link by Levenshtein distance")
-        val levenshteinDistance = LevenshteinDistance()
-        val maxProximity = (sourceLines.size + patchLines.size) / 10 // Increase max distance to allow more flexibility
-
-        log.debug("Max proximity set to: $maxProximity")
-        // Iterate over source lines to find potential matches in the patch lines
-        for (sourceLine in sourceLines) {
-            if (sourceLine.matchingLine != null) continue // Skip lines that already have matches
-            var bestMatch: LineRecord? = null
-            var bestDistance = Int.MAX_VALUE
-            var bestProximity = Int.MAX_VALUE
-            log.trace("Processing source line: ${sourceLine.line}")
-
-            for (patchLine in patchLines.filter {
-                when (it.type) {
-                    LineType.ADD -> false // ADD lines are not matched to source lines
-                    else -> true
-                }
-            }) {
-                if (patchLine.matchingLine != null) continue // Skip lines that already have matches
-                val maxDistance = minOf(bestDistance, floor(patchLine.line!!.length.toDouble() / 2).toInt())
-                // Calculate the Levenshtein distance between unmatched source and patch lines
-                val distance =
-                    levenshteinDistance.apply(normalizeLine(sourceLine.line!!), normalizeLine(patchLine.line!!))
-                if (distance <= maxDistance) {
-                    // Consider proximity to established links as a secondary factor
-                    val proximity = calculateProximityDistance(sourceLine, patchLine)
-                    if (proximity > maxProximity) continue
-                    if (distance < bestDistance || (distance == bestDistance && proximity < bestProximity)) {
-                        bestMatch = patchLine
-                        bestDistance = distance
-                        bestProximity = proximity
-                        log.trace("Found potential match: ${patchLine.line}, distance: $distance, proximity: $proximity")
-                    }
-                }
-
-                // Establish the best match found, if any
-                if (bestMatch != null) {
-                    sourceLine.matchingLine = bestMatch
-                    log.debug("Linked by Levenshtein distance: ${sourceLine.line} <-> ${bestMatch.line}")
-                    bestMatch.matchingLine = sourceLine
-                }
-            }
-        }
-    }
-
-    /**
-     * Calculates the proximity distance between a source line and a patch line based on their distance to the nearest established link.
-     * @param sourceLine The source line.
-     * @param patchLine The patch line.
-     * @return The proximity distance.
-     */
-    private fun calculateProximityDistance(sourceLine: LineRecord, patchLine: LineRecord): Int {
-        log.trace("Calculating proximity distance for source line: ${sourceLine.line} and patch line: ${patchLine.line}")
-        // Find the nearest established link in both directions for source and patch lines
-        var sourceDistancePrev = 0
-        var sourceDistanceNext = 0
-        var patchDistancePrev = 0
-        var patchDistanceNext = 0
-
-        var currentSourceLine = sourceLine.previousLine
-        while (currentSourceLine != null) {
-            if (currentSourceLine.matchingLine != null) break
-            sourceDistancePrev++
-            currentSourceLine = currentSourceLine.previousLine
-        }
-
-        currentSourceLine = sourceLine.nextLine
-        while (currentSourceLine != null) {
-            if (currentSourceLine.matchingLine != null) break
-            sourceDistanceNext++
-            currentSourceLine = currentSourceLine.nextLine
-        }
-
-        var currentPatchLine = patchLine.previousLine
-        while (currentPatchLine != null) {
-            if (currentPatchLine.matchingLine != null) break
-            patchDistancePrev++
-            currentPatchLine = currentPatchLine.previousLine
-        }
-
-        currentPatchLine = patchLine.nextLine
-        while (currentPatchLine != null) {
-            if (currentPatchLine.matchingLine != null) break
-            patchDistanceNext++
-            currentPatchLine = currentPatchLine.nextLine
-        }
-
-        // Calculate the total proximity distance as the sum of minimum distances in each direction
-        val proximityDistance =
-            minOf(sourceDistancePrev, patchDistancePrev) + minOf(sourceDistanceNext, patchDistanceNext)
-        log.trace("Calculated proximity distance: $proximityDistance")
-        return proximityDistance
-    }
-
     /**
      * @param text The text to parse.
      * @return The list of line records.
      */
     private fun parseLines(text: String): List<LineRecord> {
         log.debug("Parsing source lines")
+        // Create LineRecords for each line and set links between them
         val lines = setLinks(text.lines().mapIndexed { index, line -> LineRecord(index, line) })
+        // Calculate bracket metrics for each line
+        calculateLineMetrics(lines)
         log.debug("Parsed ${lines.size} source lines")
         return lines
     }
@@ -378,8 +387,37 @@ object IterativePatchUtil {
                 }
             )
         }.filter { it.line != null })
+        calculateLineMetrics(patchLines)
         log.debug("Parsed ${patchLines.size} patch lines")
         return patchLines
+    }
+
+    /**
+     * Calculates the metrics for each line, including bracket nesting depth.
+     * @param lines The list of line records to process.
+     */
+    private fun calculateLineMetrics(lines: List<LineRecord>) {
+        var parenthesesDepth = 0
+        var squareBracketsDepth = 0
+        var curlyBracesDepth = 0
+
+        lines.forEach { lineRecord ->
+            lineRecord.line?.forEach { char ->
+                when (char) {
+                    '(' -> parenthesesDepth++
+                    ')' -> parenthesesDepth = maxOf(0, parenthesesDepth - 1)
+                    '[' -> squareBracketsDepth++
+                    ']' -> squareBracketsDepth = maxOf(0, squareBracketsDepth - 1)
+                    '{' -> curlyBracesDepth++
+                    '}' -> curlyBracesDepth = maxOf(0, curlyBracesDepth - 1)
+                }
+            }
+            lineRecord.metrics = LineMetrics(
+                parenthesesDepth = parenthesesDepth,
+                squareBracketsDepth = squareBracketsDepth,
+                curlyBracesDepth = curlyBracesDepth
+            )
+        }
     }
 
 }
