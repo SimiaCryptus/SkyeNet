@@ -1,6 +1,8 @@
 package com.simiacryptus.diff
 
+import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
+import kotlin.math.max
 import kotlin.math.min
 
 object IterativePatchUtil {
@@ -122,11 +124,13 @@ object IterativePatchUtil {
      */
     fun patch(source: String, patch: String): String {
         // Compare source and patch to establish links between matching lines
-        val (sourceLines, patchLines) = compare(source, patch)
+        var (sourceLines, patchLines) = compare(source, patch)
+
+        patchLines = patchLines.filter { it.line?.let { normalizeLine(it).isEmpty() } == false } // Filter out empty lines in the patch
 
         // Generate the patched text using the established links
         log.info("Generating patched text using established links")
-        val generatePatchedTextUsingLinks = generatePatchedTextUsingLinks(sourceLines, patchLines)
+        val generatePatchedTextUsingLinks = generatePatchedTextUsingLinks(sourceLines, patchLines).trim()
 
         log.info("Patch process completed")
         return generatePatchedTextUsingLinks
@@ -364,6 +368,7 @@ object IterativePatchUtil {
         log.debug("Starting to link adjacent matching lines")
         var foundMatch = true
         var matchedLines = 0
+        val levenshteinDistance = LevenshteinDistance()
         // Continue linking until no more matches are found
         while (foundMatch) {
             log.debug("Starting new iteration to find adjacent matches")
@@ -373,14 +378,28 @@ object IterativePatchUtil {
 
                 // Check the previous line for a potential match
                 if (sourceLine.previousLine != null && patchLine.previousLine != null) {
-                    val sourcePrev = sourceLine.previousLine!!
+                    var sourcePrev = sourceLine.previousLine!!
                     var patchPrev = patchLine.previousLine!!
-                    // Skip ADD lines in the patch when looking for matches
-                    while (patchPrev.type == LineType.ADD && patchPrev.previousLine != null) {
+                    while (patchPrev.previousLine != null && (
+                                patchPrev.type == LineType.ADD // Skip ADD lines in the patch when looking for matches
+                                || normalizeLine(patchPrev.line ?: "").isEmpty() // Skip empty lines
+                            )) {
                         patchPrev = patchPrev.previousLine!!
                     }
+                    while (sourcePrev.previousLine != null && (
+                                normalizeLine(sourcePrev.line ?: "").isEmpty() // Skip empty lines
+                            )) {
+                        sourcePrev = sourcePrev.previousLine!!
+                    }
                     if (sourcePrev.matchingLine == null && patchPrev.matchingLine == null) { // Skip if there's already a match
-                        if (normalizeLine(sourcePrev.line!!) == normalizeLine(patchPrev.line!!)) { // Check if the lines match exactly
+                        var isMatch = normalizeLine(sourcePrev.line!!) == normalizeLine(patchPrev.line!!)
+                        val length = max(sourcePrev.line!!.length, patchPrev.line!!.length)
+                        if (!isMatch && length > 5) { // Check if the lines are similar using Levenshtein distance
+                            val distance = levenshteinDistance.apply(sourcePrev.line, patchPrev.line)
+                            log.debug("Levenshtein distance: $distance")
+                            isMatch = distance <= (length / 3)
+                        }
+                        if (isMatch) { // Check if the lines match exactly
                             sourcePrev.matchingLine = patchPrev
                             patchPrev.matchingLine = sourcePrev
                             foundMatch = true
@@ -392,11 +411,19 @@ object IterativePatchUtil {
 
                 // Check the next line for a potential match
                 if (sourceLine.nextLine != null && patchLine.nextLine != null) {
-                    val sourceNext = sourceLine.nextLine!!
+                    var sourceNext = sourceLine.nextLine!!
                     var patchNext = patchLine.nextLine!!
                     // Skip ADD lines in the patch when looking for matches
-                    while (patchNext.type == LineType.ADD && patchNext.nextLine != null) {
+                    while (patchNext.nextLine != null && (
+                                patchNext.type == LineType.ADD
+                                || normalizeLine(patchNext.line ?: "").isEmpty()
+                            )) {
                         patchNext = patchNext.nextLine!!
+                    }
+                    while (sourceNext.nextLine != null && (
+                                normalizeLine(sourceNext.line ?: "").isEmpty()
+                            )) {
+                        sourceNext = sourceNext.nextLine!!
                     }
                     if (sourceNext.matchingLine == null && patchNext.matchingLine == null) {
                         if (normalizeLine(sourceNext.line!!) == normalizeLine(patchNext.line!!)) {
