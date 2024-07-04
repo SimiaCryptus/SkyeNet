@@ -223,13 +223,15 @@ function applyToAllSvg() {
 }
 
 function substituteMessages(outerMessageId, messageDiv) {
-    Object.entries(messageMap).forEach(([innerMessageId, content]) => {
-        if (outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
-            if (element.innerHTML !== content) {
-                //console.log("Substituting message with id " + innerMessageId + " and content " + content);
-                element.innerHTML = content;
-                substituteMessages(innerMessageId, element);
-            }
+    Object.entries(messageMap)
+        .filter(([innerMessageId, content]) => innerMessageId.startsWith("z"))
+        .forEach(([innerMessageId, content]) => {
+            if (outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
+                if (element.innerHTML !== content) {
+                    //console.log("Substituting message with id " + innerMessageId + " and content " + content);
+                    element.innerHTML = content;
+                    substituteMessages(innerMessageId, element);
+                }
+            });
         });
-    });
 }
