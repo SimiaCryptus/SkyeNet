@@ -1,6 +1,7 @@
 package com.simiacryptus.diff
 
 import org.slf4j.LoggerFactory
+import kotlin.math.min
 
 object IterativePatchUtil {
     private val log = LoggerFactory.getLogger(IterativePatchUtil::class.java)
@@ -181,9 +182,12 @@ object IterativePatchUtil {
             if (sourceSegment.isNotEmpty() && patchSegment.isNotEmpty()) {
                 if(sourceLines.size == sourceSegment.size) return // No subsequence found
                 if(patchLines.size == patchSegment.size) return // No subsequence found
-                linkUniqueMatchingLines(sourceSegment, patchSegment)
-                linkAdjacentMatchingLines(sourceSegment)
-                subsequenceLinking(sourceSegment, patchSegment)
+                var matchedLines = linkUniqueMatchingLines(sourceSegment, patchSegment)
+                matchedLines += linkAdjacentMatchingLines(sourceSegment)
+                if(matchedLines == 0) {
+                    matchedLines += matchFirstBrackets(sourceSegment, patchSegment)
+                }
+                if (matchedLines > 0) subsequenceLinking(sourceSegment, patchSegment)
             }
         }
     }
@@ -285,12 +289,44 @@ object IterativePatchUtil {
         }
     }
 
+    private fun matchFirstBrackets(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): Int {
+        log.debug("Starting to link unique matching lines")
+        // Group source lines by their normalized content
+        val sourceLineMap = sourceLines.filter {
+            it.line?.lineMetrics() != LineMetrics()
+        }.groupBy { normalizeLine(it.line!!) }
+        // Group patch lines by their normalized content, excluding ADD lines
+        val patchLineMap = patchLines.filter {
+            it.line?.lineMetrics() != LineMetrics()
+        }.filter {
+            when (it.type) {
+                LineType.ADD -> false // ADD lines are not matched to source lines
+                else -> true
+            }
+        }.groupBy { normalizeLine(it.line!!) }
+        log.debug("Created source and patch line maps")
+
+        // Find intersecting keys (matching lines) and link them
+        val matched = sourceLineMap.keys.intersect(patchLineMap.keys)
+        matched.forEach { key ->
+            val sourceGroup = sourceLineMap[key]!!
+            val patchGroup = patchLineMap[key]!!
+            for (i in 0 until min(sourceGroup.size, patchGroup.size)) {
+                sourceGroup[i].matchingLine = patchGroup[i]
+                patchGroup[i].matchingLine = sourceGroup[i]
+                log.debug("Linked matching lines: Source[${sourceGroup[i].index}]: ${sourceGroup[i].line} <-> Patch[${patchGroup[i].index}]: ${patchGroup[i].line}")
+            }
+        }
+        log.debug("Finished linking matching lines")
+        return matched.sumOf { sourceLineMap[it]!!.size }
+    }
+
     /**
      * Links lines between the source and the patch that are unique and match exactly.
      * @param sourceLines The source lines.
      * @param patchLines The patch lines.
      */
-    private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>) {
+    private fun linkUniqueMatchingLines(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): Int {
         log.debug("Starting to link unique matching lines")
         // Group source lines by their normalized content
         val sourceLineMap = sourceLines.groupBy { normalizeLine(it.line!!) }
@@ -304,9 +340,10 @@ object IterativePatchUtil {
         log.debug("Created source and patch line maps")
 
         // Find intersecting keys (matching lines) and link them
-        sourceLineMap.keys.intersect(patchLineMap.keys).filter {
+        val matched = sourceLineMap.keys.intersect(patchLineMap.keys).filter {
             sourceLineMap[it]?.size == patchLineMap[it]?.size
-        }.forEach { key ->
+        }
+        matched.forEach { key ->
             val sourceGroup = sourceLineMap[key]!!
             val patchGroup = patchLineMap[key]!!
             for (i in sourceGroup.indices) {
@@ -316,15 +353,17 @@ object IterativePatchUtil {
             }
         }
         log.debug("Finished linking unique matching lines")
+        return matched.sumOf { sourceLineMap[it]!!.size }
     }
 
     /**
      * Links lines that are adjacent to already linked lines and match exactly.
      * @param sourceLines The source lines with some established links.
      */
-    private fun linkAdjacentMatchingLines(sourceLines: List<LineRecord>) {
+    private fun linkAdjacentMatchingLines(sourceLines: List<LineRecord>): Int {
         log.debug("Starting to link adjacent matching lines")
         var foundMatch = true
+        var matchedLines = 0
         // Continue linking until no more matches are found
         while (foundMatch) {
             log.debug("Starting new iteration to find adjacent matches")
@@ -345,6 +384,7 @@ object IterativePatchUtil {
                             sourcePrev.matchingLine = patchPrev
                             patchPrev.matchingLine = sourcePrev
                             foundMatch = true
+                            matchedLines++
                             log.debug("Linked adjacent previous lines: Source[${sourcePrev.index}]: ${sourcePrev.line} <-> Patch[${patchPrev.index}]: ${patchPrev.line}")
                         }
                     }
@@ -363,6 +403,7 @@ object IterativePatchUtil {
                             sourceNext.matchingLine = patchNext
                             patchNext.matchingLine = sourceNext
                             foundMatch = true
+                            matchedLines++
                             log.debug("Linked adjacent next lines: Source[${sourceNext.index}]: ${sourceNext.line} <-> Patch[${patchNext.index}]: ${patchNext.line}")
                         }
                     }
@@ -370,6 +411,7 @@ object IterativePatchUtil {
             }
         }
         log.debug("Finished linking adjacent matching lines")
+        return matchedLines
     }
 
     /**
@@ -457,6 +499,28 @@ object IterativePatchUtil {
                 curlyBracesDepth = curlyBracesDepth
             )
         }
+    }
+
+    fun String.lineMetrics() : LineMetrics {
+        var parenthesesDepth = 0
+        var squareBracketsDepth = 0
+        var curlyBracesDepth = 0
+
+        this.forEach { char ->
+            when (char) {
+                '(' -> parenthesesDepth++
+                ')' -> parenthesesDepth = maxOf(0, parenthesesDepth - 1)
+                '[' -> squareBracketsDepth++
+                ']' -> squareBracketsDepth = maxOf(0, squareBracketsDepth - 1)
+                '{' -> curlyBracesDepth++
+                '}' -> curlyBracesDepth = maxOf(0, curlyBracesDepth - 1)
+            }
+        }
+        return LineMetrics(
+            parenthesesDepth = parenthesesDepth,
+            squareBracketsDepth = squareBracketsDepth,
+            curlyBracesDepth = curlyBracesDepth
+        )
     }
 
 }

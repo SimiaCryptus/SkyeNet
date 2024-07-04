@@ -322,7 +322,7 @@ private fun SocketManagerBase.renderDiffBlock(
                 )
                 answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
                 header?.clear()
-                fixTask.complete(answer)
+                fixTask.complete(renderMarkdown(answer))
             } catch (e: Throwable) {
                 log.error("Error in fix patch", e)
             }
