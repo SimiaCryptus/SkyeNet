@@ -366,7 +366,7 @@ private fun SocketManagerBase.renderDiffBlock(
 
     hrefLink = applydiffTask.complete(apply1 + "\n" + apply2)!!
 
-    lateinit var scheduledFn: () -> Unit
+    /*lateinit var scheduledFn: () -> Unit
     var lastModifiedTime: Long = -1
     scheduledFn = {
         try {
@@ -445,8 +445,14 @@ private fun SocketManagerBase.renderDiffBlock(
             log.error("Error in scheduled function", e)
         }
     }
-    scheduledThreadPoolExecutor.schedule(scheduledFn, 1000, TimeUnit.MILLISECONDS)
-    val newValue = mainTabs + "\n" + applydiffTask.placeholder
+    scheduledThreadPoolExecutor.schedule(scheduledFn, 1000, TimeUnit.MILLISECONDS)*/
+    val newValue = if(newCode.isValid) {
+        mainTabs + "\n" + applydiffTask.placeholder
+    } else {
+        mainTabs + """
+            <div class="warning">Warning: The patch is not valid. Please fix the patch before applying.</div>
+            """.trimIndent() + applydiffTask.placeholder
+    }
     return newValue
 }
 

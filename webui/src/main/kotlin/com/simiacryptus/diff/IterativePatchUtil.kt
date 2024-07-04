@@ -148,7 +148,44 @@ object IterativePatchUtil {
         // Step 2: Link all exact matches in the source and patch which are adjacent to established links
         log.info("Step 2: Linking adjacent matching lines")
         linkAdjacentMatchingLines(sourceLines)
+
+        subsequenceLinking(sourceLines, patchLines)
+
         return Pair(sourceLines, patchLines)
+    }
+
+    private fun subsequenceLinking(
+        sourceLines: List<LineRecord>,
+        patchLines: List<LineRecord>
+    ) {
+        val sourceBuffer: MutableList<LineRecord> = sourceLines.toMutableList()
+        val patchBuffer: MutableList<LineRecord> = patchLines.toMutableList()
+        val sourceSegment = mutableListOf<LineRecord>()
+        val patchSegment = mutableListOf<LineRecord>()
+
+        while (sourceBuffer.isNotEmpty() && patchBuffer.isNotEmpty()) {
+            while (sourceBuffer.isNotEmpty() && sourceBuffer.first().matchingLine == null) {
+                sourceSegment.add(sourceBuffer.first())
+                sourceBuffer.removeAt(0)
+            }
+            while (sourceBuffer.isNotEmpty() && sourceBuffer.first().matchingLine != null) {
+                sourceBuffer.removeAt(0)
+            }
+            while (patchBuffer.isNotEmpty() && patchBuffer.first().matchingLine == null) {
+                patchSegment.add(patchBuffer.first())
+                patchBuffer.removeAt(0)
+            }
+            while (patchBuffer.isNotEmpty() && patchBuffer.first().matchingLine != null) {
+                patchBuffer.removeAt(0)
+            }
+            if (sourceSegment.isNotEmpty() && patchSegment.isNotEmpty()) {
+                if(sourceLines.size == sourceSegment.size) return // No subsequence found
+                if(patchLines.size == patchSegment.size) return // No subsequence found
+                linkUniqueMatchingLines(sourceSegment, patchSegment)
+                linkAdjacentMatchingLines(sourceSegment)
+                subsequenceLinking(sourceSegment, patchSegment)
+            }
+        }
     }
 
     /**
@@ -267,13 +304,15 @@ object IterativePatchUtil {
         log.debug("Created source and patch line maps")
 
         // Find intersecting keys (matching lines) and link them
-        sourceLineMap.keys.intersect(patchLineMap.keys).forEach { key ->
-            val sourceLine = sourceLineMap[key]?.singleOrNull()
-            val patchLine = patchLineMap[key]?.singleOrNull()
-            if (sourceLine != null && patchLine != null) {
-                sourceLine.matchingLine = patchLine
-                patchLine.matchingLine = sourceLine
-                log.debug("Linked unique matching lines: Source[${sourceLine.index}]: ${sourceLine.line} <-> Patch[${patchLine.index}]: ${patchLine.line}")
+        sourceLineMap.keys.intersect(patchLineMap.keys).filter {
+            sourceLineMap[it]?.size == patchLineMap[it]?.size
+        }.forEach { key ->
+            val sourceGroup = sourceLineMap[key]!!
+            val patchGroup = patchLineMap[key]!!
+            for (i in sourceGroup.indices) {
+                sourceGroup[i].matchingLine = patchGroup[i]
+                patchGroup[i].matchingLine = sourceGroup[i]
+                log.debug("Linked unique matching lines: Source[${sourceGroup[i].index}]: ${sourceGroup[i].line} <-> Patch[${patchGroup[i].index}]: ${patchGroup[i].line}")
             }
         }
         log.debug("Finished linking unique matching lines")
