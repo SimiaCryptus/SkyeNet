@@ -165,9 +165,10 @@ class IterativePatchUtilTest {
         val newCode = oldCode
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
-            |  line1
-            |  line2
-            |  line3
+            |@@ -1,3 +1,3 @@
+            | line1
+            | line2
+            | line3
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
@@ -187,10 +188,11 @@ class IterativePatchUtilTest {
         """.trimMargin()
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
-            |  line1
-            |  line2
-            |+ newLine
-            |  line3
+            |@@ -1,3 +1,4 @@
+            | line1
+            | line2
+            |+newLine
+            | line3
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
@@ -208,9 +210,10 @@ class IterativePatchUtilTest {
         """.trimIndent()
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
-            |  line1
-            |- line2
-            |  line3
+            |@@ -1,3 +1,2 @@
+            | line1
+            |-line2
+            | line3
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
@@ -229,10 +232,11 @@ class IterativePatchUtilTest {
         """.trimIndent()
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
-            |  line1
-            |- line2
-            |+ modifiedLine2
-            |  line3
+            |@@ -1,3 +1,3 @@
+            | line1
+            |+modifiedLine2
+            |-line2
+            | line3
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
@@ -256,15 +260,16 @@ class IterativePatchUtilTest {
         """.trimIndent()
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
-            |  function example() {
-            |-     console.log("Hello");
-            |-     // Some comment
-            |-     return true;
-            |+     console.log("Hello, World!");
-            |+     // Modified comment
-            |+     let x = 5;
-            |+     return x > 0;
-            |  }
+            |@@ -1,5 +1,6 @@
+            | function example() {
+            |+    console.log("Hello, World!");
+            |+    // Modified comment
+            |+    let x = 5;
+            |+    return x > 0;
+            |-    console.log("Hello");
+            |-    // Some comment
+            |-    return true;
+            | }            
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }

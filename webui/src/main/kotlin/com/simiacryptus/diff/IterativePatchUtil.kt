@@ -59,10 +59,140 @@ object IterativePatchUtil {
      */
     fun generatePatch(oldCode: String, newCode: String): String {
         log.info("Generating patch")
-        // Compare old and new code to establish links between matching lines
-        val (oldLines, newLines) = compare(oldCode, newCode)
-        // Create a patch string based on the comparison results
-        return createPatchFromComparison(oldLines, newLines)
+        val oldLines = oldCode.lines()
+        val newLines = newCode.lines()
+        val lcs = longestCommonSubsequence(oldLines, newLines)
+        val diff = mutableListOf<String>()
+        var oldIndex = 0
+        var newIndex = 0
+        var lcsIndex = 0
+        while (oldIndex < oldLines.size || newIndex < newLines.size) {
+            // Output a hunk header
+            val oldStart = oldIndex + 1
+            val newStart = newIndex + 1
+            val hunkDiff = mutableListOf<String>()
+            // Process lines until we've covered 3 lines of context after changes
+            var contextLines = 0
+            while (oldIndex < oldLines.size || newIndex < newLines.size) {
+                if (lcsIndex < lcs.size && oldLines[oldIndex] == lcs[lcsIndex] && newLines[newIndex] == lcs[lcsIndex]) {
+                    // Matching line (context)
+                    hunkDiff.add(" ${oldLines[oldIndex]}")
+                    oldIndex++
+                    newIndex++
+                    lcsIndex++
+                    if (contextLines > 0) contextLines++
+                    if (contextLines >= 3) break
+                } else if (newIndex < newLines.size && (lcsIndex >= lcs.size || newLines[newIndex] != lcs[lcsIndex])) {
+                    // Added line
+                    hunkDiff.add("+${newLines[newIndex]}")
+                    newIndex++
+                    contextLines = 0
+                } else if (oldIndex < oldLines.size && (lcsIndex >= lcs.size || oldLines[oldIndex] != lcs[lcsIndex])) {
+                    // Removed line
+                    hunkDiff.add("-${oldLines[oldIndex]}")
+                    oldIndex++
+                    contextLines = 0
+                }
+            }
+            if (hunkDiff.isNotEmpty()) {
+                diff.add("@@ -$oldStart,${oldIndex - oldStart + 1} +$newStart,${newIndex - newStart + 1} @@")
+                diff.addAll(hunkDiff)
+            }
+        }
+        return diff.joinToString("\n")
+    }
+    private fun longestCommonSubsequence(a: List<String>, b: List<String>): List<String> {
+        val lengths = Array(a.size + 1) { IntArray(b.size + 1) }
+        for (i in a.indices.reversed()) {
+            for (j in b.indices.reversed()) {
+                if (a[i] == b[j])
+                    lengths[i][j] = lengths[i + 1][j + 1] + 1
+                else
+                    lengths[i][j] = maxOf(lengths[i + 1][j], lengths[i][j + 1])
+            }
+        }
+        val result = mutableListOf<String>()
+        var i = 0
+        var j = 0
+        while (i < a.size && j < b.size) {
+            if (a[i] == b[j]) {
+                result.add(a[i])
+                i++
+                j++
+            } else if (lengths[i + 1][j] >= lengths[i][j + 1]) {
+                i++
+            } else {
+                j++
+            }
+        }
+        return result
+    }
+
+    private fun createHunk(
+        oldLines: List<String>,
+        newLines: List<String>,
+        oldStart: Int,
+        newStart: Int
+    ): Triple<List<String>, Int, Int> {
+        val hunk = mutableListOf<String>()
+        var oldIndex = oldStart
+        var newIndex = newStart
+        var oldCount = 0
+        var newCount = 0
+        val context = 3
+        val hunkStart = oldIndex
+        val hunkNewStart = newIndex
+        // Find the end of the differences
+        while (oldIndex < oldLines.size && newIndex < newLines.size) {
+            if (oldLines[oldIndex] != newLines[newIndex]) {
+                // Move oldIndex and newIndex to the end of the difference
+                while (oldIndex < oldLines.size && (newIndex >= newLines.size || oldLines[oldIndex] != newLines[newIndex])) {
+                    oldIndex++
+                    oldCount++
+                }
+                while (newIndex < newLines.size && (oldIndex >= oldLines.size || oldLines[oldIndex] != newLines[newIndex])) {
+                    newIndex++
+                    newCount++
+                }
+                // Add context lines after the change
+                var contextAfter = 0
+                while (contextAfter < context && oldIndex < oldLines.size && newIndex < newLines.size && oldLines[oldIndex] == newLines[newIndex]) {
+                    oldIndex++
+                    newIndex++
+                    oldCount++
+                    newCount++
+                    contextAfter++
+                }
+                break
+            }
+            oldIndex++
+            newIndex++
+            oldCount++
+            newCount++
+        }
+        // Adjust start indices to include context before the change
+        oldIndex = maxOf(hunkStart, oldIndex - oldCount - context)
+        newIndex = maxOf(hunkNewStart, newIndex - newCount - context)
+        oldCount = 0
+        newCount = 0
+        // Add the hunk header
+        hunk.add("@@ -${oldIndex + 1},${oldLines.size - oldIndex} +${newIndex + 1},${newLines.size - newIndex} @@")
+        // Add the changes
+        while (oldIndex < oldLines.size || newIndex < newLines.size) {
+            if (oldIndex < oldLines.size && (newIndex >= newLines.size || oldLines[oldIndex] != newLines[newIndex])) {
+                hunk.add("-${oldLines[oldIndex]}")
+                oldIndex++
+                oldCount++
+            } else if (newIndex < newLines.size && (oldIndex >= oldLines.size || oldLines[oldIndex] != newLines[newIndex])) {
+                hunk.add("+${newLines[newIndex]}")
+                newIndex++
+                newCount++
+            } else if (oldIndex < oldLines.size && newIndex < newLines.size) {
+                hunk.add(" ${oldLines[oldIndex]}")
+                oldIndex++; newIndex++; oldCount++; newCount++
+            }
+        }
+        return Triple(hunk, oldCount, newCount)
     }
 
     /**
@@ -76,44 +206,77 @@ object IterativePatchUtil {
         val patchBuilder = StringBuilder()
         var oldIndex = 0
         var newIndex = 0
+        var contextLines = 3 // Number of context lines to include
+        var addedLines = 0
+        var removedLines = 0
+        var lastPrintedOldIndex = -1
+        var lastPrintedNewIndex = -1
 
         // Iterate through both old and new lines to create the patch
         while (oldIndex < oldLines.size || newIndex < newLines.size) {
-            when {
-                oldIndex >= oldLines.size -> {
-                    // Remaining lines in new code are additions
-                    patchBuilder.append("+ ${newLines[newIndex].line}\n")
-                    newIndex++
-                }
 
-                newIndex >= newLines.size -> {
-                    // Remaining lines in old code are deletions
-                    patchBuilder.append("- ${oldLines[oldIndex].line}\n")
-                    oldIndex++
-                }
 
-                oldLines[oldIndex].matchingLine == newLines[newIndex] -> {
-                    // Matching lines are context
-                    patchBuilder.append("  ${oldLines[oldIndex].line}\n")
-                    oldIndex++
-                    newIndex++
+            if (oldIndex < oldLines.size && (newIndex >= newLines.size || oldLines[oldIndex].matchingLine == null)) {
+                // Line removed
+                if (addedLines + removedLines == 0) printContext(
+                    patchBuilder,
+                    oldLines,
+                    newLines,
+                    oldIndex,
+                    newIndex,
+                    contextLines
+                )
+                patchBuilder.append("- ${oldLines[oldIndex].line}\n")
+                oldIndex++
+                removedLines++
+                lastPrintedOldIndex = oldIndex - 1
+            } else if (newIndex < newLines.size && (oldIndex >= oldLines.size || newLines[newIndex].matchingLine == null)) {
+                // Line added
+                if (addedLines + removedLines == 0) printContext(
+                    patchBuilder,
+                    oldLines,
+                    newLines,
+                    oldIndex,
+                    newIndex,
+                    contextLines
+                )
+                patchBuilder.append("+ ${newLines[newIndex].line}\n")
+                newIndex++
+                addedLines++
+                lastPrintedNewIndex = newIndex - 1
+            } else {
+                // Matching line (context)
+                if (addedLines + removedLines > 0) {
+                    printContext(patchBuilder, oldLines, newLines, oldIndex, newIndex, contextLines)
+                    addedLines = 0
+                    removedLines = 0
                 }
-
-                else -> {
-                    // Non-matching lines are either deletions or additions
-                    if (oldLines[oldIndex].matchingLine == null) {
-                        patchBuilder.append("- ${oldLines[oldIndex].line}\n")
-                        oldIndex++
-                    } else {
-                        patchBuilder.append("+ ${newLines[newIndex].line}\n")
-                        newIndex++
-                    }
-                }
+                oldIndex++
+                newIndex++
             }
+        }
+        // Print final context if needed
+        if (addedLines + removedLines > 0) {
+            printContext(patchBuilder, oldLines, newLines, oldIndex, newIndex, contextLines)
         }
 
         log.debug("Patch creation completed")
         return patchBuilder.toString()
+    }
+
+    private fun printContext(
+        patchBuilder: StringBuilder, oldLines: List<LineRecord>, newLines: List<LineRecord>,
+        oldIndex: Int, newIndex: Int, contextLines: Int
+    ) {
+        val startOld = maxOf(0, oldIndex - contextLines)
+        val endOld = minOf(oldLines.size, oldIndex + contextLines)
+        val startNew = maxOf(0, newIndex - contextLines)
+        val endNew = minOf(newLines.size, newIndex + contextLines)
+        patchBuilder.append("@@ -${startOld + 1},${endOld - startOld} +${startNew + 1},${endNew - startNew} @@\n")
+        for (i in startOld until endOld) {
+            if (i < oldIndex - contextLines || i >= oldIndex + contextLines) continue
+            patchBuilder.append(" ${oldLines[i].line}\n")
+        }
     }
 
     /**
@@ -126,7 +289,8 @@ object IterativePatchUtil {
         // Compare source and patch to establish links between matching lines
         var (sourceLines, patchLines) = compare(source, patch)
 
-        patchLines = patchLines.filter { it.line?.let { normalizeLine(it).isEmpty() } == false } // Filter out empty lines in the patch
+        patchLines =
+            patchLines.filter { it.line?.let { normalizeLine(it).isEmpty() } == false } // Filter out empty lines in the patch
 
         // Generate the patched text using the established links
         log.info("Generating patched text using established links")
@@ -184,11 +348,11 @@ object IterativePatchUtil {
                 patchBuffer.removeAt(0)
             }
             if (sourceSegment.isNotEmpty() && patchSegment.isNotEmpty()) {
-                if(sourceLines.size == sourceSegment.size) return // No subsequence found
-                if(patchLines.size == patchSegment.size) return // No subsequence found
+                if (sourceLines.size == sourceSegment.size) return // No subsequence found
+                if (patchLines.size == patchSegment.size) return // No subsequence found
                 var matchedLines = linkUniqueMatchingLines(sourceSegment, patchSegment)
                 matchedLines += linkAdjacentMatchingLines(sourceSegment)
-                if(matchedLines == 0) {
+                if (matchedLines == 0) {
                     matchedLines += matchFirstBrackets(sourceSegment, patchSegment)
                 }
                 if (matchedLines > 0) subsequenceLinking(sourceSegment, patchSegment)
@@ -259,8 +423,14 @@ object IterativePatchUtil {
                     generatePatchedText(sourceLines.drop(1), patchLines.drop(1), addLine(codeLine.line), currentMetrics)
                 }
 
-                codeLine.matchingLine != null -> when(patchLine.type) {
-                    LineType.CONTEXT -> generatePatchedText(sourceLines, patchLines.drop(1), addLine(patchLine.line), currentMetrics)
+                codeLine.matchingLine != null -> when (patchLine.type) {
+                    LineType.CONTEXT -> generatePatchedText(
+                        sourceLines,
+                        patchLines.drop(1),
+                        addLine(patchLine.line),
+                        currentMetrics
+                    )
+
                     else -> generatePatchedText(sourceLines, patchLines.drop(1), patchedText, currentMetrics)
                 }
 
@@ -382,13 +552,15 @@ object IterativePatchUtil {
                     var patchPrev = patchLine.previousLine!!
                     while (patchPrev.previousLine != null && (
                                 patchPrev.type == LineType.ADD // Skip ADD lines in the patch when looking for matches
-                                || normalizeLine(patchPrev.line ?: "").isEmpty() // Skip empty lines
-                            )) {
+                                        || normalizeLine(patchPrev.line ?: "").isEmpty() // Skip empty lines
+                                )
+                    ) {
                         patchPrev = patchPrev.previousLine!!
                     }
                     while (sourcePrev.previousLine != null && (
                                 normalizeLine(sourcePrev.line ?: "").isEmpty() // Skip empty lines
-                            )) {
+                                )
+                    ) {
                         sourcePrev = sourcePrev.previousLine!!
                     }
                     if (sourcePrev.matchingLine == null && patchPrev.matchingLine == null) { // Skip if there's already a match
@@ -416,13 +588,15 @@ object IterativePatchUtil {
                     // Skip ADD lines in the patch when looking for matches
                     while (patchNext.nextLine != null && (
                                 patchNext.type == LineType.ADD
-                                || normalizeLine(patchNext.line ?: "").isEmpty()
-                            )) {
+                                        || normalizeLine(patchNext.line ?: "").isEmpty()
+                                )
+                    ) {
                         patchNext = patchNext.nextLine!!
                     }
                     while (sourceNext.nextLine != null && (
                                 normalizeLine(sourceNext.line ?: "").isEmpty()
-                            )) {
+                                )
+                    ) {
                         sourceNext = sourceNext.nextLine!!
                     }
                     if (sourceNext.matchingLine == null && patchNext.matchingLine == null) {
@@ -528,7 +702,7 @@ object IterativePatchUtil {
         }
     }
 
-    fun String.lineMetrics() : LineMetrics {
+    fun String.lineMetrics(): LineMetrics {
         var parenthesesDepth = 0
         var squareBracketsDepth = 0
         var curlyBracesDepth = 0
