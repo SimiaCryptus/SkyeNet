@@ -73,7 +73,7 @@ object IterativePatchUtil {
                 if (lcsIndex < lcs.size && oldLines[oldIndex] == lcs[lcsIndex] && newLines[newIndex] == lcs[lcsIndex]) {
                     // Matching line (context)
                     if (hunkDiff.size < maxContextLines * 2 + changes) {
-                        hunkDiff.add(" ${oldLines[oldIndex]}")
+                        hunkDiff.add("  ${oldLines[oldIndex]}")
                         hunkOldLines++
                         hunkNewLines++
                     }
@@ -83,13 +83,13 @@ object IterativePatchUtil {
                     if (changes > 0 && hunkDiff.size >= maxContextLines * 2 + changes) break
                 } else if (newIndex < newLines.size && (lcsIndex >= lcs.size || newLines[newIndex] != lcs[lcsIndex])) {
                     // Added line
-                    hunkDiff.add("+${newLines[newIndex]}")
+                    hunkDiff.add("+ ${newLines[newIndex]}")
                     newIndex++
                     hunkNewLines++
                     changes++
                 } else if (oldIndex < oldLines.size && (lcsIndex >= lcs.size || oldLines[oldIndex] != lcs[lcsIndex])) {
                     // Removed line
-                    hunkDiff.add("-${oldLines[oldIndex]}")
+                    hunkDiff.add("- ${oldLines[oldIndex]}")
                     oldIndex++
                     hunkOldLines++
                     changes++
@@ -232,75 +232,56 @@ object IterativePatchUtil {
     private fun generatePatchedText(
         sourceLines: List<LineRecord>,
         patchLines: List<LineRecord>,
-        patchedText: MutableList<String> = mutableListOf(),
-        currentMetrics: LineMetrics = LineMetrics()
     ): List<String> {
+        val patchedText: MutableList<String> = mutableListOf()
+        val usedPatchLines = mutableSetOf<LineRecord>()
         var sourceIndex = 0
-        var patchIndex = 0
-        while (sourceIndex < sourceLines.size || patchIndex < patchLines.size) {
-            if (patchIndex >= patchLines.size) {
-                // Add remaining source lines, checking for bracket mismatches
-                sourceLines.subList(sourceIndex, sourceLines.size).forEach { line ->
-                    updateMetrics(currentMetrics, line.line ?: "")
-                    patchedText.add(line.line ?: "")
-                    if (line.metrics != currentMetrics) {
-                        log.warn("Bracket mismatch detected in unmatched source line: ${line.index}")
-                    }
-                }
-                return patchedText
-            }
-            if (sourceIndex >= sourceLines.size) {
-                // Add remaining patch lines that are additions
-                patchLines.subList(patchIndex, patchLines.size).forEach { line ->
-                    if (line.type == LineType.ADD) {
-                        updateMetrics(currentMetrics, line.line ?: "")
-                        patchedText.add(line.line ?: "")
-                    }
-                }
-                return patchedText
-            }
-
+        while (sourceIndex < sourceLines.size) {
             val codeLine = sourceLines[sourceIndex]
-            val patchLine = patchLines[patchIndex]
             when {
-                patchLine.type == LineType.ADD -> {
-                    log.debug("Added new line from patch: $patchLine")
-                    updateMetrics(currentMetrics, patchLine.line ?: "")
+                codeLine.matchingLine?.type == LineType.DELETE -> {
+                    log.debug("Deleted line: $codeLine")
+                    sourceIndex++
+                }
+
+                codeLine.matchingLine != null -> {
+                    val patchLine = codeLine.matchingLine!!
+                    log.debug("Patching line: $codeLine <-> $patchLine")
+
+                    // Check preceding patch lines for insertions
+                    var patchIndex = patchLines.indexOf(patchLine)
+                    while (patchIndex > 0) {
+                        val prevPatchLine = patchLines[--patchIndex]
+                        if (prevPatchLine.type == LineType.ADD && !usedPatchLines.contains(prevPatchLine)) {
+                            log.debug("Added unmatched patch line: $prevPatchLine")
+                            patchedText.add(prevPatchLine.line ?: "")
+                            usedPatchLines.add(prevPatchLine)
+                        } else {
+                            break
+                        }
+                    }
+                    // Add the patched line
                     patchedText.add(patchLine.line ?: "")
-                    patchIndex++
-                }
 
-                codeLine.matchingLine == patchLine && patchLine.type == LineType.DELETE -> {
-                    log.debug("Skipped deleted line: $codeLine")
-                    sourceIndex++
-                    patchIndex++
-                }
-
-                codeLine.matchingLine == patchLine -> {
-                    if (codeLine.metrics != currentMetrics) {
-                        log.warn("Bracket mismatch detected in matched line: ${codeLine.index}")
+                    // Check following patch lines for insertions
+                    patchIndex = patchLines.indexOf(patchLine)
+                    while (patchIndex < patchLines.size - 1) {
+                        val nextPatchLine = patchLines[++patchIndex]
+                        if (nextPatchLine.type == LineType.ADD && !usedPatchLines.contains(nextPatchLine)) {
+                            log.debug("Added unmatched patch line: $nextPatchLine")
+                            patchedText.add(nextPatchLine.line ?: "")
+                            usedPatchLines.add(nextPatchLine)
+                        } else {
+                            break
+                        }
                     }
-                    updateMetrics(currentMetrics, codeLine.line ?: "")
-                    patchedText.add(codeLine.line ?: "")
-                    sourceIndex++
-                    patchIndex++
-                }
 
-                codeLine.matchingLine != null -> when (patchLine.type) {
-                    LineType.CONTEXT -> {
-                        updateMetrics(currentMetrics, patchLine.line ?: "")
-                        patchedText.add(patchLine.line ?: "")
-                        patchIndex++
-                    }
-                    else -> patchIndex++
+                    usedPatchLines.add(patchLine)
+                    sourceIndex++
                 }
 
                 else -> {
                     log.debug("Added unmatched source line: $codeLine")
-                    if (codeLine.metrics != currentMetrics) {
-                        log.warn("Bracket mismatch detected in unmatched source line: ${codeLine.index}")
-                    }
-                    updateMetrics(currentMetrics, codeLine.line ?: "")
                     patchedText.add(codeLine.line ?: "")
                     sourceIndex++
                 }
