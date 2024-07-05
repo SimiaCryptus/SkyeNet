@@ -477,7 +477,7 @@ object IterativePatchUtil {
      */
     private fun setLinks(list: List<LineRecord>): List<LineRecord> {
         log.debug("Setting links for ${list.size} lines")
-        for (i in 0 until list.size) {
+        for (i in list.indices) {
             list[i].previousLine = if (i > 0) list[i - 1] else null
             list[i].nextLine = if (i < list.size - 1) list[i + 1] else null
         }
@@ -504,13 +504,35 @@ object IterativePatchUtil {
                         it.trimStart().startsWith("-") -> it.trimStart().substring(1)
                         else -> it
                     }
-                }, type = when {
+                },
+                type = when {
                     line.startsWith("+") -> LineType.ADD
                     line.startsWith("-") -> LineType.DELETE
                     else -> LineType.CONTEXT
                 }
             )
-        }.filter { it.line != null })
+        }.filter { it.line != null }).toMutableList()
+
+        // Fixup: Iterate over the patch lines and look for adjacent ADD and DELETE lines; the DELETE should come first... if needed, swap them
+        var swapped: Boolean
+        do {
+            swapped = false
+            for (i in 0 until patchLines.size - 1) {
+                if (patchLines[i].type == LineType.DELETE && patchLines[i + 1].type == LineType.ADD) {
+                    swapped = true
+                    val deleteLine = patchLines[i]
+                    val addLine = patchLines[i + 1]
+                    // Swap records and update pointers
+                    deleteLine.nextLine = addLine.nextLine
+                    addLine.previousLine = deleteLine.previousLine
+                    deleteLine.previousLine = addLine
+                    addLine.nextLine = deleteLine
+                    patchLines[i] = addLine
+                    patchLines[i + 1] = deleteLine
+                }
+            }
+        } while (swapped)
+
         calculateLineMetrics(patchLines)
         log.debug("Parsed ${patchLines.size} patch lines")
         return patchLines
