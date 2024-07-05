@@ -239,38 +239,36 @@ object IterativePatchUtil {
     private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
         log.debug("Starting to generate patched text")
 
-        // Iterative function to generate patched text
+        // Function to generate patched text
         fun generatePatchedText(
             sourceLines: List<LineRecord>,
             patchLines: List<LineRecord>,
-            patchedText: MutableList<String>,
+            patchedText: MutableList<String> = mutableListOf(),
             currentMetrics: LineMetrics = LineMetrics()
-        ) {
+        ): List<String> {
             var sourceIndex = 0
             var patchIndex = 0
             while (sourceIndex < sourceLines.size || patchIndex < patchLines.size) {
                 if (patchIndex >= patchLines.size) {
                     // Add remaining source lines, checking for bracket mismatches
-                    for (i in sourceIndex until sourceLines.size) {
-                        val line = sourceLines[i]
+                    sourceLines.subList(sourceIndex, sourceLines.size).forEach { line ->
                         updateMetrics(currentMetrics, line.line ?: "")
                         patchedText.add(line.line ?: "")
                         if (line.metrics != currentMetrics) {
                             log.warn("Bracket mismatch detected in unmatched source line: ${line.index}")
                         }
                     }
-                    break
+                    return patchedText
                 }
                 if (sourceIndex >= sourceLines.size) {
                     // Add remaining patch lines that are additions
-                    for (i in patchIndex until patchLines.size) {
-                        val line = patchLines[i]
+                    patchLines.subList(patchIndex, patchLines.size).forEach { line ->
                         if (line.type == LineType.ADD) {
                             updateMetrics(currentMetrics, line.line ?: "")
                             patchedText.add(line.line ?: "")
                         }
                     }
-                    break
+                    return patchedText
                 }
 
                 val codeLine = sourceLines[sourceIndex]
@@ -322,10 +320,10 @@ object IterativePatchUtil {
 
                 }
             }
+            return patchedText
         }
 
-        val result = mutableListOf<String>()
-        generatePatchedText(sourceLines, patchLines, result)
+        val result = generatePatchedText(sourceLines, patchLines)
         log.debug("Finished generating patched text")
         return result.joinToString("\n")
     }
