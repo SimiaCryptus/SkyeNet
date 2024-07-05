@@ -66,36 +66,56 @@ object IterativePatchUtil {
         var oldIndex = 0
         var newIndex = 0
         var lcsIndex = 0
+        val maxContextLines = 3
         while (oldIndex < oldLines.size || newIndex < newLines.size) {
-            // Output a hunk header
-            val oldStart = oldIndex + 1
-            val newStart = newIndex + 1
+            val oldStart = maxOf(0, oldIndex - maxContextLines)
+            val newStart = maxOf(0, newIndex - maxContextLines)
             val hunkDiff = mutableListOf<String>()
-            // Process lines until we've covered 3 lines of context after changes
-            var contextLines = 0
+            var hunkOldLines = 0
+            var hunkNewLines = 0
+            var changes = 0
+            // Add preceding context
+            for (i in oldStart until oldIndex) {
+                hunkDiff.add(" ${oldLines[i]}")
+                hunkOldLines++
+                hunkNewLines++
+            }
             while (oldIndex < oldLines.size || newIndex < newLines.size) {
                 if (lcsIndex < lcs.size && oldLines[oldIndex] == lcs[lcsIndex] && newLines[newIndex] == lcs[lcsIndex]) {
                     // Matching line (context)
-                    hunkDiff.add(" ${oldLines[oldIndex]}")
+                    if (hunkDiff.size < maxContextLines * 2 + changes) {
+                        hunkDiff.add(" ${oldLines[oldIndex]}")
+                        hunkOldLines++
+                        hunkNewLines++
+                    }
                     oldIndex++
                     newIndex++
                     lcsIndex++
-                    if (contextLines > 0) contextLines++
-                    if (contextLines >= 3) break
+                    if (changes > 0 && hunkDiff.size >= maxContextLines * 2 + changes) break
                 } else if (newIndex < newLines.size && (lcsIndex >= lcs.size || newLines[newIndex] != lcs[lcsIndex])) {
                     // Added line
                     hunkDiff.add("+${newLines[newIndex]}")
                     newIndex++
-                    contextLines = 0
+                    hunkNewLines++
+                    changes++
                 } else if (oldIndex < oldLines.size && (lcsIndex >= lcs.size || oldLines[oldIndex] != lcs[lcsIndex])) {
                     // Removed line
                     hunkDiff.add("-${oldLines[oldIndex]}")
                     oldIndex++
-                    contextLines = 0
+                    hunkOldLines++
+                    changes++
                 }
             }
-            if (hunkDiff.isNotEmpty()) {
-                diff.add("@@ -$oldStart,${oldIndex - oldStart + 1} +$newStart,${newIndex - newStart + 1} @@")
+            if (changes > 0) {
+                // Trim context lines if necessary
+                while (hunkDiff.size > changes + maxContextLines * 2) {
+                    if (hunkDiff.last().startsWith(" ")) {
+                        hunkDiff.removeAt(hunkDiff.lastIndex)
+                        hunkOldLines--
+                        hunkNewLines--
+                    }
+                }
+                diff.add("@@ -${oldStart + 1},$hunkOldLines +${newStart + 1},$hunkNewLines @@")
                 diff.addAll(hunkDiff)
             }
         }
@@ -273,9 +293,24 @@ object IterativePatchUtil {
         val startNew = maxOf(0, newIndex - contextLines)
         val endNew = minOf(newLines.size, newIndex + contextLines)
         patchBuilder.append("@@ -${startOld + 1},${endOld - startOld} +${startNew + 1},${endNew - startNew} @@\n")
+        // Add context and changes
+        // Add context and changes
         for (i in startOld until endOld) {
-            if (i < oldIndex - contextLines || i >= oldIndex + contextLines) continue
-            patchBuilder.append(" ${oldLines[i].line}\n")
+            if (i >= oldLines.size) break
+            when {
+                i < oldIndex && oldLines[i].matchingLine != null -> patchBuilder.append(" ${oldLines[i].line}\n")
+                oldLines[i].matchingLine!!.type == LineType.ADD -> {
+                    patchBuilder.append("-${oldLines[i].line}\n")
+                    patchBuilder.append("+${oldLines[i].matchingLine!!.line}\n")
+                }
+                i < oldIndex && oldLines[i].matchingLine != null -> patchBuilder.append(" ${oldLines[i].line}\n")
+                oldLines[i].matchingLine == null -> patchBuilder.append("-${oldLines[i].line}\n")
+                oldLines[i].matchingLine!!.type == LineType.ADD -> {
+                    patchBuilder.append("-${oldLines[i].line}\n")
+                    patchBuilder.append("+${oldLines[i].matchingLine!!.line}\n")
+                }
+                else -> patchBuilder.append(" ${oldLines[i].line}\n")
+            }
         }
     }
 

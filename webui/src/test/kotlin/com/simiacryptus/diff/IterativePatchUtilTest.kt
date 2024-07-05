@@ -165,10 +165,6 @@ class IterativePatchUtilTest {
         val newCode = oldCode
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
-            |@@ -1,3 +1,3 @@
-            | line1
-            | line2
-            | line3
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
