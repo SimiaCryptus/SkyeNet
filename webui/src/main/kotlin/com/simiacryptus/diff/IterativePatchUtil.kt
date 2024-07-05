@@ -230,6 +230,89 @@ object IterativePatchUtil {
         }
     }
 
+    private fun generatePatchedText(
+        sourceLines: List<LineRecord>,
+        patchLines: List<LineRecord>,
+        patchedText: MutableList<String> = mutableListOf(),
+        currentMetrics: LineMetrics = LineMetrics()
+    ): List<String> {
+        var sourceIndex = 0
+        var patchIndex = 0
+        while (sourceIndex < sourceLines.size || patchIndex < patchLines.size) {
+            if (patchIndex >= patchLines.size) {
+                // Add remaining source lines, checking for bracket mismatches
+                sourceLines.subList(sourceIndex, sourceLines.size).forEach { line ->
+                    updateMetrics(currentMetrics, line.line ?: "")
+                    patchedText.add(line.line ?: "")
+                    if (line.metrics != currentMetrics) {
+                        log.warn("Bracket mismatch detected in unmatched source line: ${line.index}")
+                    }
+                }
+                return patchedText
+            }
+            if (sourceIndex >= sourceLines.size) {
+                // Add remaining patch lines that are additions
+                patchLines.subList(patchIndex, patchLines.size).forEach { line ->
+                    if (line.type == LineType.ADD) {
+                        updateMetrics(currentMetrics, line.line ?: "")
+                        patchedText.add(line.line ?: "")
+                    }
+                }
+                return patchedText
+            }
+
+            val codeLine = sourceLines[sourceIndex]
+            val patchLine = patchLines[patchIndex]
+
+
+            when {
+                patchLine.type == LineType.ADD -> {
+                    log.debug("Added new line from patch: $patchLine")
+                    updateMetrics(currentMetrics, patchLine.line ?: "")
+                    patchedText.add(patchLine.line ?: "")
+                    patchIndex++
+                }
+
+                codeLine.matchingLine == patchLine && patchLine.type == LineType.DELETE -> {
+                    log.debug("Skipped deleted line: $codeLine")
+                    sourceIndex++
+                    patchIndex++
+                }
+
+                codeLine.matchingLine == patchLine -> {
+                    if (codeLine.metrics != currentMetrics) {
+                        log.warn("Bracket mismatch detected in matched line: ${codeLine.index}")
+                    }
+                    updateMetrics(currentMetrics, codeLine.line ?: "")
+                    patchedText.add(codeLine.line ?: "")
+                    sourceIndex++
+                    patchIndex++
+                }
+
+                codeLine.matchingLine != null -> when (patchLine.type) {
+                    LineType.CONTEXT -> {
+                        updateMetrics(currentMetrics, patchLine.line ?: "")
+                        patchedText.add(patchLine.line ?: "")
+                        patchIndex++
+                    }
+                    else -> patchIndex++
+                }
+
+                else -> {
+                    log.debug("Added unmatched source line: $codeLine")
+                    if (codeLine.metrics != currentMetrics) {
+                        log.warn("Bracket mismatch detected in unmatched source line: ${codeLine.index}")
+                    }
+                    updateMetrics(currentMetrics, codeLine.line ?: "")
+                    patchedText.add(codeLine.line ?: "")
+                    sourceIndex++
+                }
+
+            }
+        }
+        return patchedText
+    }
+
     /**
      * Generates the final patched text using the links established between the source and patch lines.
      * @param sourceLines The source lines with established links.
@@ -238,91 +321,6 @@ object IterativePatchUtil {
      */
     private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
         log.debug("Starting to generate patched text")
-
-        // Function to generate patched text
-        fun generatePatchedText(
-            sourceLines: List<LineRecord>,
-            patchLines: List<LineRecord>,
-            patchedText: MutableList<String> = mutableListOf(),
-            currentMetrics: LineMetrics = LineMetrics()
-        ): List<String> {
-            var sourceIndex = 0
-            var patchIndex = 0
-            while (sourceIndex < sourceLines.size || patchIndex < patchLines.size) {
-                if (patchIndex >= patchLines.size) {
-                    // Add remaining source lines, checking for bracket mismatches
-                    sourceLines.subList(sourceIndex, sourceLines.size).forEach { line ->
-                        updateMetrics(currentMetrics, line.line ?: "")
-                        patchedText.add(line.line ?: "")
-                        if (line.metrics != currentMetrics) {
-                            log.warn("Bracket mismatch detected in unmatched source line: ${line.index}")
-                        }
-                    }
-                    return patchedText
-                }
-                if (sourceIndex >= sourceLines.size) {
-                    // Add remaining patch lines that are additions
-                    patchLines.subList(patchIndex, patchLines.size).forEach { line ->
-                        if (line.type == LineType.ADD) {
-                            updateMetrics(currentMetrics, line.line ?: "")
-                            patchedText.add(line.line ?: "")
-                        }
-                    }
-                    return patchedText
-                }
-
-                val codeLine = sourceLines[sourceIndex]
-                val patchLine = patchLines[patchIndex]
-
-
-                when {
-                    patchLine.type == LineType.ADD -> {
-                        log.debug("Added new line from patch: $patchLine")
-                        updateMetrics(currentMetrics, patchLine.line ?: "")
-                        patchedText.add(patchLine.line ?: "")
-                        patchIndex++
-                    }
-
-                    codeLine.matchingLine == patchLine && patchLine.type == LineType.DELETE -> {
-                        log.debug("Skipped deleted line: $codeLine")
-                        sourceIndex++
-                        patchIndex++
-                    }
-
-                    codeLine.matchingLine == patchLine -> {
-                        if (codeLine.metrics != currentMetrics) {
-                            log.warn("Bracket mismatch detected in matched line: ${codeLine.index}")
-                        }
-                        updateMetrics(currentMetrics, codeLine.line ?: "")
-                        patchedText.add(codeLine.line ?: "")
-                        sourceIndex++
-                        patchIndex++
-                    }
-
-                    codeLine.matchingLine != null -> when (patchLine.type) {
-                        LineType.CONTEXT -> {
-                            updateMetrics(currentMetrics, patchLine.line ?: "")
-                            patchedText.add(patchLine.line ?: "")
-                            patchIndex++
-                        }
-                        else -> patchIndex++
-                    }
-
-                    else -> {
-                        log.debug("Added unmatched source line: $codeLine")
-                        if (codeLine.metrics != currentMetrics) {
-                            log.warn("Bracket mismatch detected in unmatched source line: ${codeLine.index}")
-                        }
-                        updateMetrics(currentMetrics, codeLine.line ?: "")
-                        patchedText.add(codeLine.line ?: "")
-                        sourceIndex++
-                    }
-
-                }
-            }
-            return patchedText
-        }
-
         val result = generatePatchedText(sourceLines, patchLines)
         log.debug("Finished generating patched text")
         return result.joinToString("\n")
