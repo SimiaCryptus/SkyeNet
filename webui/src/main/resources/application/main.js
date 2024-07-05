@@ -1,27 +1,27 @@
-import {connect, queueMessage, send} from './chat.js';
+import {connect, queueMessage} from './chat.js';
 
- let messageVersions = {};
+let messageVersions = {};
 window.messageMap = {}; // Make messageMap global
- let singleInput = false;
- let stickyInput = false;
- let loadImages = "true";
- let showMenubar = true;
- let messageDiv;
- 
- function onWebSocketText(event) {
-     console.debug('WebSocket message:', event);
-     const messagesDiv = document.getElementById('messages');
-     if (!messagesDiv) return;
-     const firstCommaIndex = event.data.indexOf(',');
-     const secondCommaIndex = event.data.indexOf(',', firstCommaIndex + 1);
-     const messageId = event.data.substring(0, firstCommaIndex);
-     const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
-     const messageContent = event.data.substring(secondCommaIndex + 1);
-     messageVersions[messageId] = messageVersion;
+let singleInput = false;
+let stickyInput = false;
+let loadImages = "true";
+let showMenubar = true;
+let messageDiv;
+
+function onWebSocketText(event) {
+    console.debug('WebSocket message:', event);
+    const messagesDiv = document.getElementById('messages');
+    if (!messagesDiv) return;
+    const firstCommaIndex = event.data.indexOf(',');
+    const secondCommaIndex = event.data.indexOf(',', firstCommaIndex + 1);
+    const messageId = event.data.substring(0, firstCommaIndex);
+    const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
+    const messageContent = event.data.substring(secondCommaIndex + 1);
+    messageVersions[messageId] = messageVersion;
     window.messageMap[messageId] = messageContent;
- 
-     const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
-     messageDivs.forEach((messageDiv) => {
+
+    const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
+    messageDivs.forEach((messageDiv) => {
         if (messageDiv) {
             messageDiv.innerHTML = messageContent;
             substituteMessages(messageId, messageDiv);

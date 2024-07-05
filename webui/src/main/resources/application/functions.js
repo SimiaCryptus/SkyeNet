@@ -222,11 +222,11 @@ function applyToAllSvg() {
     });
 }
 
- function substituteMessages(outerMessageId, messageDiv) {
+function substituteMessages(outerMessageId, messageDiv) {
     Object.entries(window.messageMap)
-         .filter(([innerMessageId, content]) => innerMessageId.startsWith("z"))
-         .forEach(([innerMessageId, content]) => {
-             if (outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
+        .filter(([innerMessageId, content]) => innerMessageId.startsWith("z"))
+        .forEach(([innerMessageId, content]) => {
+            if (outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
                 if (element.innerHTML !== content) {
                     //console.log("Substituting message with id " + innerMessageId + " and content " + content);
                     element.innerHTML = content;
