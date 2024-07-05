@@ -22,7 +22,7 @@ fun SocketManagerBase.addApplyDiffLinks(
         val isParenthesisBalanced = FileValidationUtils.isParenthesisBalanced(code)
         val isQuoteBalanced = FileValidationUtils.isQuoteBalanced(code)
         val isSingleQuoteBalanced = FileValidationUtils.isSingleQuoteBalanced(code)
-        var newCode = IterativePatchUtil.patch(code, diff)
+        var newCode = IterativePatchUtil.applyPatch(code, diff)
         newCode = newCode.replace("\r", "")
         val isCurlyBalancedNew = FileValidationUtils.isCurlyBalanced(newCode)
         val isSquareBalancedNew = FileValidationUtils.isSquareBalanced(newCode)

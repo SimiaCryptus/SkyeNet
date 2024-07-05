@@ -17,7 +17,7 @@ class IterativePatchUtilTest {
             line2
             line3
         """.trimIndent()
-        val result = IterativePatchUtil.patch(source, patch)
+        val result = IterativePatchUtil.applyPatch(source, patch)
         Assertions.assertEquals(source.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
@@ -41,7 +41,7 @@ class IterativePatchUtilTest {
             newLine
             line3
         """.trimIndent()
-        val result = IterativePatchUtil.patch(source, patch)
+        val result = IterativePatchUtil.applyPatch(source, patch)
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
@@ -63,7 +63,7 @@ class IterativePatchUtilTest {
             modifiedLine2
             line3
         """.trimIndent()
-        val result = IterativePatchUtil.patch(source, patch)
+        val result = IterativePatchUtil.applyPatch(source, patch)
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
@@ -83,7 +83,7 @@ class IterativePatchUtilTest {
             line1
             line3
         """.trimIndent()
-        val result = IterativePatchUtil.patch(source, patch)
+        val result = IterativePatchUtil.applyPatch(source, patch)
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
@@ -147,7 +147,7 @@ class IterativePatchUtilTest {
             });
         }
         """.trimIndent()
-        val result = IterativePatchUtil.patch(source, patch)
+        val result = IterativePatchUtil.applyPatch(source, patch)
         Assertions.assertEquals(
             expected.replace("\r\n", "\n"),
             result.replace("\r\n", "\n")
@@ -829,7 +829,7 @@ describe('boardStateUtils', () => {
 });
         """.trimIndent()
 
-        val result = IterativePatchUtil.patch(source, patch)
+        val result = IterativePatchUtil.applyPatch(source, patch)
         Assertions.assertEquals(
             expected.replace("\r\n", "\n"),
             result.replace("\r\n", "\n")

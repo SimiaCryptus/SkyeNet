@@ -6,8 +6,6 @@ import kotlin.math.max
 import kotlin.math.min
 
 object IterativePatchUtil {
-    private val log = LoggerFactory.getLogger(IterativePatchUtil::class.java)
-
     enum class LineType { CONTEXT, ADD, DELETE }
 
     // Tracks the nesting depth of different bracket types
@@ -40,15 +38,6 @@ object IterativePatchUtil {
             sb.append(" [({:${metrics.parenthesesDepth}, [:${metrics.squareBracketsDepth}, {:${metrics.curlyBracesDepth}]")
             return sb.toString()
         }
-    }
-
-    /**
-     * Normalizes a line by removing all whitespace.
-     * @param line The line to normalize.
-     * @return The normalized line.
-     */
-    private fun normalizeLine(line: String): String {
-        return line.replace("\\s".toRegex(), "")
     }
 
     /**
@@ -122,6 +111,37 @@ object IterativePatchUtil {
         return diff.joinToString("\n")
     }
 
+    /**
+     * Applies a patch to the given source text.
+     * @param source The original text.
+     * @param patch The patch to apply.
+     * @return The text after the patch has been applied.
+     */
+    fun applyPatch(source: String, patch: String): String {
+        // Compare source and patch to establish links between matching lines
+        var (sourceLines, patchLines) = compare(source, patch)
+
+        patchLines =
+            patchLines.filter { it.line?.let { normalizeLine(it).isEmpty() } == false } // Filter out empty lines in the patch
+
+        log.info("Generating patched text using established links")
+        val result = generatePatchedText(sourceLines, patchLines)
+        log.debug("Finished generating patched text")
+        val generatePatchedTextUsingLinks = result.joinToString("\n").trim()
+
+        log.info("Patch process completed")
+        return generatePatchedTextUsingLinks
+    }
+
+    /**
+     * Normalizes a line by removing all whitespace.
+     * @param line The line to normalize.
+     * @return The normalized line.
+     */
+    private fun normalizeLine(line: String): String {
+        return line.replace("\\s".toRegex(), "")
+    }
+
     private fun longestCommonSubsequence(a: List<String>, b: List<String>): List<String> {
         val lengths = Array(a.size + 1) { IntArray(b.size + 1) }
         for (i in a.indices.reversed()) {
@@ -147,27 +167,6 @@ object IterativePatchUtil {
             }
         }
         return result
-    }
-
-    /**
-     * Applies a patch to the given source text.
-     * @param source The original text.
-     * @param patch The patch to apply.
-     * @return The text after the patch has been applied.
-     */
-    fun patch(source: String, patch: String): String {
-        // Compare source and patch to establish links between matching lines
-        var (sourceLines, patchLines) = compare(source, patch)
-
-        patchLines =
-            patchLines.filter { it.line?.let { normalizeLine(it).isEmpty() } == false } // Filter out empty lines in the patch
-
-        // Generate the patched text using the established links
-        log.info("Generating patched text using established links")
-        val generatePatchedTextUsingLinks = generatePatchedTextUsingLinks(sourceLines, patchLines).trim()
-
-        log.info("Patch process completed")
-        return generatePatchedTextUsingLinks
     }
 
     private fun compare(
@@ -263,8 +262,6 @@ object IterativePatchUtil {
 
             val codeLine = sourceLines[sourceIndex]
             val patchLine = patchLines[patchIndex]
-
-
             when {
                 patchLine.type == LineType.ADD -> {
                     log.debug("Added new line from patch: $patchLine")
@@ -311,19 +308,6 @@ object IterativePatchUtil {
             }
         }
         return patchedText
-    }
-
-    /**
-     * Generates the final patched text using the links established between the source and patch lines.
-     * @param sourceLines The source lines with established links.
-     * @param patchLines The patch lines with established links.
-     * @return The final patched text.
-     */
-    private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
-        log.debug("Starting to generate patched text")
-        val result = generatePatchedText(sourceLines, patchLines)
-        log.debug("Finished generating patched text")
-        return result.joinToString("\n")
     }
 
     // Updates the bracket metrics for a given line
@@ -600,5 +584,7 @@ object IterativePatchUtil {
             curlyBracesDepth = curlyBracesDepth
         )
     }
+
+    private val log = LoggerFactory.getLogger(IterativePatchUtil::class.java)
 
 }
