@@ -121,6 +121,7 @@ object IterativePatchUtil {
         }
         return diff.joinToString("\n")
     }
+
     private fun longestCommonSubsequence(a: List<String>, b: List<String>): List<String> {
         val lengths = Array(a.size + 1) { IntArray(b.size + 1) }
         for (i in a.indices.reversed()) {
@@ -146,172 +147,6 @@ object IterativePatchUtil {
             }
         }
         return result
-    }
-
-    private fun createHunk(
-        oldLines: List<String>,
-        newLines: List<String>,
-        oldStart: Int,
-        newStart: Int
-    ): Triple<List<String>, Int, Int> {
-        val hunk = mutableListOf<String>()
-        var oldIndex = oldStart
-        var newIndex = newStart
-        var oldCount = 0
-        var newCount = 0
-        val context = 3
-        val hunkStart = oldIndex
-        val hunkNewStart = newIndex
-        // Find the end of the differences
-        while (oldIndex < oldLines.size && newIndex < newLines.size) {
-            if (oldLines[oldIndex] != newLines[newIndex]) {
-                // Move oldIndex and newIndex to the end of the difference
-                while (oldIndex < oldLines.size && (newIndex >= newLines.size || oldLines[oldIndex] != newLines[newIndex])) {
-                    oldIndex++
-                    oldCount++
-                }
-                while (newIndex < newLines.size && (oldIndex >= oldLines.size || oldLines[oldIndex] != newLines[newIndex])) {
-                    newIndex++
-                    newCount++
-                }
-                // Add context lines after the change
-                var contextAfter = 0
-                while (contextAfter < context && oldIndex < oldLines.size && newIndex < newLines.size && oldLines[oldIndex] == newLines[newIndex]) {
-                    oldIndex++
-                    newIndex++
-                    oldCount++
-                    newCount++
-                    contextAfter++
-                }
-                break
-            }
-            oldIndex++
-            newIndex++
-            oldCount++
-            newCount++
-        }
-        // Adjust start indices to include context before the change
-        oldIndex = maxOf(hunkStart, oldIndex - oldCount - context)
-        newIndex = maxOf(hunkNewStart, newIndex - newCount - context)
-        oldCount = 0
-        newCount = 0
-        // Add the hunk header
-        hunk.add("@@ -${oldIndex + 1},${oldLines.size - oldIndex} +${newIndex + 1},${newLines.size - newIndex} @@")
-        // Add the changes
-        while (oldIndex < oldLines.size || newIndex < newLines.size) {
-            if (oldIndex < oldLines.size && (newIndex >= newLines.size || oldLines[oldIndex] != newLines[newIndex])) {
-                hunk.add("-${oldLines[oldIndex]}")
-                oldIndex++
-                oldCount++
-            } else if (newIndex < newLines.size && (oldIndex >= oldLines.size || oldLines[oldIndex] != newLines[newIndex])) {
-                hunk.add("+${newLines[newIndex]}")
-                newIndex++
-                newCount++
-            } else if (oldIndex < oldLines.size && newIndex < newLines.size) {
-                hunk.add(" ${oldLines[oldIndex]}")
-                oldIndex++; newIndex++; oldCount++; newCount++
-            }
-        }
-        return Triple(hunk, oldCount, newCount)
-    }
-
-    /**
-     * Creates a patch string from the comparison of old and new code lines.
-     * @param oldLines The old code lines with established links.
-     * @param newLines The new code lines with established links.
-     * @return The generated patch as a string.
-     */
-    private fun createPatchFromComparison(oldLines: List<LineRecord>, newLines: List<LineRecord>): String {
-        log.debug("Creating patch from comparison")
-        val patchBuilder = StringBuilder()
-        var oldIndex = 0
-        var newIndex = 0
-        var contextLines = 3 // Number of context lines to include
-        var addedLines = 0
-        var removedLines = 0
-        var lastPrintedOldIndex = -1
-        var lastPrintedNewIndex = -1
-
-        // Iterate through both old and new lines to create the patch
-        while (oldIndex < oldLines.size || newIndex < newLines.size) {
-
-
-            if (oldIndex < oldLines.size && (newIndex >= newLines.size || oldLines[oldIndex].matchingLine == null)) {
-                // Line removed
-                if (addedLines + removedLines == 0) printContext(
-                    patchBuilder,
-                    oldLines,
-                    newLines,
-                    oldIndex,
-                    newIndex,
-                    contextLines
-                )
-                patchBuilder.append("- ${oldLines[oldIndex].line}\n")
-                oldIndex++
-                removedLines++
-                lastPrintedOldIndex = oldIndex - 1
-            } else if (newIndex < newLines.size && (oldIndex >= oldLines.size || newLines[newIndex].matchingLine == null)) {
-                // Line added
-                if (addedLines + removedLines == 0) printContext(
-                    patchBuilder,
-                    oldLines,
-                    newLines,
-                    oldIndex,
-                    newIndex,
-                    contextLines
-                )
-                patchBuilder.append("+ ${newLines[newIndex].line}\n")
-                newIndex++
-                addedLines++
-                lastPrintedNewIndex = newIndex - 1
-            } else {
-                // Matching line (context)
-                if (addedLines + removedLines > 0) {
-                    printContext(patchBuilder, oldLines, newLines, oldIndex, newIndex, contextLines)
-                    addedLines = 0
-                    removedLines = 0
-                }
-                oldIndex++
-                newIndex++
-            }
-        }
-        // Print final context if needed
-        if (addedLines + removedLines > 0) {
-            printContext(patchBuilder, oldLines, newLines, oldIndex, newIndex, contextLines)
-        }
-
-        log.debug("Patch creation completed")
-        return patchBuilder.toString()
-    }
-
-    private fun printContext(
-        patchBuilder: StringBuilder, oldLines: List<LineRecord>, newLines: List<LineRecord>,
-        oldIndex: Int, newIndex: Int, contextLines: Int
-    ) {
-        val startOld = maxOf(0, oldIndex - contextLines)
-        val endOld = minOf(oldLines.size, oldIndex + contextLines)
-        val startNew = maxOf(0, newIndex - contextLines)
-        val endNew = minOf(newLines.size, newIndex + contextLines)
-        patchBuilder.append("@@ -${startOld + 1},${endOld - startOld} +${startNew + 1},${endNew - startNew} @@\n")
-        // Add context and changes
-        // Add context and changes
-        for (i in startOld until endOld) {
-            if (i >= oldLines.size) break
-            when {
-                i < oldIndex && oldLines[i].matchingLine != null -> patchBuilder.append(" ${oldLines[i].line}\n")
-                oldLines[i].matchingLine!!.type == LineType.ADD -> {
-                    patchBuilder.append("-${oldLines[i].line}\n")
-                    patchBuilder.append("+${oldLines[i].matchingLine!!.line}\n")
-                }
-                i < oldIndex && oldLines[i].matchingLine != null -> patchBuilder.append(" ${oldLines[i].line}\n")
-                oldLines[i].matchingLine == null -> patchBuilder.append("-${oldLines[i].line}\n")
-                oldLines[i].matchingLine!!.type == LineType.ADD -> {
-                    patchBuilder.append("-${oldLines[i].line}\n")
-                    patchBuilder.append("+${oldLines[i].matchingLine!!.line}\n")
-                }
-                else -> patchBuilder.append(" ${oldLines[i].line}\n")
-            }
-        }
     }
 
     /**
@@ -404,82 +239,93 @@ object IterativePatchUtil {
     private fun generatePatchedTextUsingLinks(sourceLines: List<LineRecord>, patchLines: List<LineRecord>): String {
         log.debug("Starting to generate patched text")
 
-        // Recursive function to generate patched text
+        // Iterative function to generate patched text
         fun generatePatchedText(
             sourceLines: List<LineRecord>,
             patchLines: List<LineRecord>,
-            patchedText: List<String>,
+            patchedText: MutableList<String>,
             currentMetrics: LineMetrics = LineMetrics()
-        ): List<String> {
-            // Base cases for recursion
-            if (sourceLines.isEmpty() && patchLines.isEmpty()) {
-                return patchedText
-            }
-            if (patchLines.isEmpty()) {
-                // Add remaining source lines, checking for bracket mismatches
-                return patchedText + sourceLines.mapNotNull { line ->
-                    updateMetrics(currentMetrics, line.line ?: "")
-                    line.line
-                }
-            }
-            if (sourceLines.isEmpty()) {
-                // Add remaining patch lines that are additions
-                return patchedText + patchLines.filter { it.type == LineType.ADD }.mapNotNull { line ->
-                    updateMetrics(currentMetrics, line.line ?: "")
-                    line.line
-                }
-            }
-
-            val codeLine = sourceLines.first()
-            val patchLine = patchLines.first()
-
-            // Helper function to add a line and update metrics
-            fun addLine(line: String?): List<String> {
-                updateMetrics(currentMetrics, line ?: "")
-                return patchedText + (line ?: "")
-            }
-
-            // Main logic for generating patched text
-            return when {
-                patchLine.type == LineType.ADD -> {
-                    log.debug("Added new line from patch: $patchLine")
-                    generatePatchedText(sourceLines, patchLines.drop(1), addLine(patchLine.line), currentMetrics)
-                }
-
-                codeLine.matchingLine == patchLine && patchLine.type == LineType.DELETE -> {
-                    log.debug("Skipped deleted line: $codeLine")
-                    generatePatchedText(sourceLines.drop(1), patchLines.drop(1), patchedText, currentMetrics)
-                }
-
-                codeLine.matchingLine == patchLine -> {
-                    if (codeLine.metrics != currentMetrics) {
-                        log.warn("Bracket mismatch detected in matched line: ${codeLine.index}")
+        ) {
+            var sourceIndex = 0
+            var patchIndex = 0
+            while (sourceIndex < sourceLines.size || patchIndex < patchLines.size) {
+                if (patchIndex >= patchLines.size) {
+                    // Add remaining source lines, checking for bracket mismatches
+                    for (i in sourceIndex until sourceLines.size) {
+                        val line = sourceLines[i]
+                        updateMetrics(currentMetrics, line.line ?: "")
+                        patchedText.add(line.line ?: "")
+                        if (line.metrics != currentMetrics) {
+                            log.warn("Bracket mismatch detected in unmatched source line: ${line.index}")
+                        }
                     }
-                    generatePatchedText(sourceLines.drop(1), patchLines.drop(1), addLine(codeLine.line), currentMetrics)
+                    break
                 }
-
-                codeLine.matchingLine != null -> when (patchLine.type) {
-                    LineType.CONTEXT -> generatePatchedText(
-                        sourceLines,
-                        patchLines.drop(1),
-                        addLine(patchLine.line),
-                        currentMetrics
-                    )
-
-                    else -> generatePatchedText(sourceLines, patchLines.drop(1), patchedText, currentMetrics)
-                }
-
-                else -> {
-                    log.debug("Added unmatched source line: $codeLine")
-                    if (codeLine.metrics != currentMetrics) {
-                        log.warn("Bracket mismatch detected in unmatched source line: ${codeLine.index}")
+                if (sourceIndex >= sourceLines.size) {
+                    // Add remaining patch lines that are additions
+                    for (i in patchIndex until patchLines.size) {
+                        val line = patchLines[i]
+                        if (line.type == LineType.ADD) {
+                            updateMetrics(currentMetrics, line.line ?: "")
+                            patchedText.add(line.line ?: "")
+                        }
                     }
-                    generatePatchedText(sourceLines.drop(1), patchLines, addLine(codeLine.line), currentMetrics)
+                    break
+                }
+
+                val codeLine = sourceLines[sourceIndex]
+                val patchLine = patchLines[patchIndex]
+
+
+                when {
+                    patchLine.type == LineType.ADD -> {
+                        log.debug("Added new line from patch: $patchLine")
+                        updateMetrics(currentMetrics, patchLine.line ?: "")
+                        patchedText.add(patchLine.line ?: "")
+                        patchIndex++
+                    }
+
+                    codeLine.matchingLine == patchLine && patchLine.type == LineType.DELETE -> {
+                        log.debug("Skipped deleted line: $codeLine")
+                        sourceIndex++
+                        patchIndex++
+                    }
+
+                    codeLine.matchingLine == patchLine -> {
+                        if (codeLine.metrics != currentMetrics) {
+                            log.warn("Bracket mismatch detected in matched line: ${codeLine.index}")
+                        }
+                        updateMetrics(currentMetrics, codeLine.line ?: "")
+                        patchedText.add(codeLine.line ?: "")
+                        sourceIndex++
+                        patchIndex++
+                    }
+
+                    codeLine.matchingLine != null -> when (patchLine.type) {
+                        LineType.CONTEXT -> {
+                            updateMetrics(currentMetrics, patchLine.line ?: "")
+                            patchedText.add(patchLine.line ?: "")
+                            patchIndex++
+                        }
+                        else -> patchIndex++
+                    }
+
+                    else -> {
+                        log.debug("Added unmatched source line: $codeLine")
+                        if (codeLine.metrics != currentMetrics) {
+                            log.warn("Bracket mismatch detected in unmatched source line: ${codeLine.index}")
+                        }
+                        updateMetrics(currentMetrics, codeLine.line ?: "")
+                        patchedText.add(codeLine.line ?: "")
+                        sourceIndex++
+                    }
+
                 }
             }
         }
 
-        val result = generatePatchedText(sourceLines, patchLines, emptyList())
+        val result = mutableListOf<String>()
+        generatePatchedText(sourceLines, patchLines, result)
         log.debug("Finished generating patched text")
         return result.joinToString("\n")
     }
