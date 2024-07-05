@@ -1,41 +1,44 @@
-
 let socket;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_DELAY = 30000; // Maximum delay of 30 seconds
 
-function send(message) {
+export function send(message) {
     console.log('Sending message:', message);
     if (socket.readyState !== 1) {
-        throw new Error('WebSocket is not open');
+        console.error('WebSocket is not open. Message not sent:', message);
+        return false;
     }
     socket.send(message);
+    return true;
 }
 
-function connect(sessionId, customReceiveFunction) {
+export function connect(sessionId, customReceiveFunction) {
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
     const port = window.location.port;
-    let path = window.location.pathname;
-    let strings = path.split('/');
-    if(strings.length >= 2 && strings[1] !== '' && strings[1] !== 'index.html') {
-        path = '/' + strings[1] + '/';
-    } else {
-        path = '/';
-    }
+    const path = getWebSocketPath();
 
     socket = new WebSocket(`${protocol}//${host}:${port}${path}ws?sessionId=${sessionId}`);
 
     socket.addEventListener('open', (event) => {
         console.log('WebSocket connected:', event);
         showDisconnectedOverlay(false);
+        reconnectAttempts = 0;
+    });
+    socket.addEventListener('message', (event) => {
+        if (customReceiveFunction) {
+            customReceiveFunction(event);
+        } else {
+            onWebSocketText(event);
+        }
     });
 
-    socket.addEventListener('message', customReceiveFunction || onWebSocketText);
 
     socket.addEventListener('close', (event) => {
         console.log('WebSocket closed:', event);
         showDisconnectedOverlay(true);
-        setTimeout(() => {
-            connect(getSessionId(), customReceiveFunction);
-        }, 3000);
+        reconnect(sessionId, customReceiveFunction);
     });
 
     socket.addEventListener('error', (event) => {
@@ -43,9 +46,43 @@ function connect(sessionId, customReceiveFunction) {
     });
 }
 
+function getWebSocketPath() {
+    const path = window.location.pathname;
+    const strings = path.split('/');
+    return (strings.length >= 2 && strings[1] !== '' && strings[1] !== 'index.html')
+        ? '/' + strings[1] + '/'
+        : '/';
+}
+
+function reconnect(sessionId, customReceiveFunction) {
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY);
+    console.log(`Attempting to reconnect in ${delay}ms...`);
+    setTimeout(() => {
+        connect(sessionId, customReceiveFunction);
+        reconnectAttempts++;
+    }, delay);
+}
+
 function showDisconnectedOverlay(show) {
-    const elements = document.getElementsByClassName('ws-control');
-    for (let i = 0; i < elements.length; i++) {
-        elements[i].disabled = show;
+    document.querySelectorAll('.ws-control').forEach(element => {
+        element.disabled = show;
+    });
+}
+
+// Implement a message queue to handle potential disconnections
+let messageQueue = [];
+
+export function queueMessage(message) {
+
+    messageQueue.push(message);
+    processMessageQueue();
+}
+
+function processMessageQueue() {
+    if (socket.readyState === WebSocket.OPEN) {
+        while (messageQueue.length > 0) {
+            const message = messageQueue.shift();
+            send(message);
+        }
     }
 }

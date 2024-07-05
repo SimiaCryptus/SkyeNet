@@ -3,8 +3,8 @@
 <head>
     <title>WebSocket Client</title>
     <meta charset="UTF-8">
-    <meta name='viewport' content='width=device-width,initial-scale=1'>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <meta content='width=device-width,initial-scale=1' name='viewport'>
+    <link href="/favicon.svg" rel="icon" type="image/svg+xml"/>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-ghcolors.min.css" rel="stylesheet"/>
@@ -14,14 +14,14 @@
           rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/match-braces/prism-match-braces.min.css"
           rel="stylesheet"/>
-    <link id="theme_style" href="main.css" rel="stylesheet"/>
+    <link href="main.css" id="theme_style" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="tabs.js"></script>
     <script src="functions.js"></script>
-    <script src="main.js"></script>
     <script src="theme.js"></script>
     <script src="about.js"></script>
-    <script src="chat.js"></script>
+    <script src="chat.js" type="module"></script>
+    <script src="main.js" type="module"></script>
     <script src="appScript.js"></script>
 </head>
 <body>
@@ -99,13 +99,13 @@
 
 <main id="session">
     <form id="main-input">
-        <textarea id="chat-input" placeholder="Type a message" rows="1" class="chat-input"></textarea>
+        <textarea class="chat-input" id="chat-input" placeholder="Type a message" rows="1"></textarea>
         <button class="ws-control" type="submit"><i class="fas fa-paper-plane"></i> Send</button>
     </form>
     <div id="messages"></div>
 </main>
 
-<div id="modal" class="modal">
+<div class="modal" id="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
         <div id="modal-content"></div>

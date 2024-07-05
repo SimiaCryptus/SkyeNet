@@ -1,25 +1,27 @@
-let messageVersions = {};
-let messageMap = {};
-let singleInput = false;
-let stickyInput = false;
-let loadImages = "true";
-let showMenubar = true;
-let messageDiv;
+import {connect, queueMessage, send} from './chat.js';
 
-function onWebSocketText(event) {
-    console.debug('WebSocket message:', event);
-    const messagesDiv = document.getElementById('messages');
-    if (!messagesDiv) return;
-    const firstCommaIndex = event.data.indexOf(',');
-    const secondCommaIndex = event.data.indexOf(',', firstCommaIndex + 1);
-    const messageId = event.data.substring(0, firstCommaIndex);
-    const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
-    const messageContent = event.data.substring(secondCommaIndex + 1);
-    messageVersions[messageId] = messageVersion;
-    messageMap[messageId] = messageContent;
-
-    const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
-    messageDivs.forEach((messageDiv) => {
+ let messageVersions = {};
+window.messageMap = {}; // Make messageMap global
+ let singleInput = false;
+ let stickyInput = false;
+ let loadImages = "true";
+ let showMenubar = true;
+ let messageDiv;
+ 
+ function onWebSocketText(event) {
+     console.debug('WebSocket message:', event);
+     const messagesDiv = document.getElementById('messages');
+     if (!messagesDiv) return;
+     const firstCommaIndex = event.data.indexOf(',');
+     const secondCommaIndex = event.data.indexOf(',', firstCommaIndex + 1);
+     const messageId = event.data.substring(0, firstCommaIndex);
+     const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
+     const messageContent = event.data.substring(secondCommaIndex + 1);
+     messageVersions[messageId] = messageVersion;
+    window.messageMap[messageId] = messageContent;
+ 
+     const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
+     messageDivs.forEach((messageDiv) => {
         if (messageDiv) {
             messageDiv.innerHTML = messageContent;
             substituteMessages(messageId, messageDiv);
@@ -171,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (form) form.addEventListener('submit', (event) => {
         event.preventDefault();
-        send(messageInput.value);
+        queueMessage(messageInput.value);
         messageInput.value = '';
 
         // Disable the send button and add a loading spinner
@@ -231,22 +233,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const hrefLink = findAncestor(target, '.href-link');
         if (hrefLink) {
             const messageId = hrefLink.getAttribute('data-id');
-            if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',link');
+            if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',link');
         } else {
             const playButton = findAncestor(target, '.play-button');
             if (playButton) {
                 const messageId = playButton.getAttribute('data-id');
-                if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',run');
+                if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',run');
             } else {
                 const regenButton = findAncestor(target, '.regen-button');
                 if (regenButton) {
                     const messageId = regenButton.getAttribute('data-id');
-                    if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',regen');
+                    if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',regen');
                 } else {
                     const cancelButton = findAncestor(target, '.cancel-button');
                     if (cancelButton) {
                         const messageId = cancelButton.getAttribute('data-id');
-                        if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',stop');
+                        if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',stop');
                     } else {
                         const textSubmitButton = findAncestor(target, '.text-submit-button');
                         if (textSubmitButton) {
@@ -254,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
                             // url escape the text
                             const escapedText = encodeURIComponent(text);
-                            if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',userTxt,' + escapedText);
+                            if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',userTxt,' + escapedText);
                         }
                     }
                 }
