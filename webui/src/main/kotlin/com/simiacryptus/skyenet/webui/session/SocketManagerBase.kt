@@ -9,7 +9,7 @@ import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 import java.net.URLDecoder
 import java.util.*
-import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
@@ -23,11 +23,10 @@ abstract class SocketManagerBase(
     private val applicationClass: Class<*>,
 ) : SocketManager {
     private val sockets: MutableMap<ChatSocket, org.eclipse.jetty.websocket.api.Session> = mutableMapOf()
-    private val sendQueues: MutableMap<ChatSocket, Deque<String>> = mutableMapOf()
+    private val sendQueues: MutableMap<ChatSocket, ConcurrentHashMap<String,String>> = mutableMapOf()
     private val messageVersions = HashMap<String, AtomicInteger>()
     val pool get() = clientManager.getPool(session, owner)
     val scheduledThreadPoolExecutor get() = clientManager.getScheduledPool(session, owner, dataStorage)!!
-    val sendQueue = ConcurrentLinkedDeque<String>()
 
     override fun removeSocket(socket: ChatSocket) {
         synchronized(sockets) {
@@ -58,21 +57,29 @@ abstract class SocketManagerBase(
             sockets.keys.forEach { chatSocket ->
                 try {
                     log.debug("Queueing message for socket: {}", chatSocket)
-                    sendQueues.computeIfAbsent(chatSocket) { ConcurrentLinkedDeque() }.add(out)
+                    val set = sendQueues.computeIfAbsent(chatSocket) { ConcurrentHashMap() }
+                    synchronized(set) {
+                        set[out] = out
+                    }
                 } catch (e: Exception) {
                     log.info("Error sending message", e)
                 }
                 pool.submit {
                     try {
-                        val deque = sendQueues[chatSocket]!!
-                        synchronized(deque) {
-                            while (true) {
-                                val msg = deque.poll() ?: break
-                                log.debug("Sending message: {} to socket: {}", msg, chatSocket)
-                                chatSocket.remote.sendString(msg)
+                        val set = sendQueues[chatSocket]!!
+                        synchronized(set) {
+                            set.let {
+                                val copy = it.toMap()
+                                it.clear()
+                                return@let copy
                             }
-                            chatSocket.remote.flush()
+                        }.keys.forEach { messageID ->
+                            val ver = messageVersions[messageID]?.get()
+                            val v = messageStates[messageID]
+                            log.debug("Wire Send Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
+                            chatSocket.remote.sendString(messageID + "," + ver + "," + v)
                         }
+                        chatSocket.remote.flush()
                     } catch (e: Exception) {
                         log.info("Error sending message", e)
                     }
@@ -125,32 +132,10 @@ abstract class SocketManagerBase(
                 log.debug("Skipping duplicate message - Key: {}, Value: {} bytes", messageID, newValue.length)
                 return
             }
-            if (sendQueue.contains(messageID)) {
-                log.debug("Skipping already queued message - Key: {}, Value: {} bytes", messageID, newValue.length)
-                return
-            }
-            if (0 == out.length) {
-                log.debug("Skipping empty message - Key: {}, Value: {} bytes", messageID, newValue.length)
-                return
-            }
-            log.debug("Queue Send Msg: {} - {} - {} bytes", session, messageID, out.length)
-            sendQueue.add(messageID)
-            scheduledThreadPoolExecutor.schedule(
-                {
-                    try {
-                        while (sendQueue.isNotEmpty()) {
-                            val messageID = sendQueue.poll() ?: return@schedule
-                            val ver = messageVersions[messageID]?.get()
-                            val v = messageStates[messageID]
-                            log.debug("Wire Send Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
-                            publish(messageID + "," + ver + "," + v)
-                        }
-                    } catch (e: Exception) {
-                        log.debug("$session - $out", e)
-                    }
-                },
-                50, java.util.concurrent.TimeUnit.MILLISECONDS
-            )
+            val ver = messageVersions[messageID]?.get()
+            val v = messageStates[messageID]
+            log.debug("Wire Send Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
+            publish(messageID + "," + ver + "," + v)
         } catch (e: Exception) {
             log.debug("$session - $out", e)
         }
@@ -188,7 +173,6 @@ abstract class SocketManagerBase(
                     val id = message.substring(1, message.indexOf(","))
                     val code = message.substring(id.length + 2)
                     onCmd(id, code)
-                } else {
                     onRun(message, socket)
                 }
             } catch (e: Throwable) {
