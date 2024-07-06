@@ -51,7 +51,7 @@ object IterativePatchUtil {
         val sourceLines = parseLines(oldCode)
         val newLines = parseLines(newCode)
         // Compare source and new lines to establish links between matching lines
-        compare(oldCode, newCode)
+        val (_, _) = compare(oldCode, newCode)
 
         log.debug("Parsed source lines: ${sourceLines.size}, patch lines: ${newLines.size}")
 
@@ -61,7 +61,7 @@ object IterativePatchUtil {
         var sourceIndex = 0
         var newIndex = 0
         while (sourceIndex < sourceLines.size) {
-            val oldStart = maxOf(0, sourceIndex - maxContextLines)
+            val oldStart = sourceIndex
             val newStart = maxOf(0, newIndex - maxContextLines)
             val hunkDiff = mutableListOf<String>()
             var hunkOldLines = 0
@@ -69,45 +69,41 @@ object IterativePatchUtil {
             var changes = 0
             // Add preceding context
             for (i in oldStart until sourceIndex) {
-                hunkDiff.add(" ${sourceLines[i].line}")
+                hunkDiff.add(" ${sourceLines[i].line ?: ""}")
                 hunkOldLines++
                 hunkNewLines++
             }
-            while (sourceIndex < sourceLines.size && newIndex < newLines.size) {
+            while (sourceIndex < sourceLines.size && newIndex < newLines.size && changes < maxContextLines * 2) {
                 val sourceLine = sourceLines[sourceIndex]
                 val newLine = newLines[newIndex]
-                if (sourceLine.line == newLine.line) {
+                if (sourceLine.matchingLine == newLine) {
                     // Matching line (context)
-                    if (hunkDiff.size < maxContextLines * 2 + changes) {
-                        hunkDiff.add(" ${sourceLine.line}")
-                        hunkOldLines++
-                        hunkNewLines++
-                    }
+                    hunkDiff.add(" ${sourceLine.line ?: ""}")
+                    hunkOldLines++
+                    hunkNewLines++
                     sourceIndex++
                     newIndex++
-                    if (changes > 0 && hunkDiff.size >= maxContextLines * 2 + changes) break
-                } else if (sourceLine.line != newLine.line) {
+                } else if (sourceLine.matchingLine == null) {
                     // Removed line
-                    if (newLines.subList(newIndex, newLines.size).any { it.line == sourceLine.line }) {
-                        hunkDiff.add("- ${sourceLine.line}")
-                        sourceIndex++
-                        hunkOldLines++
-                        changes++
-                    } else {
-                        // Added line
-                        hunkDiff.add("+ ${newLine.line}")
-                        newIndex++
-                        hunkNewLines++
-                        changes++
-                    }
+                    hunkDiff.add("- ${sourceLine.line ?: ""}")
+                    sourceIndex++
+                    hunkOldLines++
+                    changes++
+                } else if (newLine.matchingLine == null) {
+                    // Added line
+                    hunkDiff.add("+ ${newLine.line ?: ""}")
+                    newIndex++
+                    hunkNewLines++
+                    changes++
                 } else {
-                    // Unexpected case
-                    log.warn("Unexpected case encountered")
+                    // Modified line
+                    hunkDiff.add("- ${sourceLine.line ?: ""}")
+                    hunkDiff.add("+ ${newLine.line ?: ""}")
                     sourceIndex++
                     newIndex++
-                    hunkDiff.add("- ${sourceLine.line}")
-                    hunkDiff.add("+ ${newLine.line}")
-                    changes++
+                    hunkOldLines++
+                    hunkNewLines++
+                    changes += 2
                     hunkNewLines++
                     changes++
                     hunkOldLines++
