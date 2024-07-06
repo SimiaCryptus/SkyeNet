@@ -121,6 +121,10 @@ abstract class SocketManagerBase(
             val split = out.split(',', ignoreCase = false, limit = 2)
             val messageID = split[0]
             val newValue = split[1]
+            if (newValue == null || newValue.isEmpty() || newValue.isBlank() || newValue == "null") {
+                log.debug("Skipping empty message - Key: {}", messageID)
+                return
+            }
             if (setMessage(messageID, newValue) < 0) {
                 log.debug("Skipping duplicate message - Key: {}, Value: {} bytes", messageID, newValue.length)
                 return
