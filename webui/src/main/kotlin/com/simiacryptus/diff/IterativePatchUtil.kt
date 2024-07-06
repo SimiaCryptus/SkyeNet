@@ -629,10 +629,10 @@ object IterativePatchUtil {
                     val deleteLine = patchLines[i]
                     val addLine = patchLines[i + 1]
                     // Swap records and update pointers
-                    deleteLine.nextLine = addLine.nextLine
-                    addLine.previousLine = deleteLine.previousLine
-                    deleteLine.previousLine = addLine
-                    addLine.nextLine = deleteLine
+                    deleteLine.nextLine = addLine
+                    addLine.previousLine = deleteLine
+                    deleteLine.previousLine = addLine.previousLine
+                    addLine.nextLine = deleteLine.nextLine
                     patchLines[i] = addLine
                     patchLines[i + 1] = deleteLine
                 }
