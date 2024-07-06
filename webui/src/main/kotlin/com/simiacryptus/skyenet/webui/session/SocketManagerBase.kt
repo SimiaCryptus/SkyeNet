@@ -121,7 +121,15 @@ abstract class SocketManagerBase(
             val split = out.split(',', ignoreCase = false, limit = 2)
             val messageID = split[0]
             val newValue = split[1]
-            if (newValue == null || newValue.isEmpty() || newValue.isBlank() || newValue == "null") {
+//            if (newValue.isEmpty()) {
+//                log.debug("Skipping empty message - Key: {}", messageID)
+//                return
+//            }
+//            if (newValue.isBlank()) {
+//                log.debug("Skipping empty message - Key: {}", messageID)
+//                return
+//            }
+            if (newValue == "null") {
                 log.debug("Skipping empty message - Key: {}", messageID)
                 return
             }
@@ -133,7 +141,7 @@ abstract class SocketManagerBase(
                 log.debug("Skipping already queued message - Key: {}, Value: {} bytes", messageID, newValue.length)
                 return
             }
-            if (0 == out.length) {
+            if (out.isEmpty()) {
                 log.debug("Skipping empty message - Key: {}, Value: {} bytes", messageID, newValue.length)
                 return
             }
@@ -147,7 +155,7 @@ abstract class SocketManagerBase(
                             val ver = messageVersions[messageID]?.get()
                             val v = messageStates[messageID]
                             log.debug("Wire Send Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
-                            publish(messageID + "," + ver + "," + v)
+                            publish("$messageID,$ver,$v")
                         }
                     } catch (e: Exception) {
                         log.debug("$session - $out", e)
