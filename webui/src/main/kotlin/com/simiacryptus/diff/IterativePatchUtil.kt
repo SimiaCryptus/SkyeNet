@@ -48,51 +48,70 @@ object IterativePatchUtil {
      */
     fun generatePatch(oldCode: String, newCode: String): String {
         log.info("Generating patch")
-        val oldLines = oldCode.lines()
-        val newLines = newCode.lines()
-        val lcs = longestCommonSubsequence(oldLines, newLines)
+        val sourceLines = parseLines(oldCode)
+        val newLines = parseLines(newCode)
+        // Compare source and new lines to establish links between matching lines
+        compare(oldCode, newCode)
+
+        log.debug("Parsed source lines: ${sourceLines.size}, patch lines: ${newLines.size}")
+
+
         val diff = mutableListOf<String>()
-        var oldIndex = 0
-        var newIndex = 0
-        var lcsIndex = 0
         val maxContextLines = 3
-        while (oldIndex < oldLines.size || newIndex < newLines.size) {
-            val oldStart = maxOf(0, oldIndex - maxContextLines)
+        var sourceIndex = 0
+        var newIndex = 0
+        while (sourceIndex < sourceLines.size) {
+            val oldStart = maxOf(0, sourceIndex - maxContextLines)
             val newStart = maxOf(0, newIndex - maxContextLines)
             val hunkDiff = mutableListOf<String>()
             var hunkOldLines = 0
             var hunkNewLines = 0
             var changes = 0
             // Add preceding context
-            for (i in oldStart until oldIndex) {
-                hunkDiff.add(" ${oldLines[i]}")
+            for (i in oldStart until sourceIndex) {
+                hunkDiff.add(" ${sourceLines[i].line}")
                 hunkOldLines++
                 hunkNewLines++
             }
-            while (oldIndex < oldLines.size || newIndex < newLines.size) {
-                if (lcsIndex < lcs.size && oldLines[oldIndex] == lcs[lcsIndex] && newLines[newIndex] == lcs[lcsIndex]) {
+            while (sourceIndex < sourceLines.size && newIndex < newLines.size) {
+                val sourceLine = sourceLines[sourceIndex]
+                val newLine = newLines[newIndex]
+                if (sourceLine.line == newLine.line) {
                     // Matching line (context)
                     if (hunkDiff.size < maxContextLines * 2 + changes) {
-                        hunkDiff.add("  ${oldLines[oldIndex]}")
+                        hunkDiff.add(" ${sourceLine.line}")
                         hunkOldLines++
                         hunkNewLines++
                     }
-                    oldIndex++
+                    sourceIndex++
                     newIndex++
-                    lcsIndex++
                     if (changes > 0 && hunkDiff.size >= maxContextLines * 2 + changes) break
-                } else if (newIndex < newLines.size && (lcsIndex >= lcs.size || newLines[newIndex] != lcs[lcsIndex])) {
-                    // Added line
-                    hunkDiff.add("+ ${newLines[newIndex]}")
+                } else if (sourceLine.line != newLine.line) {
+                    // Removed line
+                    if (newLines.subList(newIndex, newLines.size).any { it.line == sourceLine.line }) {
+                        hunkDiff.add("- ${sourceLine.line}")
+                        sourceIndex++
+                        hunkOldLines++
+                        changes++
+                    } else {
+                        // Added line
+                        hunkDiff.add("+ ${newLine.line}")
+                        newIndex++
+                        hunkNewLines++
+                        changes++
+                    }
+                } else {
+                    // Unexpected case
+                    log.warn("Unexpected case encountered")
+                    sourceIndex++
                     newIndex++
+                    hunkDiff.add("- ${sourceLine.line}")
+                    hunkDiff.add("+ ${newLine.line}")
+                    changes++
                     hunkNewLines++
                     changes++
-                } else if (oldIndex < oldLines.size && (lcsIndex >= lcs.size || oldLines[oldIndex] != lcs[lcsIndex])) {
-                    // Removed line
-                    hunkDiff.add("- ${oldLines[oldIndex]}")
-                    oldIndex++
                     hunkOldLines++
-                    changes++
+                    hunkNewLines++
                 }
             }
             if (changes > 0) {
@@ -194,8 +213,12 @@ object IterativePatchUtil {
 
     private fun subsequenceLinking(
         sourceLines: List<LineRecord>,
-        patchLines: List<LineRecord>
+        patchLines: List<LineRecord>,
+        depth: Int = 0
     ) {
+        if (depth > 10 || sourceLines.isEmpty() || patchLines.isEmpty()) {
+            return // Base case: prevent excessive recursion
+        }
         val sourceBuffer: MutableList<LineRecord> = sourceLines.toMutableList()
         val patchBuffer: MutableList<LineRecord> = patchLines.toMutableList()
         val sourceSegment = mutableListOf<LineRecord>()
@@ -217,14 +240,17 @@ object IterativePatchUtil {
                 patchBuffer.removeAt(0)
             }
             if (sourceSegment.isNotEmpty() && patchSegment.isNotEmpty()) {
-                if (sourceLines.size == sourceSegment.size) return // No subsequence found
-                if (patchLines.size == patchSegment.size) return // No subsequence found
+                if (sourceLines.size == sourceSegment.size || patchLines.size == patchSegment.size) {
+                    return // No subsequence found
+                }
                 var matchedLines = linkUniqueMatchingLines(sourceSegment, patchSegment)
                 matchedLines += linkAdjacentMatchingLines(sourceSegment)
                 if (matchedLines == 0) {
                     matchedLines += matchFirstBrackets(sourceSegment, patchSegment)
                 }
-                if (matchedLines > 0) subsequenceLinking(sourceSegment, patchSegment)
+                if (matchedLines > 0) {
+                    subsequenceLinking(sourceSegment, patchSegment, depth + 1)
+                }
             }
         }
     }
