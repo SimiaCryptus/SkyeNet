@@ -42,7 +42,8 @@ open class FilePatchTestApp(
         """.trimMargin()
         val sourceFile = Files.createTempFile("source", ".txt").toFile()
         sourceFile.writeText(source)
-        Desktop.getDesktop().open(sourceFile)
+        sourceFile.deleteOnExit()
+        //Desktop.getDesktop().open(sourceFile)
 
         val patch = """
             |# ${sourceFile.name}
