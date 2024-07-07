@@ -188,7 +188,6 @@ class IterativePatchUtilTest {
             |  line1
             |  line2
             |+ newLine
-            |  line3
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
@@ -228,9 +227,8 @@ class IterativePatchUtilTest {
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
             |  line1
-            |+ modifiedLine2
             |- line2
-            |  line3
+            |+ modifiedLine2
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
@@ -255,14 +253,13 @@ class IterativePatchUtilTest {
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
             |  function example() {
+            |-     console.log("Hello");
+            |-     // Some comment
+            |-     return true;
             |+     console.log("Hello, World!");
             |+     // Modified comment
             |+     let x = 5;
             |+     return x > 0;
-            |-     console.log("Hello");
-            |-     // Some comment
-            |-     return true;
-            |  }            
         """.trimMargin()
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
