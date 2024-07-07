@@ -9,3 +9,4 @@ build/
 openai.key
 *.log
 *.log.*
+client_secret_google_oauth.json

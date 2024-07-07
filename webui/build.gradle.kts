@@ -35,22 +35,31 @@ val jetty_version = "11.0.18"
 val jackson_version = "2.17.0"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.63")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.63") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
 
     implementation(project(":core"))
     implementation(project(":kotlin"))
 
     implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
-    compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
     compileOnly("org.jsoup:jsoup:1.17.2")
-
 
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.zxing:javase:3.5.3")
 
-    implementation("org.openapitools:openapi-generator:7.3.0")
-    implementation("org.openapitools:openapi-generator-cli:7.3.0")
+    compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+    runtimeOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
 
+    implementation("org.openapitools:openapi-generator:7.3.0") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+        exclude(group = "org.slf4j", module = "slf4j-ext")
+        exclude(group = "org.slf4j", module = "slf4j-simple")
+    }
+    compileOnly("org.openapitools:openapi-generator-cli:7.3.0") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
+    testRuntimeOnly("org.openapitools:openapi-generator-cli:7.3.0")
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
@@ -71,7 +80,9 @@ dependencies {
     testImplementation(project(":kotlin"))
     testImplementation(project(":scala"))
 
-    implementation(group = "org.apache.httpcomponents.client5", name = "httpclient5", version = "5.2.3")
+    implementation(group = "org.apache.httpcomponents.client5", name = "httpclient5", version = "5.3.1") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
 
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-core", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jackson_version)
@@ -85,7 +96,9 @@ dependencies {
     implementation(group = "commons-codec", name = "commons-codec", version = "1.16.0")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
-    testImplementation(group = "org.slf4j", name = "slf4j-simple", version = "2.0.9")
+    runtimeOnly(group = "org.slf4j", name = "slf4j-simple", version = "2.0.9")
+    testImplementation(group = "ch.qos.logback", name = "logback-classic", version = "1.4.14")
+    testImplementation(group = "ch.qos.logback", name = "logback-core", version = "1.4.14")
 
     testImplementation(kotlin("script-runtime"))
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")

@@ -81,7 +81,7 @@ abstract class ApplicationDirectory(
             log.info("Starting application with args: ${args.joinToString(", ")}")
             setupPlatform()
             init(args.contains("--server"))
-            ClientUtil.keyTxt = run {
+            if(ClientUtil.keyTxt.isEmpty()) ClientUtil.keyTxt = run {
                 try {
                     val encryptedData = javaClass.classLoader.getResourceAsStream("openai.key.json.kms")?.readAllBytes()
                         ?: throw RuntimeException("Unable to load resource: ${"openai.key.json.kms"}")

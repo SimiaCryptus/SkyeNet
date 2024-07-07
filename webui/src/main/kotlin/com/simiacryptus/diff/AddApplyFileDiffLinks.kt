@@ -3,7 +3,6 @@ package com.simiacryptus.diff
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.set
@@ -28,7 +27,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     api: API,
 ): String {
     val initiator = "(?s)```[\\w]*\n".toRegex()
-    if(response.contains(initiator) && !response.split(initiator, 2)[1].contains("\n```(?![^\n])".toRegex())) {
+    if (response.contains(initiator) && !response.split(initiator, 2)[1].contains("\n```(?![^\n])".toRegex())) {
         // Single diff block without the closing ``` due to LLM limitations... add it back
         return addApplyFileDiffLinks(
             root,
@@ -45,7 +44,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     val diffs: List<Pair<IntRange, String>> = findAll.filter { block ->
         val header = headers.lastOrNull { it.first.endInclusive < block.range.start }
         val filename = resolve(root, header?.second ?: "Unknown")
-        when  {
+        when {
             !root.toFile().resolve(filename).exists() -> false
             //block.groupValues[1] == "diff" -> true
             else -> true
@@ -55,7 +54,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     val codeblocks = findAll.filter { block ->
         val header = headers.lastOrNull { it.first.endInclusive < block.range.start }
         val filename = resolve(root, header?.second ?: "Unknown")
-        when  {
+        when {
             root.toFile().resolve(filename).exists() -> false
             block.groupValues[1] == "diff" -> false
             else -> true
@@ -111,12 +110,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
                         """
                       |```diff
                       |${
-                            DiffUtil.formatDiff(
-                                DiffUtil.generateDiff(
-                                    prevCode.lines(),
-                                    codeValue.lines()
-                                )
-                            )
+                            IterativePatchUtil.generatePatch(prevCode, codeValue)
                         }
                       |```
                       """.trimMargin(), ui = ui
@@ -164,7 +158,8 @@ private fun SocketManagerBase.renderDiffBlock(
     diffVal: String,
     handle: (Map<Path, String>) -> Unit,
     ui: ApplicationInterface,
-    api: API?
+    api: API?,
+    watch: Boolean = false,
 ): String {
 
     val diffTask = ui.newTask(root = false)
@@ -181,9 +176,6 @@ private fun SocketManagerBase.renderDiffBlock(
     val newCode2TaskSB = newCode2Task.add("")
     val patch2Task = ui.newTask(root = false)
     val patch2TaskSB = patch2Task.add("")
-
-
-
 
 
     val filepath = path(root, filename)
@@ -204,8 +196,7 @@ private fun SocketManagerBase.renderDiffBlock(
     var newCode = patch(originalCode, diffVal)
 
 
-
-    val verifyFwdTabs = if(!newCode.isValid) displayMapInTabs(
+    val verifyFwdTabs = if (!newCode.isValid) displayMapInTabs(
         mapOf(
             "Code" to (prevCodeTask?.placeholder ?: ""),
             "Preview" to (newCodeTask?.placeholder ?: ""),
@@ -255,7 +246,7 @@ private fun SocketManagerBase.renderDiffBlock(
             applydiffTask.error(null, e)
         }
     }
-    if(!newCode.isValid) {
+    if (!newCode.isValid) {
         val fixPatchLink = hrefLink("Fix Patch", classname = "href-link cmd-button") {
             try {
                 val header = fixTask.header("Attempting to fix patch...")
@@ -302,12 +293,7 @@ private fun SocketManagerBase.renderDiffBlock(
                 )
 
                 val echoDiff = try {
-                    DiffUtil.formatDiff(
-                        DiffUtil.generateDiff(
-                            prevCode.lines(),
-                            newCode.newCode.lines()
-                        )
-                    )
+                    IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
                 } catch (e: Throwable) {
                     renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
                 }
@@ -336,7 +322,7 @@ private fun SocketManagerBase.renderDiffBlock(
                 )
                 answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
                 header?.clear()
-                fixTask.complete(answer)
+                fixTask.complete(renderMarkdown(answer))
             } catch (e: Throwable) {
                 log.error("Error in fix patch", e)
             }
@@ -387,12 +373,7 @@ private fun SocketManagerBase.renderDiffBlock(
                 if (!isApplied && thisFilehash != filehash) {
                     val newCode = patch(prevCode, diffVal)
                     val echoDiff = try {
-                        DiffUtil.formatDiff(
-                            DiffUtil.generateDiff(
-                                prevCode.lines(),
-                                newCode.newCode.lines()
-                            )
-                        )
+                        IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
                     } catch (e: Throwable) {
                         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
                     }
@@ -423,12 +404,7 @@ private fun SocketManagerBase.renderDiffBlock(
                         diffVal.reverseLines()
                     ).newCode.lines().reversed().joinToString("\n")
                     val echoDiff2 = try {
-                        DiffUtil.formatDiff(
-                            DiffUtil.generateDiff(
-                                prevCode.lines(),
-                                newCode2.lines(),
-                            )
-                        )
+                        IterativePatchUtil.generatePatch(prevCode, newCode2)
                     } catch (e: Throwable) {
                         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
                     }
@@ -458,7 +434,7 @@ private fun SocketManagerBase.renderDiffBlock(
                     filehash = thisFilehash
                 }
             }
-            if (!isApplied) {
+            if (!isApplied && watch) {
                 scheduledThreadPoolExecutor.schedule(scheduledFn, 1000, TimeUnit.MILLISECONDS)
             }
         } catch (e: Throwable) {
@@ -466,7 +442,13 @@ private fun SocketManagerBase.renderDiffBlock(
         }
     }
     scheduledThreadPoolExecutor.schedule(scheduledFn, 1000, TimeUnit.MILLISECONDS)
-    val newValue = mainTabs + "\n" + applydiffTask.placeholder
+    val newValue = if (newCode.isValid) {
+        mainTabs + "\n" + applydiffTask.placeholder
+    } else {
+        mainTabs + """
+            <div class="warning">Warning: The patch is not valid. Please fix the patch before applying.</div>
+            """.trimIndent() + applydiffTask.placeholder
+    }
     return newValue
 }
 
@@ -476,7 +458,7 @@ private val patch = { code: String, diff: String ->
     val isParenthesisBalanced = FileValidationUtils.isParenthesisBalanced(code)
     val isQuoteBalanced = FileValidationUtils.isQuoteBalanced(code)
     val isSingleQuoteBalanced = FileValidationUtils.isSingleQuoteBalanced(code)
-    var newCode = IterativePatchUtil.patch(code, diff)
+    var newCode = IterativePatchUtil.applyPatch(code, diff)
     newCode = newCode.replace("\r", "")
     val isCurlyBalancedNew = FileValidationUtils.isCurlyBalanced(newCode)
     val isSquareBalancedNew = FileValidationUtils.isSquareBalanced(newCode)

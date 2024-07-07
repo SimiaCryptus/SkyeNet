@@ -84,7 +84,7 @@ open class AwsPlatform(
         fun get() = try {
             AwsPlatform()
         } catch (e: Throwable) {
-            log.info("Error initializing AWS platform", e)
+            log.warn("Error initializing AWS platform", e)
             null
         }
     }
