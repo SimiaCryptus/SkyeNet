@@ -126,7 +126,7 @@ object IterativePatchUtil {
         log.debug("Starting annihilation of no-op line pairs")
         val toRemove = mutableListOf<Pair<Int, Int>>()
         var i = 0
-        while (i < diff.size) {
+        while (i < diff.size-1) {
             if (diff[i].type == LineType.DELETE) {
                 var j = i + 1
                 while (j < diff.size && diff[j].type != LineType.CONTEXT) {
@@ -142,10 +142,7 @@ object IterativePatchUtil {
             i++
         }
         // Remove the pairs in reverse order to maintain correct indices
-        toRemove.sortedByDescending { it.first }.forEach { (deleteIndex, addIndex) ->
-            diff.removeAt(addIndex)
-            diff.removeAt(deleteIndex)
-        }
+        toRemove.flatMap { listOf(it.first, it.second) }.distinct().sortedDescending().forEach { diff.removeAt(it) }
         log.debug("Removed ${toRemove.size} no-op line pairs")
     }
 
