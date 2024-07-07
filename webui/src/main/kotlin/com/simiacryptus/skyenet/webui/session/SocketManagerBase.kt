@@ -68,7 +68,7 @@ abstract class SocketManagerBase(
                         synchronized(deque) {
                             while (true) {
                                 val msg = deque.poll() ?: break
-                                log.debug("Sending message: {} to socket: {}", msg, chatSocket)
+                                log.info("Sending message: {} to socket: {}", msg, chatSocket)
                                 chatSocket.remote.sendString(msg)
                             }
                             chatSocket.remote.flush()
@@ -144,7 +144,7 @@ abstract class SocketManagerBase(
                 log.debug("Skipping empty message - Key: {}, Value: {} bytes", messageID, newValue.length)
                 return
             }
-            log.debug("Queue Send Msg: {} - {} - {} bytes", session, messageID, out.length)
+            log.info("Queue Send Msg: {} - {} - {} bytes", session, messageID, out.length)
             sendQueue.add(messageID)
             scheduledThreadPoolExecutor.schedule(
                 {
@@ -153,17 +153,17 @@ abstract class SocketManagerBase(
                             val messageID = sendQueue.poll() ?: return@schedule
                             val ver = messageVersions[messageID]?.get()
                             val v = messageStates[messageID]
-                            log.debug("Wire Send Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
+                            log.info("Wire Send Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
                             publish("$messageID,$ver,$v")
                         }
                     } catch (e: Exception) {
-                        log.debug("$session - $out", e)
+                        log.info("$session - $out", e)
                     }
                 },
                 50, java.util.concurrent.TimeUnit.MILLISECONDS
             )
         } catch (e: Exception) {
-            log.debug("$session - $out", e)
+            log.info("$session - $out", e)
         }
     }
 
