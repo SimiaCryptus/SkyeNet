@@ -272,7 +272,7 @@ abstract class SocketManagerBase(
     )
 
     companion object {
-        private val log = LoggerFactory.getLogger(ChatServer::class.java)
+        private val log = LoggerFactory.getLogger(SocketManagerBase::class.java)
 
         private val range1 = ('a'..'y').toList().toTypedArray()
         private val range2 = range1 + 'z'
