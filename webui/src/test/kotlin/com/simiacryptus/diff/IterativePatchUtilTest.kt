@@ -230,7 +230,10 @@ class IterativePatchUtilTest {
             |- line2
             |+ modifiedLine2
         """.trimMargin()
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
+        Assertions.assertEquals(
+            expected.trim().replace("\r\n", "\n"),
+            result.trim().replace("\r\n", "\n")
+        )
     }
 
     @Test
@@ -261,6 +264,9 @@ class IterativePatchUtilTest {
             |+     let x = 5;
             |+     return x > 0;
         """.trimMargin()
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
+        Assertions.assertEquals(
+            expected.trim().replace("\r\n", "\n"),
+            result.trim().replace("\r\n", "\n")
+        )
     }
 }
