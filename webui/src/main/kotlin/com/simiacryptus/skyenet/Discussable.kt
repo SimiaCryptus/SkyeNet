@@ -64,7 +64,7 @@ ${
             tabContent?.append("\n" + feedbackForm.placeholder)
             task.complete()
         } catch (e: Throwable) {
-            log.error("Error in main function", e)
+            log.error("Error in discussable", e)
             task.error(ui, e)
             task.complete(ui.hrefLink("🔄 Retry") {
                 main(tabIndex = tabIndex, task = task)
@@ -200,11 +200,17 @@ ${
             val newTask = ui.newTask(false)
             val header = newTask.header("Processing...")
             tabs[tabs.label(idx)] = newTask.placeholder
-            main(idx, newTask)
-            //tabs.selectedTab = idx
-            header?.clear()
-            newTask.complete()
-            semaphore.acquire()
+            try {
+                main(idx, newTask)
+                //tabs.selectedTab = idx
+                semaphore.acquire()
+            } catch (e: Throwable) {
+                log.error("Error in main function", e)
+                task.error(ui, e)
+            } finally {
+                header?.clear()
+                newTask.complete()
+            }
             log.info("Returning result from Discussable")
             return atomicRef.get()
         } catch (e: Exception) {

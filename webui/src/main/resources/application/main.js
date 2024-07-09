@@ -36,7 +36,7 @@ function onWebSocketText(event) {
         substituteMessages(messageId, messageDiv);
 
         // Scroll to the new message with smooth behavior
-        messageDiv.scrollIntoView({behavior: 'smooth', block: 'end'});
+        //messageDiv.scrollIntoView({behavior: 'smooth', block: 'end'});
     }
     if (singleInput) {
         const mainInput = document.getElementById('main-input');
