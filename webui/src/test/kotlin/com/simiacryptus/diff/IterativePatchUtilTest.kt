@@ -1,6 +1,7 @@
 package com.simiacryptus.diff
 
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class IterativePatchUtilTest {
@@ -155,7 +156,6 @@ class IterativePatchUtilTest {
     }
 
 
-
     @Test
     fun testGeneratePatchNoChanges() {
         val oldCode = """
@@ -271,5 +271,208 @@ class IterativePatchUtilTest {
             expected.trim().replace("\r\n", "\n"),
             result.trim().replace("\r\n", "\n")
         )
+    }
+
+    @Test
+    fun testGeneratePatchMoveLineUpwardsMultiplePositions() {
+        val oldCode = """
+            line1
+            line2
+            line3
+            line4
+            line5
+            line6
+        """.trimIndent()
+
+        val newCode = """
+            line1
+            line5
+            line2
+            line3
+            line4
+            line6
+        """.trimIndent()
+
+        val expectedPatch = """
+              line1
+            - line2
+            - line3
+            - line4
+              line5
+            + line2
+            + line3
+            + line4
+              line6
+        """.trimIndent()
+
+        val actualPatch = IterativePatchUtil.generatePatch(oldCode, newCode)
+        assertEquals(expectedPatch, actualPatch)
+    }
+
+    @Test
+    fun testGeneratePatchMoveLineDownwardsMultiplePositions() {
+        val oldCode = """
+            line1
+            line2
+            line3
+            line4
+            line5
+            line6
+        """.trimIndent()
+
+        val newCode = """
+            line1
+            line3
+            line4
+            line5
+            line6
+            line2
+        """.trimIndent()
+
+        val expectedPatch = """
+              line1
+            - line2
+              line3
+              line4
+              line5
+              line6
+            + line2
+        """.trimIndent()
+
+        val actualPatch = IterativePatchUtil.generatePatch(oldCode, newCode)
+        assertEquals(expectedPatch, actualPatch)
+    }
+
+    @Test
+    fun testGeneratePatchSwapLines() {
+        val oldCode = """
+            line1
+            line2
+            line3
+            line4
+            line5
+            line6
+        """.trimIndent()
+
+        val newCode = """
+            line1
+            line4
+            line3
+            line2
+            line5
+            line6
+        """.trimIndent()
+
+        val expectedPatch = """
+              line1
+            - line2
+            - line3
+              line4
+            + line3
+            + line2
+              line5
+              line6
+        """.trimIndent()
+
+        val actualPatch = IterativePatchUtil.generatePatch(oldCode, newCode)
+        assertEquals(expectedPatch, actualPatch)
+    }
+
+    @Test
+    fun testGeneratePatchMoveAdjacentLines() {
+        val oldCode = """
+            line1
+            line2
+            line3
+            line4
+            line5
+            line6
+        """.trimIndent()
+
+        val newCode = """
+            line1
+            line4
+            line5
+            line2
+            line3
+            line6
+        """.trimIndent()
+
+        val expectedPatch = """
+              line1
+            - line2
+            - line3
+              line4
+              line5
+            + line2
+            + line3
+              line6
+        """.trimIndent()
+
+        val actualPatch = IterativePatchUtil.generatePatch(oldCode, newCode)
+        assertEquals(expectedPatch, actualPatch)
+    }
+
+    @Test
+    fun testGeneratePatchMoveLineUpwards() {
+        val oldCode = """
+            line1
+            line2
+            line3
+            line4
+            line5
+            line6
+        """.trimIndent()
+        val newCode = """
+            line1
+            line2
+            line5
+            line3
+            line4
+            line6
+        """.trimIndent()
+        val expectedPatch = """
+              line1
+              line2
+            - line3
+            - line4
+              line5
+            + line3
+            + line4
+              line6
+        """.trimIndent()
+        val actualPatch = IterativePatchUtil.generatePatch(oldCode, newCode)
+        assertEquals(expectedPatch, actualPatch)
+    }
+
+    @Test
+    fun testGeneratePatchMoveLineDownwards() {
+        val oldCode = """
+            line1
+            line2
+            line3
+            line4
+            line5
+            line6
+        """.trimIndent()
+        val newCode = """
+            line1
+            line3
+            line4
+            line5
+            line2
+            line6
+        """.trimIndent()
+        val expectedPatch = """
+              line1
+            - line2
+              line3
+              line4
+              line5
+            + line2
+              line6
+        """.trimIndent()
+        val actualPatch = IterativePatchUtil.generatePatch(oldCode, newCode)
+        assertEquals(expectedPatch, actualPatch)
     }
 }

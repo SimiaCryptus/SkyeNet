@@ -2,6 +2,7 @@
 
 package com.simiacryptus.diff
 
+import com.simiacryptus.diff.IterativePatchUtil.LineType.*
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import kotlin.math.floor
@@ -25,16 +26,16 @@ object IterativePatchUtil {
         var previousLine: LineRecord? = null,
         var nextLine: LineRecord? = null,
         var matchingLine: LineRecord? = null,
-        var type: LineType = LineType.CONTEXT,
+        var type: LineType = CONTEXT,
         var metrics: LineMetrics = LineMetrics()
     ) {
         override fun toString(): String {
             val sb = StringBuilder()
             sb.append("${index.toString().padStart(5, ' ')}: ")
             when (type) {
-                LineType.CONTEXT -> sb.append(" ")
-                LineType.ADD -> sb.append("+")
-                LineType.DELETE -> sb.append("-")
+                CONTEXT -> sb.append(" ")
+                ADD -> sb.append("+")
+                DELETE -> sb.append("-")
             }
             sb.append(" ")
             sb.append(line)
@@ -79,6 +80,7 @@ object IterativePatchUtil {
         val newLines = parseLines(newCode)
         link(sourceLines, newLines, null)
         log.debug("Parsed and linked source lines: ${sourceLines.size}, new lines: ${newLines.size}")
+        markMovedLines2(sourceLines, newLines)
         val diff1 = newToPatch(newLines)
         val diff = truncateContext(diff1).toMutableList()
         fixPatchLineOrder(diff)
@@ -88,9 +90,9 @@ object IterativePatchUtil {
         // Generate the patch text
         diff.forEach { line ->
             when (line.type) {
-                LineType.CONTEXT -> patch.append("  ${line.line}\n")
-                LineType.ADD -> patch.append("+ ${line.line}\n")
-                LineType.DELETE -> patch.append("- ${line.line}\n")
+                CONTEXT -> patch.append("  ${line.line}\n")
+                ADD -> patch.append("+ ${line.line}\n")
+                DELETE -> patch.append("- ${line.line}\n")
             }
         }
         log.info("Patch generation completed")
@@ -128,10 +130,10 @@ object IterativePatchUtil {
         val toRemove = mutableListOf<Pair<Int, Int>>()
         var i = 0
         while (i < diff.size - 1) {
-            if (diff[i].type == LineType.DELETE) {
+            if (diff[i].type == DELETE) {
                 var j = i + 1
-                while (j < diff.size && diff[j].type != LineType.CONTEXT) {
-                    if (diff[j].type == LineType.ADD &&
+                while (j < diff.size && diff[j].type != CONTEXT) {
+                    if (diff[j].type == ADD &&
                         normalizeLine(diff[i].line ?: "") == normalizeLine(diff[j].line ?: "")
                     ) {
                         toRemove.add(Pair(i, j))
@@ -147,6 +149,109 @@ object IterativePatchUtil {
         log.debug("Removed ${toRemove.size} no-op line pairs")
     }
 
+    private fun markMovedLines(sourceLines: List<LineRecord>, newLines: List<LineRecord>) {
+        log.debug("Starting to mark moved lines")
+        var sourceLine = sourceLines.firstOrNull()
+        while (null != sourceLine) {
+            try {
+                if (sourceLine.matchingLine != null) {
+                    var nextSourceLine = sourceLine.nextLine ?: break
+                    try {
+                        while (nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) {
+                            nextSourceLine = nextSourceLine.nextLine ?: continue
+                        }
+                        val newLine = sourceLine.matchingLine!!
+                        log.debug("Processing source line ${sourceLine.index} with matching patch line ${newLine.index}")
+                        var nextNewLine = newLine.nextLine ?: continue
+                        while (nextNewLine.matchingLine == null || nextNewLine.type == ADD) {
+                            nextNewLine = nextNewLine.nextLine ?: continue
+                        }
+                        while (nextSourceLine.matchingLine != nextNewLine) {
+                            if (nextSourceLine.matchingLine != null) {
+                                nextSourceLine.type = DELETE
+                                nextSourceLine.matchingLine!!.type = ADD
+                                log.debug("Marked moved line: Source[${nextSourceLine.index}] as DELETE, Patch[${nextSourceLine.matchingLine!!.index}] as ADD")
+                            }
+                            nextSourceLine = nextSourceLine.nextLine ?: break
+                            while (nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) {
+                                nextSourceLine = nextSourceLine.nextLine ?: continue
+                            }
+                        }
+                    } finally {
+                        sourceLine = nextSourceLine
+                    }
+                } else {
+                    sourceLine = sourceLine.nextLine
+                }
+            } catch (e: Exception) {
+                log.error("Error marking moved lines", e)
+            }
+        }
+        log.debug("Finished marking moved lines")
+    }
+
+    private fun markMovedLines2(sourceLines: List<LineRecord>, newLines: List<LineRecord>) {
+        log.debug("Starting to mark moved lines")
+        // We start with the first line of the new (patched) code
+        var newLine = newLines.firstOrNull()
+        // We'll iterate through all lines of the new code
+        while (null != newLine) {
+            try {
+                // We only process lines that have a matching line in the source code
+                if (newLine.matchingLine != null) {
+                    // Get the next line in the new code
+                    var nextNewLine = newLine.nextLine ?: break
+                    try {
+                        // Skip any lines that don't have a match or are additions
+                        // This helps us find the next "anchor" point in the new code
+                        while (nextNewLine.matchingLine == null || nextNewLine.type == ADD) {
+                            nextNewLine = nextNewLine.nextLine ?: break
+                        }
+                        if(nextNewLine.matchingLine == null || nextNewLine.type == ADD) break
+                        // Get the corresponding line in the source code
+                        val sourceLine = newLine.matchingLine!!
+                        log.debug("Processing patch line ${newLine.index} with matching source line ${sourceLine.index}")
+                        // Find the next line in the source code
+                        var nextSourceLine = sourceLine.nextLine ?: continue
+                        // Skip any lines in the source that don't have a match or are deletions
+                        // This helps us find the next "anchor" point in the source code
+                        while (nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) {
+                            nextSourceLine = nextSourceLine.nextLine ?: break
+                        }
+                        if(nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) break
+                        // If the next matching lines in source and new don't correspond,
+                        // it means there's a moved block of code
+                        while (nextNewLine.matchingLine != nextSourceLine) {
+                            if (nextSourceLine.matchingLine != null) {
+                                // Mark the line in the new code as an addition
+                                nextSourceLine.type = DELETE
+                                // Mark the corresponding line in the source code as a deletion
+                                nextSourceLine.matchingLine!!.type = ADD
+                                log.debug("Marked moved line: Patch[${nextSourceLine.index}] as ADD, Source[${nextSourceLine.matchingLine!!.index}] as DELETE")
+                            }
+                            // Move to the next line in the new code
+                            nextSourceLine = nextSourceLine.nextLine ?: break
+                            // Skip any lines that don't have a match or are additions
+                            while (nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) {
+                                nextSourceLine = nextSourceLine.nextLine ?: continue
+                            }
+                        }
+                    } finally {
+                        // Move to the next line to process in the outer loop
+                        newLine = nextNewLine
+                    }
+                } else {
+                    // If the current line doesn't have a match, move to the next one
+                    newLine = newLine.nextLine
+                }
+            } catch (e: Exception) {
+                log.error("Error marking moved lines", e)
+            }
+        }
+        // At this point, we've marked all moved lines in both the source and new code
+        log.debug("Finished marking moved lines")
+    }
+
     private fun newToPatch(
         newLines: List<LineRecord>
     ): MutableList<LineRecord> {
@@ -157,8 +262,8 @@ object IterativePatchUtil {
         while (newLine != null) {
             val sourceLine = newLine.matchingLine
             when {
-                sourceLine == null -> {
-                    diff.add(LineRecord(newLine.index, newLine.line, type = LineType.ADD))
+                sourceLine == null || newLine.type == ADD -> {
+                    diff.add(LineRecord(newLine.index, newLine.line, type = ADD))
                     log.debug("Added ADD line: ${newLine.line}")
                 }
 
@@ -166,13 +271,13 @@ object IterativePatchUtil {
                     // search for prior, unlinked source lines
                     var priorSourceLine = sourceLine.previousLine
                     val lineBuffer = mutableListOf<LineRecord>()
-                    while (priorSourceLine != null && priorSourceLine.matchingLine == null) {
+                    while (priorSourceLine != null && (priorSourceLine.matchingLine == null || priorSourceLine?.type == DELETE)) {
                         // Note the deletion of the prior source line
-                        lineBuffer.add(LineRecord(-1, priorSourceLine.line, type = LineType.DELETE))
+                        lineBuffer.add(LineRecord(-1, priorSourceLine.line, type = DELETE))
                         priorSourceLine = priorSourceLine.previousLine
                     }
                     diff.addAll(lineBuffer.reversed())
-                    diff.add(LineRecord(newLine.index, newLine.line, type = LineType.CONTEXT))
+                    diff.add(LineRecord(newLine.index, newLine.line, type = CONTEXT))
                     log.debug("Added CONTEXT line: ${sourceLine.line}")
                 }
             }
@@ -186,46 +291,36 @@ object IterativePatchUtil {
         val contextSize = 3 // Number of context lines before and after changes
         log.debug("Truncating context with size $contextSize")
         val truncatedDiff = mutableListOf<LineRecord>()
-        var inChange = false
         val contextBuffer = mutableListOf<LineRecord>()
-        var lastChangeIndex = -1
         for (i in diff.indices) {
             val line = diff[i]
             when {
-                line.type != LineType.CONTEXT -> {
-                    if (!inChange) {
-                        // Start of a change, add buffered context
+                line.type != CONTEXT -> {
+                    // Start of a change, add buffered context
+                    if(contextSize*2 < contextBuffer.size) {
+                        truncatedDiff.addAll(contextBuffer.take(contextSize))
                         truncatedDiff.addAll(contextBuffer.takeLast(contextSize))
-                        contextBuffer.clear()
-                    }
-                    truncatedDiff.add(line)
-                    inChange = true
-                    lastChangeIndex = i
-                }
-
-                inChange -> {
-                    contextBuffer.add(line)
-                    if (contextBuffer.size == contextSize) {
-                        // End of a change, add buffered context
+                    } else {
                         truncatedDiff.addAll(contextBuffer)
-                        contextBuffer.clear()
-                        inChange = false
                     }
+                    contextBuffer.clear()
+                    truncatedDiff.add(line)
                 }
 
                 else -> {
                     contextBuffer.add(line)
-                    if (contextBuffer.size > contextSize) {
-                        contextBuffer.removeAt(0)
-                    }
                 }
             }
         }
-        // Add trailing context after the last change
-        if (lastChangeIndex != -1) {
-            val trailingContext = diff.subList(lastChangeIndex + 1, min(diff.size, lastChangeIndex + 1 + contextSize))
-            truncatedDiff.addAll(trailingContext)
+        if(truncatedDiff.isEmpty()) {
+            return truncatedDiff
         }
+        if(contextSize < contextBuffer.size) {
+            truncatedDiff.addAll(contextBuffer.take(contextSize))
+        } else {
+            truncatedDiff.addAll(contextBuffer)
+        }
+        // Add trailing context after the last change
         log.debug("Truncated diff size: ${truncatedDiff.size}")
         return truncatedDiff
     }
@@ -293,7 +388,7 @@ object IterativePatchUtil {
         while (sourceIndex < sourceLines.size - 1) {
             val codeLine = sourceLines[++sourceIndex]
             when {
-                codeLine.matchingLine?.type == LineType.DELETE -> {
+                codeLine.matchingLine?.type == DELETE -> {
                     val patchLine = codeLine.matchingLine!!
                     log.debug("Deleting line: {}", codeLine)
                     //updateContext(lastMatchedPatchIndex, patchIndex, patchLines, usedPatchLines, patchedText)
@@ -325,7 +420,7 @@ object IterativePatchUtil {
 
             }
         }
-        if (lastMatchedPatchIndex == -1) patchLines.filter { it.type == LineType.ADD && !usedPatchLines.contains(it) }
+        if (lastMatchedPatchIndex == -1) patchLines.filter { it.type == ADD && !usedPatchLines.contains(it) }
             .forEach { line ->
                 log.debug("Added patch line: {}", line)
                 patchedText.add(line.line ?: "")
@@ -344,7 +439,7 @@ object IterativePatchUtil {
         if (lastMatchedPatchIndex != -1) {
             for (i in lastMatchedPatchIndex + 1 until patchIndex) {
                 val contextLine = patchLines[i]
-                if (contextLine.type == LineType.CONTEXT && !usedPatchLines.contains(contextLine)) {
+                if (contextLine.type == CONTEXT && !usedPatchLines.contains(contextLine)) {
                     patchedText.add(contextLine.line ?: "")
                     usedPatchLines.add(contextLine)
                 }
@@ -360,7 +455,7 @@ object IterativePatchUtil {
         val buffer = mutableListOf<String>()
         var prevPatchLine = patchLine.previousLine
         while (null != prevPatchLine) {
-            if (prevPatchLine.type != LineType.ADD || usedPatchLines.contains(prevPatchLine)) {
+            if (prevPatchLine.type != ADD || usedPatchLines.contains(prevPatchLine)) {
                 break
             }
 
@@ -380,7 +475,7 @@ object IterativePatchUtil {
     ): LineRecord {
         var nextPatchLine = patchLine.nextLine
         while (null != nextPatchLine) {
-            if (nextPatchLine.type != LineType.ADD || usedPatchLines.contains(nextPatchLine)) {
+            if (nextPatchLine.type != ADD || usedPatchLines.contains(nextPatchLine)) {
                 break
             }
 
@@ -404,7 +499,7 @@ object IterativePatchUtil {
             it.line?.lineMetrics() != LineMetrics()
         }.filter {
             when (it.type) {
-                LineType.ADD -> false // ADD lines are not matched to source lines
+                ADD -> false // ADD lines are not matched to source lines
                 else -> true
             }
         }.groupBy { normalizeLine(it.line!!) }
@@ -438,7 +533,7 @@ object IterativePatchUtil {
         // Group patch lines by their normalized content, excluding ADD lines
         val patchLineMap = patchLines.filter {
             when (it.type) {
-                LineType.ADD -> false // ADD lines are not matched to source lines
+                ADD -> false // ADD lines are not matched to source lines
                 else -> true
             }
         }.groupBy { normalizeLine(it.line!!) }
@@ -479,7 +574,7 @@ object IterativePatchUtil {
 
                 var patchPrev = patchLine.previousLine
                 while (patchPrev?.previousLine != null &&
-                    (patchPrev.type == LineType.ADD || normalizeLine(patchPrev.line ?: "").isEmpty())
+                    (patchPrev.type == ADD || normalizeLine(patchPrev.line ?: "").isEmpty())
                 ) {
                     require(patchPrev !== patchPrev.previousLine)
                     patchPrev = patchPrev.previousLine!!
@@ -505,7 +600,7 @@ object IterativePatchUtil {
 
                 var patchNext = patchLine.nextLine
                 while (patchNext?.nextLine != null &&
-                    (patchNext.type == LineType.ADD || normalizeLine(patchNext.line ?: "").isEmpty())
+                    (patchNext.type == ADD || normalizeLine(patchNext.line ?: "").isEmpty())
                 ) {
                     require(patchNext !== patchNext.nextLine)
                     patchNext = patchNext.nextLine!!
@@ -606,9 +701,9 @@ object IterativePatchUtil {
                     }
                 },
                 type = when {
-                    line.startsWith("+") -> LineType.ADD
-                    line.startsWith("-") -> LineType.DELETE
-                    else -> LineType.CONTEXT
+                    line.startsWith("+") -> ADD
+                    line.startsWith("-") -> DELETE
+                    else -> CONTEXT
                 }
             )
         }.filter { it.line != null }).toMutableList()
@@ -627,7 +722,7 @@ object IterativePatchUtil {
         do {
             swapped = false
             for (i in 0 until patchLines.size - 1) {
-                if (patchLines[i].type == LineType.ADD && patchLines[i + 1].type == LineType.DELETE) {
+                if (patchLines[i].type == ADD && patchLines[i + 1].type == DELETE) {
                     swapped = true
                     val addLine = patchLines[i]
                     val deleteLine = patchLines[i + 1]
