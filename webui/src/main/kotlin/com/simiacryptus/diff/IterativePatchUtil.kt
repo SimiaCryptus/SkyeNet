@@ -80,7 +80,7 @@ object IterativePatchUtil {
         val newLines = parseLines(newCode)
         link(sourceLines, newLines, null)
         log.debug("Parsed and linked source lines: ${sourceLines.size}, new lines: ${newLines.size}")
-        markMovedLines2(sourceLines, newLines)
+        markMovedLines(newLines)
         val diff1 = newToPatch(newLines)
         val diff = truncateContext(diff1).toMutableList()
         fixPatchLineOrder(diff)
@@ -149,48 +149,7 @@ object IterativePatchUtil {
         log.debug("Removed ${toRemove.size} no-op line pairs")
     }
 
-    private fun markMovedLines(sourceLines: List<LineRecord>, newLines: List<LineRecord>) {
-        log.debug("Starting to mark moved lines")
-        var sourceLine = sourceLines.firstOrNull()
-        while (null != sourceLine) {
-            try {
-                if (sourceLine.matchingLine != null) {
-                    var nextSourceLine = sourceLine.nextLine ?: break
-                    try {
-                        while (nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) {
-                            nextSourceLine = nextSourceLine.nextLine ?: continue
-                        }
-                        val newLine = sourceLine.matchingLine!!
-                        log.debug("Processing source line ${sourceLine.index} with matching patch line ${newLine.index}")
-                        var nextNewLine = newLine.nextLine ?: continue
-                        while (nextNewLine.matchingLine == null || nextNewLine.type == ADD) {
-                            nextNewLine = nextNewLine.nextLine ?: continue
-                        }
-                        while (nextSourceLine.matchingLine != nextNewLine) {
-                            if (nextSourceLine.matchingLine != null) {
-                                nextSourceLine.type = DELETE
-                                nextSourceLine.matchingLine!!.type = ADD
-                                log.debug("Marked moved line: Source[${nextSourceLine.index}] as DELETE, Patch[${nextSourceLine.matchingLine!!.index}] as ADD")
-                            }
-                            nextSourceLine = nextSourceLine.nextLine ?: break
-                            while (nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) {
-                                nextSourceLine = nextSourceLine.nextLine ?: continue
-                            }
-                        }
-                    } finally {
-                        sourceLine = nextSourceLine
-                    }
-                } else {
-                    sourceLine = sourceLine.nextLine
-                }
-            } catch (e: Exception) {
-                log.error("Error marking moved lines", e)
-            }
-        }
-        log.debug("Finished marking moved lines")
-    }
-
-    private fun markMovedLines2(sourceLines: List<LineRecord>, newLines: List<LineRecord>) {
+    private fun markMovedLines(newLines: List<LineRecord>) {
         log.debug("Starting to mark moved lines")
         // We start with the first line of the new (patched) code
         var newLine = newLines.firstOrNull()
