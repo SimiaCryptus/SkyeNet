@@ -116,7 +116,7 @@ class IterativePatchUtilTest {
         val result = IterativePatchUtil.applyPatch(source, patch)
         Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
-
+        
     @Test
     fun testFromData1() {
         val source = """
