@@ -103,42 +103,44 @@ function getSavedTab(containerId) {
     }
 }
 
-function updateNestedTabs(element) {
-    const tabsContainers = element.querySelectorAll('.tabs-container');
-    tabsContainers.forEach(tabsContainer => {
-        try {
-            let hasActiveButton = false;
-            const nestedButtons = tabsContainer.querySelectorAll('.tab-button');
-            nestedButtons.forEach(nestedButton => {
-                // console.log(`Checking nested button: ${nestedButton.getAttribute('data-for-tab')}, nestedButton element:`, nestedButton);
-                if (nestedButton.classList.contains('active')) {
-                    hasActiveButton = true;
-                }
-            });
-            if (!hasActiveButton) {
-                const activeContent = tabsContainer.querySelector('.tab-content.active');
-                if (activeContent) {
-                    const activeTab = activeContent.getAttribute('data-tab');
-                    const activeButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${activeTab}"]`);
-                    if (activeButton) {
-                        activeButton.click(); // Simulate a click to activate the tab
+ function updateNestedTabs(element) {
+     const tabsContainers = element.querySelectorAll('.tabs-container');
+     tabsContainers.forEach(tabsContainer => {
+         try {
+             let hasActiveButton = false;
+             const nestedButtons = tabsContainer.querySelectorAll('.tab-button');
+             nestedButtons.forEach(nestedButton => {
+                 // console.log(`Checking nested button: ${nestedButton.getAttribute('data-for-tab')}, nestedButton element:`, nestedButton);
+                 if (nestedButton.classList.contains('active')) {
+                     hasActiveButton = true;
+                 }
+             });
+             if (!hasActiveButton) {
+                 const activeContent = tabsContainer.querySelector('.tab-content.active');
+                 if (activeContent) {
+                     const activeTab = activeContent.getAttribute('data-tab');
+                     const activeButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${activeTab}"]`);
+                     if (activeButton) {
+                         activeButton.click(); // Simulate a click to activate the tab
+                     }
+                 } else {
+                     tabsContainer.querySelector('.tab-button')?.click(); // Activate the first tab
+                 }
+             }
+             const savedTab = getSavedTab(tabsContainer.id);
+             if (savedTab) {
+                 const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+                 if (savedButton) {
+                    if (!savedButton.classList.contains('active')) {
+                        savedButton.click(); // Simulate a click to activate the tab only if it's not already active
                     }
-                } else {
-                    tabsContainer.querySelector('.tab-button')?.click(); // Activate the first tab
-                }
-            }
-            const savedTab = getSavedTab(tabsContainer.id);
-            if (savedTab) {
-                const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
-                if (savedButton) {
-                    savedButton.click(); // Simulate a click to activate the tab
-                }
-            }
-        } catch (e) {
-            console.warn('Failed to update nested tabs:', e);
-        }
-    });
-}
+                 }
+             }
+         } catch (e) {
+             console.warn('Failed to update nested tabs:', e);
+         }
+     });
+ }
 
 document.addEventListener('DOMContentLoaded', () => {
     updateTabs();
