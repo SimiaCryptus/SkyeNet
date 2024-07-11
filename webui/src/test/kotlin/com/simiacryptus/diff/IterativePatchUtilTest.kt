@@ -89,6 +89,35 @@ class IterativePatchUtilTest {
     }
 
     @Test
+    fun testPatchAdd2Line2() {
+        val source = """
+            line1
+            
+            line2
+            line3
+        """.trimIndent()
+        val patch = """
+            line1
+          + lineA
+          
+          + lineB
+          
+            line2
+            line3
+        """.trimIndent()
+        val expected = """
+            line1
+            
+             lineA
+             lineB
+              line2
+              line3
+        """.trimIndent()
+        val result = IterativePatchUtil.applyPatch(source, patch)
+        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+    }
+
+    @Test
     fun testFromData1() {
         val source = """
         function updateTabs() {

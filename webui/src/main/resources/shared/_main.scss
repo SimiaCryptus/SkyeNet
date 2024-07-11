@@ -157,10 +157,14 @@ body {
   border-radius: $border-radius;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease, background-color 0.3s ease;
-
   &:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
+}
+
+pre {
+  max-height: 70vh;
+  overflow: auto;
 }
 
 .user-message {
