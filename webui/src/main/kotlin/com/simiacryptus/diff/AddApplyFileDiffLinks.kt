@@ -22,7 +22,7 @@ private fun String.reverseLines(): String = lines().reversed().joinToString("\n"
 fun SocketManagerBase.addApplyFileDiffLinks(
     root: Path,
     response: String,
-    handle: (Map<Path, String>) -> Unit,
+    handle: (Map<Path, String>) -> Unit = {},
     ui: ApplicationInterface,
     api: API,
 ): String {
