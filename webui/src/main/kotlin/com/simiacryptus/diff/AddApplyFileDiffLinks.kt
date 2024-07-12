@@ -126,6 +126,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
 }
 
 private val pattern_backticks = "`(.*)`".toRegex()
+
 // Function to resolve filenames, handling backticks and relative paths
 fun resolve(root: Path, filename: String): String {
     val filename = if (pattern_backticks.containsMatchIn(filename)) {
@@ -178,7 +179,6 @@ private fun SocketManagerBase.renderDiffBlock(
     lateinit var hrefLink: StringBuilder
 
     var originalCode = load(filepath)
-    lateinit var revert: String
     var newCode = patch(originalCode, diffVal)
     val diffTask = ui.newTask(root = false)
     diffTask?.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
@@ -222,6 +222,8 @@ private fun SocketManagerBase.renderDiffBlock(
         )
     )
 
+    lateinit var revert: String
+
     // Create "Apply Diff" button
     var apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
@@ -236,14 +238,25 @@ private fun SocketManagerBase.renderDiffBlock(
             applydiffTask.error(null, e)
         }
     }
-    // Add "Fix Patch" button if the patch is not valid
-    if (!newCode.isValid) {
-        val fixPatchLink = hrefLink("Fix Patch", classname = "href-link cmd-button") {
-            try {
-                val header = fixTask.header("Attempting to fix patch...")
 
-                val patchFixer = SimpleActor(
-                    prompt = """
+    // Generate and display various code and patch information
+    newCode = patch(prevCode, diffVal)
+    val echoDiff = try {
+        IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
+    } catch (e: Throwable) {
+        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+    }
+
+    if (echoDiff.isNotBlank()) {
+
+        // Add "Fix Patch" button if the patch is not valid
+        if (!newCode.isValid) {
+            val fixPatchLink = hrefLink("Fix Patch", classname = "href-link cmd-button") {
+                try {
+                    val header = fixTask.header("Attempting to fix patch...")
+
+                    val patchFixer = SimpleActor(
+                        prompt = """
                         |You are a helpful AI that helps people with coding.
                         |
                         |Response should use one or more code patches in diff format within ```diff code blocks.
@@ -279,19 +292,19 @@ private fun SocketManagerBase.renderDiffBlock(
                         | });
                         |```
                         """.trimMargin(),
-                    model = ChatModels.GPT4o,
-                    temperature = 0.3
-                )
+                        model = ChatModels.GPT4o,
+                        temperature = 0.3
+                    )
 
-                val echoDiff = try {
-                    IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
-                } catch (e: Throwable) {
-                    renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
-                }
+                    val echoDiff = try {
+                        IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
+                    } catch (e: Throwable) {
+                        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+                    }
 
-                var answer = patchFixer.answer(
-                    listOf(
-                        """
+                    var answer = patchFixer.answer(
+                        listOf(
+                            """
                         |Code:
                         |```${filename.split('.').lastOrNull() ?: ""}
                         |$prevCode
@@ -309,122 +322,104 @@ private fun SocketManagerBase.renderDiffBlock(
                         |
                         |Please provide a fix for the diff above in the form of a diff patch.
                         """.trimMargin()
-                    ), api as OpenAIClient
-                )
-                answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
-                header?.clear()
-                fixTask.complete(renderMarkdown(answer))
+                        ), api as OpenAIClient
+                    )
+                    answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
+                    header?.clear()
+                    fixTask.complete(renderMarkdown(answer))
+                } catch (e: Throwable) {
+                    log.error("Error in fix patch", e)
+                }
+            }
+            //apply1 += fixPatchLink
+            fixTask.complete(fixPatchLink)
+        }
+
+        // Create "Apply Diff (Bottom to Top)" button
+        val apply2 = hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
+            try {
+                originalCode = load(filepath)
+                val originalLines = originalCode.reverseLines()
+                val diffLines = diffVal.reverseLines()
+                val patch1 = patch(originalLines, diffLines)
+                val newCode2 = patch1.newCode.reverseLines()
+                filepath?.toFile()?.writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+                handle(mapOf(relativize!! to newCode2))
+                hrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""" + revert)
+                applydiffTask.complete()
             } catch (e: Throwable) {
-                log.error("Error in fix patch", e)
+                hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
+                applydiffTask.error(null, e)
             }
         }
-        //apply1 += fixPatchLink
-        fixTask.complete(fixPatchLink)
-    }
-    // Create "Apply Diff (Bottom to Top)" button
-    val apply2 = hrefLink("(Bottom to Top)", classname = "href-link cmd-button") {
-        try {
-            originalCode = load(filepath)
-            val originalLines = originalCode.reverseLines()
-            val diffLines = diffVal.reverseLines()
-            val patch1 = patch(originalLines, diffLines)
-            val newCode2 = patch1.newCode.reverseLines()
-            filepath?.toFile()?.writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
-            handle(mapOf(relativize!! to newCode2))
-            hrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""" + revert)
-            applydiffTask.complete()
-        } catch (e: Throwable) {
-            hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
-            applydiffTask.error(null, e)
+        // Create "Revert" button
+        revert = hrefLink("Revert", classname = "href-link cmd-button") {
+            try {
+                save(filepath, originalCode)
+                handle(mapOf(relativize!! to originalCode))
+                hrefLink.set("""<div class="cmd-button">Reverted</div>""" + apply1 + apply2)
+                applydiffTask.complete()
+            } catch (e: Throwable) {
+                hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
+                applydiffTask.error(null, e)
+            }
         }
+        hrefLink = applydiffTask.complete(apply1 + "\n" + apply2)!!
     }
-    // Create "Revert" button
-    revert = hrefLink("Revert", classname = "href-link cmd-button") {
-        try {
-            save(filepath, originalCode)
-            handle(mapOf(relativize!! to originalCode))
-            hrefLink.set("""<div class="cmd-button">Reverted</div>""" + apply1 + apply2)
-            applydiffTask.complete()
-        } catch (e: Throwable) {
-            hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
-            applydiffTask.error(null, e)
-        }
-    }
-    hrefLink = applydiffTask.complete(apply1 + "\n" + apply2)!!
 
-
-    // Generate and display various code and patch information
-     newCode = patch(prevCode, diffVal)
-     val echoDiff = try {
-         IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
-     } catch (e: Throwable) {
-         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
-     }
-    if (echoDiff.isNotBlank()) {
-        newCodeTaskSB?.set(
-            renderMarkdown(
-                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
-                ui = ui, tabs = false
-            )
+    newCodeTaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
+            ui = ui, tabs = false
         )
-        newCodeTask.complete("")
-        prevCodeTaskSB?.set(
-            renderMarkdown(
-                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
-                ui = ui, tabs = false
-            )
+    )
+    newCodeTask.complete("")
+    prevCodeTaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+            ui = ui, tabs = false
         )
-        prevCodeTask.complete("")
-        patchTaskSB?.set(
-            renderMarkdown(
-                "# $filename\n\n```diff\n  ${echoDiff}\n```",
-                ui = ui,
-                tabs = false
-            )
+    )
+    prevCodeTask.complete("")
+    patchTaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```diff\n  ${echoDiff}\n```",
+            ui = ui,
+            tabs = false
         )
-        patchTask.complete("")
-    } else {
-        newCodeTask.complete("No changes detected.")
-        prevCodeTask.complete("No changes detected.")
-        patchTask.complete("No changes detected.")
+    )
+    patchTask.complete("")
+    val newCode2 = patch(
+        load(filepath).reverseLines(),
+        diffVal.reverseLines()
+    ).newCode.lines().reversed().joinToString("\n")
+    val echoDiff2 = try {
+        IterativePatchUtil.generatePatch(prevCode, newCode2)
+    } catch (e: Throwable) {
+        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
     }
-     val newCode2 = patch(
-         load(filepath).reverseLines(),
-         diffVal.reverseLines()
-     ).newCode.lines().reversed().joinToString("\n")
-     val echoDiff2 = try {
-         IterativePatchUtil.generatePatch(prevCode, newCode2)
-     } catch (e: Throwable) {
-         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
-     }
-    if (echoDiff2.isNotBlank()) {
-        newCode2TaskSB?.set(
-            renderMarkdown(
-                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
-                ui = ui, tabs = false
-            )
+    newCode2TaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
+            ui = ui, tabs = false
         )
-        newCode2Task.complete("")
-        prevCode2TaskSB?.set(
-            renderMarkdown(
-                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
-                ui = ui, tabs = false
-            )
+    )
+    newCode2Task.complete("")
+    prevCode2TaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+            ui = ui, tabs = false
         )
-        prevCode2Task.complete("")
-        patch2TaskSB?.set(
-            renderMarkdown(
-                "# $filename\n\n```diff\n  ${echoDiff2}\n```",
-                ui = ui,
-                tabs = false
-            )
+    )
+    prevCode2Task.complete("")
+    patch2TaskSB?.set(
+        renderMarkdown(
+            "# $filename\n\n```diff\n  ${echoDiff2}\n```",
+            ui = ui,
+            tabs = false
         )
-        patch2Task.complete("")
-    } else {
-        newCode2Task.complete("No changes detected.")
-        prevCode2Task.complete("No changes detected.")
-        patch2Task.complete("No changes detected.")
-    }
+    )
+    patch2Task.complete("")
 
 
     // Create main tabs for displaying diff and verification information
@@ -563,20 +558,20 @@ fun applyFileDiffs(
         }
     }.map { it.range to it }.toList()
     diffs.forEach { diffBlock ->
-        val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
+        val header = headers.lastOrNull { it.first.last < diffBlock.first.first }
         val filename = resolve(root, header?.second ?: "Unknown")
         val diffVal = diffBlock.second
         val filepath = root.resolve(filename)
         try {
             val originalCode = filepath.readText(Charsets.UTF_8)
             val newCode = patch(originalCode, diffVal)
-            filepath?.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8)
         } catch (e: Throwable) {
             log.warn("Error", e)
         }
     }
     codeblocks.forEach { codeBlock ->
-        val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
+        val header = headers.lastOrNull { it.first.last < codeBlock.first.first }
         val filename = resolve(root, header?.second ?: "Unknown")
         val filepath: Path? = root.resolve(filename)
         val codeValue = codeBlock.second.groupValues[2]
