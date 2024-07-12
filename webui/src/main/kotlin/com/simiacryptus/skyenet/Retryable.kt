@@ -14,7 +14,9 @@ open class Retryable(
     }
 
     open fun init() {
-        set(label(size), process(container))
+        val tabLabel = label(size)
+        set(tabLabel, SessionTask.spinner)
+        set(tabLabel, process(container))
     }
 
     override fun renderTabButtons(): String = """

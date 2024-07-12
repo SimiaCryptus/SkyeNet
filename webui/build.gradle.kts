@@ -35,7 +35,7 @@ val jetty_version = "11.0.18"
 val jackson_version = "2.17.0"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.63") {
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.64") {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
 
@@ -96,9 +96,8 @@ dependencies {
     implementation(group = "commons-codec", name = "commons-codec", version = "1.16.0")
 
     implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
-    runtimeOnly(group = "org.slf4j", name = "slf4j-simple", version = "2.0.9")
-    testImplementation(group = "ch.qos.logback", name = "logback-classic", version = "1.4.14")
-    testImplementation(group = "ch.qos.logback", name = "logback-core", version = "1.4.14")
+    runtimeOnly(group = "ch.qos.logback", name = "logback-classic", version = "1.4.14")
+    runtimeOnly(group = "ch.qos.logback", name = "logback-core", version = "1.4.14")
 
     testImplementation(kotlin("script-runtime"))
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")

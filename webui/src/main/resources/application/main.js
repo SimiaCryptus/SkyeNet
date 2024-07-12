@@ -1,4 +1,16 @@
 import {connect, queueMessage} from './chat.js';
+import {
+    applyToAllSvg,
+    closeModal,
+    findAncestor,
+    getSessionId,
+    refreshReplyForms,
+    refreshVerbose,
+    showModal,
+    substituteMessages,
+    toggleVerbose
+} from './functions.js';
+import {restoreTabs, updateTabs} from './tabs.js';
 
 let messageVersions = {};
 window.messageMap = {}; // Make messageMap global
@@ -8,56 +20,23 @@ let loadImages = "true";
 let showMenubar = true;
 let messageDiv;
 
-function onWebSocketText(event) {
-    console.debug('WebSocket message:', event);
-    const messagesDiv = document.getElementById('messages');
-    if (!messagesDiv) return;
-    const firstCommaIndex = event.data.indexOf(',');
-    const secondCommaIndex = event.data.indexOf(',', firstCommaIndex + 1);
-    const messageId = event.data.substring(0, firstCommaIndex);
-    const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
-    const messageContent = event.data.substring(secondCommaIndex + 1);
-    messageVersions[messageId] = messageVersion;
-    window.messageMap[messageId] = messageContent;
+// Add debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
-    const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
-    messageDivs.forEach((messageDiv) => {
-        if (messageDiv) {
-            messageDiv.innerHTML = messageContent;
-            substituteMessages(messageId, messageDiv);
-        }
-    });
-    if (messageDivs.length == 0 && !messageId.startsWith("z")) {
-        messageDiv = document.createElement('div');
-        messageDiv.className = 'message message-container ' + (messageId.startsWith('u') ? 'user-message' : 'response-message');
-        messageDiv.id = messageId;
-        messageDiv.innerHTML = messageContent;
-        if (messagesDiv) messagesDiv.appendChild(messageDiv);
-        substituteMessages(messageId, messageDiv);
+// Create a debounced version of updateDocumentComponents
+const debouncedUpdateDocumentComponents = debounce(updateDocumentComponents, 250);
 
-        // Scroll to the new message with smooth behavior
-        messageDiv.scrollIntoView({behavior: 'smooth', block: 'end'});
-    }
-    if (singleInput) {
-        const mainInput = document.getElementById('main-input');
-        if (mainInput) {
-            mainInput.style.display = 'none';
-        } else {
-            console.log("Error: Could not find .main-input");
-        }
-    }
-    if (stickyInput) {
-        const mainInput = document.getElementById('main-input');
-        if (mainInput) {
-            // Keep at top of screen
-            mainInput.style.position = 'sticky';
-            mainInput.style.zIndex = '1';
-            mainInput.style.top = showMenubar ? '30px' : '0px';
-        } else {
-            console.log("Error: Could not find .main-input");
-        }
-    }
-    if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+function updateDocumentComponents() {
     try {
         if (typeof Prism !== 'undefined') Prism.highlightAll();
     } catch (e) {
@@ -90,6 +69,58 @@ function onWebSocketText(event) {
     }
 }
 
+function onWebSocketText(event) {
+    console.debug('WebSocket message:', event);
+    const messagesDiv = document.getElementById('messages');
+    if (!messagesDiv) return;
+    const firstCommaIndex = event.data.indexOf(',');
+    const secondCommaIndex = event.data.indexOf(',', firstCommaIndex + 1);
+    const messageId = event.data.substring(0, firstCommaIndex);
+    const messageVersion = event.data.substring(firstCommaIndex + 1, secondCommaIndex);
+    const messageContent = event.data.substring(secondCommaIndex + 1);
+    messageVersions[messageId] = messageVersion;
+    window.messageMap[messageId] = messageContent;
+
+    const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
+    messageDivs.forEach((messageDiv) => {
+        if (messageDiv) {
+            messageDiv.innerHTML = messageContent;
+            substituteMessages(messageId, messageDiv);
+            //requestAnimationFrame(() => updateNestedTabs(messageDiv));
+        }
+    });
+    if (messageDivs.length === 0 && !messageId.startsWith("z")) {
+        messageDiv = document.createElement('div');
+        messageDiv.className = 'message message-container ' + (messageId.startsWith('u') ? 'user-message' : 'response-message');
+        messageDiv.id = messageId;
+        messageDiv.innerHTML = messageContent;
+        if (messagesDiv) messagesDiv.appendChild(messageDiv);
+        substituteMessages(messageId, messageDiv);
+        //requestAnimationFrame(() => updateNestedTabs(messageDiv));
+    }
+    if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    if (singleInput) {
+        const mainInput = document.getElementById('main-input');
+        if (mainInput) {
+            mainInput.style.display = 'none';
+        } else {
+            console.log("Error: Could not find .main-input");
+        }
+    }
+    if (stickyInput) {
+        const mainInput = document.getElementById('main-input');
+        if (mainInput) {
+            // Keep at top of screen
+            mainInput.style.position = 'sticky';
+            mainInput.style.zIndex = '1';
+            mainInput.style.top = showMenubar ? '30px' : '0px';
+        } else {
+            console.log("Error: Could not find .main-input");
+        }
+    }
+    debouncedUpdateDocumentComponents();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof mermaid !== 'undefined') mermaid.run();
     applyToAllSvg();
@@ -99,33 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyToAllSvg();
     }, 5000); // Adjust the interval as needed
 
-    // Restore the selected tabs from localStorage before adding event listeners
-    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
-        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
-        if (savedTab) {
-            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
-            if (savedButton) {
-                savedButton.classList.add('active');
-                const forTab = savedButton.getAttribute('data-for-tab');
-                const selectedContent = tabsContainer.querySelector(`.tab-content[data-tab="${forTab}"]`);
-                if (selectedContent) {
-                    selectedContent.classList.add('active');
-                    selectedContent.style.display = 'block';
-                }
-                console.log(`Restored saved tab: ${savedTab}`);
-            }
-        }
-    });
-    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
-        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
-        if (savedTab) {
-            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
-            if (savedButton) {
-                savedButton.click();
-                console.log(`Restored saved tab: ${savedTab}`);
-            }
-        }
-    });
+    restoreTabs();
 
     const historyElement = document.getElementById('history');
     if (historyElement) historyElement.addEventListener('click', () => showModal('sessions'));

@@ -1,4 +1,4 @@
-async function fetchData(endpoint, useSession = true) {
+export async function fetchData(endpoint, useSession = true) {
     try {
         // Add session id to the endpoint as a path parameter
         if (useSession) {
@@ -20,7 +20,7 @@ async function fetchData(endpoint, useSession = true) {
     }
 }
 
-function getSessionId() {
+export function getSessionId() {
     if (!window.location.hash) {
         fetch('newSession')
             .then(response => {
@@ -39,14 +39,14 @@ function getSessionId() {
     }
 }
 
-function showModal(endpoint, useSession = true) {
+export function showModal(endpoint, useSession = true) {
     fetchData(endpoint, useSession).then(r => {
         const modal = document.getElementById('modal');
         if (modal) modal.style.display = 'block';
     });
 }
 
-function closeModal() {
+export function closeModal() {
     const modal = document.getElementById('modal');
     if (modal) modal.style.display = 'none';
 }
@@ -150,7 +150,7 @@ function closeModal() {
 })();
 
 
-function toggleVerbose() {
+export function toggleVerbose() {
     let verboseToggle = document.getElementById('verbose');
     if (verboseToggle.innerText === 'Hide Verbose') {
         const elements = document.getElementsByClassName('verbose');
@@ -169,7 +169,7 @@ function toggleVerbose() {
     }
 }
 
-function refreshReplyForms() {
+export function refreshReplyForms() {
     document.querySelectorAll('.reply-input').forEach(messageInput => {
         messageInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
@@ -189,7 +189,7 @@ function refreshReplyForms() {
 }
 
 
-function refreshVerbose() {
+export function refreshVerbose() {
     let verboseToggle = document.getElementById('verbose');
     if (verboseToggle.innerText === 'Hide Verbose') {
         const elements = document.getElementsByClassName('verbose');
@@ -206,7 +206,7 @@ function refreshVerbose() {
     }
 }
 
-function findAncestor(element, selector) {
+export function findAncestor(element, selector) {
     while (element && !element.matches(selector)) {
         element = element.parentElement;
     }
@@ -214,7 +214,7 @@ function findAncestor(element, selector) {
 }
 
 
-function applyToAllSvg() {
+export function applyToAllSvg() {
     document.querySelectorAll('svg').forEach(svg => {
         if (!svg.dataset.svgPanZoomInitialized) {
             new SvgPanZoom().init(svg);
@@ -222,7 +222,7 @@ function applyToAllSvg() {
     });
 }
 
-function substituteMessages(outerMessageId, messageDiv) {
+export function substituteMessages(outerMessageId, messageDiv) {
     Object.entries(window.messageMap)
         .filter(([innerMessageId, content]) => innerMessageId.startsWith("z"))
         .forEach(([innerMessageId, content]) => {

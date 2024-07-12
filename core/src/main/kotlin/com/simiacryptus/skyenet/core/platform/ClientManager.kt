@@ -132,7 +132,7 @@ open class ClientManager {
         apiBase: Map<APIProvider, String> = APIProvider.values().associate { it to (it.base ?: "") },
         scheduledPool: ListeningScheduledExecutorService = HttpClientManager.scheduledPool,
         workPool: ThreadPoolExecutor = HttpClientManager.workPool,
-        client: CloseableHttpClient = HttpClientManager.client
+        client: CloseableHttpClient = HttpClientManager.createHttpClient()
     ) : OpenAIClient(
         key = key,
         logLevel = Level.DEBUG,
