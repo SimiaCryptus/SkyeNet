@@ -25,6 +25,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     handle: (Map<Path, String>) -> Unit = {},
     ui: ApplicationInterface,
     api: API,
+    shouldAutoApply: (Path) -> Boolean = { false },
 ): String {
     // Check if there's an unclosed code block and close it if necessary
     val initiator = "(?s)```[\\w]*\n".toRegex()
@@ -66,7 +67,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
         val filename = resolve(root, header?.second ?: "Unknown")
         val diffVal = diffBlock.second
-        val newValue = renderDiffBlock(root, filename, diffVal, handle, ui, api)
+        val newValue = renderDiffBlock(root, filename, diffVal, handle, ui, api, shouldAutoApply)
         val regex = "(?s)```[^\n]*\n?${Pattern.quote(diffVal)}\n?```".toRegex()
         markdown.replace(regex, newValue)
     }
@@ -166,6 +167,7 @@ private fun SocketManagerBase.renderDiffBlock(
     handle: (Map<Path, String>) -> Unit,
     ui: ApplicationInterface,
     api: API?,
+    shouldAutoApply: (Path) -> Boolean,
 ): String {
 
     val filepath = path(root, filename)
@@ -178,11 +180,25 @@ private fun SocketManagerBase.renderDiffBlock(
     val applydiffTask = ui.newTask(false)
     lateinit var hrefLink: StringBuilder
 
-    var originalCode = load(filepath)
-    var newCode = patch(originalCode, diffVal)
+    var newCode = patch(prevCode, diffVal)
+    val echoDiff = try {
+        IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
+    } catch (e: Throwable) {
+        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+    }
     val diffTask = ui.newTask(root = false)
     diffTask?.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
 
+    if (echoDiff.isNotBlank() && newCode.isValid && shouldAutoApply(filepath ?: root.resolve(filename))) {
+        try {
+            filepath?.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize!! to newCode.newCode))
+            return """<div class="cmd-button">Diff Automatically Applied</div>"""
+        } catch (e: Throwable) {
+            log.error("Error auto-applying diff", e)
+            return """<div class="cmd-button">Error Auto-Applying Diff: ${e.message}</div>"""
+        }
+    }
 
     // Create tasks for displaying code and patch information
     val prevCodeTask = ui.newTask(root = false)
@@ -224,6 +240,7 @@ private fun SocketManagerBase.renderDiffBlock(
 
     lateinit var revert: String
 
+    var originalCode = prevCode // For reverting changes
     // Create "Apply Diff" button
     var apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
@@ -239,13 +256,6 @@ private fun SocketManagerBase.renderDiffBlock(
         }
     }
 
-    // Generate and display various code and patch information
-    newCode = patch(prevCode, diffVal)
-    val echoDiff = try {
-        IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
-    } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
-    }
 
     if (echoDiff.isNotBlank()) {
 
