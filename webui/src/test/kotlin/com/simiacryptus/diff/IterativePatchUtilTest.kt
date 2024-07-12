@@ -19,7 +19,7 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
         val result = IterativePatchUtil.applyPatch(source, patch)
-        Assertions.assertEquals(source.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+        assertEquals(source.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
     // ... (other existing tests)
@@ -43,7 +43,7 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
         val result = IterativePatchUtil.applyPatch(source, patch)
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
     @Test
@@ -65,7 +65,31 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
         val result = IterativePatchUtil.applyPatch(source, patch)
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+    }
+
+    @Test
+    fun testPatchModifyLineWithComments() {
+        val source = """
+            line1
+            line3
+            line2
+        """.trimIndent()
+        val patch = """
+            line1
+            line3
+            // This comment should be ignored
+            -line2
+            +modifiedLine2
+            # LLMs sometimes get chatty and add stuff to patches__
+        """.trimIndent()
+        val expected = """
+            line1
+            line3
+            modifiedLine2
+        """.trimIndent()
+        val result = IterativePatchUtil.applyPatch(source, patch)
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
     @Test
@@ -85,7 +109,7 @@ class IterativePatchUtilTest {
               line3
         """.trimIndent()
         val result = IterativePatchUtil.applyPatch(source, patch)
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
 
     @Test
@@ -107,16 +131,45 @@ class IterativePatchUtilTest {
         """.trimIndent()
         val expected = """
             line1
-            
              lineA
              lineB
+            
               line2
               line3
         """.trimIndent()
         val result = IterativePatchUtil.applyPatch(source, patch)
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
-        
+
+    @Test
+    fun testPatchAdd2Line3() {
+        val source = """
+            line1
+            
+            line2
+            line3
+        """.trimIndent()
+        val patch = """
+            line1
+            // extraneous comment
+          + lineA
+          + lineB
+            // llms sometimes get chatty and add stuff to patches
+            line2
+            line3
+        """.trimIndent()
+        val expected = """
+            line1
+             lineA
+             lineB
+            
+              line2
+              line3
+        """.trimIndent()
+        val result = IterativePatchUtil.applyPatch(source, patch)
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
+    }
+
     @Test
     fun testFromData1() {
         val source = """
@@ -178,7 +231,100 @@ class IterativePatchUtilTest {
         }
         """.trimIndent()
         val result = IterativePatchUtil.applyPatch(source, patch)
-        Assertions.assertEquals(
+        assertEquals(
+            expected.replace("\\s*\r?\n\\s*".toRegex(), "\n"),
+            result.replace("\\s*\r?\n\\s*".toRegex(), "\n")
+        )
+    }
+
+    @Test
+    fun testFromData2() {
+        val source = """
+            export class StandardChessModel implements GameModel {
+                geometry: BoardGeometry;
+                state: GameState;
+                private moveHistory: MoveHistory;
+    
+                constructor(initialBoard?: Piece[]) {
+                    this.geometry = new StandardBoardGeometry();
+                    this.state = initialBoard ? this.initializeWithBoard(initialBoard) : this.initialize();
+                    this.moveHistory = new MoveHistory(this.state.board);
+                }
+    
+                redoMove(): GameState {
+                    return this.getState();
+                }
+    
+                isGameOver(): boolean {
+                    return false;
+                }
+    
+                getWinner(): 'white' | 'black' | 'draw' | null {
+                    return null;
+                }
+    
+                importState(stateString: string): GameState {
+                    // Implement import state logic
+                    const parsedState = JSON.parse(stateString);
+                    // Validate and convert the parsed state to GameState
+                    // For now, we'll just return the current state
+                    return this.getState();
+                }
+    
+            }
+    
+            // Similar changes for black pawns
+        """.trimIndent()
+        val patch = """
+        | export class StandardChessModel implements GameModel {
+        |     // ... other methods ...
+        |
+        |-    getWinner(): 'white' | 'black' | 'draw' | null {
+        |+    getWinner(): ChessColor | 'draw' | null {
+        |         return null;
+        |     }
+        |
+        |     // ... other methods ...
+        | }
+        """.trimMargin()
+        val expected = """
+            export class StandardChessModel implements GameModel {
+                geometry: BoardGeometry;
+                state: GameState;
+                private moveHistory: MoveHistory;
+    
+                constructor(initialBoard?: Piece[]) {
+                    this.geometry = new StandardBoardGeometry();
+                    this.state = initialBoard ? this.initializeWithBoard(initialBoard) : this.initialize();
+                    this.moveHistory = new MoveHistory(this.state.board);
+                }
+    
+                redoMove(): GameState {
+                    return this.getState();
+                }
+    
+                isGameOver(): boolean {
+                    return false;
+                }
+    
+                getWinner(): ChessColor | 'draw' | null {
+                    return null;
+                }
+    
+                importState(stateString: string): GameState {
+                    // Implement import state logic
+                    const parsedState = JSON.parse(stateString);
+                    // Validate and convert the parsed state to GameState
+                    // For now, we'll just return the current state
+                    return this.getState();
+                }
+    
+            }
+    
+            // Similar changes for black pawns
+        """.trimIndent()
+        val result = IterativePatchUtil.applyPatch(source, patch)
+        assertEquals(
             expected.replace("\\s*\r?\n\\s*".toRegex(), "\n"),
             result.replace("\\s*\r?\n\\s*".toRegex(), "\n")
         )
@@ -196,7 +342,7 @@ class IterativePatchUtilTest {
         val result = IterativePatchUtil.generatePatch(oldCode, newCode)
         val expected = """
         """.trimMargin()
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
 
     @Test
@@ -219,7 +365,7 @@ class IterativePatchUtilTest {
             |+ newLine
             |  line3
         """.trimMargin()
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
 
     @Test
@@ -239,7 +385,7 @@ class IterativePatchUtilTest {
             |- line2
             |  line3
         """.trimMargin()
-        Assertions.assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
+        assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
     }
 
     @Test
@@ -261,7 +407,7 @@ class IterativePatchUtilTest {
             |+ modifiedLine2
             |  line3
         """.trimMargin()
-        Assertions.assertEquals(
+        assertEquals(
             expected.trim().replace("\r\n", "\n"),
             result.trim().replace("\r\n", "\n")
         )
@@ -296,7 +442,7 @@ class IterativePatchUtilTest {
             |+     return x > 0;
             |  }
         """.trimMargin()
-        Assertions.assertEquals(
+        assertEquals(
             expected.trim().replace("\r\n", "\n"),
             result.trim().replace("\r\n", "\n")
         )

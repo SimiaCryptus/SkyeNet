@@ -354,65 +354,77 @@ private fun SocketManagerBase.renderDiffBlock(
 
 
     // Generate and display various code and patch information
-    newCode = patch(prevCode, diffVal)
-    val echoDiff = try {
-        IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
-    } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+     newCode = patch(prevCode, diffVal)
+     val echoDiff = try {
+         IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
+     } catch (e: Throwable) {
+         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+     }
+    if (echoDiff.isNotBlank()) {
+        newCodeTaskSB?.set(
+            renderMarkdown(
+                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
+                ui = ui, tabs = false
+            )
+        )
+        newCodeTask.complete("")
+        prevCodeTaskSB?.set(
+            renderMarkdown(
+                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+                ui = ui, tabs = false
+            )
+        )
+        prevCodeTask.complete("")
+        patchTaskSB?.set(
+            renderMarkdown(
+                "# $filename\n\n```diff\n  ${echoDiff}\n```",
+                ui = ui,
+                tabs = false
+            )
+        )
+        patchTask.complete("")
+    } else {
+        newCodeTask.complete("No changes detected.")
+        prevCodeTask.complete("No changes detected.")
+        patchTask.complete("No changes detected.")
     }
-    newCodeTaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
-            ui = ui, tabs = false
+     val newCode2 = patch(
+         load(filepath).reverseLines(),
+         diffVal.reverseLines()
+     ).newCode.lines().reversed().joinToString("\n")
+     val echoDiff2 = try {
+         IterativePatchUtil.generatePatch(prevCode, newCode2)
+     } catch (e: Throwable) {
+         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+     }
+    if (echoDiff2.isNotBlank()) {
+        newCode2TaskSB?.set(
+            renderMarkdown(
+                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
+                ui = ui, tabs = false
+            )
         )
-    )
-    newCodeTask.complete("")
-    prevCodeTaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
-            ui = ui, tabs = false
+        newCode2Task.complete("")
+        prevCode2TaskSB?.set(
+            renderMarkdown(
+                "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+                ui = ui, tabs = false
+            )
         )
-    )
-    prevCodeTask.complete("")
-    patchTaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```diff\n  ${echoDiff}\n```",
-            ui = ui,
-            tabs = false
+        prevCode2Task.complete("")
+        patch2TaskSB?.set(
+            renderMarkdown(
+                "# $filename\n\n```diff\n  ${echoDiff2}\n```",
+                ui = ui,
+                tabs = false
+            )
         )
-    )
-    patchTask.complete("")
-    val newCode2 = patch(
-        load(filepath).reverseLines(),
-        diffVal.reverseLines()
-    ).newCode.lines().reversed().joinToString("\n")
-    val echoDiff2 = try {
-        IterativePatchUtil.generatePatch(prevCode, newCode2)
-    } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+        patch2Task.complete("")
+    } else {
+        newCode2Task.complete("No changes detected.")
+        prevCode2Task.complete("No changes detected.")
+        patch2Task.complete("No changes detected.")
     }
-    newCode2TaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
-            ui = ui, tabs = false
-        )
-    )
-    newCode2Task.complete("")
-    prevCode2TaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
-            ui = ui, tabs = false
-        )
-    )
-    prevCode2Task.complete("")
-    patch2TaskSB?.set(
-        renderMarkdown(
-            "# $filename\n\n```diff\n  ${echoDiff2}\n```",
-            ui = ui,
-            tabs = false
-        )
-    )
-    patch2Task.complete("")
 
 
     // Create main tabs for displaying diff and verification information
