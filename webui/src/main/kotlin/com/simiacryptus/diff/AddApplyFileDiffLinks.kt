@@ -1,5 +1,6 @@
 package com.simiacryptus.diff
 
+import com.simiacryptus.diff.FileValidationUtils.Companion.isLLMIncludable
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
@@ -28,7 +29,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     shouldAutoApply: (Path) -> Boolean = { false },
 ): String {
     // Check if there's an unclosed code block and close it if necessary
-    val initiator = "(?s)```[\\w]*\n".toRegex()
+    val initiator = "(?s)```\\w*\n".toRegex()
     if (response.contains(initiator) && !response.split(initiator, 2)[1].contains("\n```(?![^\n])".toRegex())) {
         // Single diff block without the closing ``` due to LLM limitations... add it back and recurse
         return addApplyFileDiffLinks(
@@ -45,34 +46,37 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
     val findAll = codeblockPattern.findAll(response).toList()
     val codeblocks = findAll.filter { block ->
-        val header = headers.lastOrNull { it.first.last < block.range.start }
-        val filename = resolve(root, header?.second ?: "Unknown")
-        when {
-            root.resolve(filename).toFile().exists() -> false
-            block.groupValues[1] == "diff" -> false
-            else -> true
+        val header = headers.lastOrNull { it.first.last <= block.range.first }
+        if (header == null) {
+            return@filter false
         }
+        val filename = resolve(root, header.second)
+        !root.resolve(filename).toFile().exists()
     }.map { it.range to it }.toList()
     val patchBlocks = findAll.filter { block ->
-        val header = headers.lastOrNull { it.first.last < block.range.first }
-        val filename = resolve(root, header?.second ?: "Unknown")
+        val header = headers.lastOrNull { it.first.last <= block.range.first }
+        if (header == null) {
+            return@filter false
+        }
+        val filename = resolve(root, header.second)
         root.resolve(filename).toFile().exists()
-    }.map { it.range to it.groupValues[2] }.toList()
+    }.map { it.range to it }.toList()
     // Process diff blocks and add patch links
     val withPatchLinks: String = patchBlocks.fold(response) { markdown, diffBlock ->
+        val lang = diffBlock.second.groupValues[1]
+        val value = diffBlock.second.groupValues[2].trim()
         val header = headers.lastOrNull { it.first.last < diffBlock.first.first }
         val filename = resolve(root, header?.second ?: "Unknown")
-        val diffVal = diffBlock.second
-        val newValue = renderDiffBlock(root, filename, diffVal, handle, ui, api, shouldAutoApply)
-        val regex = "(?s)```[^\n]*\n?${Pattern.quote(diffVal)}\n?```".toRegex()
+        val newValue = renderDiffBlock(root, filename, value, handle, ui, api, shouldAutoApply)
+        val regex = "(?s)```[^\n]*\n?${Pattern.quote(value)}\n?```".toRegex()
         markdown.replace(regex, newValue.replace("$", "\\$"))
     }
     // Process code blocks and add save links
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
-        val codeLang = codeBlock.second.groupValues[1]
-        val codeValue = codeBlock.second.groupValues[2].trim()
-        val newMarkdown = renderNewFile(headers, codeBlock, root, ui, shouldAutoApply, codeValue, handle, codeLang)
-        markdown.replace("```${codeLang}\n${codeValue}\n```\n", newMarkdown)
+        val lang = codeBlock.second.groupValues[1]
+        val value = codeBlock.second.groupValues[2].trim()
+        val newMarkdown = renderNewFile(headers, codeBlock, root, ui, shouldAutoApply, value, handle, lang)
+        markdown.replace("```${lang}\n${value}\n```\n", newMarkdown)
     }
     return withSaveLinks
 }
@@ -138,21 +142,39 @@ private fun SocketManagerBase.renderNewFile(
 
 private val pattern_backticks = "`(.*)`".toRegex()
 
-// Function to resolve filenames, handling backticks and relative paths
+
 fun resolve(root: Path, filename: String): String {
-    val filename = if (pattern_backticks.containsMatchIn(filename)) {
+    var filename = filename.trim()
+
+    filename = if (pattern_backticks.containsMatchIn(filename)) {
         pattern_backticks.find(filename)!!.groupValues[1]
     } else {
-        filename.trim()
+        filename
     }
-    val filepath: Path? = File(filename).toPath()
-    return if (root.contains(filepath)) filepath?.let {
-        try {
-            root.relativize(it).toString()
-        } catch (e: Throwable) {
-            filename
+
+    filename = if (root.contains(File(filename).toPath())) try {
+        root.relativize(File(filename).toPath()).toString()
+    } catch (e: Throwable) {
+        filename
+    } else filename
+
+    if (!root.resolve(filename).toFile().exists()) {
+        root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }
+            ?.toString()?.let { filename = root.relativize(File(it).toPath()).toString() }
+    }
+
+    return filename
+}
+
+private fun File.listFilesRecursively(): List<File> {
+    val files = mutableListOf<File>()
+    this.listFiles().filter { isLLMIncludable(it) }.forEach {
+        files.add(it.absoluteFile)
+        if (it.isDirectory) {
+            files.addAll(it.listFilesRecursively())
         }
-    }?.toString() ?: filename else filename
+    }
+    return files.toTypedArray().toList()
 }
 
 // Function to render a diff block with apply and revert options
