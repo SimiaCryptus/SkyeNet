@@ -1,5 +1,6 @@
 package com.simiacryptus.diff
 
+import com.simiacryptus.diff.FileValidationUtils.Companion.isGitignore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
@@ -11,7 +12,6 @@ import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import java.io.File
 import java.nio.file.Path
-import java.util.regex.Pattern
 import kotlin.io.path.readText
 
 
@@ -28,7 +28,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     shouldAutoApply: (Path) -> Boolean = { false },
 ): String {
     // Check if there's an unclosed code block and close it if necessary
-    val initiator = "(?s)```[\\w]*\n".toRegex()
+    val initiator = "(?s)```\\w*\n".toRegex()
     if (response.contains(initiator) && !response.split(initiator, 2)[1].contains("\n```(?![^\n])".toRegex())) {
         // Single diff block without the closing ``` due to LLM limitations... add it back and recurse
         return addApplyFileDiffLinks(
@@ -44,120 +44,136 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     val codeblockPattern = """(?s)(?<![^\n])```([^\n]*)(\n.*?\n)```""".toRegex() // capture filename
     val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
     val findAll = codeblockPattern.findAll(response).toList()
-    val diffs: List<Pair<IntRange, String>> = findAll.filter { block ->
-        val header = headers.lastOrNull { it.first.endInclusive < block.range.start }
-        val filename = resolve(root, header?.second ?: "Unknown")
-        when {
-            //block.groupValues[1] == "diff" -> true
-            else -> true
-        }
-    }.map { it.range to it.groupValues[2] }.toList()
-
     val codeblocks = findAll.filter { block ->
-        val header = headers.lastOrNull { it.first.endInclusive < block.range.start }
-        val filename = resolve(root, header?.second ?: "Unknown")
-        when {
-            root.toFile().resolve(filename).exists() -> false
-            block.groupValues[1] == "diff" -> false
-            else -> true
+        val header = headers.lastOrNull { it.first.last <= block.range.first }
+        if (header == null) {
+            return@filter false
         }
+        val filename = resolve(root, header.second)
+        !root.resolve(filename).toFile().exists()
+    }.map { it.range to it }.toList()
+    val patchBlocks = findAll.filter { block ->
+        val header = headers.lastOrNull { it.first.last <= block.range.first }
+        if (header == null) {
+            return@filter false
+        }
+        val filename = resolve(root, header.second)
+        root.resolve(filename).toFile().exists()
     }.map { it.range to it }.toList()
     // Process diff blocks and add patch links
-    val withPatchLinks: String = diffs.fold(response) { markdown, diffBlock ->
-        val header = headers.lastOrNull { it.first.endInclusive < diffBlock.first.start }
+    val withPatchLinks: String = patchBlocks.fold(response) { markdown, diffBlock ->
+        val value = diffBlock.second.groupValues[2].trim()
+        val header = headers.lastOrNull { it.first.last < diffBlock.first.first }
         val filename = resolve(root, header?.second ?: "Unknown")
-        val diffVal = diffBlock.second
-        val newValue = renderDiffBlock(root, filename, diffVal, handle, ui, api, shouldAutoApply)
-        val regex = "(?s)```[^\n]*\n?${Pattern.quote(diffVal)}\n?```".toRegex()
-        markdown.replace(regex, newValue)
+        val newValue = renderDiffBlock(root, filename, value, handle, ui, api, shouldAutoApply)
+        markdown.replace(diffBlock.second.value, newValue)
     }
     // Process code blocks and add save links
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
-        val header = headers.lastOrNull { it.first.endInclusive < codeBlock.first.start }
-        val filename = resolve(root, header?.second ?: "Unknown")
-        val filepath: Path? = path(root, filename)
-        val prevCode = load(filepath)
-        val codeLang = codeBlock.second.groupValues[1]
-        val codeValue = codeBlock.second.groupValues[2]
+        val lang = codeBlock.second.groupValues[1]
+        val value = codeBlock.second.groupValues[2].trim()
+        val header = headers.lastOrNull { it.first.last < codeBlock.first.first }?.second
+        val newMarkdown = renderNewFile(header, root, ui, shouldAutoApply, value, handle, lang)
+        markdown.replace(codeBlock.second.value, newMarkdown)
+    }
+    return withSaveLinks
+}
+
+private fun SocketManagerBase.renderNewFile(
+    header: String?,
+    root: Path,
+    ui: ApplicationInterface,
+    shouldAutoApply: (Path) -> Boolean,
+    codeValue: String,
+    handle: (Map<Path, String>) -> Unit,
+    codeLang: String
+): String {
+    val filename = resolve(root, header ?: "Unknown")
+    val filepath = root.resolve(filename)
+    if (shouldAutoApply(filepath)) {
+        try {
+            filepath.parent?.toFile()?.mkdirs()
+            filepath.toFile().writeText(codeValue, Charsets.UTF_8)
+            handle(mapOf(File(filename).toPath() to codeValue))
+            return """
+                |```${codeLang}
+                |${codeValue}
+                |```
+                |
+                |<div class="cmd-button">Automatically Saved ${filename}</div>
+                |""".trimMargin()
+        } catch (e: Throwable) {
+            return """
+                |```${codeLang}
+                |${codeValue}
+                |```
+                |
+                |<div class="cmd-button">Error Auto-Saving ${filename}: ${e.message}</div>
+                |""".trimMargin()
+        }
+    } else {
         val commandTask = ui.newTask(false)
         lateinit var hrefLink: StringBuilder
         hrefLink = commandTask.complete(hrefLink("Save File", classname = "href-link cmd-button") {
             try {
-                save(filepath, codeValue)
+                filepath.parent?.toFile()?.mkdirs()
+                filepath.toFile().writeText(codeValue, Charsets.UTF_8)
                 handle(mapOf(File(filename).toPath() to codeValue))
                 hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
                 commandTask.complete()
-                //task.complete("""<div class="cmd-button">Saved ${filename}</div>""")
             } catch (e: Throwable) {
                 hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
                 commandTask.error(null, e)
             }
         })!!
-
-        val codeblockRaw = """
-          |```${codeLang}
-          |${codeValue}
-          |```
-          """.trimMargin()
-        markdown.replace(
-            codeblockRaw, displayMapInTabs(
-                mapOf(
-                    "New" to renderMarkdown(codeblockRaw, ui = ui),
-                    "Old" to renderMarkdown(
-                        """
-                      |```${codeLang}
-                      |${prevCode}
-                      |```
-                      """.trimMargin(), ui = ui
-                    ),
-                    "Patch" to renderMarkdown(
-                        """
-                      |```diff
-                      |${
-                            IterativePatchUtil.generatePatch(prevCode, codeValue)
-                        }
-                      |```
-                      """.trimMargin(), ui = ui
-                    ),
-                )
-            ) + "\n" + commandTask.placeholder
-        )
+        return """
+            |```${codeLang}
+            |${codeValue}
+            |```
+            |
+            |${commandTask.placeholder}
+            |""".trimMargin()
     }
-    return withSaveLinks
 }
 
 private val pattern_backticks = "`(.*)`".toRegex()
 
-// Function to resolve filenames, handling backticks and relative paths
+
 fun resolve(root: Path, filename: String): String {
-    val filename = if (pattern_backticks.containsMatchIn(filename)) {
+    var filename = filename.trim()
+
+    filename = if (pattern_backticks.containsMatchIn(filename)) {
         pattern_backticks.find(filename)!!.groupValues[1]
     } else {
-        filename.trim()
+        filename
     }
-    var filepath = path(root, filename)
-    if (filepath?.toFile()?.exists() == false) filepath = null // reset if file not found
-    if (null != filepath) return filepath.let { root.relativize(it).toString() }.toString() // return if file found
 
-    // if file not found, search for file in the root directory
-    val files = root.toFile().recurseFiles().filter { it.name == filename.split('/', '\\').last() }
-    if (files.size == 1) filepath = files.first().toPath() // if only one file found, return it
-    return filepath?.let { root.relativize(it).toString() } ?: filename
+    filename = if (root.contains(File(filename).toPath())) try {
+        root.relativize(File(filename).toPath()).toString()
+    } catch (e: Throwable) {
+        filename
+    } else filename
+
+    if (!root.resolve(filename).toFile().exists()) {
+        root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }
+            ?.toString()?.apply {
+                filename = root.relativize(File(this).toPath()).toString()
+            }
+    }
+
+    return filename
 }
 
-// Extension function to recursively list all files in a directory
-fun File.recurseFiles(): List<File> {
+private fun File.listFilesRecursively(): List<File> {
     val files = mutableListOf<File>()
-    if (isDirectory) {
-        listFiles()?.forEach {
-            files.addAll(it.recurseFiles())
+    this.listFiles().filter { !isGitignore(it.toPath()) }.forEach {
+        files.add(it.absoluteFile)
+        if (it.isDirectory) {
+            files.addAll(it.listFilesRecursively())
         }
-    } else {
-        files.add(this)
     }
-    return files
+    return files.toTypedArray().toList()
 }
-
 
 // Function to render a diff block with apply and revert options
 private fun SocketManagerBase.renderDiffBlock(
@@ -170,7 +186,7 @@ private fun SocketManagerBase.renderDiffBlock(
     shouldAutoApply: (Path) -> Boolean,
 ): String {
 
-    val filepath = path(root, filename)
+    val filepath = root.resolve(filename)
     val prevCode = load(filepath)
     val relativize = try {
         root.relativize(filepath)
@@ -186,19 +202,20 @@ private fun SocketManagerBase.renderDiffBlock(
     } catch (e: Throwable) {
         renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
     }
-    val diffTask = ui.newTask(root = false)
-    diffTask?.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
 
     if (echoDiff.isNotBlank() && newCode.isValid && shouldAutoApply(filepath ?: root.resolve(filename))) {
         try {
-            filepath?.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
-            handle(mapOf(relativize!! to newCode.newCode))
-            return """<div class="cmd-button">Diff Automatically Applied</div>"""
+            filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8)
+            handle(mapOf(relativize to newCode.newCode))
+            return "```diff\n$diffVal\n```" + """<div class="cmd-button">Diff Automatically Applied to ${filepath}</div>"""
         } catch (e: Throwable) {
             log.error("Error auto-applying diff", e)
-            return """<div class="cmd-button">Error Auto-Applying Diff: ${e.message}</div>"""
+            return "```diff\n$diffVal\n```" + """<div class="cmd-button">Error Auto-Applying Diff to ${filepath}: ${e.message}</div>"""
         }
     }
+
+    val diffTask = ui.newTask(root = false)
+    diffTask.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
 
     // Create tasks for displaying code and patch information
     val prevCodeTask = ui.newTask(root = false)
@@ -365,7 +382,7 @@ private fun SocketManagerBase.renderDiffBlock(
         // Create "Revert" button
         revert = hrefLink("Revert", classname = "href-link cmd-button") {
             try {
-                save(filepath, originalCode)
+                filepath?.toFile()?.writeText(originalCode, Charsets.UTF_8)
                 handle(mapOf(relativize!! to originalCode))
                 hrefLink.set("""<div class="cmd-button">Reverted</div>""" + apply1 + apply2)
                 applydiffTask.complete()
@@ -492,63 +509,6 @@ private fun load(
     ""
 }
 
-// Function to save file contents
-private fun save(
-    filepath: Path?,
-    code: String
-) {
-    try {
-        filepath?.toFile()?.writeText(code, Charsets.UTF_8)
-    } catch (e: Throwable) {
-        log.error("Error writing file: $filepath", e)
-    }
-}
-
-// Function to resolve a file path
-private fun path(root: Path, filename: String): Path? {
-    val filepath = try {
-        findFile(root, filename) ?: root.resolve(filename)
-    } catch (e: Throwable) {
-        log.error("Error finding file: $filename", e)
-        try {
-            root.resolve(filename)
-        } catch (e: Throwable) {
-            log.error("Error resolving file: $filename", e)
-            null
-        }
-    }
-    return filepath
-}
-
-// Function to find a file in the directory structure
-fun findFile(root: Path, filename: String): Path? {
-    return try {
-        when {
-            root.resolve(filename).toFile().exists() -> root.resolve(filename)
-
-            /* filename is absolute */
-            filename.startsWith("/") -> {
-                val resolve = File(filename)
-                if (resolve.exists()) resolve.toPath() else findFile(root, filename.removePrefix("/"))
-            }
-            /* windows absolute */
-            filename.indexOf(":\\") == 1 -> {
-                val resolve = File(filename)
-                if (resolve.exists()) resolve.toPath() else findFile(
-                    root,
-                    filename.removePrefix(filename.substring(0, 2))
-                )
-            }
-
-            null != root.parent && root != root.parent -> findFile(root.parent, filename)
-            else -> null
-        }
-    } catch (e: Throwable) {
-        log.error("Error finding file: $filename", e)
-        null
-    }
-}
-
 // Function to apply file diffs from a response string
 @Suppress("unused")
 fun applyFileDiffs(
@@ -584,7 +544,7 @@ fun applyFileDiffs(
         val header = headers.lastOrNull { it.first.last < codeBlock.first.first }
         val filename = resolve(root, header?.second ?: "Unknown")
         val filepath: Path? = root.resolve(filename)
-        val codeValue = codeBlock.second.groupValues[2]
+        val codeValue = codeBlock.second.groupValues[2].trim()
         lateinit var hrefLink: StringBuilder
         try {
             try {
