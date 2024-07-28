@@ -1,6 +1,6 @@
 package com.simiacryptus.diff
 
-import com.simiacryptus.diff.FileValidationUtils.Companion.isLLMIncludable
+import com.simiacryptus.diff.FileValidationUtils.Companion.isGitignore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
@@ -12,7 +12,6 @@ import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import java.io.File
 import java.nio.file.Path
-import java.util.regex.Pattern
 import kotlin.io.path.readText
 
 
@@ -63,27 +62,25 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     }.map { it.range to it }.toList()
     // Process diff blocks and add patch links
     val withPatchLinks: String = patchBlocks.fold(response) { markdown, diffBlock ->
-        val lang = diffBlock.second.groupValues[1]
         val value = diffBlock.second.groupValues[2].trim()
         val header = headers.lastOrNull { it.first.last < diffBlock.first.first }
         val filename = resolve(root, header?.second ?: "Unknown")
         val newValue = renderDiffBlock(root, filename, value, handle, ui, api, shouldAutoApply)
-        val regex = "(?s)```[^\n]*\n?${Pattern.quote(value)}\n?```".toRegex()
-        markdown.replace(regex, newValue.replace("$", "\\$"))
+        markdown.replace(diffBlock.second.value, newValue)
     }
     // Process code blocks and add save links
     val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
         val lang = codeBlock.second.groupValues[1]
         val value = codeBlock.second.groupValues[2].trim()
-        val newMarkdown = renderNewFile(headers, codeBlock, root, ui, shouldAutoApply, value, handle, lang)
-        markdown.replace("```${lang}\n${value}\n```\n", newMarkdown)
+        val header = headers.lastOrNull { it.first.last < codeBlock.first.first }?.second
+        val newMarkdown = renderNewFile(header, root, ui, shouldAutoApply, value, handle, lang)
+        markdown.replace(codeBlock.second.value, newMarkdown)
     }
     return withSaveLinks
 }
 
 private fun SocketManagerBase.renderNewFile(
-    headers: List<Pair<IntRange, String>>,
-    codeBlock: Pair<IntRange, MatchResult>,
+    header: String?,
     root: Path,
     ui: ApplicationInterface,
     shouldAutoApply: (Path) -> Boolean,
@@ -91,8 +88,7 @@ private fun SocketManagerBase.renderNewFile(
     handle: (Map<Path, String>) -> Unit,
     codeLang: String
 ): String {
-    val header = headers.lastOrNull { it.first.last < codeBlock.first.first }
-    val filename = resolve(root, header?.second ?: "Unknown")
+    val filename = resolve(root, header ?: "Unknown")
     val filepath = root.resolve(filename)
     if (shouldAutoApply(filepath)) {
         try {
@@ -160,7 +156,9 @@ fun resolve(root: Path, filename: String): String {
 
     if (!root.resolve(filename).toFile().exists()) {
         root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }
-            ?.toString()?.let { filename = root.relativize(File(it).toPath()).toString() }
+            ?.toString()?.apply {
+                filename = root.relativize(File(this).toPath()).toString()
+            }
     }
 
     return filename
@@ -168,7 +166,7 @@ fun resolve(root: Path, filename: String): String {
 
 private fun File.listFilesRecursively(): List<File> {
     val files = mutableListOf<File>()
-    this.listFiles().filter { isLLMIncludable(it) }.forEach {
+    this.listFiles().filter { !isGitignore(it.toPath()) }.forEach {
         files.add(it.absoluteFile)
         if (it.isDirectory) {
             files.addAll(it.listFilesRecursively())
