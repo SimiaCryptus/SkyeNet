@@ -35,7 +35,7 @@ val jetty_version = "11.0.18"
 val jackson_version = "2.17.0"
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.65") {
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.0.66") {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
 
