@@ -59,7 +59,7 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         try {
             logger.debug("Incrementing usage for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
             val usageKey = UsageInterface.UsageKey(session, apiKey, model)
-            val usageValues = getUsageValues(usageKey)
+            val usageValues = UsageInterface.UsageValues() //getUsageValues(usageKey)
             usageValues.addAndGet(tokens)
             saveUsageValues(usageKey, usageValues)
             logger.debug("Usage incremented for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
