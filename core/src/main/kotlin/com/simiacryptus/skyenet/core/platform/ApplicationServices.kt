@@ -16,6 +16,7 @@ import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
 
 object ApplicationServicesConfig {
@@ -258,8 +259,8 @@ interface UsageInterface {
     )
 
     class UsageValues(
-        val inputTokens: AtomicInteger = AtomicInteger(),
-        val outputTokens: AtomicInteger = AtomicInteger(),
+        val inputTokens: AtomicLong = AtomicLong(),
+        val outputTokens: AtomicLong = AtomicLong(),
         val cost: AtomicDouble = AtomicDouble(),
     ) {
         fun addAndGet(tokens: ApiModel.Usage) {
