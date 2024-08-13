@@ -49,14 +49,14 @@ open class UsageManager(val root: File) : UsageInterface {
                                 Session(sessionId),
                                 User(email = user),
                                 modelEnum,
-                                com.simiacryptus.jopenai.ApiModel.Usage(prompt_tokens = value.toInt())
+                                com.simiacryptus.jopenai.ApiModel.Usage(prompt_tokens = value.toLong())
                             )
 
                             "output" -> incrementUsage(
                                 Session(sessionId),
                                 User(email = user),
                                 modelEnum,
-                                com.simiacryptus.jopenai.ApiModel.Usage(completion_tokens = value.toInt())
+                                com.simiacryptus.jopenai.ApiModel.Usage(completion_tokens = value.toLong())
                             )
 
                             "cost" -> incrementUsage(

@@ -11,7 +11,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.Timestamp
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 class HSQLUsageManager(private val dbFile: File) : UsageInterface {
 
@@ -29,17 +29,17 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         logger.info("Creating database schema if not exists")
         connection.createStatement().executeUpdate(
             """
-            CREATE TABLE IF NOT EXISTS usage (
-                session_id VARCHAR(255),
-                api_key VARCHAR(255),
-                model VARCHAR(255),
-                prompt_tokens INT,
-                completion_tokens INT,
-                cost DOUBLE,
-               datetime TIMESTAMP,
-               PRIMARY KEY (session_id, api_key, model, prompt_tokens, completion_tokens, cost, datetime)
-                )
-             """
+         CREATE TABLE IF NOT EXISTS usage (
+             session_id VARCHAR(255),
+             api_key VARCHAR(255),
+             model VARCHAR(255),
+            prompt_tokens BIGINT,
+            completion_tokens BIGINT,
+             cost DOUBLE,
+            datetime TIMESTAMP,
+            PRIMARY KEY (session_id, api_key, model, prompt_tokens, completion_tokens, cost, datetime)
+             )
+          """
         )
     }
 
@@ -56,12 +56,16 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     override fun incrementUsage(session: Session, apiKey: String?, model: OpenAIModel, tokens: ApiModel.Usage) {
-        logger.debug("Incrementing usage for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
-        val usageKey = UsageInterface.UsageKey(session, apiKey, model)
-        val usageValues = getUsageValues(usageKey)
-        usageValues.addAndGet(tokens)
-        saveUsageValues(usageKey, usageValues)
-        logger.debug("Usage incremented for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
+        try {
+            logger.debug("Incrementing usage for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
+            val usageKey = UsageInterface.UsageKey(session, apiKey, model)
+            val usageValues = UsageInterface.UsageValues() //getUsageValues(usageKey)
+            usageValues.addAndGet(tokens)
+            saveUsageValues(usageKey, usageValues)
+            logger.debug("Usage incremented for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
+        } catch (e: Exception) {
+            logger.error("Error incrementing usage", e)
+        }
     }
 
     override fun getUserUsageSummary(apiKey: String): Map<OpenAIModel, ApiModel.Usage> {
@@ -103,10 +107,10 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         logger.debug("Getting usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
         val statement = connection.prepareStatement(
             """
-            SELECT COALESCE(SUM(prompt_tokens), 0), COALESCE(SUM(completion_tokens), 0), COALESCE(SUM(cost), 0)
-            FROM usage
-            WHERE session_id = ? AND api_key = ? AND model = ?
-            """
+         SELECT COALESCE(SUM(prompt_tokens), 0), COALESCE(SUM(completion_tokens), 0), COALESCE(SUM(cost), 0)
+         FROM usage
+         WHERE session_id = ? AND api_key = ? AND model = ?
+         """
         )
         statement.setString(1, usageKey.session.sessionId)
         statement.setString(2, usageKey.apiKey ?: "")
@@ -114,8 +118,8 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         val resultSet = statement.executeQuery()
         resultSet.next()
         return UsageInterface.UsageValues(
-            AtomicInteger(resultSet.getInt(1)),
-            AtomicInteger(resultSet.getInt(2)),
+            AtomicLong(resultSet.getLong(1)),
+            AtomicLong(resultSet.getLong(2)),
             AtomicDouble(resultSet.getDouble(3))
         )
     }
@@ -124,17 +128,17 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         logger.debug("Saving usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
         val statement = connection.prepareStatement(
             """
-            INSERT INTO usage (session_id, api_key, model, prompt_tokens, completion_tokens, cost, datetime)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """
+         INSERT INTO usage (session_id, api_key, model, prompt_tokens, completion_tokens, cost, datetime)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         """
         )
         statement.setString(1, usageKey.session.sessionId)
         statement.setString(2, usageKey.apiKey ?: "")
         statement.setString(3, usageKey.model.modelName)
-        statement.setInt(4, usageValues.inputTokens.get())
-        statement.setInt(5, usageValues.outputTokens.get())
+        statement.setLong(4, usageValues.inputTokens.get())
+        statement.setLong(5, usageValues.outputTokens.get())
         statement.setDouble(6, usageValues.cost.get())
-       statement.setTimestamp(7, Timestamp(System.currentTimeMillis()))
+        statement.setTimestamp(7, Timestamp(System.currentTimeMillis()))
         logger.debug("Executing statement: $statement")
         logger.debug("With parameters: ${usageKey.session.sessionId}, ${usageKey.apiKey}, ${usageKey.model.modelName}, ${usageValues.inputTokens.get()}, ${usageValues.outputTokens.get()}, ${usageValues.cost.get()}")
         statement.executeUpdate()
@@ -147,8 +151,8 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
             val string = resultSet.getString(1)
             val model = openAIModel(string) ?: continue
             val usage = ApiModel.Usage(
-                prompt_tokens = resultSet.getInt(2),
-                completion_tokens = resultSet.getInt(3),
+                prompt_tokens = resultSet.getLong(2),
+                completion_tokens = resultSet.getLong(3),
                 cost = resultSet.getDouble(4)
             )
             summary[model] = usage

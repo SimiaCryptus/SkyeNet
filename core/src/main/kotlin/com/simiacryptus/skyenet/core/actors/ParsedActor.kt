@@ -79,7 +79,7 @@ open class ParsedActor<T : Any>(
                     ApiModel.ChatRequest(
                         messages = listOf(
                             ApiModel.ChatMessage(role = ApiModel.Role.system, content = prompt.toContentList()),
-                            ApiModel.ChatMessage(role = ApiModel.Role.user, content = input.toContentList()),
+                            ApiModel.ChatMessage(role = ApiModel.Role.user, content = "The user message to parse:\n\n$input".toContentList()),
                         ),
                         temperature = temperature,
                         model = model.modelName,
