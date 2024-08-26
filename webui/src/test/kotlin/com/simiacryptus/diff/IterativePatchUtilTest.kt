@@ -1,6 +1,5 @@
 package com.simiacryptus.diff
 
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -106,7 +105,7 @@ class IterativePatchUtilTest {
         """.trimIndent()
         val expected = """
             line1
-              line3
+            line3
         """.trimIndent()
         val result = IterativePatchUtil.applyPatch(source, patch)
         assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
@@ -130,13 +129,13 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
         val expected = """
-            line1
-             lineA
-             lineB
-            
-              line2
-              line3
-        """.trimIndent()
+           |line1
+           | lineA
+           | lineB
+           |
+           |line2
+           |line3
+        """.trimMargin()
         val result = IterativePatchUtil.applyPatch(source, patch)
         assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
@@ -159,13 +158,13 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
         val expected = """
-            line1
-             lineA
-             lineB
-            
-              line2
-              line3
-        """.trimIndent()
+           |line1
+           | lineA
+           | lineB
+           |
+           |line2
+           |line3
+        """.trimMargin()
         val result = IterativePatchUtil.applyPatch(source, patch)
         assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
     }
