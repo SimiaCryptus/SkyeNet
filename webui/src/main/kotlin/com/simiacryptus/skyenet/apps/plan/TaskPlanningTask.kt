@@ -12,6 +12,7 @@ import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.UUID
 
 class TaskPlanningTask(
     settings: Settings,
@@ -71,30 +72,35 @@ class TaskPlanningTask(
             },
         ).call()
         // Execute sub-tasks
+        executeSubTasks(agent, userMessage, subPlan, task)
+    }
+    private fun executeSubTasks(
+        agent: PlanCoordinator,
+        userMessage: String,
+        subPlan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        parentTask: SessionTask
+    ) {
         val subTasks = subPlan.obj.tasksByID ?: emptyMap()
-        val pool: ThreadPoolExecutor = ApplicationServices.clientManager.getPool(agent.session, agent.user)
+        val subPlanTask = agent.ui.newTask(false)
+        parentTask.add(subPlanTask.placeholder)
+        val subTaskTabs = TabbedDisplay(subPlanTask)
         val subGenState = PlanCoordinator.GenState(subTasks.toMutableMap())
         PlanCoordinator.executionOrder(subTasks).forEach { subTaskId ->
             val subTask = subTasks[subTaskId] ?: return@forEach
             val subTaskImpl = agent.settings.getImpl(subTask)
-            pool.submit {
-                try {
-                    val subTaskTask = agent.ui.newTask(false)
-                    taskTabs[subTaskId] = subTaskTask.placeholder
-                    subTaskImpl.run(
-                        agent = agent,
-                        taskId = subTaskId,
-                        userMessage = userMessage,
-                        plan = subPlan,
-                        genState = subGenState,
-                        task = subTaskTask,
-                        taskTabs = taskTabs
-                    )
-                } catch (e: Throwable) {
-                    log.error("Error executing sub-task $subTaskId", e)
-                }
-            }
+            val subTaskTask = agent.ui.newTask(false)
+            subTaskTabs[subTaskId] = subTaskTask.placeholder
+            subTaskImpl.run(
+                agent = agent,
+                taskId = subTaskId,
+                userMessage = userMessage,
+                plan = subPlan,
+                genState = subGenState,
+                task = subTaskTask,
+                taskTabs = subTaskTabs
+            )
         }
+        subPlanTask.complete()
     }
 
     companion object {
