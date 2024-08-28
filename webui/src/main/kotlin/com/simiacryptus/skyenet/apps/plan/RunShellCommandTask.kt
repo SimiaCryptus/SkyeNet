@@ -21,10 +21,10 @@ class RunShellCommandTask(
             name = "RunShellCommand",
             interpreterClass = ProcessInterpreter::class,
             details = """
-                Execute the following shell command(s) and provide the output. Ensure to handle any errors or exceptions gracefully.
-            
-                Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
-              """.trimIndent(),
+                |Execute the following shell command(s) and provide the output. Ensure to handle any errors or exceptions gracefully.
+                |
+                |Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
+                """.trimMargin(),
             symbols = mapOf(
                 "env" to settings.env,
                 "workingDir" to File(settings.workingDir).absolutePath,
@@ -38,10 +38,10 @@ class RunShellCommandTask(
 
     override fun promptSegment(): String {
         return """
-            RunShellCommand - Execute shell commands and provide the output
-              ** Specify the command to be executed, or describe the task to be performed
-              ** List input files/tasks to be examined when writing the command
-        """.trimIndent()
+            |RunShellCommand - Execute shell commands and provide the output
+            |  ** Specify the command to be executed, or describe the task to be performed
+            |  ** List input files/tasks to be examined when writing the command
+            """.trimMargin()
     }
 
     override fun run(
@@ -77,12 +77,12 @@ class RunShellCommandTask(
                 var formHandle: StringBuilder? = null
                 formHandle = task.add(
                     """
-          |<div style="display: flex;flex-direction: column;">
-          |${if (!super.canPlay) "" else super.playButton(task, request, response, formText) { formHandle!! }}
-          |${acceptButton(response)}
-          |</div>
-          |${super.reviseMsg(task, request, response, formText) { formHandle!! }}
-          """.trimMargin(), className = "reply-message"
+                    |<div style="display: flex;flex-direction: column;">
+                    |${if (!super.canPlay) "" else super.playButton(task, request, response, formText) { formHandle!! }}
+                    |${acceptButton(response)}
+                    |</div>
+                    |${super.reviseMsg(task, request, response, formText) { formHandle!! }}
+                    """.trimMargin(), className = "reply-message"
                 )
                 formText.append(formHandle.toString())
                 formHandle.toString()
@@ -95,16 +95,16 @@ class RunShellCommandTask(
                 return ui.hrefLink("Accept", "href-link play-button") {
                     genState.taskResult[taskId] = response.let {
                         """
-                  |## Shell Command Output
-                  |
-                  |$TRIPLE_TILDE
-                  |${response.code}
-                  |$TRIPLE_TILDE
-                  |
-                  |$TRIPLE_TILDE
-                  |${response.renderedResponse}
-                  |$TRIPLE_TILDE
-                  """.trimMargin()
+                        |## Shell Command Output
+                        |
+                        |$TRIPLE_TILDE
+                        |${response.code}
+                        |$TRIPLE_TILDE
+                        |
+                        |$TRIPLE_TILDE
+                        |${response.renderedResponse}
+                        |$TRIPLE_TILDE
+                        """.trimMargin()
                     }
                     semaphore.release()
                 }

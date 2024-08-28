@@ -90,87 +90,87 @@ class WebDevAgent(
 //      parserClass = PageResourceListParser::class.java,
             resultClass = ProjectSpec::class.java,
             prompt = """
-        Translate the user's idea into a detailed architecture for a simple web application. 
-                  
-                  List all html, css, javascript, and image files to be created, and for each file:
-                  1. Mark with <file>filename</file> tags.
-                  2. Describe the public interface / interaction with other components.
-                  3. Core functional requirements.
-                  
-        Specify user interactions and how the application will respond to them.
-        Identify key HTML classes and element IDs that will be used to bind the application to the HTML.
-      """.trimIndent(),
+                |Translate the user's idea into a detailed architecture for a simple web application. 
+                |          
+                |          List all html, css, javascript, and image files to be created, and for each file:
+                |          1. Mark with <file>filename</file> tags.
+                |          2. Describe the public interface / interaction with other components.
+                |          3. Core functional requirements.
+                |          
+                |Specify user interactions and how the application will respond to them.
+                |Identify key HTML classes and element IDs that will be used to bind the application to the HTML.
+                """.trimMargin(),
             model = model,
             parsingModel = parsingModel,
         ),
         ActorTypes.CodeReviewer to SimpleActor(
             prompt = """
-        |Analyze the code summarized in the user's header-labeled code blocks.
-        |Review, look for bugs, and provide fixes. 
-        |Provide implementations for missing functions.
-        |
-        |Response should use one or more code patches in diff format within ```diff code blocks.
-        |Each diff should be preceded by a header that identifies the file being modified.
-        |The diff format should use + for line additions, - for line deletions.
-        |The diff should include 2 lines of context before and after every change.
-        |
-        |Example:
-        |
-        |Here are the patches:
-        |
-        |### src/utils/exampleUtils.js
-        |```diff
-        | // Utility functions for example feature
-        | const b = 2;
-        | function exampleFunction() {
-        |-   return b + 1;
-        |+   return b + 2;
-        | }
-        |```
-        |
-        |### tests/exampleUtils.test.js
-        |```diff
-        | // Unit tests for exampleUtils
-        | const assert = require('assert');
-        | const { exampleFunction } = require('../src/utils/exampleUtils');
-        | 
-        | describe('exampleFunction', () => {
-        |-   it('should return 3', () => {
-        |+   it('should return 4', () => {
-        |     assert.equal(exampleFunction(), 3);
-        |   });
-        | });
-        |```
-      """.trimMargin(),
+                |Analyze the code summarized in the user's header-labeled code blocks.
+                |Review, look for bugs, and provide fixes. 
+                |Provide implementations for missing functions.
+                |
+                |Response should use one or more code patches in diff format within ```diff code blocks.
+                |Each diff should be preceded by a header that identifies the file being modified.
+                |The diff format should use + for line additions, - for line deletions.
+                |The diff should include 2 lines of context before and after every change.
+                |
+                |Example:
+                |
+                |Here are the patches:
+                |
+                |### src/utils/exampleUtils.js
+                |```diff
+                | // Utility functions for example feature
+                | const b = 2;
+                | function exampleFunction() {
+                |-   return b + 1;
+                |+   return b + 2;
+                | }
+                |```
+                |
+                |### tests/exampleUtils.test.js
+                |```diff
+                | // Unit tests for exampleUtils
+                | const assert = require('assert');
+                | const { exampleFunction } = require('../src/utils/exampleUtils');
+                | 
+                | describe('exampleFunction', () => {
+                |-   it('should return 3', () => {
+                |+   it('should return 4', () => {
+                |     assert.equal(exampleFunction(), 3);
+                |   });
+                | });
+                |```
+                """.trimMargin(),
             model = model,
         ),
         ActorTypes.HtmlCodingActor to SimpleActor(
             prompt = """
-    You will translate the user request into a skeleton HTML file for a rich javascript application.
-    The html file can reference needed CSS and JS files, which are will be located in the same directory as the html file.
-    Do not output the content of the resource files, only the html file.
-  """.trimIndent(), model = model
+                |You will translate the user request into a skeleton HTML file for a rich javascript application.
+                |The html file can reference needed CSS and JS files, which are will be located in the same directory as the html file.
+                |Do not output the content of the resource files, only the html file.
+                """.trimMargin(), model = model
         ),
         ActorTypes.JavascriptCodingActor to SimpleActor(
             prompt = """
-    You will translate the user request into a javascript file for use in a rich javascript application.
-  """.trimIndent(), model = model
+                |You will translate the user request into a javascript file for use in a rich javascript application.
+                """.trimMargin(), model = model
         ),
         ActorTypes.CssCodingActor to SimpleActor(
             prompt = """
-    You will translate the user request into a CSS file for use in a rich javascript application.
-  """.trimIndent(), model = model
+              |You will translate the user request into a CSS file for use in a rich javascript application.
+              """.trimMargin(), model = model
         ),
         ActorTypes.EtcCodingActor to SimpleActor(
             prompt = """
-              You will translate the user request into a file for use in a web application.
-            """.trimIndent(),
+              |You will translate the user request into a file for use in a web application.
+            """.trimMargin(),
             model = model,
         ),
         ActorTypes.ImageActor to ImageActor(
             prompt = """
-              You will translate the user request into an image file for use in a web application.
-            """.trimIndent(),
+              |You will translate the user request into an image file for use in a web application.
+            """.trimMargin(),
             textModel = model,
             imageModel = ImageModels.DallE3,
         ),

@@ -71,11 +71,11 @@ class CmdPatchApp(
         .joinToString("\n\n") { path ->
             try {
                 """
-                        |# ${path}
-                        |${tripleTilde}${path.toString().split('.').lastOrNull()}
-                        |${settings.workingDirectory?.resolve(path.toFile())?.readText(Charsets.UTF_8)}
-                        |${tripleTilde}
-                        """.trimMargin()
+                |# ${path}
+                |${tripleTilde}${path.toString().split('.').lastOrNull()}
+                |${settings.workingDirectory?.resolve(path.toFile())?.readText(Charsets.UTF_8)}
+                |${tripleTilde}
+                """.trimMargin()
             } catch (e: Exception) {
                 log.warn("Error reading file", e)
                 "Error reading file `${path}` - ${e.message}"

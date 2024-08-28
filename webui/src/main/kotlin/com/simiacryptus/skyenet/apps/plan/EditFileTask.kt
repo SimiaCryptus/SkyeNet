@@ -18,10 +18,10 @@ class EditFileTask(
         SimpleActor(
             name = "FilePatcher",
             prompt = """
-         Generate a patch for an existing file to modify its functionality or fix issues based on the given requirements and context. 
-         Ensure the modifications are efficient, maintain readability, and adhere to coding standards.
-         Carefully review the existing code and project structure to ensure the changes are consistent and do not introduce bugs.
-         Consider the impact of the modifications on other parts of the codebase.
+                |Generate a patch for an existing file to modify its functionality or fix issues based on the given requirements and context. 
+                |Ensure the modifications are efficient, maintain readability, and adhere to coding standards.
+                |Carefully review the existing code and project structure to ensure the changes are consistent and do not introduce bugs.
+                |Consider the impact of the modifications on other parts of the codebase.
                 |
                 |Provide a summary of the changes made.
                 |  
@@ -56,8 +56,8 @@ class EditFileTask(
                 |     assert.equal(exampleFunction(), 3);
                 |   });
                 | });
-         $TRIPLE_TILDE
-              """.trimMargin(),
+                |$TRIPLE_TILDE
+                """.trimMargin(),
             model = settings.model,
             temperature = settings.temperature,
         )
@@ -65,10 +65,10 @@ class EditFileTask(
 
     override fun promptSegment(): String {
         return """
-            EditFile - Modify existing files
-              ** For each file, specify the relative file path and the goal of the modification
-              ** List input files/tasks to be examined when designing the modifications
-        """.trimIndent()
+            |EditFile - Modify existing files
+            |  ** For each file, specify the relative file path and the goal of the modification
+            |  ** List input files/tasks to be examined when designing the modifications
+            """.trimMargin()
     }
 
     override fun run(

@@ -3,11 +3,12 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Task
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.TaskBreakdownResult
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 data class Settings(
-    val model: ChatModels,
-    val parsingModel: ChatModels,
+    val model: OpenAITextModel,
+    val parsingModel: OpenAITextModel,
     val command: List<String>,
     val temperature: Double = 0.2,
     val budget: Double = 2.0,
@@ -22,7 +23,7 @@ data class Settings(
 ) {
     fun getImpl(task: Task): AbstractTask {
         return when (task.taskType) {
-            TaskType.TaskPlanning -> TaskPlanningTask(this, task)
+            TaskType.TaskPlanning -> PlanningTask(this, task)
             TaskType.Documentation -> DocumentationTask(this, task)
             TaskType.NewFile -> NewFileTask(this, task)
             TaskType.EditFile -> EditFileTask(this, task)
@@ -43,8 +44,9 @@ data class Settings(
                     |
                     |Tasks can be of the following types: 
                     |
-                    |
                     |${getAvailableTaskTypes().joinToString("\n") { "* ${it.promptSegment()}" }}
+                    |
+                    |${if (taskPlanningEnabled) "Do not start your plan with a plan to plan!\n" else ""}
                     """.trimMargin(),
         model = this.model,
         parsingModel = this.parsingModel,

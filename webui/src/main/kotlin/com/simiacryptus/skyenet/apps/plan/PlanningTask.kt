@@ -6,15 +6,14 @@ import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.buildMermaidGraph
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
+import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.UUID
 
-class TaskPlanningTask(
+class PlanningTask(
     settings: Settings,
     task: PlanCoordinator.Task
 ) : AbstractTask(settings, task) {
@@ -22,9 +21,11 @@ class TaskPlanningTask(
 
     override fun promptSegment(): String {
         return """
-            TaskPlanning - High-level planning and organization of tasks - identify smaller, actionable tasks based on the information available at task execution time.
-              ** Specify the prior tasks and the goal of the task
-        """.trimIndent()
+        |TaskPlanning - High-level planning and organization of tasks - identify smaller, actionable tasks based on the information available at task execution time.
+        |  ** Specify the prior tasks and the goal of the task
+        |  ** Used to dynamically break down tasks as needed given new information
+        |  ** Important: A planning task should not be used to begin a plan, as no new knowledge will be present
+        """.trimMargin()
     }
 
     override fun run(
@@ -37,6 +38,7 @@ class TaskPlanningTask(
         taskTabs: TabbedDisplay
     ) {
         if (!agent.settings.taskPlanningEnabled) throw RuntimeException("Task planning is disabled")
+        @Suppress("NAME_SHADOWING") val task = agent.ui.newTask(false).apply { task.add(placeholder) }
         fun toInput(s: String) = listOf(
             userMessage,
             plan.text,
@@ -80,30 +82,38 @@ class TaskPlanningTask(
         subPlan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
         parentTask: SessionTask
     ) {
-        val subTasks = subPlan.obj.tasksByID ?: emptyMap()
         val subPlanTask = agent.ui.newTask(false)
         parentTask.add(subPlanTask.placeholder)
-        val subTaskTabs = TabbedDisplay(subPlanTask)
-        val subGenState = PlanCoordinator.GenState(subTasks.toMutableMap())
-        PlanCoordinator.executionOrder(subTasks).forEach { subTaskId ->
-            val subTask = subTasks[subTaskId] ?: return@forEach
-            val subTaskImpl = agent.settings.getImpl(subTask)
-            val subTaskTask = agent.ui.newTask(false)
-            subTaskTabs[subTaskId] = subTaskTask.placeholder
-            subTaskImpl.run(
-                agent = agent,
-                taskId = subTaskId,
-                userMessage = userMessage,
-                plan = subPlan,
-                genState = subGenState,
-                task = subTaskTask,
-                taskTabs = subTaskTabs
-            )
-        }
+        val subTasks = subPlan.obj.tasksByID ?: emptyMap()
+        val genState = PlanCoordinator.GenState(subTasks.toMutableMap())
+        agent.executePlan(
+            task = subPlanTask,
+            diagramBuffer = subPlanTask.add(diagram(genState, agent.ui)),
+            subTasks = subTasks,
+            diagramTask = subPlanTask,
+            genState = genState,
+            taskIdProcessingQueue = PlanCoordinator.executionOrder(subTasks).toMutableList(),
+            pool = agent.pool,
+            userMessage = userMessage,
+            plan = subPlan,
+        )
         subPlanTask.complete()
     }
 
+    private fun diagram(
+        genState: PlanCoordinator.GenState,
+        ui: ApplicationInterface
+    ) = MarkdownUtil.renderMarkdown(
+        """
+        |## Sub-Plan Task Dependency Graph
+        |${TRIPLE_TILDE}mermaid
+        |${buildMermaidGraph(genState.subTasks)}
+        |$TRIPLE_TILDE
+        """.trimMargin(),
+        ui = ui
+    )
+
     companion object {
-        private val log = LoggerFactory.getLogger(TaskPlanningTask::class.java)
+        private val log = LoggerFactory.getLogger(PlanningTask::class.java)
     }
 }

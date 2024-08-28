@@ -2,6 +2,9 @@ package com.simiacryptus.skyenet.webui
 
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
+import com.simiacryptus.skyenet.apps.general.PlanAheadApp
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
+import com.simiacryptus.skyenet.apps.plan.Settings
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.ImageActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
@@ -73,7 +76,33 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                 "/test_coding_groovy",
                 CodingActorTestApp(CodingActor(GroovyInterpreter::class, model = ChatModels.GPT35Turbo))
             ),
-            ChildWebApp("/test_file_patch", FilePatchTestApp())
+            ChildWebApp("/test_file_patch", FilePatchTestApp()),
+            /*PlanAheadApp*/
+            ChildWebApp(
+                "/taskDev",
+                PlanAheadApp(
+                    rootFile = null,
+                    settings = Settings(
+                        model = ChatModels.GPT4o,
+                        parsingModel = ChatModels.GPT4oMini,
+                        command = listOf("task"),
+                        temperature = 0.2,
+                        budget = 2.0,
+                        taskPlanningEnabled = true,
+                        shellCommandTaskEnabled = false,
+                        autoFix = true,
+                        enableCommandAutoFix = true,
+                        commandAutoFixCommands = listOf(
+                            "C:\\Program Files\\nodejs\\npx.cmd", "C:\\Program Files\\nodejs\\npm.cmd"
+                        ),
+                        env = mapOf(),
+                        workingDir = ".",
+                        language = if (PlanCoordinator.isWindows) "powershell" else "bash",
+                    ),
+                    model = ChatModels.GPT4o,
+                    parsingModel = ChatModels.GPT4oMini,
+                )
+            ),
         )
     }
 

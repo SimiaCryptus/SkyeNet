@@ -44,7 +44,8 @@ class CommandAutoFixTask(
             task.add("Command Auto Fix is disabled")
             onComplete()
         } else {
-            val process = { sb: StringBuilder ->
+            Retryable(agent.ui, task = task) {
+                val task = agent.ui.newTask(false).apply { it.append(placeholder) }
                 val alias = this.task.command?.first()
                 val commandAutoFixCommands = agent.settings.commandAutoFixCommands
                 val cmds = commandAutoFixCommands.filter {
@@ -73,14 +74,17 @@ class CommandAutoFixTask(
                     task = task
                 )
                 genState.taskResult[taskId] = "Command Auto Fix completed"
-                if (outputResult.exitCode == 0) {
+                task.add(if (outputResult.exitCode == 0) {
                     if (agent.settings.autoFix) {
                         taskTabs.selectedTab += 1
                         taskTabs.update()
                         onComplete()
                         MarkdownUtil.renderMarkdown("## Auto-applied Command Auto Fix\n", ui = agent.ui)
                     } else {
-                        MarkdownUtil.renderMarkdown("## Command Auto Fix Result\n", ui = agent.ui) + acceptButtonFooter(
+                        MarkdownUtil.renderMarkdown(
+                            "## Command Auto Fix Result\n",
+                            ui = agent.ui
+                        ) + acceptButtonFooter(
                             agent.ui
                         ) {
                             taskTabs.selectedTab += 1
@@ -89,16 +93,19 @@ class CommandAutoFixTask(
                         }
                     }
                 } else {
-                    MarkdownUtil.renderMarkdown("## Command Auto Fix Failed\n", ui = agent.ui) + acceptButtonFooter(
+                    MarkdownUtil.renderMarkdown(
+                        "## Command Auto Fix Failed\n",
+                        ui = agent.ui
+                    ) + acceptButtonFooter(
                         agent.ui
                     ) {
                         taskTabs.selectedTab += 1
                         taskTabs.update()
                         onComplete()
                     }
-                }
+                })
+                task.placeholder
             }
-            Retryable(agent.ui, task = task, process = process)
         }
         try {
             semaphore.acquire()

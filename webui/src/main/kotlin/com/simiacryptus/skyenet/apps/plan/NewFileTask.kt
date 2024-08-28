@@ -18,12 +18,12 @@ class NewFileTask(
         SimpleActor(
             name = "NewFileCreator",
             prompt = """
-         Generate the necessary code for new files based on the given requirements and context.
-         For each file:
-         Provide a clear relative file path based on the content and purpose of the file.
-         Ensure the code is well-structured, follows best practices, and meets the specified functionality.
-         Carefully consider how the new file fits into the existing project structure and architecture.
-         Avoid creating files that duplicate functionality or introduce inconsistencies.
+                |Generate the necessary code for new files based on the given requirements and context.
+                |For each file:
+                |Provide a clear relative file path based on the content and purpose of the file.
+                |Ensure the code is well-structured, follows best practices, and meets the specified functionality.
+                |Carefully consider how the new file fits into the existing project structure and architecture.
+                |Avoid creating files that duplicate functionality or introduce inconsistencies.
                 |  
                 |The response format should be as follows:
                 |- Use triple backticks to create code blocks for each file.
@@ -66,10 +66,10 @@ class NewFileTask(
 
     override fun promptSegment(): String {
         return """
-            NewFile - Create one or more new files, carefully considering how they fit into the existing project structure
-              ** For each file, specify the relative file path and the purpose of the file
-              ** List input files/tasks to be examined when authoring the new files
-        """.trimIndent()
+            |NewFile - Create one or more new files, carefully considering how they fit into the existing project structure
+            |  ** For each file, specify the relative file path and the purpose of the file
+            |  ** List input files/tasks to be examined when authoring the new files
+        """.trimMargin()
     }
 
     override fun run(

@@ -15,20 +15,20 @@ class DocumentationTask(
 ) : AbstractTask(settings, task) {
     override fun promptSegment(): String {
         return """
-            Documentation - Generate documentation
-              ** List input files/tasks to be examined
-        """.trimIndent()
+            |Documentation - Generate documentation
+            |  ** List input files/tasks to be examined
+            """.trimMargin()
     }
 
     val documentationGeneratorActor by lazy {
         SimpleActor(
             name = "DocumentationGenerator",
             prompt = """
-                Create detailed and clear documentation for the provided code, covering its purpose, functionality, inputs, outputs, and any assumptions or limitations.
-                Use a structured and consistent format that facilitates easy understanding and navigation. 
-                Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
-                Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
-              """.trimIndent(),
+                |Create detailed and clear documentation for the provided code, covering its purpose, functionality, inputs, outputs, and any assumptions or limitations.
+                |Use a structured and consistent format that facilitates easy understanding and navigation. 
+                |Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
+                |Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
+                """.trimMargin(),
             model = settings.model,
             temperature = settings.temperature,
         )

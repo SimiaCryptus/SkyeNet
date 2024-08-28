@@ -42,6 +42,8 @@ class PlanCoordinator(
         val finalTaskID: String? = null,
     )
 
+    val pool: ThreadPoolExecutor by lazy { ApplicationServices.clientManager.getPool(session, user) }
+
     data class Task(
         val description: String? = null,
         val taskType: TaskType? = null,
@@ -137,7 +139,6 @@ class PlanCoordinator(
         try {
             val tasksByID =
                 plan.obj.tasksByID?.entries?.toTypedArray()?.associate { it.key to it.value } ?: mapOf()
-            val pool: ThreadPoolExecutor = ApplicationServices.clientManager.getPool(session, user)
             val genState = GenState(tasksByID.toMutableMap())
             val diagramTask = ui.newTask(false).apply { task.add(placeholder) }
             val diagramBuffer =
@@ -147,124 +148,152 @@ class PlanCoordinator(
                         ui = ui
                     )
                 )
-            val taskTabs = object : TabbedDisplay(ui.newTask(false).apply { task.add(placeholder) }) {
-                override fun renderTabButtons(): String {
-                    diagramBuffer?.set(
-                        MarkdownUtil.renderMarkdown(
-                            "## Task Dependency Graph\n${TRIPLE_TILDE}mermaid\n${
-                                buildMermaidGraph(
-                                    genState.subTasks
-                                )
-                            }\n$TRIPLE_TILDE", ui = ui
-                        )
-                    )
-                    diagramTask.complete()
-                    return buildString {
-                        append("<div class='tabs'>\n")
-                        super.tabs.withIndex().forEach { (idx, t) ->
-                            val (taskId, taskV) = t
-                            val subTask = genState.tasksByDescription[taskId]
-                            if (null == subTask) {
-                                log.warn("Task tab not found: $taskId")
-                            }
-                            val isChecked = if (taskId in genState.taskIdProcessingQueue) "checked" else ""
-                            val style = when (subTask?.state) {
-                                AbstractTask.TaskState.Completed -> " style='text-decoration: line-through;'"
-                                null -> " style='opacity: 20%;'"
-                                AbstractTask.TaskState.Pending -> " style='opacity: 30%;'"
-                                else -> ""
-                            }
-                            append("<label class='tab-button' data-for-tab='${idx}'$style><input type='checkbox' $isChecked disabled /> $taskId</label><br/>\n")
-                        }
-                        append("</div>")
-                    }
-                }
-            }
-            genState.taskIdProcessingQueue.forEach { taskId ->
-                val newTask = ui.newTask(false)
-                genState.uitaskMap[taskId] = newTask
-                val subtask = genState.subTasks[taskId]
-                val description = subtask?.description
-                log.debug("Creating task tab: $taskId ${System.identityHashCode(subtask)} $description")
-                taskTabs[description ?: taskId] = newTask.placeholder
-            }
-            Thread.sleep(100)
-            while (genState.taskIdProcessingQueue.isNotEmpty()) {
-                val taskId = genState.taskIdProcessingQueue.removeAt(0)
-                val subTask = genState.subTasks[taskId] ?: throw RuntimeException("Task not found: $taskId")
-                genState.taskFutures[taskId] = pool.submit {
-                    subTask.state = AbstractTask.TaskState.Pending
-                    taskTabs.update()
-                    log.debug("Awaiting dependencies: ${subTask.task_dependencies?.joinToString(", ") ?: ""}")
-                    subTask.task_dependencies
-                        ?.associate { it to genState.taskFutures[it] }
-                        ?.forEach { (id, future) ->
-                            try {
-                                future?.get() ?: log.warn("Dependency not found: $id")
-                            } catch (e: Throwable) {
-                                log.warn("Error", e)
-                            }
-                        }
-                    subTask.state = AbstractTask.TaskState.InProgress
-                    taskTabs.update()
-                    log.debug("Running task: ${System.identityHashCode(subTask)} ${subTask.description}")
-                    val task1 = genState.uitaskMap.get(taskId) ?: ui.newTask(false).apply {
-                        taskTabs[taskId] = placeholder
-                    }
-                    try {
-                        val dependencies = subTask.task_dependencies?.toMutableSet() ?: mutableSetOf()
-                        dependencies += getAllDependencies(
-                            subTask = subTask,
-                            subTasks = genState.subTasks,
-                            visited = mutableSetOf()
-                        )
-
-                        task1.add(
-                            MarkdownUtil.renderMarkdown(
-                                """
-             ## Task `${taskId}`
-             ${subTask.description ?: ""}
-                      |
-                      |${TRIPLE_TILDE}json
-                      |${JsonUtil.toJson(data = subTask)/*.indent("  ")*/}
-                      |$TRIPLE_TILDE
-                      |
-                      |### Dependencies:
-                      |${dependencies.joinToString("\n") { "- $it" }}
-                      |
-                      """.trimMargin(), ui = ui
-                            )
-                        )
-                        settings.getImpl(subTask).run(
-                            agent = this,
-                            taskId = taskId,
-                            userMessage = userMessage,
-                            plan = plan,
-                            genState = genState,
-                            task = task1,
-                            taskTabs = taskTabs
-                        )
-                    } catch (e: Throwable) {
-                        log.warn("Error during task execution", e)
-                        task1.error(ui, e)
-                    } finally {
-                        genState.completedTasks.add(element = taskId)
-                        subTask.state = AbstractTask.TaskState.Completed
-                        log.debug("Completed task: $taskId ${System.identityHashCode(subTask)}")
-                        taskTabs.update()
-                    }
-                }
-            }
-            genState.taskFutures.forEach { (id, future) ->
-                try {
-                    future.get() ?: log.warn("Dependency not found: $id")
-                } catch (e: Throwable) {
-                    log.warn("Error", e)
-                }
-            }
+            val taskIdProcessingQueue = genState.taskIdProcessingQueue
+            val subTasks = genState.subTasks
+            executePlan(
+                task,
+                diagramBuffer,
+                subTasks,
+                diagramTask,
+                genState,
+                taskIdProcessingQueue,
+                pool,
+                userMessage,
+                plan
+            )
         } catch (e: Throwable) {
             log.warn("Error during incremental code generation process", e)
             task.error(ui, e)
+        }
+    }
+
+    fun executePlan(
+        task: SessionTask,
+        diagramBuffer: StringBuilder?,
+        subTasks: Map<String, Task>,
+        diagramTask: SessionTask,
+        genState: GenState,
+        taskIdProcessingQueue: MutableList<String>,
+        pool: ThreadPoolExecutor,
+        userMessage: String,
+        plan: ParsedResponse<TaskBreakdownResult>
+    ) {
+        val taskTabs = object : TabbedDisplay(ui.newTask(false).apply { task.add(placeholder) }) {
+            override fun renderTabButtons(): String {
+                diagramBuffer?.set(
+                    MarkdownUtil.renderMarkdown(
+                        """
+                                |## Task Dependency Graph
+                                |${TRIPLE_TILDE}mermaid
+                                |${buildMermaidGraph(subTasks)}
+                                |$TRIPLE_TILDE
+                                """.trimMargin(), ui = ui
+                    )
+                )
+                diagramTask.complete()
+                return buildString {
+                    append("<div class='tabs'>\n")
+                    super.tabs.withIndex().forEach { (idx, t) ->
+                        val (taskId, taskV) = t
+                        val subTask = genState.tasksByDescription[taskId]
+                        if (null == subTask) {
+                            log.warn("Task tab not found: $taskId")
+                        }
+                        val isChecked = if (taskId in taskIdProcessingQueue) "checked" else ""
+                        val style = when (subTask?.state) {
+                            AbstractTask.TaskState.Completed -> " style='text-decoration: line-through;'"
+                            null -> " style='opacity: 20%;'"
+                            AbstractTask.TaskState.Pending -> " style='opacity: 30%;'"
+                            else -> ""
+                        }
+                        append("<label class='tab-button' data-for-tab='${idx}'$style><input type='checkbox' $isChecked disabled /> $taskId</label><br/>\n")
+                    }
+                    append("</div>")
+                }
+            }
+        }
+        // Initialize task tabs
+        taskIdProcessingQueue.forEach { taskId ->
+            val newTask = ui.newTask(false)
+            genState.uitaskMap[taskId] = newTask
+            val subtask = genState.subTasks[taskId]
+            val description = subtask?.description
+            log.debug("Creating task tab: $taskId ${System.identityHashCode(subtask)} $description")
+            taskTabs[description ?: taskId] = newTask.placeholder
+        }
+        Thread.sleep(100)
+        while (taskIdProcessingQueue.isNotEmpty()) {
+            val taskId = taskIdProcessingQueue.removeAt(0)
+            val subTask = genState.subTasks[taskId] ?: throw RuntimeException("Task not found: $taskId")
+            genState.taskFutures[taskId] = pool.submit {
+                subTask.state = AbstractTask.TaskState.Pending
+                taskTabs.update()
+                log.debug("Awaiting dependencies: ${subTask.task_dependencies?.joinToString(", ") ?: ""}")
+                subTask.task_dependencies
+                    ?.associate { it to genState.taskFutures[it] }
+                    ?.forEach { (id, future) ->
+                        try {
+                            future?.get() ?: log.warn("Dependency not found: $id")
+                        } catch (e: Throwable) {
+                            log.warn("Error", e)
+                        }
+                    }
+                subTask.state = AbstractTask.TaskState.InProgress
+                taskTabs.update()
+                log.debug("Running task: ${System.identityHashCode(subTask)} ${subTask.description}")
+                val task1 = genState.uitaskMap.get(taskId) ?: ui.newTask(false).apply {
+                    taskTabs[taskId] = placeholder
+                }
+                try {
+                    val dependencies = subTask.task_dependencies?.toMutableSet() ?: mutableSetOf()
+                    dependencies += getAllDependencies(
+                        subTask = subTask,
+                        subTasks = genState.subTasks,
+                        visited = mutableSetOf()
+                    )
+
+                    task1.add(
+                        MarkdownUtil.renderMarkdown(
+                            """
+                 ## Task `${taskId}`
+                 ${subTask.description ?: ""}
+                          |
+                          |${TRIPLE_TILDE}json
+                          |${JsonUtil.toJson(data = subTask)/*.indent("  ")*/}
+                          |$TRIPLE_TILDE
+                          |
+                          |### Dependencies:
+                          |${dependencies.joinToString("\n") { "- $it" }}
+                          |
+                          """.trimMargin(), ui = ui
+                        )
+                    )
+                    settings.getImpl(subTask).run(
+                        agent = this,
+                        taskId = taskId,
+                        userMessage = userMessage,
+                        plan = plan,
+                        genState = genState,
+                        task = task1,
+                        taskTabs = taskTabs
+                    )
+                } catch (e: Throwable) {
+                    log.warn("Error during task execution", e)
+                    task1.error(ui, e)
+                } finally {
+                    genState.completedTasks.add(element = taskId)
+                    subTask.state = AbstractTask.TaskState.Completed
+                    log.debug("Completed task: $taskId ${System.identityHashCode(subTask)}")
+                    taskTabs.update()
+                }
+            }
+        }
+        genState.taskFutures.forEach { (id, future) ->
+            try {
+                future.get() ?: log.warn("Dependency not found: $id")
+            } catch (e: Throwable) {
+                log.warn("Error", e)
+            }
         }
     }
 
@@ -317,13 +346,18 @@ class PlanCoordinator(
             .replace("\"", "\\\"")
             .let { '"' + it + '"' }
 
-        private fun buildMermaidGraph(subTasks: Map<String, Task>): String {
+        fun buildMermaidGraph(subTasks: Map<String, Task>): String {
             val graphBuilder = StringBuilder("graph TD;\n")
             subTasks.forEach { (taskId, task) ->
                 val sanitizedTaskId = sanitizeForMermaid(taskId)
                 val taskType = task.taskType?.name ?: "Unknown"
                 val escapedDescription = escapeMermaidCharacters(task.description ?: "")
-                graphBuilder.append("    ${sanitizedTaskId}[$escapedDescription]:::$taskType;\n")
+                val style = when (task.state) {
+                    AbstractTask.TaskState.Completed -> ":::completed"
+                    AbstractTask.TaskState.InProgress -> ":::inProgress"
+                    else -> ":::$taskType"
+                }
+                graphBuilder.append("    ${sanitizedTaskId}[$escapedDescription]$style;\n")
                 task.task_dependencies?.forEach { dependency ->
                     val sanitizedDependency = sanitizeForMermaid(dependency)
                     graphBuilder.append("    $sanitizedDependency --> ${sanitizedTaskId};\n")
@@ -335,6 +369,8 @@ class PlanCoordinator(
             graphBuilder.append("    classDef Documentation fill:lightyellow,stroke:#333,stroke-width:2px;\n")
             graphBuilder.append("    classDef Inquiry fill:orange,stroke:#333,stroke-width:2px;\n")
             graphBuilder.append("    classDef TaskPlanning fill:lightgrey,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef completed fill:#90EE90,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef inProgress fill:#FFA500,stroke:#333,stroke-width:2px;\n")
             return graphBuilder.toString()
         }
 

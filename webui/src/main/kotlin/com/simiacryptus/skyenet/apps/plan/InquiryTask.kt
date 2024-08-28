@@ -21,20 +21,20 @@ class InquiryTask(
         SimpleActor(
             name = "Inquiry",
             prompt = """
-                Create code for a new file that fulfills the specified requirements and context.
-                Given a detailed user request, break it down into smaller, actionable tasks suitable for software development.
-                Compile comprehensive information and insights on the specified topic.
-                Provide a comprehensive overview, including key concepts, relevant technologies, best practices, and any potential challenges or considerations. 
-                Ensure the information is accurate, up-to-date, and well-organized to facilitate easy understanding.
-        
-                When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
-                Focus on generating insights and information that support the task types available in the system (Requirements, NewFile, EditFile, ${
-                if (!settings.taskPlanningEnabled) "" else "TaskPlanning, "
-            }${
-                if (!settings.shellCommandTaskEnabled) "" else "RunShellCommand, "
-            }Documentation).
-                This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
-             """.trimIndent(),
+                |Create code for a new file that fulfills the specified requirements and context.
+                |Given a detailed user request, break it down into smaller, actionable tasks suitable for software development.
+                |Compile comprehensive information and insights on the specified topic.
+                |Provide a comprehensive overview, including key concepts, relevant technologies, best practices, and any potential challenges or considerations. 
+                |Ensure the information is accurate, up-to-date, and well-organized to facilitate easy understanding.
+                
+                |When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
+                |Focus on generating insights and information that support the task types available in the system (Requirements, NewFile, EditFile, ${
+                    if (!settings.taskPlanningEnabled) "" else "TaskPlanning, "
+                }${
+                    if (!settings.shellCommandTaskEnabled) "" else "RunShellCommand, "
+                }Documentation).
+                |This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
+                """.trimMargin(),
             model = settings.model,
             temperature = settings.temperature,
         )
@@ -42,10 +42,10 @@ class InquiryTask(
 
     override fun promptSegment(): String {
         return """
-            Inquiry - Answer questions by reading in files and providing a summary that can be discussed with and approved by the user
-              ** Specify the questions and the goal of the inquiry
-              ** List input files to be examined when answering the questions
-        """.trimIndent()
+            |Inquiry - Answer questions by reading in files and providing a summary that can be discussed with and approved by the user
+            |  ** Specify the questions and the goal of the inquiry
+            |  ** List input files to be examined when answering the questions
+            """.trimMargin()
     }
 
     override fun run(

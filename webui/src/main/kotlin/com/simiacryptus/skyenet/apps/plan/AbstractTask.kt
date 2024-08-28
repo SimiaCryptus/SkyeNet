@@ -31,10 +31,10 @@ abstract class AbstractTask(
 
     fun getPriorCode(genState: PlanCoordinator.GenState) = taskDependencies?.joinToString("\n\n\n") { dependency ->
         """
-          |# $dependency
-          |
-          |${genState.taskResult[dependency] ?: ""}
-          """.trimMargin()
+        |# $dependency
+        |
+        |${genState.taskResult[dependency] ?: ""}
+        """.trimMargin()
     } ?: ""
 
 
@@ -42,12 +42,12 @@ abstract class AbstractTask(
         .filter { FileValidationUtils.isLLMIncludable(root.toFile().resolve(it)) }.joinToString("\n\n") {
             try {
                 """
-                    |# $it
-                    |
-                    |$TRIPLE_TILDE
-                    |${codeFiles[File(it).toPath()] ?: root.resolve(it).toFile().readText()}
-                    |$TRIPLE_TILDE
-                    """.trimMargin()
+                |# $it
+                |
+                |$TRIPLE_TILDE
+                |${codeFiles[File(it).toPath()] ?: root.resolve(it).toFile().readText()}
+                |$TRIPLE_TILDE
+                """.trimMargin()
             } catch (e: Throwable) {
                 PlanCoordinator.log.warn("Error: root=$root    ", e)
                 ""

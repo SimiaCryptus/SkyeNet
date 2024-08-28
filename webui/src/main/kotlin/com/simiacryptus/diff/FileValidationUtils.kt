@@ -126,7 +126,7 @@ class FileValidationUtils {
                     if (it.exists()) {
                         val gitignore = it.readText()
                         if (gitignore.split("\n").any { line ->
-                                val pattern = line.trim().trimEnd('/').replace(".", "\\.").replace("*", ".*")
+                                val pattern = line.trim().trimStart('/').trimEnd('/').replace(".", "\\.").replace("*", ".*")
                                 line.trim().isNotEmpty()
                                         && !line.startsWith("#")
                                         && path.fileName.toString().trimEnd('/').matches(Regex(pattern))

@@ -134,11 +134,11 @@ abstract class PatchApp(
         try {
             task.add(
                 """
-            |<div>
-            |<div><b>Command exit code: ${output.exitCode}</b></div>
-            |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
-            |</div>
-            """.trimMargin()
+                |<div>
+                |<div><b>Command exit code: ${output.exitCode}</b></div>
+                |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
+                |</div>
+                """.trimMargin()
             )
             fixAll(settings, output, task, ui, api)
         } catch (e: Exception) {
@@ -266,7 +266,14 @@ abstract class PatchApp(
                     (error.fixFiles ?: emptyList()) +
                             (error.relatedFiles ?: emptyList()) +
                             (additionalFiles ?: emptyList())
-                    ).map { File(it).toPath() }
+                    ).map {
+                    try {
+                        File(it).toPath()
+                    } catch (e: Throwable) {
+                        log.warn("Error: root=${root}    ", e)
+                        null
+                    }
+                }.filterNotNull()
         val prunedPaths = prunePaths(paths, 50 * 1024)
         val summary = codeSummary(prunedPaths)
         val response = SimpleActor(
