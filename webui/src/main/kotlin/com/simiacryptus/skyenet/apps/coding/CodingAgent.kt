@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.actors.ActorSystem
@@ -34,7 +35,7 @@ open class CodingAgent<T : Interpreter>(
     val symbols: Map<String, Any>,
     temperature: Double = 0.1,
     val details: String? = null,
-    val model: ChatModels,
+    val model: OpenAITextModel,
     private val mainTask: SessionTask,
     val actorMap: Map<ActorTypes, CodingActor> = mapOf(
         ActorTypes.CodingActor to CodingActor(

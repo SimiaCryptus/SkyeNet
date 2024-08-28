@@ -18,7 +18,7 @@ open class ParsedActor<T : Any>(
     name: String? = resultClass?.simpleName,
     model: OpenAITextModel = ChatModels.GPT4o,
     temperature: Double = 0.3,
-    val parsingModel: ChatModels = ChatModels.GPT35Turbo,
+    val parsingModel: OpenAITextModel = ChatModels.GPT35Turbo,
     val deserializerRetries: Int = 2,
     open val describer: TypeDescriber = object : AbbrevWhitelistYamlDescriber(
         "com.simiacryptus", "com.github.simiacryptus"

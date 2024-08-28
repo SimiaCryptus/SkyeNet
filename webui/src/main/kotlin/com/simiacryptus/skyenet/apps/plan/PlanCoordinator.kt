@@ -1,10 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.github.simiacryptus.aicoder.util.FileSystemUtils
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE_ARRAY
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.isFile
+
+import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.describe.Description
@@ -23,6 +20,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.Future
@@ -35,7 +33,6 @@ class PlanCoordinator(
     val ui: ApplicationInterface,
     val api: API,
     val settings: Settings,
-    val event: AnActionEvent,
     val root: Path
 ) {
     private val taskBreakdownActor by lazy { settings.planningActor() }
@@ -56,8 +53,8 @@ class PlanCoordinator(
         val command: List<String>? = null,
     )
 
-    val virtualFiles by lazy {
-        FileSystemUtils.expandFileList(VIRTUAL_FILE_ARRAY.getData(event.dataContext) ?: arrayOf())
+    val virtualFiles: Array<File> by lazy {
+        FileValidationUtils.expandFileList(root.toFile())
     }
 
     private val codeFiles: Map<Path, String>
@@ -67,14 +64,14 @@ class PlanCoordinator(
             .associate { file -> getKey(file) to getValue(file) }
 
 
-    private fun getValue(file: VirtualFile) = try {
-        file.inputStream.bufferedReader().use { it.readText() }
+    private fun getValue(file: File) = try {
+        file.inputStream().bufferedReader().use { it.readText() }
     } catch (e: Exception) {
         log.warn("Error reading file", e)
         ""
     }
 
-    private fun getKey(file: VirtualFile) = root.relativize(file.toNioPath())
+    private fun getKey(file: File) = root.relativize(file.toPath())
 
     fun startProcess(userMessage: String) {
         val codeFiles = codeFiles
@@ -85,7 +82,7 @@ class PlanCoordinator(
             """
             |${
                 virtualFiles.joinToString("\n\n") {
-                    val path = root.relativize(it.toNioPath())
+                    val path = root.relativize(it.toPath())
                     """
  ## $path
               |

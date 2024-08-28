@@ -2,14 +2,13 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Task
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.TaskBreakdownResult
-import com.github.simiacryptus.aicoder.config.AppSettingsState
-import com.github.simiacryptus.aicoder.config.AppSettingsState.Companion.chatModel
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 data class Settings(
-    val model: ChatModels = AppSettingsState.instance.smartModel.chatModel(),
-    val parsingModel: ChatModels = AppSettingsState.instance.fastModel.chatModel(),
+    val model: ChatModels,
+    val parsingModel: ChatModels,
+    val command: List<String>,
     val temperature: Double = 0.2,
     val budget: Double = 2.0,
     val taskPlanningEnabled: Boolean = false,
@@ -20,7 +19,6 @@ data class Settings(
     val env: Map<String, String> = mapOf(),
     val workingDir: String = ".",
     val language: String = if (PlanCoordinator.isWindows) "powershell" else "bash",
-    val command: List<String> = listOf(AppSettingsState.instance.shellCommand)
 ) {
     fun getImpl(task: Task): AbstractTask {
         return when (task.taskType) {

@@ -1,10 +1,10 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.github.simiacryptus.aicoder.actions.generic.CmdPatchApp
-import com.github.simiacryptus.aicoder.actions.generic.PatchApp
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
+import com.simiacryptus.skyenet.apps.general.CmdPatchApp
+import com.simiacryptus.skyenet.apps.general.PatchApp
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
@@ -66,7 +66,8 @@ class CommandAutoFixTask(
                         autoFix = agent.settings.autoFix
                     ),
                     api = agent.api as OpenAIClient,
-                    virtualFiles = agent.virtualFiles
+                    virtualFiles = agent.virtualFiles,
+                    model = agent.settings.model,
                 ).run(
                     ui = agent.ui,
                     task = task

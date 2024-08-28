@@ -89,7 +89,7 @@ class FileValidationUtils {
                 file.name.startsWith(".") -> false
                 file.length() > (256 * 1024) -> false
                 isGitignore(file.toPath()) -> false
-                file.extension?.lowercase(Locale.getDefault()) in setOf(
+                file.extension.lowercase(Locale.getDefault()) in setOf(
                     "jar",
                     "zip",
                     "class",
@@ -102,6 +102,20 @@ class FileValidationUtils {
                 ) -> false
                 else -> true
             }
+        }
+
+        fun expandFileList(vararg data: File): Array<File> {
+            return data.flatMap {
+                (when {
+                    it.name.startsWith(".") -> arrayOf()
+                    isGitignore(it.toPath()) -> arrayOf()
+                    it.length() > 1e6 -> arrayOf()
+                    it.extension.lowercase(Locale.getDefault()) in
+                            setOf("jar", "zip", "class", "png", "jpg", "jpeg", "gif", "ico") -> arrayOf()
+                    it.isDirectory -> expandFileList(*it.listFiles() ?: arrayOf())
+                    else -> arrayOf(it)
+                }).toList()
+            }.toTypedArray()
         }
 
         fun isGitignore(path: Path): Boolean {
