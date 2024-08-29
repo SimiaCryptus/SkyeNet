@@ -11,6 +11,8 @@ import {
     toggleVerbose
 } from './functions.js';
 import {restoreTabs, updateTabs} from './tabs.js';
+console.log('Main script started');
+
 
 let messageVersions = {};
 window.messageMap = {}; // Make messageMap global
@@ -34,42 +36,49 @@ function debounce(func, wait) {
 }
 
 // Create a debounced version of updateDocumentComponents
-const debouncedUpdateDocumentComponents = debounce(updateDocumentComponents, 250);
+export const debouncedUpdateDocumentComponents = debounce(updateDocumentComponents, 250);
 
-function updateDocumentComponents() {
+export function updateDocumentComponents() {
+    try {
+        updateTabs();
+    } catch (e) {
+        console.error("Error updating tabs:", e);
+    }
     try {
         if (typeof Prism !== 'undefined') Prism.highlightAll();
     } catch (e) {
-        console.log("Error highlighting code: " + e);
+        console.error("Error highlighting code:", e);
     }
     try {
         refreshVerbose();
     } catch (e) {
-        console.log("Error refreshing verbose: " + e);
+        console.error("Error refreshing verbose:", e);
     }
     try {
         refreshReplyForms()
     } catch (e) {
-        console.log("Error refreshing reply forms: " + e);
+        console.error("Error refreshing reply forms:", e);
     }
     try {
-        if (typeof mermaid !== 'undefined') mermaid.run();
+       if (typeof mermaid !== 'undefined') {
+           const mermaidDiagrams = document.querySelectorAll('.mermaid:not(.mermaid-processed)');
+           if (mermaidDiagrams.length > 0) {
+               mermaid.run();
+               mermaidDiagrams.forEach(diagram => diagram.classList.add('mermaid-processed'));
+           }
+       }
     } catch (e) {
-        console.log("Error running mermaid: " + e);
+        console.error("Error running mermaid:", e);
     }
     try {
         applyToAllSvg();
     } catch (e) {
-        console.log("Error applying SVG pan zoom: " + e);
-    }
-    try {
-        updateTabs();
-    } catch (e) {
-        console.log("Error updating tabs: " + e);
+        console.error("Error applying SVG pan zoom:", e);
     }
 }
 
 function onWebSocketText(event) {
+    console.log('WebSocket message received:', event.data);
     console.debug('WebSocket message:', event);
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) return;
@@ -82,6 +91,7 @@ function onWebSocketText(event) {
     window.messageMap[messageId] = messageContent;
 
     const messageDivs = document.querySelectorAll('[id="' + messageId + '"]');
+    console.log(`Found ${messageDivs.length} message divs for messageId: ${messageId}`);
     messageDivs.forEach((messageDiv) => {
         if (messageDiv) {
             messageDiv.innerHTML = messageContent;
@@ -90,6 +100,7 @@ function onWebSocketText(event) {
         }
     });
     if (messageDivs.length === 0 && !messageId.startsWith("z")) {
+        console.log(`Creating new message div for messageId: ${messageId}`);
         messageDiv = document.createElement('div');
         messageDiv.className = 'message message-container ' + (messageId.startsWith('u') ? 'user-message' : 'response-message');
         messageDiv.id = messageId;
@@ -122,13 +133,14 @@ function onWebSocketText(event) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM content loaded');
     if (typeof mermaid !== 'undefined') mermaid.run();
-    applyToAllSvg();
-
-    // Set a timer to periodically apply svgPanZoom to all SVG elements
-    setInterval(() => {
-        applyToAllSvg();
-    }, 5000); // Adjust the interval as needed
+    //applyToAllSvg();
+    //
+    // // Set a timer to periodically apply svgPanZoom to all SVG elements
+    // setInterval(() => {
+    //     applyToAllSvg();
+    // }, 5000); // Adjust the interval as needed
 
     restoreTabs();
 
@@ -164,8 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sessionId = getSessionId();
     if (sessionId) {
+        console.log(`Connecting with session ID: ${sessionId}`);
         connect(sessionId, onWebSocketText);
     } else {
+        console.log('Connecting without session ID');
         connect(undefined, onWebSocketText);
     }
 
@@ -178,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (form) form.addEventListener('submit', (event) => {
         event.preventDefault();
+        console.log('Form submitted');
         queueMessage(messageInput.value);
         messageInput.value = '';
 
@@ -195,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (messageInput) {
         messageInput.addEventListener('keydown', (event) => {
+            console.log('Key pressed in message input:', event.key);
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 form.dispatchEvent(new Event('submit'));
@@ -206,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let heightAdjustment = postEditScrollHeight - originalScrollHeight;
         messageInput.style.height = '';
         messageInput.addEventListener('input', function () {
+            console.log('Input event on message input');
             // Reset the height to a single row to get the scroll height for the current content
             this.style.height = 'auto';
             // Set the height to the scroll height, which represents the height of the content
@@ -235,29 +252,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.body.addEventListener('click', (event) => {
         const target = event.target;
+        console.log('Click event on body, target:', target);
         const hrefLink = findAncestor(target, '.href-link');
         if (hrefLink) {
             const messageId = hrefLink.getAttribute('data-id');
+            console.log('Href link clicked, messageId:', messageId);
             if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',link');
         } else {
             const playButton = findAncestor(target, '.play-button');
             if (playButton) {
                 const messageId = playButton.getAttribute('data-id');
+                console.log('Play button clicked, messageId:', messageId);
                 if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',run');
             } else {
                 const regenButton = findAncestor(target, '.regen-button');
                 if (regenButton) {
                     const messageId = regenButton.getAttribute('data-id');
+                    console.log('Regen button clicked, messageId:', messageId);
                     if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',regen');
                 } else {
                     const cancelButton = findAncestor(target, '.cancel-button');
                     if (cancelButton) {
                         const messageId = cancelButton.getAttribute('data-id');
+                        console.log('Cancel button clicked, messageId:', messageId);
                         if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',stop');
                     } else {
                         const textSubmitButton = findAncestor(target, '.text-submit-button');
                         if (textSubmitButton) {
                             const messageId = textSubmitButton.getAttribute('data-id');
+                            console.log('Text submit button clicked, messageId:', messageId);
                             const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
                             // url escape the text
                             const escapedText = encodeURIComponent(text);
@@ -272,6 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let filesElement = document.getElementById("files");
     if (filesElement) filesElement.addEventListener("click", function (event) {
         event.preventDefault();
+        console.log('Files element clicked');
         const sessionId = getSessionId();
         const url = "fileIndex/" + sessionId + "/";
         window.open(url, "_blank");
@@ -279,12 +303,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetch('appInfo?session=' + sessionId)
         .then(response => {
+            console.log('AppInfo fetch response:', response);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             return response.json();
         })
         .then(data => {
+            console.log('AppInfo data:', data);
             if (data) {
                 if (data.applicationName) {
                     document.title = data.applicationName;
@@ -325,12 +351,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetch('/userInfo')
         .then(response => {
+            console.log('UserInfo fetch response:', response);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             return response.json();
         })
         .then(data => {
+            console.log('UserInfo data:', data);
             if (data.name) {
                 // Update the username link with the user's name and make it visible
                 usernameLink.textContent = data.name;
@@ -360,9 +388,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Restore the selected tabs from localStorage
     document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+        console.log('Restoring tabs for container:', tabsContainer.id);
         const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
         if (savedTab) {
             const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+console.log('Main script finished loading');
             if (savedButton) {
                 savedButton.click();
                 console.log(`Restored saved tab: ${savedTab}`);

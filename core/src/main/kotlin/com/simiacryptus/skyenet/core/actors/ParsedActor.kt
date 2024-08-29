@@ -6,6 +6,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
 import java.util.function.Function
@@ -15,9 +16,9 @@ open class ParsedActor<T : Any>(
     val exampleInstance: T? = resultClass?.getConstructor()?.newInstance(),
     prompt: String = "",
     name: String? = resultClass?.simpleName,
-    model: ChatModels = ChatModels.GPT4o,
+    model: OpenAITextModel = ChatModels.GPT4o,
     temperature: Double = 0.3,
-    val parsingModel: ChatModels = ChatModels.GPT35Turbo,
+    val parsingModel: OpenAITextModel = ChatModels.GPT35Turbo,
     val deserializerRetries: Int = 2,
     open val describer: TypeDescriber = object : AbbrevWhitelistYamlDescriber(
         "com.simiacryptus", "com.github.simiacryptus"

@@ -1,6 +1,7 @@
 const observer = new MutationObserver(updateTabs);
 const observerOptions = {childList: true, subtree: true};
 const tabCache = new Map();
+let isRestoringTabs = false;
 
 export function updateTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -10,14 +11,11 @@ export function updateTabs() {
         tabsContainers.add(tabsContainer);
         if (button.hasListener) return;
         button.hasListener = true;
-        // console.log(`Adding click event listener to tab button: ${button.getAttribute('data-for-tab')}, button element:`, button);
         button.addEventListener('click', (event) => {
-            // console.log(`Tab button clicked: ${button.getAttribute('data-for-tab')}, event:`, event);
             event.stopPropagation();
             const forTab = button.getAttribute('data-for-tab');
-            const tabsContainerId = button.closest('.tabs-container').id;
-            // console.log(`Tabs container ID: ${tabsContainerId}, button:`, button);
-            // console.log(`Saving selected tab to localStorage: selectedTab_${tabsContainerId} = ${forTab}, button:`, button);
+            let tabsContainerId = button.closest('.tabs-container').id;
+            if (button.classList.contains('active')) return; // Skip if already active
             try {
                 localStorage.setItem(`selectedTab_${tabsContainerId}`, forTab);
                 tabCache.set(tabsContainerId, forTab); // Update the cache
@@ -25,68 +23,78 @@ export function updateTabs() {
                 console.warn('Failed to save tab state to localStorage:', e);
             }
             let tabsParent = button.closest('.tabs-container');
-            const tabButtons = tabsParent.querySelectorAll('.tab-button');
-            tabButtons.forEach(btn => {
-                if (btn.closest('.tabs-container') === tabsParent) {
-                    btn.classList.remove('active');
-                }
+            const allTabButtons = tabsParent.querySelectorAll('.tab-button');
+            allTabButtons.forEach(btn => {
+                btn.classList.remove('active');
             });
             button.classList.add('active');
-            // console.log(`Active tab set to: ${forTab}, button:`, button);
+            console.log(`Active tab set to: ${forTab}, button:`, button);
             let selectedContent = null;
             const tabContents = tabsParent.querySelectorAll('.tab-content');
             tabContents.forEach(content => {
-                if (content.closest('.tabs-container') !== tabsParent) return;
                 if (content.getAttribute('data-tab') === forTab) {
                     content.classList.add('active');
                     content.style.display = 'block'; // Ensure the content is displayed
-                    // console.log(`Content displayed for tab: ${forTab}, content element:`, content);
                     selectedContent = content;
+                    // Recursively update nested tabs
+                    updateNestedTabs(selectedContent);
                 } else {
                     content.classList.remove('active');
-                    content.style.display = 'none'; // Ensure the content is hidden
-                    // console.log(`Content hidden for tab: ${content.getAttribute('data-tab')}, content element:`, content);
+                    content.style.display = 'none'; // Hide the content instead of removing it
                 }
             });
-            if (selectedContent !== null) {
-                requestAnimationFrame(() => updateNestedTabs(selectedContent));
-            }
         });
     });
 
     // Restore the selected tabs from localStorage
-    tabsContainers.forEach(tabsContainer => {
-        const savedTab = getSavedTab(tabsContainer.id);
-        if (savedTab) {
-            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
-            if (savedButton) {
-                savedButton.click(); // Simulate a click to activate the tab
-                // console.log(`Restored saved tab: ${savedTab}`);
+    isRestoringTabs = true;
+    try {
+        tabsContainers.forEach(tabsContainer => {
+            const savedTab = getSavedTab(tabsContainer.id);
+            if (savedTab) {
+                const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+                if (savedButton) {
+                    savedButton.click(); // Activate the tab
+                }
+            } else {
+                tabsContainer.querySelector('.tab-button')?.click(); // Activate the first tab
             }
-        } else {
-            tabsContainer.querySelector('.tab-button')?.click(); // Activate the first tab
-        }
-    });
+        });
+    } finally {
+        isRestoringTabs = false;
+    }
 }
 
 export function restoreTabs() {
+    isRestoringTabs = true;
     // Restore the selected tabs from localStorage before adding event listeners
-    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
-        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
-        if (savedTab) {
-            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
-            if (savedButton) {
-                savedButton.classList.add('active');
-                const forTab = savedButton.getAttribute('data-for-tab');
-                const selectedContent = tabsContainer.querySelector(`.tab-content[data-tab="${forTab}"]`);
-                if (selectedContent) {
-                    selectedContent.classList.add('active');
-                    selectedContent.style.display = 'block';
+    try {
+        document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+            const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
+            if (savedTab) {
+                const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+                tabsContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                if (savedButton) {
+                    savedButton.classList.add('active');
+                    const forTab = savedButton.getAttribute('data-for-tab');
+                    const selectedContent = tabsContainer.querySelector(`.tab-content[data-tab="${forTab}"]`);
+                    if (selectedContent) {
+                        selectedContent.classList.add('active');
+                        selectedContent.style.display = 'block'; // Ensure the content is displayed
+                        updateNestedTabs(selectedContent);
+                    }
+                    // Hide other tab contents
+                    tabsContainer.querySelectorAll(`.tab-content:not([data-tab="${forTab}"])`).forEach(content => {
+                        content.style.display = 'none';
+                    });
+                } else {
+                    tabsContainer.querySelector('.tab-button')?.click(); // Activate the first tab if no saved tab
                 }
-                console.log(`Restored saved tab: ${savedTab}`);
             }
-        }
-    });
+        });
+    } finally {
+        isRestoringTabs = false;
+    }
 }
 
 function getSavedTab(containerId) {
@@ -103,36 +111,37 @@ function getSavedTab(containerId) {
     }
 }
 
- function updateNestedTabs(element) {
-     const tabsContainers = element.querySelectorAll('.tabs-container');
-     tabsContainers.forEach(tabsContainer => {
-         try {
-             let hasActiveButton = false;
-             const nestedButtons = tabsContainer.querySelectorAll('.tab-button');
-             nestedButtons.forEach(nestedButton => {
-                 // console.log(`Checking nested button: ${nestedButton.getAttribute('data-for-tab')}, nestedButton element:`, nestedButton);
-                 if (nestedButton.classList.contains('active')) {
-                     hasActiveButton = true;
-                 }
-             });
-             if (!hasActiveButton) {
-                 const activeContent = tabsContainer.querySelector('.tab-content.active');
-                 if (activeContent) {
-                     const activeTab = activeContent.getAttribute('data-tab');
-                     const activeButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${activeTab}"]`);
-                     if (activeButton) {
-                         activeButton.click(); // Simulate a click to activate the tab
-                     }
-                 } else {
-                     tabsContainer.querySelector('.tab-button')?.click(); // Activate the first tab
-                 }
-             }
+function updateNestedTabs(element) {
+    const tabsContainers = element.querySelectorAll('.tabs-container');
+    tabsContainers.forEach(tabsContainer => {
+        try {
+            tabsContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            let hasActiveButton = false;
+            const nestedButtons = tabsContainer.querySelectorAll('.tab-button');
+            nestedButtons.forEach(nestedButton => {
+                if (nestedButton.classList.contains('active')) {
+                    hasActiveButton = true;
+                }
+            });
+            if (!hasActiveButton) {
+                const activeContent = tabsContainer.querySelector('.tab-content.active');
+                if (activeContent) {
+                    const activeTab = activeContent.getAttribute('data-tab');
+                    const activeButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${activeTab}"]`);
+                    if (activeButton) {
+                        setTimeout(() => activeButton.click(), 0); // Activate the tab asynchronously
+                    }
+                } else {
+                    setTimeout(() => tabsContainer.querySelector('.tab-button')?.click(), 0); // Activate the first tab asynchronously
+                }
+            }
              const savedTab = getSavedTab(tabsContainer.id);
+            console.log(`Saved tab for container ${tabsContainer.id}: ${savedTab}`);
              if (savedTab) {
                  const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
                  if (savedButton) {
-                    if (!savedButton.classList.contains('active')) {
-                        savedButton.click(); // Simulate a click to activate the tab only if it's not already active
+                     if (!savedButton.classList.contains('active')) {
+                         setTimeout(() => savedButton.click(), 0); // Activate the tab only if it's not already active, asynchronously
                     }
                  }
              }
@@ -145,8 +154,8 @@ function getSavedTab(containerId) {
 document.addEventListener('DOMContentLoaded', () => {
     updateTabs();
     observer.observe(document.body, observerOptions);
-
 });
+
 window.addEventListener('beforeunload', () => {
     observer.disconnect();
 });

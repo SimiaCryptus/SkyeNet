@@ -9,7 +9,7 @@ import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 open class SimpleActor(
     prompt: String,
     name: String? = null,
-    model: ChatModels,
+    model: OpenAITextModel,
     temperature: Double = 0.3,
 ) : BaseActor<List<String>, String>(
     prompt = prompt,

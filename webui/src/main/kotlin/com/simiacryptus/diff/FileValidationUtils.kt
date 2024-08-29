@@ -89,7 +89,7 @@ class FileValidationUtils {
                 file.name.startsWith(".") -> false
                 file.length() > (256 * 1024) -> false
                 isGitignore(file.toPath()) -> false
-                file.extension?.lowercase(Locale.getDefault()) in setOf(
+                file.extension.lowercase(Locale.getDefault()) in setOf(
                     "jar",
                     "zip",
                     "class",
@@ -104,6 +104,20 @@ class FileValidationUtils {
             }
         }
 
+        fun expandFileList(vararg data: File): Array<File> {
+            return data.flatMap {
+                (when {
+                    it.name.startsWith(".") -> arrayOf()
+                    isGitignore(it.toPath()) -> arrayOf()
+                    it.length() > 1e6 -> arrayOf()
+                    it.extension.lowercase(Locale.getDefault()) in
+                            setOf("jar", "zip", "class", "png", "jpg", "jpeg", "gif", "ico") -> arrayOf()
+                    it.isDirectory -> expandFileList(*it.listFiles() ?: arrayOf())
+                    else -> arrayOf(it)
+                }).toList()
+            }.toTypedArray()
+        }
+
         fun isGitignore(path: Path): Boolean {
             var currentDir = path.toFile().parentFile
             currentDir ?: return false
@@ -112,7 +126,7 @@ class FileValidationUtils {
                     if (it.exists()) {
                         val gitignore = it.readText()
                         if (gitignore.split("\n").any { line ->
-                                val pattern = line.trim().trimEnd('/').replace(".", "\\.").replace("*", ".*")
+                                val pattern = line.trim().trimStart('/').trimEnd('/').replace(".", "\\.").replace("*", ".*")
                                 line.trim().isNotEmpty()
                                         && !line.startsWith("#")
                                         && path.fileName.toString().trimEnd('/').matches(Regex(pattern))
