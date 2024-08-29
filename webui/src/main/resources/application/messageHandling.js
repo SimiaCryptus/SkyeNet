@@ -1,7 +1,10 @@
+import {showMenubar, singleInput, stickyInput} from './appConfig.js';
+
 let messageVersions = {};
 window.messageMap = {}; // Make messageMap global
 
-export function onWebSocketText(event, messagesDiv, singleInput, stickyInput, showMenubar, substituteMessages, debouncedUpdateDocumentComponents) {
+
+export function onWebSocketText(event, messagesDiv, updateDocumentComponents) {
     if (!messagesDiv) return;
     const firstCommaIndex = event.data.indexOf(',');
     const secondCommaIndex = event.data.indexOf(',', firstCommaIndex + 1);
@@ -45,5 +48,20 @@ export function onWebSocketText(event, messagesDiv, singleInput, stickyInput, sh
             console.log("Error: Could not find .main-input");
         }
     }
-    debouncedUpdateDocumentComponents();
+    updateDocumentComponents();
+}
+
+
+export function substituteMessages(outerMessageId, messageDiv) {
+    Object.entries(window.messageMap)
+        .filter(([innerMessageId, content]) => innerMessageId.startsWith("z"))
+        .forEach(([innerMessageId, content]) => {
+            if (outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
+                if (element.innerHTML !== content) {
+                    //console.log("Substituting message with id " + innerMessageId + " and content " + content);
+                    element.innerHTML = content;
+                    substituteMessages(innerMessageId, element);
+                }
+            });
+        });
 }

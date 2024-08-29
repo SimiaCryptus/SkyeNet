@@ -1,5 +1,5 @@
 import {connect} from './chat.js';
-import {applyToAllSvg, getSessionId, refreshReplyForms, refreshVerbose, substituteMessages} from './functions.js';
+import {applyToAllSvg, getSessionId, refreshReplyForms, refreshVerbose} from './functions.js';
 import {restoreTabs, updateTabs} from './tabs.js';
 import {setupUIHandlers} from './uiHandlers.js';
 import {onWebSocketText} from './messageHandling.js';
@@ -76,13 +76,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('main-input');
     const messageInput = document.getElementById('chat-input');
     const sessionId = getSessionId();
+    const messages = document.getElementById('messages');
 
     if (sessionId) {
         console.log(`Connecting with session ID: ${sessionId}`);
-        connect(sessionId, (event) => onWebSocketText(event, document.getElementById('messages'), singleInput, stickyInput, showMenubar, substituteMessages, debouncedUpdateDocumentComponents));
+        connect(sessionId, (event) => onWebSocketText(event, messages, debouncedUpdateDocumentComponents));
     } else {
         console.log('Connecting without session ID');
-        connect(undefined, (event) => onWebSocketText(event, document.getElementById('messages'), singleInput, stickyInput, showMenubar, substituteMessages, debouncedUpdateDocumentComponents));
+        connect(undefined, (event) => onWebSocketText(event, messages, debouncedUpdateDocumentComponents));
     }
 
     setupMessageInput(form, messageInput);
