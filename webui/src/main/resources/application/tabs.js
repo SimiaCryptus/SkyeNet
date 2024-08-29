@@ -28,7 +28,7 @@ export function updateTabs() {
                 btn.classList.remove('active');
             });
             button.classList.add('active');
-            console.log(`Active tab set to: ${forTab}, button:`, button);
+            // console.log(`Active tab set to: ${forTab}, button:`, button);
             let selectedContent = null;
             const tabContents = tabsParent.querySelectorAll('.tab-content');
             tabContents.forEach(content => {
@@ -136,7 +136,7 @@ function updateNestedTabs(element) {
                 }
             }
              const savedTab = getSavedTab(tabsContainer.id);
-            console.log(`Saved tab for container ${tabsContainer.id}: ${savedTab}`);
+            // console.log(`Saved tab for container ${tabsContainer.id}: ${savedTab}`);
              if (savedTab) {
                  const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
                  if (savedButton) {

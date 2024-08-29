@@ -46,40 +46,6 @@ abstract class SocketManagerBase(
         sockets[socket] = session
     }
 
-    private fun publish(
-        out: String,
-    ) {
-        sockets.keys.toTypedArray().forEach { chatSocket ->
-            try {
-                val deque = sendQueues.computeIfAbsent(chatSocket) { ConcurrentLinkedDeque() }
-                deque.add(out)
-                pool.submit {
-                    try {
-                        if (deque.isEmpty()) return@submit
-                        ioPool.submit {
-                            try {
-                                while (deque.isNotEmpty()) {
-                                    val msg = deque.poll() ?: break
-                                    log.info("Sending message: {} to socket: {}", msg, chatSocket)
-                                    synchronized(chatSocket) {
-                                        chatSocket.remote.sendString(msg)
-                                    }
-                                }
-                                chatSocket.remote.flush()
-                            } catch (e: Exception) {
-                                log.info("Error sending message", e)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        log.info("Error sending message", e)
-                    }
-                }
-            } catch (e: Exception) {
-                log.info("Error sending message", e)
-            }
-        }
-    }
-
     fun newTask(
         cancelable: Boolean = false,
         root: Boolean = true
@@ -92,7 +58,7 @@ abstract class SocketManagerBase(
     }
 
 
-    inner class SessionTaskImpl(
+    private inner class SessionTaskImpl(
         operationID: String,
         responseContents: String,
         spinner: String = SessionTask.spinner,
@@ -135,7 +101,35 @@ abstract class SocketManagerBase(
                 val ver = messageVersions[messageID]?.get()
                 val v = messageStates[messageID]
                 log.info("Publish Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
-                publish("$messageID,$ver,$v")
+                sockets.keys.toTypedArray<ChatSocket>().forEach<ChatSocket> { chatSocket ->
+                    try {
+                        val deque = sendQueues.computeIfAbsent(chatSocket) { ConcurrentLinkedDeque() }
+                        deque.add("$messageID,$ver,$v")
+                        ioPool.submit {
+                            try {
+                                while (deque.isNotEmpty()) {
+                                    var msg = deque.poll() ?: break
+                                    try {
+                                        val (messageID, _, _) = msg.split(',', ignoreCase = false, limit = 3)
+                                        val ver = messageVersions[messageID]?.get()
+                                        val v = messageStates[messageID]
+                                        msg = "$messageID,$ver,$v"
+                                    } finally {
+                                        log.info("Sending message: {} to socket: {}", msg, chatSocket)
+                                        synchronized(chatSocket) {
+                                            chatSocket.remote.sendString(msg)
+                                        }
+                                    }
+                                }
+                                chatSocket.remote.flush()
+                            } catch (e: Exception) {
+                                log.info("Error sending message", e)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        log.info("Error sending message", e)
+                    }
+                }
             } catch (e: Exception) {
                 log.info("$session - $out", e)
             }
