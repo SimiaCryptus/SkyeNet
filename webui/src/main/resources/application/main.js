@@ -1,10 +1,10 @@
 import {connect} from './chat.js';
 import {applyToAllSvg, getSessionId, refreshReplyForms, refreshVerbose} from './functions.js';
-import {restoreTabs, updateTabs} from './tabs.js';
+import {updateTabs} from './tabs.js';
 import {setupUIHandlers} from './uiHandlers.js';
 import {onWebSocketText} from './messageHandling.js';
 import {setupFormSubmit, setupMessageInput, setupUserInfo} from './uiSetup.js';
-import {fetchAppConfig, showMenubar, singleInput, stickyInput} from './appConfig.js';
+import {fetchAppConfig} from './appConfig.js';
 
 console.log('Main script started');
 
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM content loaded');
     if (typeof mermaid !== 'undefined') mermaid.run();
 
-    restoreTabs();
+    updateTabs();
     setupUIHandlers();
 
     const loginLink = document.getElementById('login');
