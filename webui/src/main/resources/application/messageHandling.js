@@ -2,6 +2,18 @@ import {showMenubar, singleInput, stickyInput} from './appConfig.js';
 
 const messageVersions = new Map();
 const messageMap = new Map(); // Use Map instead of object for better performance
+// Create a debounce function for scrolling
+const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func(...args), delay);
+    };
+};
+// Debounced scroll function
+const scrollToBottom = debounce((messagesDiv) => {
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}, 100);
 
 
 export function onWebSocketText(event, messagesDiv, updateDocumentComponents) {
@@ -24,20 +36,23 @@ export function onWebSocketText(event, messagesDiv, updateDocumentComponents) {
         messagesDiv.appendChild(messageDiv);
         substituteMessages(messageId, messageDiv);
     }
-    requestAnimationFrame(() => {
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
+    scrollToBottom(messagesDiv);
     const mainInput = document.getElementById('main-input');
     if (mainInput) {
         if (singleInput) mainInput.style.display = 'none';
         if (stickyInput) {
-            mainInput.style.cssText = `position: sticky; z-index: 1; top: ${showMenubar ? '30px' : '0px'}`;
+            mainInput.style.position = 'sticky';
+            mainInput.style.zIndex = '1';
+            mainInput.style.top = showMenubar ? '30px' : '0px';
         }
     } else {
         console.log("Error: Could not find #main-input");
     }
 
-    requestAnimationFrame(updateDocumentComponents);
+    requestAnimationFrame(() => {
+        updateDocumentComponents();
+        scrollToBottom(messagesDiv);
+    });
 }
 
 

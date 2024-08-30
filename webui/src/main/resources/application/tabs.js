@@ -2,6 +2,16 @@ const observer = new MutationObserver(updateTabs);
 const observerOptions = {childList: true, subtree: true};
 const tabCache = new Map();
 let isRestoringTabs = false;
+// Debounce function to limit the frequency of updateTabs calls
+const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func(...args), delay);
+    };
+};
+const debouncedUpdateTabs = debounce(updateTabs, 100);
+
 
 export function updateTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');

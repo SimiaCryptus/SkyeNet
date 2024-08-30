@@ -32,7 +32,7 @@ object MarkdownUtil {
             val fixedMermaidCode = fixupMermaidCode(mermaidCode)
             var mermaidDiagramHTML = """<pre class="mermaid">$fixedMermaidCode</pre>"""
             try {
-                if(false){
+                if(true){
                     val svg = renderMermaidToSVG(fixedMermaidCode)
                     if (null != ui) {
                         val newTask = ui.newTask(false)
