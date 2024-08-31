@@ -2,19 +2,8 @@ import {showMenubar, singleInput, stickyInput} from './appConfig.js';
 
 const messageVersions = new Map();
 const messageMap = new Map(); // Use Map instead of object for better performance
-// Create a debounce function for scrolling
-const debounce = (func, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func(...args), delay);
-    };
-};
-// Debounced scroll function
-const scrollToBottom = debounce((messagesDiv) => {
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}, 100);
-
+const MAX_SUBSTITUTION_DEPTH = 10;
+const OPERATION_TIMEOUT = 5000; // 5 seconds
 
 export function onWebSocketText(event, messagesDiv, updateDocumentComponents) {
     if (!messagesDiv) return;
@@ -26,7 +15,7 @@ export function onWebSocketText(event, messagesDiv, updateDocumentComponents) {
     const messageDivs = messagesDiv.querySelectorAll(`[id="${messageId}"]`);
     messageDivs.forEach((messageDiv) => {
         messageDiv.innerHTML = messageContent;
-        substituteMessages(messageId, messageDiv);
+        substituteMessages(messageDiv, 0, [messageId]);
     });
     if (messageDivs.length === 0 && !messageId.startsWith("z")) {
         const messageDiv = document.createElement('div');
@@ -34,9 +23,8 @@ export function onWebSocketText(event, messagesDiv, updateDocumentComponents) {
         messageDiv.id = messageId;
         messageDiv.innerHTML = messageContent;
         messagesDiv.appendChild(messageDiv);
-        substituteMessages(messageId, messageDiv);
+        substituteMessages(messageDiv, 0, [messageId]);
     }
-    scrollToBottom(messagesDiv);
     const mainInput = document.getElementById('main-input');
     if (mainInput) {
         if (singleInput) mainInput.style.display = 'none';
@@ -51,21 +39,30 @@ export function onWebSocketText(event, messagesDiv, updateDocumentComponents) {
 
     requestAnimationFrame(() => {
         updateDocumentComponents();
-        scrollToBottom(messagesDiv);
     });
 }
 
 
-export function substituteMessages(outerMessageId, messageDiv) {
+function substituteMessages(messageDiv, depth, outerMessageIds) {
+    if (depth > MAX_SUBSTITUTION_DEPTH) {
+        console.warn('Max substitution depth reached');
+        return;
+    }
+    const timeoutId = setTimeout(() => console.warn('substituteMessages operation timed out'), OPERATION_TIMEOUT);
     for (const [innerMessageId, content] of messageMap) {
-        if (!innerMessageId.startsWith("z") || outerMessageId === innerMessageId) continue;
+        if (!innerMessageId.startsWith("z") || outerMessageIds.includes(innerMessageId)) continue;
         const elements = messageDiv.querySelectorAll(`[id="${innerMessageId}"]`);
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
             if (element.innerHTML !== content) {
-                element.innerHTML = content;
-                substituteMessages(innerMessageId, element);
+                try {
+                    element.innerHTML = content;
+                    substituteMessages(element, depth + 1, [...outerMessageIds, innerMessageId]);
+                } catch (e) {
+                    console.warn('Error during message substitution:', e);
+                }
             }
         }
     }
+    clearTimeout(timeoutId);
 }

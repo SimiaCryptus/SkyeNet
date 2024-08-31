@@ -2,16 +2,8 @@ const observer = new MutationObserver(updateTabs);
 const observerOptions = {childList: true, subtree: true};
 const tabCache = new Map();
 let isRestoringTabs = false;
-// Debounce function to limit the frequency of updateTabs calls
-const debounce = (func, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func(...args), delay);
-    };
-};
-const debouncedUpdateTabs = debounce(updateTabs, 100);
-
+const MAX_RECURSION_DEPTH = 10;
+const OPERATION_TIMEOUT = 5000; // 5 seconds
 
 export function updateTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -40,7 +32,7 @@ export function updateTabs() {
             if (content.getAttribute('data-tab') === forTab) {
                 content.classList.add('active');
                 content.style.display = 'block';
-                updateNestedTabs(content);
+                updateNestedTabs(content, 0);
             } else {
                 content.classList.remove('active');
                 content.style.display = 'none';
@@ -72,8 +64,6 @@ export function updateTabs() {
     }
 }
 
-// Remove the restoreTabs function as it's now redundant with the improved updateTabs function
-
 function getSavedTab(containerId) {
     if (tabCache.has(containerId)) return tabCache.get(containerId);
     try {
@@ -86,8 +76,14 @@ function getSavedTab(containerId) {
     }
 }
 
-function updateNestedTabs(element) {
+function updateNestedTabs(element, depth) {
+    if (depth > MAX_RECURSION_DEPTH) {
+        console.warn('Max recursion depth reached in updateNestedTabs');
+        return;
+    }
+
     const tabsContainers = element.querySelectorAll('.tabs-container');
+    const timeoutId = setTimeout(() => console.warn('updateNestedTabs operation timed out'), OPERATION_TIMEOUT);
     for (const tabsContainer of tabsContainers) {
         try {
             const buttons = tabsContainer.querySelectorAll('.tab-button');
@@ -115,6 +111,7 @@ function updateNestedTabs(element) {
             console.warn('Failed to update nested tabs:', e);
         }
     }
+    clearTimeout(timeoutId);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

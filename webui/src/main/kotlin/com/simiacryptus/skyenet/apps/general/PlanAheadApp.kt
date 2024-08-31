@@ -4,7 +4,6 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.Settings
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
@@ -20,6 +19,7 @@ class PlanAheadApp(
     val settings: Settings,
     val model: OpenAITextModel,
     val parsingModel: OpenAITextModel,
+    val domainName : String = "localhost",
     showMenubar: Boolean = true,
 ) : ApplicationServer(
     applicationName = applicationName,

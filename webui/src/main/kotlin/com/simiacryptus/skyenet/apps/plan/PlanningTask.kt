@@ -49,7 +49,7 @@ class PlanningTask(
 
         val subPlan = Discussable(
             task = task,
-            userMessage = { "Expand ${description ?: ""}\n${JsonUtil.toJson(task)}" },
+            userMessage = { "Expand ${description ?: ""}" },
             heading = "",
             initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = agent.api) },
             outputFn = { design: ParsedResponse<PlanCoordinator.TaskBreakdownResult> ->
@@ -60,6 +60,7 @@ class PlanningTask(
                             "${TRIPLE_TILDE}json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n$TRIPLE_TILDE",
                             ui = agent.ui
                         ),
+                        "Diagram" to diagram(PlanCoordinator.GenState((design.obj.tasksByID ?: emptyMap()).toMutableMap()), agent.ui)
                     )
                 )
             },

@@ -20,9 +20,7 @@ function debounce(func, wait) {
     };
 }
 
-export const debouncedUpdateDocumentComponents = debounce(updateDocumentComponents, 250);
-
-export function updateDocumentComponents() {
+const updateDocumentComponents = debounce(function () {
     try {
         updateTabs();
     } catch (e) {
@@ -59,7 +57,7 @@ export function updateDocumentComponents() {
     } catch (e) {
         console.error("Error applying SVG pan zoom:", e);
     }
-}
+}, 250);
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM content loaded');
@@ -80,10 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sessionId) {
         console.log(`Connecting with session ID: ${sessionId}`);
-        connect(sessionId, (event) => onWebSocketText(event, messages, debouncedUpdateDocumentComponents));
+        connect(sessionId, (event) => onWebSocketText(event, messages, updateDocumentComponents));
     } else {
         console.log('Connecting without session ID');
-        connect(undefined, (event) => onWebSocketText(event, messages, debouncedUpdateDocumentComponents));
+        connect(undefined, (event) => onWebSocketText(event, messages, updateDocumentComponents));
     }
 
     setupMessageInput(form, messageInput);

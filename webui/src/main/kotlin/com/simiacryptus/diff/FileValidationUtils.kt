@@ -3,6 +3,7 @@ package com.simiacryptus.diff
 import java.io.File
 import java.nio.file.Path
 import java.util.*
+import kotlin.io.path.name
 
 class FileValidationUtils {
     companion object {
@@ -119,6 +120,12 @@ class FileValidationUtils {
         }
 
         fun isGitignore(path: Path): Boolean {
+            when {
+                path.name == "node_modules" -> return true
+                path.name == "target" -> return true
+                path.name == "build" -> return true
+                path.name.startsWith(".") -> return true
+            }
             var currentDir = path.toFile().parentFile
             currentDir ?: return false
             while (!currentDir.resolve(".git").exists()) {

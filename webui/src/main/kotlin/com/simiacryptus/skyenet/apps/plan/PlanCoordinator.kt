@@ -114,6 +114,7 @@ class PlanCoordinator(
                             "${TRIPLE_TILDE}json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n$TRIPLE_TILDE",
                             ui = ui
                         ),
+                        "Diagram" to MarkdownUtil.renderMarkdown("```mermaid\n"+buildMermaidGraph((design.obj.tasksByID ?: emptyMap()).toMutableMap())+"\n```\n")
                     )
                 )
             },
