@@ -18,7 +18,7 @@ export function setupUIHandlers() {
     if (threadsElement) threadsElement.addEventListener('click', () => showModal('threads'));
     const shareElement = document.getElementById('share');
     if (shareElement) {
-        shareElement.addEventListener('click', () => showModal('share?url=' + encodeURIComponent(window.location.href) + "&loadImages=" + loadImages, false));
+        shareElement.addEventListener('click', () => showModal('share?url=' + encodeURIComponent(window.location.href) + "&loadImages=true", false));
     }
     const closeElement = document.querySelector('.close');
     if (closeElement) closeElement.addEventListener('click', closeModal);
