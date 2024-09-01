@@ -86,9 +86,9 @@ class PlanCoordinator(
                 virtualFiles.joinToString("\n\n") {
                     val path = root.relativize(it.toPath())
                     """
- ## $path
-              |
- ${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
+                    |## $path
+                    |
+                    |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
              """.trimMargin()
                 }
             }
@@ -111,7 +111,7 @@ class PlanCoordinator(
                     mapOf(
                         "Text" to MarkdownUtil.renderMarkdown(design.text, ui = ui),
                         "JSON" to MarkdownUtil.renderMarkdown(
-                            "${TRIPLE_TILDE}json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n$TRIPLE_TILDE",
+                            "${TRIPLE_TILDE}json\n${JsonUtil.toJson(design.obj)}\n$TRIPLE_TILDE",
                             ui = ui
                         ),
                         "Diagram" to MarkdownUtil.renderMarkdown("```mermaid\n"+buildMermaidGraph((design.obj.tasksByID ?: emptyMap()).toMutableMap())+"\n```\n")

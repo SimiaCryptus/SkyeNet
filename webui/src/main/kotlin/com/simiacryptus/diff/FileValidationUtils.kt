@@ -133,13 +133,18 @@ class FileValidationUtils {
                     if (it.exists()) {
                         val gitignore = it.readText()
                         if (gitignore.split("\n").any { line ->
-                                val pattern = line.trim().trimStart('/').trimEnd('/').replace(".", "\\.").replace("*", ".*")
-                                line.trim().isNotEmpty()
-                                        && !line.startsWith("#")
-                                        && path.fileName.toString().trimEnd('/').matches(Regex(pattern))
-                            }) {
-                            return true
-                        }
+                                try {
+                                    if (line.trim().isEmpty()) return@any false
+                                    if (line.startsWith("#")) return@any false
+                                    val pattern =
+                                        line.trim().trimStart('/').trimEnd('/')
+                                            .replace(".", "\\.").replace("*", ".*")
+                                    if (!path.fileName.toString().trimEnd('/').matches(Regex(pattern))) return@any false
+                                    return@any true
+                                } catch (e: Throwable) {
+                                    return@any false
+                                }
+                            }) return true
                     }
                 }
                 currentDir = currentDir.parentFile ?: return false

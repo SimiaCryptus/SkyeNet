@@ -90,7 +90,7 @@ private fun SocketManagerBase.renderNewFile(
 ): String {
     val filename = resolve(root, header ?: "Unknown")
     val filepath = root.resolve(filename)
-    if (shouldAutoApply(filepath)) {
+    if (shouldAutoApply(filepath) && !filepath.toFile().exists()) {
         try {
             filepath.parent?.toFile()?.mkdirs()
             filepath.toFile().writeText(codeValue, Charsets.UTF_8)
@@ -148,11 +148,12 @@ fun resolve(root: Path, filename: String): String {
         filename
     }
 
-    filename = if (root.contains(File(filename).toPath())) try {
-        root.relativize(File(filename).toPath()).toString()
+    filename = try {
+        val path = File(filename).toPath()
+        if (root.contains(path)) root.relativize(path).toString() else filename
     } catch (e: Throwable) {
         filename
-    } else filename
+    }
 
     if (!root.resolve(filename).toFile().exists()) {
         root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }

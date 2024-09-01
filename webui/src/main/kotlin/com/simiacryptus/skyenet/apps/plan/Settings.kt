@@ -2,7 +2,6 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Task
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.TaskBreakdownResult
-import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
@@ -25,8 +24,7 @@ data class Settings(
         return when (task.taskType) {
             TaskType.TaskPlanning -> PlanningTask(this, task)
             TaskType.Documentation -> DocumentationTask(this, task)
-            TaskType.NewFile -> NewFileTask(this, task)
-            TaskType.EditFile -> EditFileTask(this, task)
+            TaskType.FileModification -> FileModificationTask(this, task)
             TaskType.RunShellCommand -> RunShellCommandTask(this, task)
             TaskType.CommandAutoFix -> CommandAutoFixTask(this, task)
             TaskType.Inquiry -> InquiryTask(this, task)
