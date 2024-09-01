@@ -32,13 +32,15 @@ object MarkdownUtil {
             val fixedMermaidCode = fixupMermaidCode(mermaidCode)
             var mermaidDiagramHTML = """<pre class="mermaid">$fixedMermaidCode</pre>"""
             try {
-                val svg = renderMermaidToSVG(fixedMermaidCode)
-                if (null != ui) {
-                    val newTask = ui.newTask(false)
-                    newTask.complete(svg)
-                    mermaidDiagramHTML = newTask.placeholder
-                } else {
-                    mermaidDiagramHTML = svg
+                if(true){
+                    val svg = renderMermaidToSVG(fixedMermaidCode)
+                    if (null != ui) {
+                        val newTask = ui.newTask(false)
+                        newTask.complete(svg)
+                        mermaidDiagramHTML = newTask.placeholder
+                    } else {
+                        mermaidDiagramHTML = svg
+                    }
                 }
             } catch (e: Exception) {
                 log.warn("Failed to render Mermaid diagram", e)

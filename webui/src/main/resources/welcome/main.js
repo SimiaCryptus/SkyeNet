@@ -1,4 +1,3 @@
-let messageVersions = {};
 let messageMap = {};
 let singleInput = false;
 let stickyInput = false;

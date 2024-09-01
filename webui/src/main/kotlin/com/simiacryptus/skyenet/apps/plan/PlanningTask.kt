@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
@@ -47,34 +48,45 @@ class PlanningTask(
             s
         ).filter { it.isNotBlank() }
 
-        val subPlan = Discussable(
-            task = task,
-            userMessage = { "Expand ${description ?: ""}\n${JsonUtil.toJson(task)}" },
-            heading = "",
-            initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = agent.api) },
-            outputFn = { design: ParsedResponse<PlanCoordinator.TaskBreakdownResult> ->
-                AgentPatterns.displayMapInTabs(
-                    mapOf(
-                        "Text" to MarkdownUtil.renderMarkdown(design.text, ui = agent.ui),
-                        "JSON" to MarkdownUtil.renderMarkdown(
-                            "${TRIPLE_TILDE}json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n$TRIPLE_TILDE",
-                            ui = agent.ui
-                        ),
+        if (!settings.autoFix) {
+            val subPlan = Discussable(
+                task = task,
+                userMessage = { "Expand ${description ?: ""}" },
+                heading = "",
+                initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = agent.api) },
+                outputFn = { design: ParsedResponse<PlanCoordinator.TaskBreakdownResult> ->
+                    AgentPatterns.displayMapInTabs(
+                        mapOf(
+                            "Text" to MarkdownUtil.renderMarkdown(design.text, ui = agent.ui),
+                            "JSON" to MarkdownUtil.renderMarkdown(
+                                "${TRIPLE_TILDE}json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n$TRIPLE_TILDE",
+                                ui = agent.ui
+                            ),
+                            "Diagram" to diagram(
+                                PlanCoordinator.GenState(
+                                    (design.obj.tasksByID ?: emptyMap()).toMutableMap()
+                                ), agent.ui
+                            )
+                        )
                     )
-                )
-            },
-            ui = agent.ui,
-            reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                taskBreakdownActor.respond(
-                    messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                        .toTypedArray<ApiModel.ChatMessage>()),
-                    input = toInput("Expand ${description ?: ""}\n${JsonUtil.toJson(this)}"),
-                    api = agent.api
-                )
-            },
-        ).call()
-        // Execute sub-tasks
-        executeSubTasks(agent, userMessage, subPlan, task)
+                },
+                ui = agent.ui,
+                reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+                    taskBreakdownActor.respond(
+                        messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                            .toTypedArray<ApiModel.ChatMessage>()),
+                        input = toInput("Expand ${description ?: ""}\n${JsonUtil.toJson(this)}"),
+                        api = agent.api
+                    )
+                },
+            ).call()
+            // Execute sub-tasks
+            executeSubTasks(agent, userMessage, subPlan, task)
+        } else {
+            val subPlan = taskBreakdownActor.answer(toInput("Expand ${description ?: ""}"), api = agent.api)
+            // Execute sub-tasks
+            executeSubTasks(agent, userMessage, subPlan, task)
+        }
     }
     private fun executeSubTasks(
         agent: PlanCoordinator,

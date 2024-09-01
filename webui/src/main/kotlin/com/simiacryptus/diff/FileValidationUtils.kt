@@ -3,6 +3,7 @@ package com.simiacryptus.diff
 import java.io.File
 import java.nio.file.Path
 import java.util.*
+import kotlin.io.path.name
 
 class FileValidationUtils {
     companion object {
@@ -119,6 +120,12 @@ class FileValidationUtils {
         }
 
         fun isGitignore(path: Path): Boolean {
+            when {
+                path.name == "node_modules" -> return true
+                path.name == "target" -> return true
+                path.name == "build" -> return true
+                path.name.startsWith(".") -> return true
+            }
             var currentDir = path.toFile().parentFile
             currentDir ?: return false
             while (!currentDir.resolve(".git").exists()) {
@@ -126,13 +133,18 @@ class FileValidationUtils {
                     if (it.exists()) {
                         val gitignore = it.readText()
                         if (gitignore.split("\n").any { line ->
-                                val pattern = line.trim().trimStart('/').trimEnd('/').replace(".", "\\.").replace("*", ".*")
-                                line.trim().isNotEmpty()
-                                        && !line.startsWith("#")
-                                        && path.fileName.toString().trimEnd('/').matches(Regex(pattern))
-                            }) {
-                            return true
-                        }
+                                try {
+                                    if (line.trim().isEmpty()) return@any false
+                                    if (line.startsWith("#")) return@any false
+                                    val pattern =
+                                        line.trim().trimStart('/').trimEnd('/')
+                                            .replace(".", "\\.").replace("*", ".*")
+                                    if (!path.fileName.toString().trimEnd('/').matches(Regex(pattern))) return@any false
+                                    return@any true
+                                } catch (e: Throwable) {
+                                    return@any false
+                                }
+                            }) return true
                     }
                 }
                 currentDir = currentDir.parentFile ?: return false

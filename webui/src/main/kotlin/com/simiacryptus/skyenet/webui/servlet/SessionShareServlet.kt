@@ -113,7 +113,7 @@ class SessionShareServlet(
                         log.info("Generating shareId: $shareId")
                         sessionSettings["shareId"] = shareId
                         infoFile.writeText(JsonUtil.toJson(sessionSettings))
-                        val selenium2S3: Selenium = ApplicationServices.seleniumFactory?.invoke(pool, cookies)!!
+                        val selenium2S3: Selenium = ApplicationServices.seleniumFactory?.invoke(pool, cookies) ?: throw IllegalStateException("Selenium not configured")
                         if (selenium2S3 is Selenium2S3) {
                             selenium2S3.loadImages = req.getParameter("loadImages")?.toBoolean() ?: false
                         }

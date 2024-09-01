@@ -56,7 +56,6 @@ export function closeModal() {
 
         // Make sure to update the init function to avoid attaching multiple listeners to the same SVG
         init(svgElement) {
-            console.log("Initializing SvgPanZoom for an SVG element");
             if (svgElement.dataset.svgPanZoomInitialized) return; // Skip if already initialized
             svgElement.dataset.svgPanZoomInitialized = true; // Mark as initialized
             this.svgElement = svgElement;
@@ -70,7 +69,6 @@ export function closeModal() {
 
         // Ensure the SVG has a <g> element for transformations
         ensureTransformGroup() {
-            console.log("Ensuring transform group exists in the SVG");
             if (!this.svgElement.querySelector('g.transform-group')) {
                 const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 group.classList.add('transform-group');
@@ -84,7 +82,6 @@ export function closeModal() {
 
         // Attach event listeners for panning and zooming
         attachEventListeners() {
-            console.log("Attaching event listeners for panning and zooming");
             this.svgElement.addEventListener('click', this.onClick.bind(this));
             this.svgElement.addEventListener('mousemove', this.onMove.bind(this));
             this.svgElement.addEventListener('wheel', this.handleZoom.bind(this));
@@ -122,7 +119,6 @@ export function closeModal() {
                     this.currentTransform.y = dy * moveScale + this.priorPan.y;
                 }
             }
-            console.log("Panning %s, %s", this.currentTransform.x, this.currentTransform.y);
             this.updateTransform();
         }
 
@@ -220,18 +216,4 @@ export function applyToAllSvg() {
             new SvgPanZoom().init(svg);
         }
     });
-}
-
-export function substituteMessages(outerMessageId, messageDiv) {
-    Object.entries(window.messageMap)
-        .filter(([innerMessageId, content]) => innerMessageId.startsWith("z"))
-        .forEach(([innerMessageId, content]) => {
-            if (outerMessageId !== innerMessageId && messageDiv) messageDiv.querySelectorAll('[id="' + innerMessageId + '"]').forEach((element) => {
-                if (element.innerHTML !== content) {
-                    //console.log("Substituting message with id " + innerMessageId + " and content " + content);
-                    element.innerHTML = content;
-                    substituteMessages(innerMessageId, element);
-                }
-            });
-        });
 }

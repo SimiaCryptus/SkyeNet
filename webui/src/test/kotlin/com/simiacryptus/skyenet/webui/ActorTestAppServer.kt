@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.webui
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
 import com.simiacryptus.skyenet.apps.general.PlanAheadApp
+import com.simiacryptus.skyenet.apps.general.StressTestApp
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.Settings
 import com.simiacryptus.skyenet.core.actors.CodingActor
@@ -103,6 +104,8 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                     parsingModel = ChatModels.GPT4oMini,
                 )
             ),
+            /*StressTestApp*/
+            ChildWebApp("/stressTest", StressTestApp()),
         )
     }
 

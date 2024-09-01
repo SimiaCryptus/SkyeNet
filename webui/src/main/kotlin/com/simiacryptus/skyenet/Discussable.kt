@@ -61,7 +61,7 @@ ${
             history.add(rendered to Role.assistant)
             val tabContent = task.add(rendered)!!
             val feedbackForm = feedbackForm(tabIndex, tabContent, design, history, task)
-            tabContent?.append("\n" + feedbackForm.placeholder)
+            tabContent.append("\n" + feedbackForm.placeholder)
             task.complete()
         } catch (e: Throwable) {
             log.error("Error in discussable", e)
