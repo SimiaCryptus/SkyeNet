@@ -21,6 +21,7 @@ data class Settings(
     val securityAuditEnabled: Boolean = true,
     val performanceAnalysisEnabled: Boolean = true,
     val refactorTaskEnabled: Boolean = true,
+    val foreachTaskEnabled: Boolean = true,
     val autoFix: Boolean = false,
     val enableCommandAutoFix: Boolean = false,
     var commandAutoFixCommands: List<String> = listOf(),
@@ -53,6 +54,10 @@ data class Settings(
                 this,
                 planTask
             ) else throw DisabledTaskException(planTask.taskType)
+            TaskType.ForeachTask -> if (foreachTaskEnabled) ForeachTask(
+                this,
+                planTask
+            ) else throw DisabledTaskException(planTask.taskType)
             else -> throw RuntimeException("Unknown task type: ${planTask.taskType}")
         }
     }
@@ -61,15 +66,15 @@ data class Settings(
         name = "TaskBreakdown",
         resultClass = TaskBreakdownResult::class.java,
         prompt = """
-                |Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
-                |Detail files input and output as well as task execution dependencies.
-                |Creating directories and initializing source control are out of scope.
+ Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
+ Detail files input and output as well as task execution dependencies.
+ Creating directories and initializing source control are out of scope.
                 |
                 |Tasks can be of the following types: 
                 |
                 |${getAvailableTaskTypes().joinToString("\n") { "* ${it.promptSegment()}" }}
                 |
-                |${if (taskPlanningEnabled) "Do not start your plan with a plan to plan!\n" else ""}
+ ${if (taskPlanningEnabled) "Do not start your plan with a plan to plan!\n" else ""}
                 """.trimMargin(),
         model = this.model,
         parsingModel = this.parsingModel,
@@ -90,6 +95,7 @@ data class Settings(
             TaskType.SecurityAudit -> this.securityAuditEnabled
             TaskType.PerformanceAnalysis -> this.performanceAnalysisEnabled
             TaskType.RefactorTask -> this.refactorTaskEnabled
+            TaskType.ForeachTask -> this.foreachTaskEnabled
         }
     }.map { this.getImpl(PlanTask(taskType = it)) }
 }

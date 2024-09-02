@@ -12,5 +12,7 @@ data class PlanTask(
     @Description("Command and arguments (in list form) for the task")
     val command: List<String>? = null,
     @Description("Working directory for the command execution")
-    val workingDir: String? = null
+    val workingDir: String? = null,
+    @Description("List of items to iterate over")
+    val foreachItems: List<String>? = null
 )
