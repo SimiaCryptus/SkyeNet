@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.Discussable
+import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.buildMermaidGraph
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
@@ -84,7 +85,11 @@ class PlanningTask(
         } else {
             val subPlan = taskBreakdownActor.answer(toInput("Expand ${description ?: ""}"), api = agent.api)
             // Execute sub-tasks
-            executeSubTasks(agent, userMessage, subPlan, task)
+            Retryable(agent.ui,task) {
+                val task = agent.ui.newTask(false)
+                executeSubTasks(agent, userMessage, subPlan, task)
+                task.placeholder
+            }
         }
     }
     private fun executeSubTasks(
