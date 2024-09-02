@@ -21,6 +21,7 @@ data class Settings(
     val securityAuditEnabled: Boolean = true,
     val performanceAnalysisEnabled: Boolean = true,
     val refactorTaskEnabled: Boolean = true,
+    val foreachTaskEnabled: Boolean = true,
     val autoFix: Boolean = false,
     val enableCommandAutoFix: Boolean = false,
     var commandAutoFixCommands: List<String> = listOf(),
@@ -50,6 +51,10 @@ data class Settings(
             ) else throw DisabledTaskException(planTask.taskType)
 
             TaskType.RefactorTask -> if (refactorTaskEnabled) RefactorTask(
+                this,
+                planTask
+            ) else throw DisabledTaskException(planTask.taskType)
+            TaskType.ForeachTask -> if (foreachTaskEnabled) ForeachTask(
                 this,
                 planTask
             ) else throw DisabledTaskException(planTask.taskType)
@@ -90,6 +95,7 @@ data class Settings(
             TaskType.SecurityAudit -> this.securityAuditEnabled
             TaskType.PerformanceAnalysis -> this.performanceAnalysisEnabled
             TaskType.RefactorTask -> this.refactorTaskEnabled
+            TaskType.ForeachTask -> this.foreachTaskEnabled
         }
     }.map { this.getImpl(PlanTask(taskType = it)) }
 }

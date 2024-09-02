@@ -13,4 +13,5 @@ enum class TaskType {
     SecurityAudit,
     PerformanceAnalysis,
     RefactorTask,
+    ForeachTask,
 }
