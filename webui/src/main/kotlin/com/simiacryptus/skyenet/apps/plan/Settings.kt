@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.TaskBreakdownResult
 import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.TaskBreakdownResult
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 data class Settings(
@@ -18,6 +18,9 @@ data class Settings(
     val codeReviewEnabled: Boolean = true,
     val testGenerationEnabled: Boolean = true,
     val optimizationEnabled: Boolean = true,
+    val securityAuditEnabled: Boolean = true,
+    val performanceAnalysisEnabled: Boolean = true,
+    val refactorTaskEnabled: Boolean = true,
     val autoFix: Boolean = false,
     val enableCommandAutoFix: Boolean = false,
     var commandAutoFixCommands: List<String> = listOf(),
@@ -36,6 +39,20 @@ data class Settings(
             TaskType.CodeReview -> if (codeReviewEnabled) CodeReviewTask(this, planTask) else throw DisabledTaskException(planTask.taskType)
             TaskType.TestGeneration -> if (testGenerationEnabled) TestGenerationTask(this, planTask) else throw DisabledTaskException(planTask.taskType)
             TaskType.Optimization -> if (optimizationEnabled) CodeOptimizationTask(this, planTask) else throw DisabledTaskException(planTask.taskType)
+            TaskType.SecurityAudit -> if (securityAuditEnabled) SecurityAuditTask(
+                this,
+                planTask
+            ) else throw DisabledTaskException(planTask.taskType)
+
+            TaskType.PerformanceAnalysis -> if (performanceAnalysisEnabled) PerformanceAnalysisTask(
+                this,
+                planTask
+            ) else throw DisabledTaskException(planTask.taskType)
+
+            TaskType.RefactorTask -> if (refactorTaskEnabled) RefactorTask(
+                this,
+                planTask
+            ) else throw DisabledTaskException(planTask.taskType)
             else -> throw RuntimeException("Unknown task type: ${planTask.taskType}")
         }
     }
@@ -70,6 +87,9 @@ data class Settings(
             TaskType.TestGeneration -> this.testGenerationEnabled
             TaskType.Optimization -> this.optimizationEnabled
             TaskType.CommandAutoFix -> this.enableCommandAutoFix
+            TaskType.SecurityAudit -> this.securityAuditEnabled
+            TaskType.PerformanceAnalysis -> this.performanceAnalysisEnabled
+            TaskType.RefactorTask -> this.refactorTaskEnabled
         }
     }.map { this.getImpl(PlanTask(taskType = it)) }
 }

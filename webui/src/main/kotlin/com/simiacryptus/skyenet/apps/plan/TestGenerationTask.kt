@@ -1,26 +1,16 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.jopenai.OpenAIClient
-import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.apps.general.CommandPatchApp
-import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
-import com.simiacryptus.skyenet.core.actors.SimpleActor
-import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
-import java.io.File
 
 class TestGenerationTask(
     settings: Settings,
     planTask: PlanTask
-) : AbstractTask(settings, planTask) {
-    val testGenerationActor by lazy {
-        SimpleActor(
-            name = "TestGeneration",
-            prompt = """
-                |Generate comprehensive unit tests for the provided code files. The tests should:
-                |1. Cover all public methods and functions
-                |2. Include both positive and negative test cases
+) : AbstractAnalysisTask(settings, planTask) {
+    override val actorName: String = "TestGeneration"
+    override val actorPrompt: String = """
+ Generate comprehensive unit tests for the provided code files. The tests should:
+ 1. Cover all public methods and functions
+ 2. Include both positive and negative test cases
                 |3. Test edge cases and boundary conditions
                 |4. Ensure high code coverage
                 |5. Follow best practices for unit testing in the given programming language
@@ -60,12 +50,10 @@ class TestGenerationTask(
                 |        });
                 |    }
                 |}
-                |${TRIPLE_TILDE}
-            """.trimMargin(),
-            model = settings.model,
-            temperature = settings.temperature,
-        )
-    }
+ ${TRIPLE_TILDE}
+    """.trimMargin()
+
+    override fun getAnalysisInstruction(): String = "Generate tests for the following code"
 
     override fun promptSegment(): String {
         return """
@@ -73,49 +61,6 @@ class TestGenerationTask(
             |  ** Specify the files for which tests should be generated
             |  ** List input files/tasks to be examined when generating tests
         """.trimMargin()
-    }
-
-    override fun run(
-        agent: PlanCoordinator,
-        taskId: String,
-        userMessage: String,
-        plan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
-        genState: PlanCoordinator.GenState,
-        task: SessionTask,
-        taskTabs: TabbedDisplay
-    ) {
-        val testResult = testGenerationActor.answer(
-            listOf(
-                userMessage,
-                plan.text,
-                getPriorCode(genState),
-                getInputFileCode(),
-                "Generate tests for the following code:\n${getInputFileCode()}",
-            ).filter { it.isNotBlank() }, api = agent.api
-        )
-        genState.taskResult[taskId] = testResult
-        val outputResult = CommandPatchApp(
-            root = agent.root.toFile(),
-            session = agent.session,
-            settings = PatchApp.Settings(
-                executable = File("dummy"),
-                workingDirectory = agent.root.toFile(),
-                exitCodeOption = "nonzero",
-                additionalInstructions = "",
-                autoFix = agent.settings.autoFix
-            ),
-            api = agent.api as OpenAIClient,
-            model = agent.settings.model,
-            files = agent.files,
-            command = testResult
-        ).run(
-            ui = agent.ui,
-            task = task
-        )
-        task.add(
-            if (outputResult.exitCode == 0) "Test files have been generated and applied successfully."
-            else "Failed to apply generated test files. Exit code: ${outputResult.exitCode}"
-        )
     }
 
     companion object {

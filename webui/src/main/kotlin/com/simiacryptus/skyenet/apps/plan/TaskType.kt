@@ -10,4 +10,7 @@ enum class TaskType {
     CodeReview,
     TestGeneration,
     Optimization,
+    SecurityAudit,
+    PerformanceAnalysis,
+    RefactorTask,
 }
