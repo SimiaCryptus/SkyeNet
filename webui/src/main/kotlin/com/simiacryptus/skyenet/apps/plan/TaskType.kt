@@ -7,4 +7,10 @@ enum class TaskType {
     Documentation,
     RunShellCommand,
     CommandAutoFix,
+    CodeReview,
+    TestGeneration,
+    Optimization,
+    SecurityAudit,
+    PerformanceAnalysis,
+    RefactorTask,
 }

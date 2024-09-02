@@ -15,8 +15,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 class InquiryTask(
     settings: Settings,
-    task: PlanCoordinator.Task
-) : AbstractTask(settings, task) {
+    planTask: PlanTask
+) : AbstractTask(settings, planTask) {
     val inquiryActor by lazy {
         SimpleActor(
             name = "Inquiry",

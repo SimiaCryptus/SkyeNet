@@ -11,8 +11,8 @@ import java.util.concurrent.Semaphore
 
 class DocumentationTask(
     settings: Settings,
-    task: PlanCoordinator.Task
-) : AbstractTask(settings, task) {
+    planTask: PlanTask
+) : AbstractTask(settings, planTask) {
     override fun promptSegment(): String {
         return """
             |Documentation - Generate documentation

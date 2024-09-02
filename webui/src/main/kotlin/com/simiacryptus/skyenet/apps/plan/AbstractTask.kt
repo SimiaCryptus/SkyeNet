@@ -11,12 +11,12 @@ import java.nio.file.Path
 
 abstract class AbstractTask(
     val settings: Settings,
-    val task: PlanCoordinator.Task
+    val planTask: PlanTask
 ) {
-    val outputFiles: List<String>? = task.output_files
-    val inputFiles: List<String>? = task.input_files
-    val taskDependencies: List<String>? = task.task_dependencies
-    val description: String? = task.description
+    val outputFiles: List<String>? = planTask.output_files
+    val inputFiles: List<String>? = planTask.input_files
+    val taskDependencies: List<String>? = planTask.task_dependencies
+    val description: String? = planTask.description
     var state: TaskState? = TaskState.Pending
     val codeFiles = mutableMapOf<Path, String>()
 
