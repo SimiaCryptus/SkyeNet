@@ -4,7 +4,6 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.AgentPatterns
@@ -38,29 +37,18 @@ class PlanCoordinator(
     private val taskBreakdownActor by lazy { settings.planningActor() }
 
     data class TaskBreakdownResult(
-        val tasksByID: Map<String, Task>? = null,
+        val tasksByID: Map<String, PlanTask>? = null,
         val finalTaskID: String? = null,
     )
 
     val pool: ThreadPoolExecutor by lazy { ApplicationServices.clientManager.getPool(session, user) }
 
-    data class Task(
-        val description: String? = null,
-        val taskType: TaskType? = null,
-        var task_dependencies: List<String>? = null,
-        val input_files: List<String>? = null,
-        val output_files: List<String>? = null,
-        var state: AbstractTask.TaskState? = null,
-        @Description("Command and arguments (in list form) for the task")
-        val command: List<String>? = null,
-    )
-
-    val virtualFiles: Array<File> by lazy {
+    val files: Array<File> by lazy {
         FileValidationUtils.expandFileList(root.toFile())
     }
 
     private val codeFiles: Map<Path, String>
-        get() = virtualFiles
+        get() = files
             .filter { it.exists() && it.isFile }
             .filter { !it.name.startsWith(".") }
             .associate { file -> getKey(file) to getValue(file) }
@@ -78,22 +66,16 @@ class PlanCoordinator(
     fun startProcess(userMessage: String) {
         val codeFiles = codeFiles
         val eventStatus = if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
- Files:
- ${codeFiles.keys.joinToString("\n") { "* $it" }}  
-     """.trimMargin() else {
-            """
-            |${
-                virtualFiles.joinToString("\n\n") {
-                    val path = root.relativize(it.toPath())
+            | Files:
+            | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
+             """.trimMargin() else files.joinToString("\n\n") {
+                val path = root.relativize(it.toPath())
                     """
                     |## $path
                     |
                     |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-             """.trimMargin()
-                }
+                    """.trimMargin()
             }
-           """.trimMargin()
-        }
         val task = ui.newTask()
         val toInput = { it: String ->
             listOf(
@@ -171,7 +153,7 @@ class PlanCoordinator(
     fun executePlan(
         task: SessionTask,
         diagramBuffer: StringBuilder?,
-        subTasks: Map<String, Task>,
+        subTasks: Map<String, PlanTask>,
         diagramTask: SessionTask,
         genState: GenState,
         taskIdProcessingQueue: MutableList<String>,
@@ -248,7 +230,7 @@ class PlanCoordinator(
                 try {
                     val dependencies = subTask.task_dependencies?.toMutableSet() ?: mutableSetOf()
                     dependencies += getAllDependencies(
-                        subTask = subTask,
+                        subPlanTask = subTask,
                         subTasks = genState.subTasks,
                         visited = mutableSetOf()
                     )
@@ -299,12 +281,12 @@ class PlanCoordinator(
     }
 
     private fun getAllDependencies(
-        subTask: Task,
-        subTasks: Map<String, Task>,
+        subPlanTask: PlanTask,
+        subTasks: Map<String, PlanTask>,
         visited: MutableSet<String>
     ): List<String> {
-        val dependencies = subTask.task_dependencies?.toMutableList() ?: mutableListOf()
-        subTask.task_dependencies?.forEach { dep ->
+        val dependencies = subPlanTask.task_dependencies?.toMutableList() ?: mutableListOf()
+        subPlanTask.task_dependencies?.forEach { dep ->
             if (dep in visited) return@forEach
             val subTask = subTasks[dep]
             if (subTask != null) {
@@ -318,7 +300,7 @@ class PlanCoordinator(
     companion object {
         val log = LoggerFactory.getLogger(PlanCoordinator::class.java)
 
-        fun executionOrder(tasks: Map<String, Task>): List<String> {
+        fun executionOrder(tasks: Map<String, PlanTask>): List<String> {
             val taskIds: MutableList<String> = mutableListOf()
             val taskMap = tasks.toMutableMap()
             while (taskMap.isNotEmpty()) {
@@ -347,7 +329,7 @@ class PlanCoordinator(
             .replace("\"", "\\\"")
             .let { '"' + it + '"' }
 
-        fun buildMermaidGraph(subTasks: Map<String, Task>): String {
+        fun buildMermaidGraph(subTasks: Map<String, PlanTask>): String {
             val graphBuilder = StringBuilder("graph TD;\n")
             subTasks.forEach { (taskId, task) ->
                 val sanitizedTaskId = sanitizeForMermaid(taskId)
@@ -378,8 +360,8 @@ class PlanCoordinator(
     }
 
     data class GenState(
-        val subTasks: Map<String, Task>,
-        val tasksByDescription: MutableMap<String?, Task> = subTasks.entries.toTypedArray()
+        val subTasks: Map<String, PlanTask>,
+        val tasksByDescription: MutableMap<String?, PlanTask> = subTasks.entries.toTypedArray()
             .associate { it.value.description to it.value }.toMutableMap(),
         val taskIdProcessingQueue: MutableList<String> = executionOrder(subTasks).toMutableList(),
         val taskResult: MutableMap<String, String> = mutableMapOf(),

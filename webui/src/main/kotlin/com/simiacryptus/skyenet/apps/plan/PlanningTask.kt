@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
@@ -16,8 +15,8 @@ import org.slf4j.LoggerFactory
 
 class PlanningTask(
     settings: Settings,
-    task: PlanCoordinator.Task
-) : AbstractTask(settings, task) {
+    planTask: PlanTask
+) : AbstractTask(settings, planTask) {
     val taskBreakdownActor by lazy { settings.planningActor() }
 
     override fun promptSegment(): String {

@@ -12,8 +12,8 @@ import java.util.concurrent.Semaphore
 
 class FileModificationTask(
     settings: Settings,
-    task: PlanCoordinator.Task
-) : AbstractTask(settings, task) {
+    planTask: PlanTask
+) : AbstractTask(settings, planTask) {
     val fileModificationActor by lazy {
         SimpleActor(
             name = "FileModification",

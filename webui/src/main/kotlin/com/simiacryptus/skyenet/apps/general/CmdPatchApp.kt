@@ -17,7 +17,7 @@ class CmdPatchApp(
     session: Session,
     settings: Settings,
     api: OpenAIClient,
-    val virtualFiles: Array<out File>?,
+    val files: Array<out File>?,
     model: OpenAITextModel
 ) : PatchApp(root.toFile(), session, settings, api, model) {
     companion object {
@@ -59,7 +59,7 @@ class CmdPatchApp(
         return codeFiles
     }
 
-    override fun codeFiles() = getFiles(virtualFiles)
+    override fun codeFiles() = getFiles(files)
         .filter { it.toFile().length() < 1024 * 1024 / 2 } // Limit to 0.5MB
         .map { root.toPath().relativize(it) ?: it }.toSet()
 

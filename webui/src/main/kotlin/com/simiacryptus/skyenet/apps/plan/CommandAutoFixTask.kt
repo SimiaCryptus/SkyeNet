@@ -14,8 +14,8 @@ import java.util.concurrent.Semaphore
 
 class CommandAutoFixTask(
     settings: Settings,
-    task: PlanCoordinator.Task
-) : AbstractTask(settings, task) {
+    planTask: PlanTask
+) : AbstractTask(settings, planTask) {
     override fun promptSegment(): String {
         return """
             |CommandAutoFix - Run a command and automatically fix any issues that arise
@@ -46,7 +46,7 @@ class CommandAutoFixTask(
         } else {
             Retryable(agent.ui, task = task) {
                 val task = agent.ui.newTask(false).apply { it.append(placeholder) }
-                val alias = this.task.command?.first()
+                val alias = this.planTask.command?.first()
                 val commandAutoFixCommands = agent.settings.commandAutoFixCommands
                 val cmds = commandAutoFixCommands.filter {
                     File(it).name.startsWith(alias ?: "")
@@ -60,14 +60,14 @@ class CommandAutoFixTask(
                     session = agent.session,
                     settings = PatchApp.Settings(
                         executable = File(executable),
-                        arguments = this.task.command?.drop(1)?.joinToString(" ") ?: "",
+                        arguments = this.planTask.command?.drop(1)?.joinToString(" ") ?: "",
                         workingDirectory = agent.root.toFile(),
                         exitCodeOption = "nonzero",
                         additionalInstructions = "",
                         autoFix = agent.settings.autoFix
                     ),
                     api = agent.api as OpenAIClient,
-                    virtualFiles = agent.virtualFiles,
+                    files = agent.files,
                     model = agent.settings.model,
                 ).run(
                     ui = agent.ui,

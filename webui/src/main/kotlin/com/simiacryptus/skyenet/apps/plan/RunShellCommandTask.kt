@@ -14,20 +14,20 @@ import kotlin.reflect.KClass
 
 class RunShellCommandTask(
     settings: Settings,
-    task: PlanCoordinator.Task
-) : AbstractTask(settings, task) {
+    planTask: PlanTask
+) : AbstractTask(settings, planTask) {
     val shellCommandActor by lazy {
         CodingActor(
             name = "RunShellCommand",
             interpreterClass = ProcessInterpreter::class,
             details = """
-                |Execute the following shell command(s) and provide the output. Ensure to handle any errors or exceptions gracefully.
+ Execute the following shell command(s) and provide the output. Ensure to handle any errors or exceptions gracefully.
                 |
-                |Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
+ Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
                 """.trimMargin(),
             symbols = mapOf(
                 "env" to settings.env,
-                "workingDir" to File(settings.workingDir).absolutePath,
+                "workingDir" to (planTask.workingDir?.let { File(it).absolutePath } ?: File(settings.workingDir).absolutePath),
                 "language" to settings.language,
                 "command" to settings.command,
             ),
@@ -38,9 +38,10 @@ class RunShellCommandTask(
 
     override fun promptSegment(): String {
         return """
-            |RunShellCommand - Execute shell commands and provide the output
-            |  ** Specify the command to be executed, or describe the task to be performed
-            |  ** List input files/tasks to be examined when writing the command
+ RunShellCommand - Execute shell commands and provide the output
+   ** Specify the command to be executed, or describe the task to be performed
+   ** List input files/tasks to be examined when writing the command
+  ** Optionally specify a working directory for the command execution
             """.trimMargin()
     }
 
