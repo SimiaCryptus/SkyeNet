@@ -5,8 +5,10 @@ import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.Discussable
+import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.buildMermaidGraph
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.filterPlan
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -32,7 +34,7 @@ class PlanningTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        plan: PlanCoordinator.TaskBreakdownResult,
         genState: PlanCoordinator.GenState,
         task: SessionTask,
         taskTabs: TabbedDisplay
@@ -41,7 +43,7 @@ class PlanningTask(
         @Suppress("NAME_SHADOWING") val task = agent.ui.newTask(false).apply { task.add(placeholder) }
         fun toInput(s: String) = listOf(
             userMessage,
-            plan.text,
+            JsonUtil.toJson(plan),
             getPriorCode(genState),
             getInputFileCode(),
             s
@@ -58,12 +60,12 @@ class PlanningTask(
                         mapOf(
                             "Text" to MarkdownUtil.renderMarkdown(design.text, ui = agent.ui),
                             "JSON" to MarkdownUtil.renderMarkdown(
-                                "${TRIPLE_TILDE}json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n$TRIPLE_TILDE",
+                                "${TRIPLE_TILDE}json\n${JsonUtil.toJson(filterPlan(design.obj))/*.indent("  ")*/}\n$TRIPLE_TILDE",
                                 ui = agent.ui
                             ),
                             "Diagram" to diagram(
                                 PlanCoordinator.GenState(
-                                    (design.obj.tasksByID ?: emptyMap()).toMutableMap()
+                                    (filterPlan(design.obj).tasksByID ?: emptyMap()).toMutableMap()
                                 ), agent.ui
                             )
                         )
@@ -80,22 +82,26 @@ class PlanningTask(
                 },
             ).call()
             // Execute sub-tasks
-            executeSubTasks(agent, userMessage, subPlan, task)
+            executeSubTasks(agent, userMessage, filterPlan(subPlan.obj), task)
         } else {
             val subPlan = taskBreakdownActor.answer(toInput("Expand ${description ?: ""}"), api = agent.api)
             // Execute sub-tasks
-            executeSubTasks(agent, userMessage, subPlan, task)
+            Retryable(agent.ui,task) {
+                val task = agent.ui.newTask(false)
+                executeSubTasks(agent, userMessage, filterPlan(subPlan.obj), task)
+                task.placeholder
+            }
         }
     }
     private fun executeSubTasks(
         agent: PlanCoordinator,
         userMessage: String,
-        subPlan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        subPlan: PlanCoordinator.TaskBreakdownResult,
         parentTask: SessionTask
     ) {
         val subPlanTask = agent.ui.newTask(false)
         parentTask.add(subPlanTask.placeholder)
-        val subTasks = subPlan.obj.tasksByID ?: emptyMap()
+        val subTasks = subPlan.tasksByID ?: emptyMap()
         val genState = PlanCoordinator.GenState(subTasks.toMutableMap())
         agent.executePlan(
             task = subPlanTask,

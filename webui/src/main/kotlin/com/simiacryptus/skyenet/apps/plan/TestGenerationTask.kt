@@ -8,9 +8,9 @@ class TestGenerationTask(
 ) : AbstractAnalysisTask(settings, planTask) {
     override val actorName: String = "TestGeneration"
     override val actorPrompt: String = """
- Generate comprehensive unit tests for the provided code files. The tests should:
- 1. Cover all public methods and functions
- 2. Include both positive and negative test cases
+                |Generate comprehensive unit tests for the provided code files. The tests should:
+                |1. Cover all public methods and functions
+                |2. Include both positive and negative test cases
                 |3. Test edge cases and boundary conditions
                 |4. Ensure high code coverage
                 |5. Follow best practices for unit testing in the given programming language

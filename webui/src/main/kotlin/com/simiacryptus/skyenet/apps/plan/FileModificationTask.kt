@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.diff.addApplyFileDiffLinks
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
@@ -78,7 +79,7 @@ class FileModificationTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        plan: PlanCoordinator.TaskBreakdownResult,
         genState: PlanCoordinator.GenState,
         task: SessionTask,
         taskTabs: TabbedDisplay
@@ -93,7 +94,7 @@ class FileModificationTask(
             val codeResult = fileModificationActor.answer(
                 listOf(
                     userMessage,
-                    plan.text,
+                    JsonUtil.toJson(plan),
                     getPriorCode(genState),
                     getInputFileCode(),
                     this.description ?: "",
