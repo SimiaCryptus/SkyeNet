@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.apps.general.PatchApp
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.apps.general.CommandPatchApp
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -31,7 +32,7 @@ abstract class AbstractAnalysisTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        plan: PlanCoordinator.TaskBreakdownResult,
         genState: PlanCoordinator.GenState,
         task: SessionTask,
         taskTabs: TabbedDisplay
@@ -39,7 +40,7 @@ abstract class AbstractAnalysisTask(
         val analysisResult = analysisActor.answer(
             listOf(
                 userMessage,
-                plan.text,
+                JsonUtil.toJson(plan),
                 getPriorCode(genState),
                 getInputFileCode(),
                 "${getAnalysisInstruction()}:\n${getInputFileCode()}",

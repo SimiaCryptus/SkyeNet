@@ -20,6 +20,7 @@ class CommandAutoFixTask(
         return """
             |CommandAutoFix - Run a command and automatically fix any issues that arise
             |  ** Specify the command to be executed and any additional instructions
+            |  ** Specify the working directory relative to the root directory
             |  ** Provide the command arguments in the 'commandArguments' field
             |  ** List input files/tasks to be examined when fixing issues
             |  ** Available commands:
@@ -31,7 +32,7 @@ class CommandAutoFixTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        plan: PlanCoordinator.TaskBreakdownResult,
         genState: PlanCoordinator.GenState,
         task: SessionTask,
         taskTabs: TabbedDisplay
@@ -55,13 +56,16 @@ class CommandAutoFixTask(
                 if (executable == null) {
                     throw IllegalArgumentException("Command not found: $alias")
                 }
+                val workingDirectory = (this.planTask.workingDir
+                    ?.let { agent.root.toFile().resolve(it) } ?: agent.root.toFile())
+                    .apply { mkdirs() }
                 val outputResult = CmdPatchApp(
                     root = agent.root,
                     session = agent.session,
                     settings = PatchApp.Settings(
                         executable = File(executable),
                         arguments = this.planTask.command?.drop(1)?.joinToString(" ") ?: "",
-                        workingDirectory = agent.root.toFile(),
+                        workingDirectory = workingDirectory,
                         exitCodeOption = "nonzero",
                         additionalInstructions = "",
                         autoFix = agent.settings.autoFix

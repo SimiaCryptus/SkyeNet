@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
 import com.simiacryptus.skyenet.core.actors.CodingActor
@@ -49,7 +50,7 @@ class RunShellCommandTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        plan: PlanCoordinator.TaskBreakdownResult,
         genState: PlanCoordinator.GenState,
         task: SessionTask,
         taskTabs: TabbedDisplay
@@ -115,7 +116,7 @@ class RunShellCommandTask(
                 codeRequest(
                     listOf<Pair<String, ApiModel.Role>>(
                         userMessage to ApiModel.Role.user,
-                        plan.text to ApiModel.Role.assistant,
+                        JsonUtil.toJson(plan) to ApiModel.Role.assistant,
                         getPriorCode(genState) to ApiModel.Role.assistant,
                         getInputFileCode() to ApiModel.Role.assistant,
                     )

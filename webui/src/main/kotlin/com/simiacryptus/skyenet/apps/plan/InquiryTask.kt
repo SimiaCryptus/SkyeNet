@@ -52,7 +52,7 @@ class InquiryTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        plan: PlanCoordinator.TaskBreakdownResult,
         genState: PlanCoordinator.GenState,
         task: SessionTask,
         taskTabs: TabbedDisplay
@@ -60,7 +60,7 @@ class InquiryTask(
         val toInput = { it: String ->
             listOf<String>(
                 userMessage,
-                plan.text,
+                JsonUtil.toJson(plan),
                 getPriorCode(genState),
                 getInputFileCode(),
                 it,

@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
@@ -38,7 +39,7 @@ class DocumentationTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: ParsedResponse<PlanCoordinator.TaskBreakdownResult>,
+        plan: PlanCoordinator.TaskBreakdownResult,
         genState: PlanCoordinator.GenState,
         task: SessionTask,
         taskTabs: TabbedDisplay
@@ -51,7 +52,7 @@ class DocumentationTask(
             val docResult = documentationGeneratorActor.answer(
                 listOf<String>(
                     userMessage,
-                    plan.text,
+                    JsonUtil.toJson(plan),
                     getPriorCode(genState),
                     getInputFileCode(),
                 ).filter { it.isNotBlank() }, agent.api

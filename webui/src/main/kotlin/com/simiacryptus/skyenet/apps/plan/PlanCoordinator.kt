@@ -93,10 +93,16 @@ class PlanCoordinator(
                     mapOf(
                         "Text" to MarkdownUtil.renderMarkdown(design.text, ui = ui),
                         "JSON" to MarkdownUtil.renderMarkdown(
-                            "${TRIPLE_TILDE}json\n${JsonUtil.toJson(design.obj)}\n$TRIPLE_TILDE",
+                            "${TRIPLE_TILDE}json\n${JsonUtil.toJson(filterPlan(design.obj))}\n$TRIPLE_TILDE",
                             ui = ui
                         ),
-                        "Diagram" to MarkdownUtil.renderMarkdown("```mermaid\n"+buildMermaidGraph((design.obj.tasksByID ?: emptyMap()).toMutableMap())+"\n```\n")
+                        "Diagram" to MarkdownUtil.renderMarkdown(
+                            "```mermaid\n" + buildMermaidGraph(
+                                (filterPlan(
+                                    design.obj
+                                ).tasksByID ?: emptyMap()).toMutableMap()
+                            ) + "\n```\n"
+                        )
                     )
                 )
             },
@@ -111,17 +117,17 @@ class PlanCoordinator(
             },
         ).call()
 
-        initPlan(highLevelPlan, userMessage, task)
+        initPlan(filterPlan(highLevelPlan.obj), userMessage, task)
     }
 
     fun initPlan(
-        plan: ParsedResponse<TaskBreakdownResult>,
+        plan: TaskBreakdownResult,
         userMessage: String,
         task: SessionTask
     ) {
         try {
             val tasksByID =
-                plan.obj.tasksByID?.entries?.toTypedArray()?.associate { it.key to it.value } ?: mapOf()
+                filterPlan(plan).tasksByID?.entries?.toTypedArray()?.associate { it.key to it.value } ?: mapOf()
             val genState = GenState(tasksByID.toMutableMap())
             val diagramTask = ui.newTask(false).apply { task.add(placeholder) }
             val diagramBuffer =
@@ -159,7 +165,7 @@ class PlanCoordinator(
         taskIdProcessingQueue: MutableList<String>,
         pool: ThreadPoolExecutor,
         userMessage: String,
-        plan: ParsedResponse<TaskBreakdownResult>
+        plan: TaskBreakdownResult
     ) {
         val taskTabs = object : TabbedDisplay(ui.newTask(false).apply { task.add(placeholder) }) {
             override fun renderTabButtons(): String {
@@ -357,6 +363,22 @@ class PlanCoordinator(
             return graphBuilder.toString()
         }
 
+        fun filterPlan(obj: TaskBreakdownResult): TaskBreakdownResult {
+            val tasksByID = obj.tasksByID?.filter { (k, v) ->
+                when {
+                    v.taskType == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() -> false
+                    else -> true
+                }
+            } ?: mapOf()
+            if (tasksByID.size == obj.tasksByID?.size) return obj
+            return filterPlan(obj.copy(
+                tasksByID = tasksByID.mapValues { (_, v) ->
+                    v.copy(
+                        task_dependencies = v.task_dependencies?.filter { it in tasksByID.keys }
+                    )
+                }
+            ))
+        }
     }
 
     data class GenState(
