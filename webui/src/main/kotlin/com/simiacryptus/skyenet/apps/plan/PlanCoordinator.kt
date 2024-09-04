@@ -12,6 +12,7 @@ import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.Companion.planningActor
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
@@ -251,64 +252,65 @@ class PlanCoordinator(
             planSettings: PlanSettings,
             api: API
         ): TaskBreakdownInterface {
-            val toInput = { it: String ->
-                listOf(
-                    if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
-                                    | Files:
-                                    | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
-                                     """.trimMargin() else {
-                        files.joinToString("\n\n") {
-                            val path = root.relativize(it.toPath())
-                            """
-                            |## $path
-                            |
-                            |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-                            """.trimMargin()
-                        }
-                    },
-                    it
-                )
-            }
+            val toInput = inputFn(codeFiles, files, root)
             return filterPlan(
                 Discussable(
                     task = task,
                     heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
                     userMessage = { userMessage },
-                    initialResponse = { it: String ->
+                    initialResponse = {
                         planningActor(planSettings).answer(
                             toInput(it),
                             api = api
                         ) as ParsedResponse<TaskBreakdownInterface>
                     },
-                    outputFn = { design: ParsedResponse<TaskBreakdownInterface> ->
-                        AgentPatterns.displayMapInTabs(
-                            mapOf(
-                                "Text" to MarkdownUtil.renderMarkdown(design.text, ui = ui),
-                                "JSON" to MarkdownUtil.renderMarkdown(
-                                    "${TRIPLE_TILDE}json\n${JsonUtil.toJson(filterPlan(design.obj))}\n$TRIPLE_TILDE",
-                                    ui = ui
-                                ),
-                                "Diagram" to MarkdownUtil.renderMarkdown(
-                                    "```mermaid\n" + buildMermaidGraph(
-                                        (filterPlan(
-                                            design.obj
-                                        ).tasksByID ?: emptyMap()).toMutableMap()
-                                    ) + "\n```\n"
-                                )
-                            )
-                        )
-                    },
+                    outputFn = { render(
+                        withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                            prompt = userMessage,
+                            plan = it.obj,
+                            planText = JsonUtil.toJson(it)
+                        ),
+                        ui = ui
+                    ) },
                     ui = ui,
                     reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+                        val messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                            .toTypedArray<ApiModel.ChatMessage>()
                         planningActor(planSettings).respond(
-                            messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                                .toTypedArray<ApiModel.ChatMessage>()),
+                            messages = messages,
                             input = toInput(userMessage),
                             api = api
                         ) as ParsedResponse<TaskBreakdownInterface>
                     },
                 ).call().obj
             )
+        }
+
+
+        fun inputFn(
+            codeFiles: Map<Path, String>,
+            files: Array<File>,
+            root: Path
+        ): (String) -> List<String> {
+            val toInput = { it: String ->
+                listOf(
+                    if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
+                                            | Files:
+                                            | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
+                                             """.trimMargin() else {
+                        files.joinToString("\n\n") {
+                            val path = root.relativize(it.toPath())
+                            """
+                                    |## $path
+                                    |
+                                    |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
+                                    """.trimMargin()
+                        }
+                    },
+                    it
+                )
+            }
+            return toInput
         }
     }
 

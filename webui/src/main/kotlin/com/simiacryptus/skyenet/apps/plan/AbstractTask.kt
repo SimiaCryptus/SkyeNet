@@ -11,6 +11,7 @@ import java.io.File
 import java.nio.file.Path
 import java.nio.file.Files
 import java.nio.file.FileSystems
+import kotlin.streams.asSequence
 
 abstract class AbstractTask(
     val planSettings: PlanSettings,
@@ -38,12 +39,12 @@ abstract class AbstractTask(
         } ?: ""
 
     fun getInputFileCode(): String = ((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf()))
-        .flatMap { pattern ->
+        .flatMap { pattern: String ->
             val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
-            Files.walk(root)
+            Files.walk(root).asSequence()
                 .filter { path ->
                     matcher.matches(root.relativize(path)) &&
-                    FileValidationUtils.isLLMIncludable(path.toFile())
+                            FileValidationUtils.isLLMIncludable(path.toFile())
                 }
                 .map { path ->
                     root.relativize(path).toString()

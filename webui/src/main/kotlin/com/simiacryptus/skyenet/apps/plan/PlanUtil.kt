@@ -1,6 +1,10 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import java.util.*
@@ -18,6 +22,32 @@ object PlanUtil {
             |$TRIPLE_TILDE
             """.trimMargin(),
         ui = ui
+    )
+
+    data class TaskBreakdownWithPrompt(
+        val prompt: String,
+        val plan: TaskBreakdownInterface,
+        val planText: String
+    )
+
+    fun render(
+        withPrompt: TaskBreakdownWithPrompt,
+        ui: ApplicationInterface
+    ) = AgentPatterns.displayMapInTabs(
+        mapOf(
+            "Text" to MarkdownUtil.renderMarkdown(withPrompt.planText, ui = ui),
+            "JSON" to MarkdownUtil.renderMarkdown(
+                "${TRIPLE_TILDE}json\n${JsonUtil.toJson(withPrompt)}\n$TRIPLE_TILDE",
+                ui = ui
+            ),
+            "Diagram" to MarkdownUtil.renderMarkdown(
+                "```mermaid\n" + buildMermaidGraph(
+                    (filterPlan(
+                        withPrompt.plan
+                    ).tasksByID ?: emptyMap()).toMutableMap()
+                ) + "\n```\n", ui = ui
+            )
+        )
     )
 
     fun executionOrder(tasks: Map<String, PlanningTask.PlanTask>): List<String> {
