@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.apps.plan
 import org.slf4j.LoggerFactory
 
 class CodeOptimizationTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractAnalysisTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName = "CodeOptimization"
     override val actorPrompt = """
  Analyze the provided code and suggest optimizations to improve code quality. Focus exclusively on:

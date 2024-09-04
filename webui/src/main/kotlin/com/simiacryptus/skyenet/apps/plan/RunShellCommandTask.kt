@@ -4,8 +4,8 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.CodingActor
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -14,9 +14,9 @@ import java.util.concurrent.Semaphore
 import kotlin.reflect.KClass
 
 class RunShellCommandTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractTask(planSettings, planTask) {
     val shellCommandActor by lazy {
         CodingActor(
             name = "RunShellCommand",
@@ -27,13 +27,13 @@ class RunShellCommandTask(
  Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
                 """.trimMargin(),
             symbols = mapOf(
-                "env" to settings.env,
-                "workingDir" to (planTask.workingDir?.let { File(it).absolutePath } ?: File(settings.workingDir).absolutePath),
-                "language" to settings.language,
-                "command" to settings.command,
+                "env" to planSettings.env,
+                "workingDir" to (planTask.workingDir?.let { File(it).absolutePath } ?: File(planSettings.workingDir).absolutePath),
+                "language" to planSettings.language,
+                "command" to planSettings.command,
             ),
-            model = settings.model,
-            temperature = settings.temperature,
+            model = planSettings.model,
+            temperature = planSettings.temperature,
         )
     }
 
@@ -42,7 +42,7 @@ class RunShellCommandTask(
  RunShellCommand - Execute shell commands and provide the output
    ** Specify the command to be executed, or describe the task to be performed
    ** List input files/tasks to be examined when writing the command
-  ** Optionally specify a working directory for the command execution
+   ** Optionally specify a working directory for the command execution
             """.trimMargin()
     }
 
@@ -50,12 +50,12 @@ class RunShellCommandTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: PlanCoordinator.TaskBreakdownResult,
-        genState: PlanCoordinator.GenState,
+        plan: TaskBreakdownInterface,
+        planProcessingState: PlanProcessingState,
         task: SessionTask,
         taskTabs: TabbedDisplay
     ) {
-        if (!agent.settings.shellCommandTaskEnabled) throw RuntimeException("Shell command task is disabled")
+        if (!agent.planSettings.shellCommandTaskEnabled) throw RuntimeException("Shell command task is disabled")
         val semaphore = Semaphore(0)
         object : CodingAgent<ProcessInterpreter>(
             api = agent.api,
@@ -95,7 +95,7 @@ class RunShellCommandTask(
                 response: CodingActor.CodeResult
             ): String {
                 return ui.hrefLink("Accept", "href-link play-button") {
-                    genState.taskResult[taskId] = response.let {
+                    planProcessingState.taskResult[taskId] = response.let {
                         """
                         |## Shell Command Output
                         |
@@ -114,10 +114,10 @@ class RunShellCommandTask(
         }.apply<CodingAgent<ProcessInterpreter>> {
             start(
                 codeRequest(
-                    listOf<Pair<String, ApiModel.Role>>(
+                    listOf(
                         userMessage to ApiModel.Role.user,
                         JsonUtil.toJson(plan) to ApiModel.Role.assistant,
-                        getPriorCode(genState) to ApiModel.Role.assistant,
+                        getPriorCode(planProcessingState) to ApiModel.Role.assistant,
                         getInputFileCode() to ApiModel.Role.assistant,
                     )
                 )
@@ -126,9 +126,9 @@ class RunShellCommandTask(
         try {
             semaphore.acquire()
         } catch (e: Throwable) {
-            PlanCoordinator.log.warn("Error", e)
+            log.warn("Error", e)
         }
-        PlanCoordinator.log.debug("Completed shell command: $taskId")
+        log.debug("Completed shell command: $taskId")
     }
 
     companion object {

@@ -2,26 +2,25 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import java.io.File
 import java.nio.file.Path
+import java.nio.file.Files
+import java.nio.file.FileSystems
 
 abstract class AbstractTask(
-    val settings: Settings,
+    val planSettings: PlanSettings,
     val planTask: PlanTask
 ) {
-    val outputFiles: List<String>? = planTask.output_files
-    val inputFiles: List<String>? = planTask.input_files
-    val taskDependencies: List<String>? = planTask.task_dependencies
-    val description: String? = planTask.description
     var state: TaskState? = TaskState.Pending
     val codeFiles = mutableMapOf<Path, String>()
 
     open val root: Path
-        get() = File(settings.workingDir).toPath()
+        get() = File(planSettings.workingDir).toPath()
 
     enum class TaskState {
         Pending,
@@ -29,27 +28,42 @@ abstract class AbstractTask(
         Completed,
     }
 
-    fun getPriorCode(genState: PlanCoordinator.GenState) = taskDependencies?.joinToString("\n\n\n") { dependency ->
-        """
+    fun getPriorCode(planProcessingState: PlanProcessingState) =
+        planTask.task_dependencies?.joinToString("\n\n\n") { dependency ->
+            """
         |# $dependency
         |
-        |${genState.taskResult[dependency] ?: ""}
+        |${planProcessingState.taskResult[dependency] ?: ""}
         """.trimMargin()
-    } ?: ""
+        } ?: ""
 
-
-    fun getInputFileCode(): String = ((inputFiles ?: listOf()) + (outputFiles ?: listOf()))
-        .filter { FileValidationUtils.isLLMIncludable(root.toFile().resolve(it)) }.joinToString("\n\n") {
+    fun getInputFileCode(): String = ((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf()))
+        .flatMap { pattern ->
+            val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
+            Files.walk(root)
+                .filter { path ->
+                    matcher.matches(root.relativize(path)) &&
+                    FileValidationUtils.isLLMIncludable(path.toFile())
+                }
+                .map { path ->
+                    root.relativize(path).toString()
+                }
+                .toList()
+        }
+        .distinct()
+        .sortedBy { it }
+        .joinToString("\n\n") { relativePath ->
+            val file = root.resolve(relativePath).toFile()
             try {
                 """
-                |# $it
+                |# $relativePath
                 |
                 |$TRIPLE_TILDE
-                |${codeFiles[File(it).toPath()] ?: root.resolve(it).toFile().readText()}
+                |${codeFiles[file.toPath()] ?: file.readText()}
                 |$TRIPLE_TILDE
                 """.trimMargin()
             } catch (e: Throwable) {
-                PlanCoordinator.log.warn("Error: root=$root    ", e)
+                log.warn("Error reading file: $relativePath", e)
                 ""
             }
         }
@@ -62,13 +76,12 @@ abstract class AbstractTask(
                 textHandle.set("""<div class="cmd-button">Accepted</div>""")
                 footerTask.complete()
             } catch (e: Throwable) {
-                PlanCoordinator.log.warn("Error", e)
+                log.warn("Error", e)
             }
             fn()
         })!!
         return footerTask.placeholder
     }
-
 
     abstract fun promptSegment(): String
 
@@ -76,9 +89,13 @@ abstract class AbstractTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: PlanCoordinator.TaskBreakdownResult,
-        genState: PlanCoordinator.GenState,
+        plan: TaskBreakdownInterface,
+        planProcessingState: PlanProcessingState,
         task: SessionTask,
         taskTabs: TabbedDisplay
     )
+
+    companion object {
+        private val log = org.slf4j.LoggerFactory.getLogger(AbstractTask::class.java)
+    }
 }

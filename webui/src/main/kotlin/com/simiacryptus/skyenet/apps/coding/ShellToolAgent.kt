@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
@@ -374,7 +375,7 @@ abstract class ShellToolAgent<T : Interpreter>(
                                 actor.CodeResultImpl(
                                     messages = actor.chatMessages(codeRequest),
                                     input = codeRequest,
-                                    api = super.api as OpenAIClient,
+                                    api = super.api as ChatClient,
                                     givenCode = lastUserMessage.removePrefix("```").removeSuffix("```")
                                 )
                             } else {
@@ -425,7 +426,7 @@ abstract class ShellToolAgent<T : Interpreter>(
                                     actor.CodeResultImpl(
                                         messages = actor.chatMessages(codeRequest),
                                         input = codeRequest,
-                                        api = super.api as OpenAIClient,
+                                        api = super.api as ChatClient,
                                         givenCode = lastUserMessage.removePrefix("```").removeSuffix("```")
                                     )
                                 } else {

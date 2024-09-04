@@ -1,20 +1,21 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.apps.general.CommandPatchApp
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import org.slf4j.LoggerFactory
 import java.io.File
 
 abstract class AbstractAnalysisTask(
-    settings: Settings,
+    planSettings: PlanSettings,
     planTask: PlanTask
-) : AbstractTask(settings, planTask) {
+) : AbstractTask(planSettings, planTask) {
 
     abstract val actorName: String
     abstract val actorPrompt: String
@@ -23,8 +24,8 @@ abstract class AbstractAnalysisTask(
         SimpleActor(
             name = actorName,
             prompt = actorPrompt,
-            model = settings.model,
-            temperature = settings.temperature,
+            model = planSettings.model,
+            temperature = planSettings.temperature,
         )
     }
 
@@ -32,8 +33,8 @@ abstract class AbstractAnalysisTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: PlanCoordinator.TaskBreakdownResult,
-        genState: PlanCoordinator.GenState,
+        plan: TaskBreakdownInterface,
+        planProcessingState: PlanProcessingState,
         task: SessionTask,
         taskTabs: TabbedDisplay
     ) {
@@ -41,12 +42,12 @@ abstract class AbstractAnalysisTask(
             listOf(
                 userMessage,
                 JsonUtil.toJson(plan),
-                getPriorCode(genState),
+                getPriorCode(planProcessingState),
                 getInputFileCode(),
                 "${getAnalysisInstruction()}:\n${getInputFileCode()}",
             ).filter { it.isNotBlank() }, api = agent.api
         )
-        genState.taskResult[taskId] = analysisResult
+        planProcessingState.taskResult[taskId] = analysisResult
         applyChanges(agent, task, analysisResult)
     }
 
@@ -61,10 +62,10 @@ abstract class AbstractAnalysisTask(
                 workingDirectory = agent.root.toFile(),
                 exitCodeOption = "nonzero",
                 additionalInstructions = "",
-                autoFix = agent.settings.autoFix
+                autoFix = agent.planSettings.autoFix
             ),
-            api = agent.api as OpenAIClient,
-            model = agent.settings.model,
+            api = agent.api as ChatClient,
+            model = agent.planSettings.model,
             files = agent.files,
             command = analysisResult
         ).run(

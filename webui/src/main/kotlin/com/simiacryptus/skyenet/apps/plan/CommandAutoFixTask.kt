@@ -1,11 +1,11 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
@@ -13,9 +13,9 @@ import java.io.File
 import java.util.concurrent.Semaphore
 
 class CommandAutoFixTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractTask(planSettings, planTask) {
     override fun promptSegment(): String {
         return """
             |CommandAutoFix - Run a command and automatically fix any issues that arise
@@ -24,7 +24,7 @@ class CommandAutoFixTask(
             |  ** Provide the command arguments in the 'commandArguments' field
             |  ** List input files/tasks to be examined when fixing issues
             |  ** Available commands:
-            |    ${settings.commandAutoFixCommands.joinToString("\n    ") { "* ${File(it).name}" }}
+            |    ${planSettings.commandAutoFixCommands.joinToString("\n    ") { "* ${File(it).name}" }}
         """.trimMargin()
     }
 
@@ -32,8 +32,8 @@ class CommandAutoFixTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: PlanCoordinator.TaskBreakdownResult,
-        genState: PlanCoordinator.GenState,
+        plan: TaskBreakdownInterface,
+        planProcessingState: PlanProcessingState,
         task: SessionTask,
         taskTabs: TabbedDisplay
     ) {
@@ -41,14 +41,14 @@ class CommandAutoFixTask(
         val onComplete = {
             semaphore.release()
         }
-        if (!agent.settings.enableCommandAutoFix) {
+        if (!agent.planSettings.enableCommandAutoFix) {
             task.add("Command Auto Fix is disabled")
             onComplete()
         } else {
             Retryable(agent.ui, task = task) {
                 val task = agent.ui.newTask(false).apply { it.append(placeholder) }
                 val alias = this.planTask.command?.first()
-                val commandAutoFixCommands = agent.settings.commandAutoFixCommands
+                val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
                 val cmds = commandAutoFixCommands.filter {
                     File(it).name.startsWith(alias ?: "")
                 }
@@ -68,18 +68,18 @@ class CommandAutoFixTask(
                         workingDirectory = workingDirectory,
                         exitCodeOption = "nonzero",
                         additionalInstructions = "",
-                        autoFix = agent.settings.autoFix
+                        autoFix = agent.planSettings.autoFix
                     ),
-                    api = agent.api as OpenAIClient,
+                    api = agent.api as ChatClient,
                     files = agent.files,
-                    model = agent.settings.model,
+                    model = agent.planSettings.model,
                 ).run(
                     ui = agent.ui,
                     task = task
                 )
-                genState.taskResult[taskId] = "Command Auto Fix completed"
+                planProcessingState.taskResult[taskId] = "Command Auto Fix completed"
                 task.add(if (outputResult.exitCode == 0) {
-                    if (agent.settings.autoFix) {
+                    if (agent.planSettings.autoFix) {
                         taskTabs.selectedTab += 1
                         taskTabs.update()
                         onComplete()
@@ -114,9 +114,9 @@ class CommandAutoFixTask(
         try {
             semaphore.acquire()
         } catch (e: Throwable) {
-            PlanCoordinator.log.warn("Error", e)
+            log.warn("Error", e)
         }
-        PlanCoordinator.log.debug("Completed command auto fix: $taskId")
+        log.debug("Completed command auto fix: $taskId")
     }
 
     companion object {

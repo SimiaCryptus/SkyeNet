@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
-import com.simiacryptus.skyenet.apps.plan.Settings
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
@@ -16,7 +16,7 @@ class PlanAheadApp(
     applicationName: String = "Task Planning v1.1",
     path: String = "/taskDev",
     val rootFile: File?,
-    val settings: Settings,
+    val planSettings: PlanSettings,
     val model: OpenAITextModel,
     val parsingModel: OpenAITextModel,
     val domainName : String = "localhost",
@@ -27,10 +27,9 @@ class PlanAheadApp(
     showMenubar = showMenubar,
 ) {
     override val root: File get() = rootFile ?: super.root
-    override val settingsClass: Class<*> get() = Settings::class.java
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> initSettings(session: Session): T = settings.let {
+    override fun <T : Any> initSettings(session: Session): T = planSettings.let {
         if (null == rootFile) it.copy(workingDir = root.absolutePath) else
         it
     } as T
@@ -43,8 +42,8 @@ class PlanAheadApp(
         api: API
     ) {
         try {
-            val settings = getSettings<Settings>(session, user)
-            if (api is ClientManager.MonitoredClient) api.budget = settings?.budget ?: 2.0
+            val planSettings = getSettings<PlanSettings>(session, user)
+            if (api is ClientManager.MonitoredClient) api.budget = planSettings?.budget ?: 2.0
             PlanCoordinator(
                 user = user,
                 session = session,
@@ -52,7 +51,7 @@ class PlanAheadApp(
                 api = api,
                 ui = ui,
                 root = (rootFile ?: dataStorage.getDataDir(user, session)).toPath(),
-                settings = settings!!
+                planSettings = planSettings!!
             ).startProcess(userMessage = userMessage)
         } catch (e: Throwable) {
             ui.newTask().error(ui, e)

@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
@@ -15,7 +16,7 @@ abstract class BaseActor<I, R>(
 ) {
     abstract fun respond(input: I, api: API, vararg messages: ApiModel.ChatMessage): R
     open fun response(vararg input: ApiModel.ChatMessage, model: OpenAIModel = this.model, api: API) =
-        (api as OpenAIClient).chat(
+        (api as ChatClient).chat(
             ApiModel.ChatRequest(
                 messages = ArrayList(input.toList()),
                 temperature = temperature,

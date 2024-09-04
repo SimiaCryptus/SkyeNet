@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAITextModel
@@ -109,7 +110,7 @@ open class CodingAgent<T : Interpreter>(
                 actor.CodeResultImpl(
                     messages = actor.chatMessages(codeRequest),
                     input = codeRequest,
-                    api = api as OpenAIClient,
+                    api = api as ChatClient,
                     givenCode = lastUserMessage.removePrefix("```").removeSuffix("```")
                 )
             } else {

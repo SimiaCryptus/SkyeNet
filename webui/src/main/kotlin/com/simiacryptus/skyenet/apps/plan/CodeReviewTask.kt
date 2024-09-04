@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.apps.plan
 import org.slf4j.LoggerFactory
 
 class CodeReviewTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractAnalysisTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName: String = "CodeReview"
     override val actorPrompt: String = """
  Perform a comprehensive code review for the provided code files. Analyze the code for:

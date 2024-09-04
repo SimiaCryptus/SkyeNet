@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
@@ -11,9 +11,9 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
 
 class DocumentationTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractTask(planSettings, planTask) {
     override fun promptSegment(): String {
         return """
             |Documentation - Generate documentation
@@ -30,8 +30,8 @@ class DocumentationTask(
                 |Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
                 |Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
                 """.trimMargin(),
-            model = settings.model,
-            temperature = settings.temperature,
+            model = planSettings.model,
+            temperature = planSettings.temperature,
         )
     }
 
@@ -39,8 +39,8 @@ class DocumentationTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: PlanCoordinator.TaskBreakdownResult,
-        genState: PlanCoordinator.GenState,
+        plan: TaskBreakdownInterface,
+        planProcessingState: PlanProcessingState,
         task: SessionTask,
         taskTabs: TabbedDisplay
     ) {
@@ -53,12 +53,12 @@ class DocumentationTask(
                 listOf<String>(
                     userMessage,
                     JsonUtil.toJson(plan),
-                    getPriorCode(genState),
+                    getPriorCode(planProcessingState),
                     getInputFileCode(),
                 ).filter { it.isNotBlank() }, agent.api
             )
-            genState.taskResult[taskId] = docResult
-            if (agent.settings.autoFix) {
+            planProcessingState.taskResult[taskId] = docResult
+            if (agent.planSettings.autoFix) {
                 taskTabs.selectedTab += 1
                 taskTabs.update()
                 task.complete()
@@ -80,7 +80,7 @@ class DocumentationTask(
         try {
             semaphore.acquire()
         } catch (e: Throwable) {
-            PlanCoordinator.log.warn("Error", e)
+            log.warn("Error", e)
         }
     }
 

@@ -4,7 +4,7 @@ import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
 
 class FileModificationTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractTask(planSettings, planTask) {
     val fileModificationActor by lazy {
         SimpleActor(
             name = "FileModification",
@@ -62,8 +62,8 @@ class FileModificationTask(
                 |}
                 |${TRIPLE_TILDE}
                 """.trimMargin(),
-            model = settings.model,
-            temperature = settings.temperature,
+            model = planSettings.model,
+            temperature = planSettings.temperature,
         )
     }
 
@@ -79,12 +79,12 @@ class FileModificationTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: PlanCoordinator.TaskBreakdownResult,
-        genState: PlanCoordinator.GenState,
+        plan: TaskBreakdownInterface,
+        planProcessingState: PlanProcessingState,
         task: SessionTask,
         taskTabs: TabbedDisplay
     ) {
-        if(((inputFiles ?: listOf()) + (outputFiles ?: listOf())).isEmpty()) {
+        if(((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf())).isEmpty()) {
             task.complete("No input files specified")
             return
         }
@@ -95,13 +95,13 @@ class FileModificationTask(
                 listOf(
                     userMessage,
                     JsonUtil.toJson(plan),
-                    getPriorCode(genState),
+                    getPriorCode(planProcessingState),
                     getInputFileCode(),
-                    this.description ?: "",
+                    this.planTask.description ?: "",
                 ).filter { it.isNotBlank() }, agent.api
             )
-            genState.taskResult[taskId] = codeResult
-            if (agent.settings.autoFix) {
+            planProcessingState.taskResult[taskId] = codeResult
+            if (agent.planSettings.autoFix) {
                 val diffLinks = agent.ui.socketManager!!.addApplyFileDiffLinks(
                     root = agent.root,
                     response = codeResult,
@@ -144,7 +144,7 @@ class FileModificationTask(
         try {
             semaphore.acquire()
         } catch (e: Throwable) {
-            PlanCoordinator.log.warn("Error", e)
+            log.warn("Error", e)
         }
     }
 

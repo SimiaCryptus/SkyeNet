@@ -4,9 +4,9 @@ import org.slf4j.LoggerFactory
 
 
 class PerformanceAnalysisTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractAnalysisTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName = "PerformanceAnalysis"
     override val actorPrompt = """
 Analyze the provided code for performance issues and bottlenecks. Focus exclusively on:

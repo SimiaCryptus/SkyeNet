@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.HttpClientManager
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.APIProvider
@@ -24,14 +25,14 @@ open class ClientManager {
 
     private data class SessionKey(val session: Session, val user: User?)
 
-    private val clientCache = mutableMapOf<SessionKey, OpenAIClient>()
+    private val clientCache = mutableMapOf<SessionKey, ChatClient>()
     private val poolCache = mutableMapOf<SessionKey, ThreadPoolExecutor>()
     private val scheduledPoolCache = mutableMapOf<SessionKey, ListeningScheduledExecutorService>()
 
     fun getClient(
         session: Session,
         user: User?,
-    ): OpenAIClient {
+    ): ChatClient {
         log.debug("Fetching client for session: {}, user: {}", session, user)
         val key = SessionKey(session, user)
         return clientCache.getOrPut(key) { createClient(session, user)!! }
@@ -90,7 +91,7 @@ open class ClientManager {
     protected open fun createClient(
         session: Session,
         user: User?,
-    ): OpenAIClient? {
+    ): ChatClient? {
         log.debug("Creating client for session: {}, user: {}", session, user)
         val sessionDir = dataStorageFactory(dataStorageRoot).getDataDir(user, session).apply { mkdirs() }
         if (user != null) {
@@ -133,7 +134,7 @@ open class ClientManager {
         scheduledPool: ListeningScheduledExecutorService = HttpClientManager.scheduledPool,
         workPool: ThreadPoolExecutor = HttpClientManager.workPool,
         client: CloseableHttpClient = HttpClientManager.createHttpClient()
-    ) : OpenAIClient(
+    ) : ChatClient(
         key = key,
         logLevel = Level.DEBUG,
         logStreams = listOfNotNull(

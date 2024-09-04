@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
@@ -76,7 +77,7 @@ open class ParsedActor<T : Any>(
           """.trimMargin()
         for (i in 0 until deserializerRetries) {
             try {
-                val content = (api as OpenAIClient).chat(
+                val content = (api as ChatClient).chat(
                     ApiModel.ChatRequest(
                         messages = listOf(
                             ApiModel.ChatMessage(role = ApiModel.Role.system, content = prompt.toContentList()),

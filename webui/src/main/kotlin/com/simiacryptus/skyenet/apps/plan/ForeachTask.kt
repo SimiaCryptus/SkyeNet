@@ -1,14 +1,17 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.webui.session.SessionTask
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import org.slf4j.LoggerFactory
 
 class ForeachTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractTask(planSettings, planTask) {
 
     override fun promptSegment(): String {
         return """
@@ -22,27 +25,37 @@ ForeachTask - Execute a task for each item in a list
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: PlanCoordinator.TaskBreakdownResult,
-        genState: PlanCoordinator.GenState,
+        plan: TaskBreakdownInterface,
+        planProcessingState: PlanProcessingState,
         task: SessionTask,
         taskTabs: TabbedDisplay
     ) {
         val items = planTask.foreachItems ?: throw RuntimeException("No items specified for ForeachTask")
+        val subTasks = planTask.subTasksByID ?: throw RuntimeException("No subTasks specified for ForeachTask")
+        val subPlanTask = agent.ui.newTask(false)
+        task.add(subPlanTask.placeholder)
+        
         items.forEachIndexed { index, item ->
-            val subTask = agent.ui.newTask(false)
-            task.add(subTask.placeholder)
-            
-            // Create a new PlanTask for each item, copying the original task's properties
-            val itemTask = planTask.copy(
-                description = "${planTask.description} - Item $index: $item",
-                foreachItems = null // Remove the foreach items to prevent infinite recursion
+            val itemSubTasks = subTasks.mapValues { (_, subTaskPlan) ->
+                subTaskPlan.copy(description = "${subTaskPlan.description} - Item $index: $item")
+            }
+            val itemPlanProcessingState = PlanProcessingState(itemSubTasks.toMutableMap())
+            agent.executePlan(
+                task = subPlanTask,
+                diagramBuffer = subPlanTask.add(diagram(agent.ui, itemPlanProcessingState.subTasks)),
+                subTasks = itemSubTasks,
+                diagramTask = subPlanTask,
+                planProcessingState = itemPlanProcessingState,
+                taskIdProcessingQueue = executionOrder(itemSubTasks).toMutableList(),
+                pool = agent.pool,
+                userMessage = "$userMessage\nProcessing item $index: $item",
+                plan = object : TaskBreakdownInterface {
+                    override val tasksByID = itemSubTasks
+                    override val finalTaskID = null
+                }
             )
-            
-            // Execute the task for this item
-            val subTaskImpl = settings.getImpl(itemTask)
-            subTaskImpl.run(agent, "$taskId-$index", userMessage, plan, genState, subTask, taskTabs)
         }
-        task.complete("Completed ForeachTask for ${items.size} items")
+        subPlanTask.complete("Completed ForeachTask for ${items.size} items")
     }
 
     companion object {
