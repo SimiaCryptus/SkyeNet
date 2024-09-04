@@ -5,8 +5,6 @@ import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
-import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
@@ -25,6 +23,7 @@ import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.jopenai.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
@@ -76,6 +75,26 @@ class PlanCoordinator(
         )
         executePlan(plan, task, userMessage)
     }
+    fun executeTaskBreakdownWithPrompt(jsonInput: String) {
+        val task = ui.newTask()
+        try {
+            val taskBreakdownWithPrompt = JsonUtil.fromJson<PlanUtil.TaskBreakdownWithPrompt>(jsonInput, PlanUtil.TaskBreakdownWithPrompt::class.java)
+            val plan = filterPlan(taskBreakdownWithPrompt.plan)
+            task.add(MarkdownUtil.renderMarkdown(
+                """
+                ## Executing TaskBreakdownWithPrompt
+                Prompt: ${taskBreakdownWithPrompt.prompt}
+                Plan Text:
+                ```
+                ${taskBreakdownWithPrompt.planText}
+                ```
+                """.trimIndent(), ui = ui))
+            executePlan(plan, task, taskBreakdownWithPrompt.prompt)
+        } catch (e: Exception) {
+            task.error(ui, e)
+        }
+    }
+
 
     fun executePlan(
         plan: TaskBreakdownInterface,

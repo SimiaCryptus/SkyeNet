@@ -2,8 +2,10 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.PlanUtil
 import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
@@ -15,12 +17,13 @@ import java.io.File
 class PlanAheadApp(
     applicationName: String = "Task Planning v1.1",
     path: String = "/taskDev",
-    val rootFile: File?,
+     val rootFile: File,
     val planSettings: PlanSettings,
     val model: OpenAITextModel,
     val parsingModel: OpenAITextModel,
     val domainName : String = "localhost",
     showMenubar: Boolean = true,
+    val initialPlan: PlanUtil.TaskBreakdownWithPrompt? = null
 ) : ApplicationServer(
     applicationName = applicationName,
     path = path,
@@ -44,7 +47,7 @@ class PlanAheadApp(
         try {
             val planSettings = getSettings<PlanSettings>(session, user)
             if (api is ClientManager.MonitoredClient) api.budget = planSettings?.budget ?: 2.0
-            PlanCoordinator(
+            val coordinator = PlanCoordinator(
                 user = user,
                 session = session,
                 dataStorage = dataStorage,
@@ -52,7 +55,12 @@ class PlanAheadApp(
                 ui = ui,
                 root = (rootFile ?: dataStorage.getDataDir(user, session)).toPath(),
                 planSettings = planSettings!!
-            ).startProcess(userMessage = userMessage)
+            )
+            if (initialPlan != null) {
+                coordinator.executeTaskBreakdownWithPrompt(JsonUtil.toJson(initialPlan))
+            } else {
+                coordinator.startProcess(userMessage = userMessage)
+            }
         } catch (e: Throwable) {
             ui.newTask().error(ui, e)
             log.warn("Error", e)
