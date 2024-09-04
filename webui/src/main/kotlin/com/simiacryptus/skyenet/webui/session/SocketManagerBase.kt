@@ -27,7 +27,7 @@ abstract class SocketManagerBase(
     private val sendQueues: MutableMap<ChatSocket, Deque<String>> = ConcurrentHashMap()
     private val messageVersions = HashMap<String, AtomicInteger>()
     val pool get() = clientManager.getPool(session, owner)
-    val scheduledThreadPoolExecutor get() = clientManager.getScheduledPool(session, owner, dataStorage)!!
+    val scheduledThreadPoolExecutor get() = clientManager.getScheduledPool(session, owner, dataStorage)
 
     override fun removeSocket(socket: ChatSocket) {
         log.debug("Removing socket: {}", socket)

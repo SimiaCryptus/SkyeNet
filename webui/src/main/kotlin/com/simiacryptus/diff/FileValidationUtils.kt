@@ -139,8 +139,7 @@ class FileValidationUtils {
                                     val pattern =
                                         line.trim().trimStart('/').trimEnd('/')
                                             .replace(".", "\\.").replace("*", ".*")
-                                    if (!path.fileName.toString().trimEnd('/').matches(Regex(pattern))) return@any false
-                                    return@any true
+                                    return@any path.fileName.toString().trimEnd('/').matches(Regex(pattern))
                                 } catch (e: Throwable) {
                                     return@any false
                                 }

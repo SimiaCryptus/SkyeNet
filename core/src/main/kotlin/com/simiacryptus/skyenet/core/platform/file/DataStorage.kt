@@ -220,7 +220,7 @@ open class DataStorage(
         val globalSessions = listSessions(dataDir.resolve("global"), path)
         val userSessions = if (user == null) listOf() else listSessions(
             dataDir.resolve("user-sessions").resolve(
-                if (user?.email != null) {
+                if (user.email != null) {
                     user.email
                 } else {
                     throw IllegalArgumentException("User required for private session")

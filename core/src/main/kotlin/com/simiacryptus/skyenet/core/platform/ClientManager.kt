@@ -115,7 +115,7 @@ open class ClientManager {
         return (if (ClientUtil.keyMap.isNotEmpty()) {
             MonitoredClient(
                 key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
-                logfile = sessionDir?.resolve("openai.log"),
+                logfile = sessionDir.resolve("openai.log"),
                 session = session,
                 user = user,
                 workPool = getPool(session, user),
@@ -133,7 +133,7 @@ open class ClientManager {
         apiBase: Map<APIProvider, String> = APIProvider.values().associate { it to (it.base ?: "") },
         scheduledPool: ListeningScheduledExecutorService = HttpClientManager.scheduledPool,
         workPool: ThreadPoolExecutor = HttpClientManager.workPool,
-        client: CloseableHttpClient = HttpClientManager.createHttpClient()
+        client: CloseableHttpClient = createHttpClient()
     ) : ChatClient(
         key = key,
         logLevel = Level.DEBUG,

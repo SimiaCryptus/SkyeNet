@@ -224,7 +224,7 @@ object IterativePatchUtil {
                     // search for prior, unlinked source lines
                     var priorSourceLine = sourceLine.previousLine
                     val lineBuffer = mutableListOf<LineRecord>()
-                    while (priorSourceLine != null && (priorSourceLine.matchingLine == null || priorSourceLine?.type == DELETE)) {
+                    while (priorSourceLine != null && (priorSourceLine.matchingLine == null || priorSourceLine.type == DELETE)) {
                         // Note the deletion of the prior source line
                         lineBuffer.add(LineRecord(-1, priorSourceLine.line, type = DELETE))
                         priorSourceLine = priorSourceLine.previousLine

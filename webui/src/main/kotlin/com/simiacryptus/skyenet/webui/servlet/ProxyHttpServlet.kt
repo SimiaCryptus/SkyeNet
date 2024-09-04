@@ -59,7 +59,7 @@ open class ProxyHttpServlet(
         val proxyKey = ApiKeyServlet.apiKeyRecords.find { it.apiKey == requestKey }
         val path = (req.servletPath ?: "").removePrefix("/")
         val proxyRequest = getProxyRequest(req)
-        if (null != proxyKey) proxyRequest?.addHeader("Authorization", "Bearer " + proxyKey.mappedKey)
+        if (null != proxyKey) proxyRequest.addHeader("Authorization", "Bearer " + proxyKey.mappedKey)
         val totalUsage =
             ApplicationServices.usageManager.getUserUsageSummary(requestKey).values.map { it.cost ?: 0.0 }.sum()
         if (totalUsage > (proxyKey?.budget ?: 0.0)) {
@@ -85,7 +85,7 @@ open class ProxyHttpServlet(
                         proxyResponse,
                         proxyResponseBody,
                         proxyKey,
-                        proxyRequest?.body?.bodyBytes
+                        proxyRequest.body?.bodyBytes
                     )
                 )
                 asyncContext.complete()

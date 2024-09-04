@@ -220,7 +220,7 @@ abstract class ApplicationDirectory(
         context.resourceBase = "application"
         context.welcomeFiles = arrayOf("index.html")
         val servletHolder = ServletHolder(servlet)
-        servletHolder.getRegistration().setMultipartConfig(MultipartConfigElement("./tmp"));
+        servletHolder.getRegistration().setMultipartConfig(MultipartConfigElement("./tmp"))
         context.addServlet(servletHolder, "/")
         return context
     }

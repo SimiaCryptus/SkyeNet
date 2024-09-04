@@ -170,6 +170,6 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     companion object {
-        private val log = org.slf4j.LoggerFactory.getLogger(HSQLUsageManager::class.java)
+        private val log = LoggerFactory.getLogger(HSQLUsageManager::class.java)
     }
 }

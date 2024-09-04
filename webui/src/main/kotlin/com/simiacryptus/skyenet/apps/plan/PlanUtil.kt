@@ -50,7 +50,7 @@ object PlanUtil {
         )
     )
 
-    fun executionOrder(tasks: Map<String, PlanningTask.PlanTask>): List<String> {
+    fun executionOrder(tasks: Map<String, PlanTask>): List<String> {
         val taskIds: MutableList<String> = mutableListOf()
         val taskMap = tasks.toMutableMap()
         while (taskMap.isNotEmpty()) {
@@ -79,7 +79,7 @@ object PlanUtil {
         .replace("\"", "\\\"")
         .let { '"' + it + '"' }
 
-    fun buildMermaidGraph(subTasks: Map<String, PlanningTask.PlanTask>): String {
+    fun buildMermaidGraph(subTasks: Map<String, PlanTask>): String {
         val graphBuilder = StringBuilder("graph TD;\n")
         subTasks.forEach { (taskId, task) ->
             val sanitizedTaskId = sanitizeForMermaid(taskId)
@@ -107,7 +107,7 @@ object PlanUtil {
         return graphBuilder.toString()
     }
 
-    fun filterPlan(obj: PlanningTask.TaskBreakdownInterface): PlanningTask.TaskBreakdownInterface {
+    fun filterPlan(obj: TaskBreakdownInterface): TaskBreakdownInterface {
         var tasksByID = obj.tasksByID?.filter { (k, v) ->
             when {
                 v.taskType == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() -> false
@@ -124,8 +124,8 @@ object PlanUtil {
     }
 
     fun getAllDependencies(
-        subPlanTask: PlanningTask.PlanTask,
-        subTasks: Map<String, PlanningTask.PlanTask>,
+        subPlanTask: PlanTask,
+        subTasks: Map<String, PlanTask>,
         visited: MutableSet<String>
     ): List<String> {
         val dependencies = subPlanTask.task_dependencies?.toMutableList() ?: mutableListOf()

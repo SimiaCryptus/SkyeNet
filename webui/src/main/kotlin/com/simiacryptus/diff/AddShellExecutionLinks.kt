@@ -31,7 +31,7 @@ import java.io.InputStreamReader
                 }
                 val exitCode = process.waitFor()
                 output.append("Exit code: $exitCode")
-                executionTask.complete(MarkdownUtil.renderMarkdown("```\n${output.toString()}\n```", ui = ui))
+                executionTask.complete(MarkdownUtil.renderMarkdown("```\n$output\n```", ui = ui))
              } catch (e: Throwable) {
                  executionTask.error(null, e)
              }
