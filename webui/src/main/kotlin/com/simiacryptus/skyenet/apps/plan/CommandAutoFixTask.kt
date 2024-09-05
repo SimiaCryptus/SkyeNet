@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
@@ -24,7 +25,7 @@ class CommandAutoFixTask(
             |  ** Provide the command arguments in the 'commandArguments' field
             |  ** List input files/tasks to be examined when fixing issues
             |  ** Available commands:
-            |    ${planSettings.commandAutoFixCommands.joinToString("\n    ") { "* ${File(it).name}" }}
+            |    ${planSettings.commandAutoFixCommands?.joinToString("\n    ") { "* ${File(it).name}" }}
         """.trimMargin()
     }
 
@@ -35,7 +36,8 @@ class CommandAutoFixTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay
+        taskTabs: TabbedDisplay,
+        api: API
     ) {
         val semaphore = Semaphore(0)
         val onComplete = {
@@ -49,9 +51,10 @@ class CommandAutoFixTask(
                 val task = agent.ui.newTask(false).apply { it.append(placeholder) }
                 val alias = this.planTask.command?.first()
                 val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
-                val cmds = commandAutoFixCommands.filter {
-                    File(it).name.startsWith(alias ?: "")
-                }
+                val cmds = commandAutoFixCommands
+                    ?.map { File(it).name }
+                    ?.filter { it.startsWith(alias ?: "") }
+                    ?: emptyList()
                 val executable = cmds.firstOrNull()
                 if (executable == null) {
                     throw IllegalArgumentException("Command not found: $alias")
@@ -70,7 +73,7 @@ class CommandAutoFixTask(
                         additionalInstructions = "",
                         autoFix = agent.planSettings.autoFix
                     ),
-                    api = agent.api as ChatClient,
+                    api = api as ChatClient,
                     files = agent.files,
                     model = agent.planSettings.model,
                 ).run(

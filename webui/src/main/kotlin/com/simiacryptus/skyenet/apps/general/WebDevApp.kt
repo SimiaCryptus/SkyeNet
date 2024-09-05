@@ -4,6 +4,7 @@ import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ApiModel.Role
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.ImageModels
@@ -47,7 +48,7 @@ open class WebDevApp(
         api: API
     ) {
         val settings = getSettings(session, user) ?: Settings()
-        (api as ClientManager.MonitoredClient).budget = settings.budget ?: 2.00
+        (api as ChatClient).budget = settings.budget ?: 2.00
         WebDevAgent(
             api = api,
             dataStorage = dataStorage,

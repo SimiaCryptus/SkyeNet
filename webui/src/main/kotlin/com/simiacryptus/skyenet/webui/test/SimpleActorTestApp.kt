@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.test
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.core.platform.ClientManager
 import com.simiacryptus.skyenet.core.platform.Session
@@ -34,7 +35,7 @@ open class SimpleActorTestApp(
         ui: ApplicationInterface,
         api: API
     ) {
-        (api as ClientManager.MonitoredClient).budget = 2.00
+        (api as ChatClient).budget = 2.00
         val message = ui.newTask()
         try {
             val actor = getSettings<Settings>(session, user)?.actor ?: actor

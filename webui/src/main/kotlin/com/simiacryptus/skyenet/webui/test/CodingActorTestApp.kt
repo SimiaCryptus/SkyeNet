@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.webui.test
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
@@ -30,7 +31,7 @@ open class CodingActorTestApp(
         ui: ApplicationInterface,
         api: API
     ) {
-        (api as ClientManager.MonitoredClient).budget = 2.00
+        (api as ChatClient).budget = 2.00
         val message = ui.newTask()
         try {
             message.echo(renderMarkdown(userMessage, ui = ui))

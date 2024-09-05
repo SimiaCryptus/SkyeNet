@@ -1,22 +1,22 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.AgentPatterns
-import com.simiacryptus.skyenet.Discussable
-import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.TabbedDisplay
+import com.simiacryptus.skyenet.*
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
+import kotlin.text.set
 
 class PlanningTask(
     planSettings: PlanSettings,
@@ -69,7 +69,8 @@ class PlanningTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay
+        taskTabs: TabbedDisplay,
+        api: API
     ) {
         if (!agent.planSettings.taskPlanningEnabled) throw RuntimeException("Task planning is disabled")
         @Suppress("NAME_SHADOWING") val task = agent.ui.newTask(false).apply { task.add(placeholder) }
@@ -85,22 +86,15 @@ class PlanningTask(
                 task = task,
                 userMessage = { "Expand ${planTask.description ?: ""}" },
                 heading = "",
-                initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = agent.api) },
+                initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = api) },
                 outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
-                    val ui = PlanProcessingState(
-                        (filterPlan(design.obj).tasksByID ?: emptyMap()).toMutableMap()
-                    )
-                    AgentPatterns.displayMapInTabs(
-                        mapOf(
-                            "Text" to MarkdownUtil.renderMarkdown(design.text, ui = agent.ui),
-                            "JSON" to MarkdownUtil.renderMarkdown(
-                                "${TRIPLE_TILDE}json\n${JsonUtil.toJson(filterPlan(design.obj))/*.indent("  ")*/}\n$TRIPLE_TILDE",
-                                ui = agent.ui
-                            ),
-                            "Diagram" to diagram(
-                                agent.ui, ui.subTasks
-                            )
-                        )
+                    render(
+                        withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                            plan = filterPlan { design.obj } as TaskBreakdownResult,
+                            planText = design.text,
+                            prompt = userMessage
+                        ),
+                        ui = agent.ui
                     )
                 },
                 ui = agent.ui,
@@ -109,27 +103,35 @@ class PlanningTask(
                         messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
                             .toTypedArray<ApiModel.ChatMessage>()),
                         input = toInput("Expand ${planTask.description ?: ""}\n${JsonUtil.toJson(this)}"),
-                        api = agent.api
+                        api = api
                     )
                 },
             ).call()
             // Execute sub-tasks
-            executeSubTasks(agent, userMessage, filterPlan(subPlan.obj), task)
+            executeSubTasks(agent, userMessage, filterPlan{subPlan.obj}, task, api)
         } else {
-            val subPlan = taskBreakdownActor.answer(toInput("Expand ${planTask.description ?: ""}"), api = agent.api)
             // Execute sub-tasks
-            Retryable(agent.ui,task) {
+/*
+            Retryable(agent.ui,task) { sb ->
                 val task = agent.ui.newTask(false)
-                executeSubTasks(agent, userMessage, filterPlan(subPlan.obj), task)
+                sb.set(task.placeholder)
                 task.placeholder
             }
+*/
+            executeSubTasks(agent, userMessage, filterPlan{
+                taskBreakdownActor.answer(
+                    toInput("Expand ${planTask.description ?: ""}"),
+                    api = api
+                ).obj
+            }, task, api)
         }
     }
     private fun executeSubTasks(
         agent: PlanCoordinator,
         userMessage: String,
         subPlan: TaskBreakdownInterface,
-        parentTask: SessionTask
+        parentTask: SessionTask,
+        api: API
     ) {
         val subPlanTask = agent.ui.newTask(false)
         parentTask.add(subPlanTask.placeholder)
@@ -145,6 +147,7 @@ class PlanningTask(
             pool = agent.pool,
             userMessage = userMessage,
             plan = subPlan,
+            api = api,
         )
         subPlanTask.complete()
     }

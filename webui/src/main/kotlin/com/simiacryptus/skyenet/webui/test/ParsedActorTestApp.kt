@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.test
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.platform.ClientManager
@@ -26,7 +27,7 @@ open class ParsedActorTestApp<T : Any>(
         ui: ApplicationInterface,
         api: API
     ) {
-        (api as ClientManager.MonitoredClient).budget = 2.00
+        (api as ChatClient).budget = 2.00
         val message = ui.newTask()
         try {
             message.echo(renderMarkdown(userMessage, ui = ui))

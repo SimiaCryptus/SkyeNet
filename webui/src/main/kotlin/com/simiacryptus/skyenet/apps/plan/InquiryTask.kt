@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
@@ -55,7 +56,8 @@ class InquiryTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay
+        taskTabs: TabbedDisplay,
+        api: API
     ) {
         val toInput = { it: String ->
             listOf<String>(
@@ -70,7 +72,7 @@ class InquiryTask(
             task = task,
             userMessage = { "Expand ${this.planTask.description ?: ""}\n${JsonUtil.toJson(data = this)}" },
             heading = "",
-            initialResponse = { it: String -> inquiryActor.answer(toInput(it), api = agent.api) },
+            initialResponse = { it: String -> inquiryActor.answer(toInput(it), api = api) },
             outputFn = { design: String ->
                 MarkdownUtil.renderMarkdown(design, ui = agent.ui)
             },
@@ -80,7 +82,7 @@ class InquiryTask(
                     messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
                         .toTypedArray<ApiModel.ChatMessage>()),
                     input = toInput("Expand ${this.planTask.description ?: ""}\n${JsonUtil.toJson(data = this)}"),
-                    api = agent.api
+                    api = api
                 )
             },
             atomicRef = AtomicReference(),

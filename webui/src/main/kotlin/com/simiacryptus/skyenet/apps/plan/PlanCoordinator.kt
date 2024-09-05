@@ -4,6 +4,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
@@ -27,6 +28,7 @@ import com.simiacryptus.jopenai.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
+import java.util.UUID
 import java.util.concurrent.ThreadPoolExecutor
 
 class PlanCoordinator(
@@ -34,7 +36,6 @@ class PlanCoordinator(
     val session: Session,
     val dataStorage: StorageInterface,
     val ui: ApplicationInterface,
-    val api: API,
     val planSettings: PlanSettings,
     val root: Path
 ) {
@@ -58,52 +59,56 @@ class PlanCoordinator(
                 }
             }
 
-
-    fun startProcess(userMessage: String) {
+    fun startProcess(userMessage: String, api: API) {
         val task = ui.newTask()
-        val plan = filterPlan(
-            initialPlan(
-                codeFiles = codeFiles,
-                files = files,
-                root = root,
-                task = task,
-                userMessage = userMessage,
-                ui = ui,
-                planSettings = planSettings,
-                api = api
-            )
+        executePlan(
+            (
+                    initialPlan(
+                        codeFiles = codeFiles,
+                        files = files,
+                        root = root,
+                        task = task,
+                        userMessage = userMessage,
+                        ui = ui,
+                        planSettings = planSettings,
+                        api = api
+                    )
+                    ).plan, task, userMessage, api
         )
-        executePlan(plan, task, userMessage)
     }
-    fun executeTaskBreakdownWithPrompt(jsonInput: String) {
+
+    fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API) {
         val task = ui.newTask()
         try {
-            val taskBreakdownWithPrompt = JsonUtil.fromJson<PlanUtil.TaskBreakdownWithPrompt>(jsonInput, PlanUtil.TaskBreakdownWithPrompt::class.java)
-            val plan = filterPlan(taskBreakdownWithPrompt.plan)
+            lateinit var taskBreakdownWithPrompt: PlanUtil.TaskBreakdownWithPrompt
+            val plan = filterPlan {
+                taskBreakdownWithPrompt = JsonUtil.fromJson(jsonInput, PlanUtil.TaskBreakdownWithPrompt::class.java)
+                taskBreakdownWithPrompt.plan
+            }
             task.add(MarkdownUtil.renderMarkdown(
                 """
-                ## Executing TaskBreakdownWithPrompt
-                Prompt: ${taskBreakdownWithPrompt.prompt}
-                Plan Text:
-                ```
-                ${taskBreakdownWithPrompt.planText}
-                ```
-                """.trimIndent(), ui = ui))
-            executePlan(plan, task, taskBreakdownWithPrompt.prompt)
+                |## Executing TaskBreakdownWithPrompt
+                |Prompt: ${taskBreakdownWithPrompt.prompt}
+                |Plan Text:
+                |```
+                |${taskBreakdownWithPrompt.planText}
+                |```
+                """.trimMargin(), ui = ui))
+            executePlan(plan, task, taskBreakdownWithPrompt.prompt, api)
         } catch (e: Exception) {
             task.error(ui, e)
         }
     }
 
-
     fun executePlan(
         plan: TaskBreakdownInterface,
         task: SessionTask,
-        userMessage: String
+        userMessage: String,
+        api: API
     ) {
         try {
             val planProcessingState =
-                PlanProcessingState((filterPlan(plan).tasksByID?.entries?.toTypedArray<Map.Entry<String, PlanTask>>()
+                PlanProcessingState((filterPlan{plan}.tasksByID?.entries?.toTypedArray<Map.Entry<String, PlanTask>>()
                     ?.associate { it.key to it.value } ?: mapOf()).toMutableMap())
             val diagramTask = ui.newTask(false).apply { task.add(placeholder) }
             executePlan(
@@ -120,7 +125,8 @@ class PlanCoordinator(
                 taskIdProcessingQueue = planProcessingState.taskIdProcessingQueue,
                 pool = pool,
                 userMessage = userMessage,
-                plan = plan
+                plan = plan,
+                api = api
             )
         } catch (e: Throwable) {
             log.warn("Error during incremental code generation process", e)
@@ -137,9 +143,18 @@ class PlanCoordinator(
         taskIdProcessingQueue: MutableList<String>,
         pool: ThreadPoolExecutor,
         userMessage: String,
-        plan: TaskBreakdownInterface
+        plan: TaskBreakdownInterface,
+        api: API
     ) {
-        val taskTabs = object : TabbedDisplay(ui.newTask(false).apply { task.add(placeholder) }) {
+        val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
+        val api = (api as ChatClient).getChildClient().apply {
+            val createFile = sessionTask.createFile("api-${UUID.randomUUID()}.log")
+            createFile.second?.apply {
+                logStreams += this.outputStream().buffered()
+                sessionTask.add("API log: <a href=\"${createFile.first}\">$this</a>")
+            }
+        }
+        val taskTabs = object : TabbedDisplay(sessionTask) {
             override fun renderTabButtons(): String {
                 diagramBuffer?.set(
                     MarkdownUtil.renderMarkdown(
@@ -173,7 +188,6 @@ class PlanCoordinator(
                 }
             }
         }
-        // Initialize task tabs
         taskIdProcessingQueue.forEach { taskId ->
             val newTask = ui.newTask(false)
             planProcessingState.uitaskMap[taskId] = newTask
@@ -236,7 +250,8 @@ class PlanCoordinator(
                         plan = plan,
                         planProcessingState = planProcessingState,
                         task = task1,
-                        taskTabs = taskTabs
+                        taskTabs = taskTabs,
+                        api = api
                     )
                 } catch (e: Throwable) {
                     log.warn("Error during task execution", e)
@@ -270,9 +285,9 @@ class PlanCoordinator(
             ui: ApplicationInterface,
             planSettings: PlanSettings,
             api: API
-        ): TaskBreakdownInterface {
+        ): PlanUtil.TaskBreakdownWithPrompt {
             val toInput = inputFn(codeFiles, files, root)
-            return filterPlan(
+            return (
                 Discussable(
                     task = task,
                     heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
@@ -286,8 +301,8 @@ class PlanCoordinator(
                     outputFn = { render(
                         withPrompt = PlanUtil.TaskBreakdownWithPrompt(
                             prompt = userMessage,
-                            plan = it.obj,
-                            planText = JsonUtil.toJson(it)
+                            plan = it.obj as TaskBreakdownResult,
+                            planText = it.text
                         ),
                         ui = ui
                     ) },
@@ -301,7 +316,13 @@ class PlanCoordinator(
                             api = api
                         ) as ParsedResponse<TaskBreakdownInterface>
                     },
-                ).call().obj
+                ).call().let {
+                    PlanUtil.TaskBreakdownWithPrompt(
+                        prompt = userMessage,
+                        plan = filterPlan{it.obj} as TaskBreakdownResult,
+                        planText = it.text
+                    )
+                }
             )
         }
 

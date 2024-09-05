@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.core.actors.SimpleActor
@@ -36,7 +37,8 @@ abstract class AbstractAnalysisTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay
+        taskTabs: TabbedDisplay,
+        api: API
     ) {
         val analysisResult = analysisActor.answer(
             listOf(
@@ -45,15 +47,15 @@ abstract class AbstractAnalysisTask(
                 getPriorCode(planProcessingState),
                 getInputFileCode(),
                 "${getAnalysisInstruction()}:\n${getInputFileCode()}",
-            ).filter { it.isNotBlank() }, api = agent.api
+            ).filter { it.isNotBlank() }, api = api
         )
         planProcessingState.taskResult[taskId] = analysisResult
-        applyChanges(agent, task, analysisResult)
+        applyChanges(agent, task, analysisResult, api)
     }
 
     abstract fun getAnalysisInstruction(): String
 
-    private fun applyChanges(agent: PlanCoordinator, task: SessionTask, analysisResult: String) {
+    private fun applyChanges(agent: PlanCoordinator, task: SessionTask, analysisResult: String, api: API) {
         val outputResult = CommandPatchApp(
             root = agent.root.toFile(),
             session = agent.session,
@@ -64,7 +66,7 @@ abstract class AbstractAnalysisTask(
                 additionalInstructions = "",
                 autoFix = agent.planSettings.autoFix
             ),
-            api = agent.api as ChatClient,
+            api = api as ChatClient,
             model = agent.planSettings.model,
             files = agent.files,
             command = analysisResult

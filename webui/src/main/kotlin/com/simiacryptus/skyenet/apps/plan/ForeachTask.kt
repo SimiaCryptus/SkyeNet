@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
-import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
@@ -28,7 +28,8 @@ ForeachTask - Execute a task for each item in a list
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay
+        taskTabs: TabbedDisplay,
+        api: API
     ) {
         val items = planTask.foreachItems ?: throw RuntimeException("No items specified for ForeachTask")
         val subTasks = planTask.subTasksByID ?: throw RuntimeException("No subTasks specified for ForeachTask")
@@ -52,7 +53,8 @@ ForeachTask - Execute a task for each item in a list
                 plan = object : TaskBreakdownInterface {
                     override val tasksByID = itemSubTasks
                     override val finalTaskID = null
-                }
+                },
+                api = api
             )
         }
         subPlanTask.complete("Completed ForeachTask for ${items.size} items")

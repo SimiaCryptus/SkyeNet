@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.diff.addApplyFileDiffLinks
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
@@ -82,7 +83,8 @@ class FileModificationTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay
+        taskTabs: TabbedDisplay,
+        api: API
     ) {
         if(((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf())).isEmpty()) {
             task.complete("No input files specified")
@@ -98,7 +100,7 @@ class FileModificationTask(
                     getPriorCode(planProcessingState),
                     getInputFileCode(),
                     this.planTask.description ?: "",
-                ).filter { it.isNotBlank() }, agent.api
+                ).filter { it.isNotBlank() }, api
             )
             planProcessingState.taskResult[taskId] = codeResult
             if (agent.planSettings.autoFix) {
@@ -111,7 +113,7 @@ class FileModificationTask(
                         }
                     },
                     ui = agent.ui,
-                    api = agent.api,
+                    api = api,
                     shouldAutoApply = { true }
                 )
                 taskTabs.selectedTab += 1
@@ -130,7 +132,7 @@ class FileModificationTask(
                             }
                         },
                         ui = agent.ui,
-                        api = agent.api
+                        api = api
                     ) + acceptButtonFooter(agent.ui) {
                         taskTabs.selectedTab += 1
                         taskTabs.update()

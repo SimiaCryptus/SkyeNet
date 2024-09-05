@@ -4,7 +4,6 @@ import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import java.util.*
@@ -26,7 +25,7 @@ object PlanUtil {
 
     data class TaskBreakdownWithPrompt(
         val prompt: String,
-        val plan: TaskBreakdownInterface,
+        val plan: PlanningTask.TaskBreakdownResult,
         val planText: String
     )
 
@@ -42,9 +41,9 @@ object PlanUtil {
             ),
             "Diagram" to MarkdownUtil.renderMarkdown(
                 "```mermaid\n" + buildMermaidGraph(
-                    (filterPlan(
+                    (filterPlan {
                         withPrompt.plan
-                    ).tasksByID ?: emptyMap()).toMutableMap()
+                    }.tasksByID ?: emptyMap()).toMutableMap()
                 ) + "\n```\n", ui = ui
             )
         )
@@ -52,7 +51,9 @@ object PlanUtil {
 
     fun executionOrder(tasks: Map<String, PlanTask>): List<String> {
         val taskIds: MutableList<String> = mutableListOf()
-        val taskMap = tasks.toMutableMap()
+        val taskMap = tasks.mapValues { it.value.copy(task_dependencies = it.value.task_dependencies?.filter { entry ->
+            entry in tasks.keys
+        }) }.toMutableMap()
         while (taskMap.isNotEmpty()) {
             val nextTasks =
                 taskMap.filter { (_, task) -> task.task_dependencies?.all { taskIds.contains(it) } ?: true }
@@ -107,20 +108,35 @@ object PlanUtil {
         return graphBuilder.toString()
     }
 
-    fun filterPlan(obj: TaskBreakdownInterface): TaskBreakdownInterface {
+    fun filterPlan(retries: Int = 3, fn: () -> TaskBreakdownInterface): TaskBreakdownInterface {
+        val obj = fn()
         var tasksByID = obj.tasksByID?.filter { (k, v) ->
             when {
                 v.taskType == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() -> false
                 else -> true
             }
-        } ?: mapOf()
-        if (tasksByID.size == obj.tasksByID?.size) return obj
-        tasksByID = tasksByID.mapValues { (_, v) ->
-            v.copy(
-                task_dependencies = v.task_dependencies?.filter { it in tasksByID.keys }
+        }?.map {
+            it.key to it.value.copy(
+                task_dependencies = it.value.task_dependencies?.filter { it in (obj.tasksByID?.keys ?: setOf()) }
             )
+        }?.toMap() ?: emptyMap()
+        try {
+            executionOrder(tasksByID)
+        } catch (e: RuntimeException) {
+            log.info("Circular dependency detected in task breakdown")
+            if (retries <= 0) throw e
+            return filterPlan(retries - 1, fn)
         }
-        return filterPlan(PlanningTask.TaskBreakdownResult(tasksByID, obj.finalTaskID))
+        return if (tasksByID.size == obj.tasksByID?.size) {
+            obj
+        } else filterPlan {
+            tasksByID = tasksByID.mapValues { (_, v) ->
+                v.copy(
+                    task_dependencies = v.task_dependencies?.filter { it in tasksByID.keys }
+                )
+            }
+            PlanningTask.TaskBreakdownResult(tasksByID, obj.finalTaskID)
+        }
     }
 
     fun getAllDependencies(
@@ -139,5 +155,7 @@ object PlanUtil {
         }
         return dependencies
     }
+
+    val log = org.slf4j.LoggerFactory.getLogger(PlanUtil::class.java)
 
 }

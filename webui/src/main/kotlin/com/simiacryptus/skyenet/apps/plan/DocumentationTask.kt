@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.TabbedDisplay
@@ -42,7 +43,8 @@ class DocumentationTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay
+        taskTabs: TabbedDisplay,
+        api: API
     ) {
         val semaphore = Semaphore(0)
         val onComplete = {
@@ -55,7 +57,7 @@ class DocumentationTask(
                     JsonUtil.toJson(plan),
                     getPriorCode(planProcessingState),
                     getInputFileCode(),
-                ).filter { it.isNotBlank() }, agent.api
+                ).filter { it.isNotBlank() }, api
             )
             planProcessingState.taskResult[taskId] = docResult
             if (agent.planSettings.autoFix) {
