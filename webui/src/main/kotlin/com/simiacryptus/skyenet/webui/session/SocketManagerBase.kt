@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationTy
 import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.net.URLDecoder
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -27,7 +28,7 @@ abstract class SocketManagerBase(
     private val sendQueues: MutableMap<ChatSocket, Deque<String>> = ConcurrentHashMap()
     private val messageVersions = HashMap<String, AtomicInteger>()
     val pool get() = clientManager.getPool(session, owner)
-    val scheduledThreadPoolExecutor get() = clientManager.getScheduledPool(session, owner, dataStorage)!!
+    val scheduledThreadPoolExecutor get() = clientManager.getScheduledPool(session, owner, dataStorage)
 
     override fun removeSocket(socket: ChatSocket) {
         log.debug("Removing socket: {}", socket)
@@ -77,6 +78,15 @@ abstract class SocketManagerBase(
                 resolve.writeBytes(data)
             }
             return "fileIndex/$session/$relativePath"
+        }
+        override fun createFile(relativePath: String): Pair<String, File?> {
+            log.debug("Saving file at path: {}", relativePath)
+            return Pair("fileIndex/$session/$relativePath", dataStorage?.getSessionDir(owner, session)?.let { dir ->
+                dir.mkdirs()
+                val resolve = dir.resolve(relativePath)
+                resolve.parentFile.mkdirs()
+                resolve
+            })
         }
     }
 

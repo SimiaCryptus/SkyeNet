@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel.*
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
@@ -136,7 +137,7 @@ open class CodingActor(
         var result = CodeResultImpl(
             *messages,
             input = input,
-            api = (api as OpenAIClient)
+            api = (api as ChatClient)
         )
         if (!input.autoEvaluate) return result
         for (i in 0..input.fixIterations) try {
@@ -206,7 +207,7 @@ open class CodingActor(
     inner class CodeResultImpl(
         vararg val messages: ChatMessage,
         private val input: CodeRequest,
-        private val api: OpenAIClient,
+        private val api: ChatClient,
         private val givenCode: String? = null,
         private val givenResponse: String? = null,
     ) : CodeResult {
@@ -309,7 +310,7 @@ open class CodingActor(
     }
 
     private fun fixCommand(
-        api: OpenAIClient,
+        api: ChatClient,
         previousCode: String,
         error: Throwable,
         vararg promptMessages: ChatMessage,
@@ -345,7 +346,7 @@ open class CodingActor(
         model = model
     )
 
-    private fun chat(api: OpenAIClient, request: ChatRequest, model: OpenAITextModel) =
+    private fun chat(api: ChatClient, request: ChatRequest, model: OpenAITextModel) =
         api.chat(request.copy(model = model.modelName, temperature = temperature), model)
             .choices.first().message?.content.orEmpty().trim()
 

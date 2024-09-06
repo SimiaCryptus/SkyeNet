@@ -5,7 +5,8 @@ import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
 import com.simiacryptus.skyenet.apps.general.PlanAheadApp
 import com.simiacryptus.skyenet.apps.general.StressTestApp
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
-import com.simiacryptus.skyenet.apps.plan.Settings
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.ImageActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
@@ -18,6 +19,7 @@ import com.simiacryptus.skyenet.groovy.GroovyInterpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.scala.ScalaLocalInterpreter
 import com.simiacryptus.skyenet.webui.test.*
+import java.io.File
 
 
 object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.ApplicationDirectory(port = 8082) {
@@ -82,8 +84,8 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
             ChildWebApp(
                 "/taskDev",
                 PlanAheadApp(
-                    rootFile = null,
-                    settings = Settings(
+                    rootFile = File("."),
+                    planSettings = PlanSettings(
                         model = ChatModels.GPT4o,
                         parsingModel = ChatModels.GPT4oMini,
                         command = listOf("task"),
@@ -98,7 +100,7 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                         ),
                         env = mapOf(),
                         workingDir = ".",
-                        language = if (PlanCoordinator.isWindows) "powershell" else "bash",
+                        language = if (isWindows) "powershell" else "bash",
                     ),
                     model = ChatModels.GPT4o,
                     parsingModel = ChatModels.GPT4oMini,

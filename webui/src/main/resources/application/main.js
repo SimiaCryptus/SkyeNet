@@ -52,11 +52,11 @@ const updateDocumentComponents = debounce(function () {
     } catch (e) {
         console.error("Error running mermaid:", e);
     }
-    try {
-        applyToAllSvg();
-    } catch (e) {
-        console.error("Error applying SVG pan zoom:", e);
-    }
+    // try {
+    //     applyToAllSvg();
+    // } catch (e) {
+    //     console.error("Error applying SVG pan zoom:", e);
+    // }
 }, 250);
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -228,16 +228,16 @@ private fun SocketManagerBase.renderDiffBlock(
     val fixTask = ui.newTask(root = false)
     val verifyFwdTabs = if (!newCode.isValid) displayMapInTabs(
         mapOf(
-            "Code" to (prevCodeTask?.placeholder ?: ""),
-            "Preview" to (newCodeTask?.placeholder ?: ""),
-            "Echo" to (patchTask?.placeholder ?: ""),
-            "Fix" to (fixTask?.placeholder ?: ""),
+            "Code" to prevCodeTask.placeholder,
+            "Preview" to newCodeTask.placeholder,
+            "Echo" to patchTask.placeholder,
+            "Fix" to fixTask.placeholder,
         )
     ) else displayMapInTabs(
         mapOf(
-            "Code" to (prevCodeTask?.placeholder ?: ""),
-            "Preview" to (newCodeTask?.placeholder ?: ""),
-            "Echo" to (patchTask?.placeholder ?: ""),
+            "Code" to prevCodeTask.placeholder,
+            "Preview" to newCodeTask.placeholder,
+            "Echo" to patchTask.placeholder,
         )
     )
 
@@ -250,9 +250,9 @@ private fun SocketManagerBase.renderDiffBlock(
     val patch2TaskSB = patch2Task.add("")
     val verifyRevTabs = displayMapInTabs(
         mapOf(
-            "Code" to (prevCode2Task?.placeholder ?: ""),
-            "Preview" to (newCode2Task?.placeholder ?: ""),
-            "Echo" to (patch2Task?.placeholder ?: ""),
+            "Code" to prevCode2Task.placeholder,
+            "Preview" to newCode2Task.placeholder,
+            "Echo" to patch2Task.placeholder,
         )
     )
 
@@ -264,8 +264,8 @@ private fun SocketManagerBase.renderDiffBlock(
         try {
             originalCode = load(filepath)
             newCode = patch(originalCode, diffVal)
-            filepath?.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
-            handle(mapOf(relativize!! to newCode.newCode))
+            filepath.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            handle(mapOf(relativize to newCode.newCode))
             hrefLink.set("""<div class="cmd-button">Diff Applied</div>""" + revert)
             applydiffTask.complete()
         } catch (e: Throwable) {
@@ -371,8 +371,8 @@ private fun SocketManagerBase.renderDiffBlock(
                 val diffLines = diffVal.reverseLines()
                 val patch1 = patch(originalLines, diffLines)
                 val newCode2 = patch1.newCode.reverseLines()
-                filepath?.toFile()?.writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
-                handle(mapOf(relativize!! to newCode2))
+                filepath.toFile()?.writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+                handle(mapOf(relativize to newCode2))
                 hrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""" + revert)
                 applydiffTask.complete()
             } catch (e: Throwable) {
@@ -383,8 +383,8 @@ private fun SocketManagerBase.renderDiffBlock(
         // Create "Revert" button
         revert = hrefLink("Revert", classname = "href-link cmd-button") {
             try {
-                filepath?.toFile()?.writeText(originalCode, Charsets.UTF_8)
-                handle(mapOf(relativize!! to originalCode))
+                filepath.toFile()?.writeText(originalCode, Charsets.UTF_8)
+                handle(mapOf(relativize to originalCode))
                 hrefLink.set("""<div class="cmd-button">Reverted</div>""" + apply1 + apply2)
                 applydiffTask.complete()
             } catch (e: Throwable) {
@@ -453,7 +453,7 @@ private fun SocketManagerBase.renderDiffBlock(
     // Create main tabs for displaying diff and verification information
     val mainTabs = displayMapInTabs(
         mapOf(
-            "Diff" to (diffTask?.placeholder ?: ""),
+            "Diff" to diffTask.placeholder,
             "Verify" to displayMapInTabs(
                 mapOf(
                     "Forward" to verifyFwdTabs,

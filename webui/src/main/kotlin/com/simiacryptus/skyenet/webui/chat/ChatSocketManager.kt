@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.chat
 
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
@@ -19,7 +20,7 @@ open class ChatSocketManager(
     val userInterfacePrompt: String,
     open val initialAssistantPrompt: String = "",
     open val systemPrompt: String,
-    val api: OpenAIClient,
+    val api: ChatClient,
     val temperature: Double = 0.3,
     applicationClass: Class<out ApplicationServer>,
     val storage: StorageInterface?,

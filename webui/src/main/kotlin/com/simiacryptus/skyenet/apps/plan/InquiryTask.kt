@@ -1,11 +1,12 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
@@ -14,9 +15,9 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicReference
 
 class InquiryTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractTask(planSettings, planTask) {
     val inquiryActor by lazy {
         SimpleActor(
             name = "Inquiry",
@@ -29,14 +30,14 @@ class InquiryTask(
                 
                 |When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
                 |Focus on generating insights and information that support the task types available in the system (Requirements, NewFile, EditFile, ${
-                    if (!settings.taskPlanningEnabled) "" else "TaskPlanning, "
+                    if (!planSettings.taskPlanningEnabled) "" else "TaskPlanning, "
                 }${
-                    if (!settings.shellCommandTaskEnabled) "" else "RunShellCommand, "
+                    if (!planSettings.shellCommandTaskEnabled) "" else "RunShellCommand, "
                 }Documentation).
                 |This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
                 """.trimMargin(),
-            model = settings.model,
-            temperature = settings.temperature,
+            model = planSettings.model,
+            temperature = planSettings.temperature,
         )
     }
 
@@ -52,25 +53,26 @@ class InquiryTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: PlanCoordinator.TaskBreakdownResult,
-        genState: PlanCoordinator.GenState,
+        plan: TaskBreakdownInterface,
+        planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay
+        taskTabs: TabbedDisplay,
+        api: API
     ) {
         val toInput = { it: String ->
             listOf<String>(
                 userMessage,
                 JsonUtil.toJson(plan),
-                getPriorCode(genState),
+                getPriorCode(planProcessingState),
                 getInputFileCode(),
                 it,
             ).filter { it.isNotBlank() }
         }
         val inquiryResult = Discussable(
             task = task,
-            userMessage = { "Expand ${this.description ?: ""}\n${JsonUtil.toJson(data = this)}" },
+            userMessage = { "Expand ${this.planTask.description ?: ""}\n${JsonUtil.toJson(data = this)}" },
             heading = "",
-            initialResponse = { it: String -> inquiryActor.answer(toInput(it), api = agent.api) },
+            initialResponse = { it: String -> inquiryActor.answer(toInput(it), api = api) },
             outputFn = { design: String ->
                 MarkdownUtil.renderMarkdown(design, ui = agent.ui)
             },
@@ -79,14 +81,14 @@ class InquiryTask(
                 inquiryActor.respond(
                     messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
                         .toTypedArray<ApiModel.ChatMessage>()),
-                    input = toInput("Expand ${this.description ?: ""}\n${JsonUtil.toJson(data = this)}"),
-                    api = agent.api
+                    input = toInput("Expand ${this.planTask.description ?: ""}\n${JsonUtil.toJson(data = this)}"),
+                    api = api
                 )
             },
             atomicRef = AtomicReference(),
             semaphore = Semaphore(0),
         ).call()
-        genState.taskResult[taskId] = inquiryResult
+        planProcessingState.taskResult[taskId] = inquiryResult
     }
 
     companion object {

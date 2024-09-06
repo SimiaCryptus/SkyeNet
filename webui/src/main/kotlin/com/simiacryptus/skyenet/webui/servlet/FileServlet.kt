@@ -16,7 +16,7 @@ import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
 
-abstract class FileServlet() : HttpServlet() {
+abstract class FileServlet : HttpServlet() {
 
     abstract fun getDir(
             req: HttpServletRequest,

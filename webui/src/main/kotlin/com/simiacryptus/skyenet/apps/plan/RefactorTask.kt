@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.apps.plan
 import org.slf4j.LoggerFactory
 
 class RefactorTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractAnalysisTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName: String = "Refactor"
     override val actorPrompt: String = """
 Analyze the provided code and suggest refactoring to improve code structure, readability, and maintainability. Focus on:

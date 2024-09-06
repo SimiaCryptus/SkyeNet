@@ -4,11 +4,17 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
-import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.Companion.planningActor
+import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
@@ -18,11 +24,11 @@ import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.jopenai.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
-import java.util.*
-import java.util.concurrent.Future
+import java.util.UUID
 import java.util.concurrent.ThreadPoolExecutor
 
 class PlanCoordinator(
@@ -30,16 +36,9 @@ class PlanCoordinator(
     val session: Session,
     val dataStorage: StorageInterface,
     val ui: ApplicationInterface,
-    val api: API,
-    val settings: Settings,
+    val planSettings: PlanSettings,
     val root: Path
 ) {
-    private val taskBreakdownActor by lazy { settings.planningActor() }
-
-    data class TaskBreakdownResult(
-        val tasksByID: Map<String, PlanTask>? = null,
-        val finalTaskID: String? = null,
-    )
 
     val pool: ThreadPoolExecutor by lazy { ApplicationServices.clientManager.getPool(session, user) }
 
@@ -47,108 +46,87 @@ class PlanCoordinator(
         FileValidationUtils.expandFileList(root.toFile())
     }
 
-    private val codeFiles: Map<Path, String>
+    val codeFiles: Map<Path, String>
         get() = files
             .filter { it.exists() && it.isFile }
             .filter { !it.name.startsWith(".") }
-            .associate { file -> getKey(file) to getValue(file) }
-
-
-    private fun getValue(file: File) = try {
-        file.inputStream().bufferedReader().use { it.readText() }
-    } catch (e: Exception) {
-        log.warn("Error reading file", e)
-        ""
-    }
-
-    private fun getKey(file: File) = root.relativize(file.toPath())
-
-    fun startProcess(userMessage: String) {
-        val codeFiles = codeFiles
-        val eventStatus = if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
-            | Files:
-            | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
-             """.trimMargin() else files.joinToString("\n\n") {
-                val path = root.relativize(it.toPath())
-                    """
-                    |## $path
-                    |
-                    |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-                    """.trimMargin()
+            .associate { file ->
+                root.relativize(file.toPath()) to try {
+                    file.inputStream().bufferedReader().use { it.readText() }
+                } catch (e: Exception) {
+                    log.warn("Error reading file", e)
+                    ""
+                }
             }
-        val task = ui.newTask()
-        val toInput = { it: String ->
-            listOf(
-                eventStatus,
-                it
-            )
-        }
-        val highLevelPlan = Discussable(
-            task = task,
-            heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
-            userMessage = { userMessage },
-            initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = api) },
-            outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
-                AgentPatterns.displayMapInTabs(
-                    mapOf(
-                        "Text" to MarkdownUtil.renderMarkdown(design.text, ui = ui),
-                        "JSON" to MarkdownUtil.renderMarkdown(
-                            "${TRIPLE_TILDE}json\n${JsonUtil.toJson(filterPlan(design.obj))}\n$TRIPLE_TILDE",
-                            ui = ui
-                        ),
-                        "Diagram" to MarkdownUtil.renderMarkdown(
-                            "```mermaid\n" + buildMermaidGraph(
-                                (filterPlan(
-                                    design.obj
-                                ).tasksByID ?: emptyMap()).toMutableMap()
-                            ) + "\n```\n"
-                        )
-                    )
-                )
-            },
-            ui = ui,
-            reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                taskBreakdownActor.respond(
-                    messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                        .toTypedArray<ApiModel.ChatMessage>()),
-                    input = toInput(userMessage),
-                    api = api
-                )
-            },
-        ).call()
 
-        initPlan(filterPlan(highLevelPlan.obj), userMessage, task)
+    fun startProcess(userMessage: String, api: API) {
+        val task = ui.newTask()
+        executePlan(
+            (
+                    initialPlan(
+                        codeFiles = codeFiles,
+                        files = files,
+                        root = root,
+                        task = task,
+                        userMessage = userMessage,
+                        ui = ui,
+                        planSettings = planSettings,
+                        api = api
+                    )
+                    ).plan, task, userMessage, api
+        )
     }
 
-    fun initPlan(
-        plan: TaskBreakdownResult,
+    fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API) {
+        val task = ui.newTask()
+        try {
+            lateinit var taskBreakdownWithPrompt: PlanUtil.TaskBreakdownWithPrompt
+            val plan = filterPlan {
+                taskBreakdownWithPrompt = JsonUtil.fromJson(jsonInput, PlanUtil.TaskBreakdownWithPrompt::class.java)
+                taskBreakdownWithPrompt.plan
+            }
+            task.add(MarkdownUtil.renderMarkdown(
+                """
+                |## Executing TaskBreakdownWithPrompt
+                |Prompt: ${taskBreakdownWithPrompt.prompt}
+                |Plan Text:
+                |```
+                |${taskBreakdownWithPrompt.planText}
+                |```
+                """.trimMargin(), ui = ui))
+            executePlan(plan, task, taskBreakdownWithPrompt.prompt, api)
+        } catch (e: Exception) {
+            task.error(ui, e)
+        }
+    }
+
+    fun executePlan(
+        plan: TaskBreakdownInterface,
+        task: SessionTask,
         userMessage: String,
-        task: SessionTask
+        api: API
     ) {
         try {
-            val tasksByID =
-                filterPlan(plan).tasksByID?.entries?.toTypedArray()?.associate { it.key to it.value } ?: mapOf()
-            val genState = GenState(tasksByID.toMutableMap())
+            val planProcessingState =
+                PlanProcessingState((filterPlan{plan}.tasksByID?.entries?.toTypedArray<Map.Entry<String, PlanTask>>()
+                    ?.associate { it.key to it.value } ?: mapOf()).toMutableMap())
             val diagramTask = ui.newTask(false).apply { task.add(placeholder) }
-            val diagramBuffer =
-                diagramTask.add(
+            executePlan(
+                task = task,
+                diagramBuffer = diagramTask.add(
                     MarkdownUtil.renderMarkdown(
-                        "## Task Dependency Graph\n${TRIPLE_TILDE}mermaid\n${buildMermaidGraph(genState.subTasks)}\n$TRIPLE_TILDE",
+                        "## Task Dependency Graph\n${TRIPLE_TILDE}mermaid\n${buildMermaidGraph(planProcessingState.subTasks)}\n$TRIPLE_TILDE",
                         ui = ui
                     )
-                )
-            val taskIdProcessingQueue = genState.taskIdProcessingQueue
-            val subTasks = genState.subTasks
-            executePlan(
-                task,
-                diagramBuffer,
-                subTasks,
-                diagramTask,
-                genState,
-                taskIdProcessingQueue,
-                pool,
-                userMessage,
-                plan
+                ),
+                subTasks = planProcessingState.subTasks,
+                diagramTask = diagramTask,
+                planProcessingState = planProcessingState,
+                taskIdProcessingQueue = planProcessingState.taskIdProcessingQueue,
+                pool = pool,
+                userMessage = userMessage,
+                plan = plan,
+                api = api
             )
         } catch (e: Throwable) {
             log.warn("Error during incremental code generation process", e)
@@ -161,13 +139,22 @@ class PlanCoordinator(
         diagramBuffer: StringBuilder?,
         subTasks: Map<String, PlanTask>,
         diagramTask: SessionTask,
-        genState: GenState,
+        planProcessingState: PlanProcessingState,
         taskIdProcessingQueue: MutableList<String>,
         pool: ThreadPoolExecutor,
         userMessage: String,
-        plan: TaskBreakdownResult
+        plan: TaskBreakdownInterface,
+        api: API
     ) {
-        val taskTabs = object : TabbedDisplay(ui.newTask(false).apply { task.add(placeholder) }) {
+        val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
+        val api = (api as ChatClient).getChildClient().apply {
+            val createFile = sessionTask.createFile("api-${UUID.randomUUID()}.log")
+            createFile.second?.apply {
+                logStreams += this.outputStream().buffered()
+                sessionTask.add("API log: <a href=\"${createFile.first}\">$this</a>")
+            }
+        }
+        val taskTabs = object : TabbedDisplay(sessionTask) {
             override fun renderTabButtons(): String {
                 diagramBuffer?.set(
                     MarkdownUtil.renderMarkdown(
@@ -184,7 +171,7 @@ class PlanCoordinator(
                     append("<div class='tabs'>\n")
                     super.tabs.withIndex().forEach { (idx, t) ->
                         val (taskId, taskV) = t
-                        val subTask = genState.tasksByDescription[taskId]
+                        val subTask = planProcessingState.tasksByDescription[taskId]
                         if (null == subTask) {
                             log.warn("Task tab not found: $taskId")
                         }
@@ -201,11 +188,10 @@ class PlanCoordinator(
                 }
             }
         }
-        // Initialize task tabs
         taskIdProcessingQueue.forEach { taskId ->
             val newTask = ui.newTask(false)
-            genState.uitaskMap[taskId] = newTask
-            val subtask = genState.subTasks[taskId]
+            planProcessingState.uitaskMap[taskId] = newTask
+            val subtask = planProcessingState.subTasks[taskId]
             val description = subtask?.description
             log.debug("Creating task tab: $taskId ${System.identityHashCode(subtask)} $description")
             taskTabs[description ?: taskId] = newTask.placeholder
@@ -213,13 +199,13 @@ class PlanCoordinator(
         Thread.sleep(100)
         while (taskIdProcessingQueue.isNotEmpty()) {
             val taskId = taskIdProcessingQueue.removeAt(0)
-            val subTask = genState.subTasks[taskId] ?: throw RuntimeException("Task not found: $taskId")
-            genState.taskFutures[taskId] = pool.submit {
+            val subTask = planProcessingState.subTasks[taskId] ?: throw RuntimeException("Task not found: $taskId")
+            planProcessingState.taskFutures[taskId] = pool.submit {
                 subTask.state = AbstractTask.TaskState.Pending
                 taskTabs.update()
                 log.debug("Awaiting dependencies: ${subTask.task_dependencies?.joinToString(", ") ?: ""}")
                 subTask.task_dependencies
-                    ?.associate { it to genState.taskFutures[it] }
+                    ?.associate { it to planProcessingState.taskFutures[it] }
                     ?.forEach { (id, future) ->
                         try {
                             future?.get() ?: log.warn("Dependency not found: $id")
@@ -230,14 +216,14 @@ class PlanCoordinator(
                 subTask.state = AbstractTask.TaskState.InProgress
                 taskTabs.update()
                 log.debug("Running task: ${System.identityHashCode(subTask)} ${subTask.description}")
-                val task1 = genState.uitaskMap.get(taskId) ?: ui.newTask(false).apply {
+                val task1 = planProcessingState.uitaskMap.get(taskId) ?: ui.newTask(false).apply {
                     taskTabs[taskId] = placeholder
                 }
                 try {
                     val dependencies = subTask.task_dependencies?.toMutableSet() ?: mutableSetOf()
                     dependencies += getAllDependencies(
                         subPlanTask = subTask,
-                        subTasks = genState.subTasks,
+                        subTasks = planProcessingState.subTasks,
                         visited = mutableSetOf()
                     )
 
@@ -257,27 +243,28 @@ class PlanCoordinator(
                           """.trimMargin(), ui = ui
                         )
                     )
-                    settings.getImpl(subTask).run(
+                    getImpl(planSettings, subTask).run(
                         agent = this,
                         taskId = taskId,
                         userMessage = userMessage,
                         plan = plan,
-                        genState = genState,
+                        planProcessingState = planProcessingState,
                         task = task1,
-                        taskTabs = taskTabs
+                        taskTabs = taskTabs,
+                        api = api
                     )
                 } catch (e: Throwable) {
                     log.warn("Error during task execution", e)
                     task1.error(ui, e)
                 } finally {
-                    genState.completedTasks.add(element = taskId)
+                    planProcessingState.completedTasks.add(element = taskId)
                     subTask.state = AbstractTask.TaskState.Completed
                     log.debug("Completed task: $taskId ${System.identityHashCode(subTask)}")
                     taskTabs.update()
                 }
             }
         }
-        genState.taskFutures.forEach { (id, future) ->
+        planProcessingState.taskFutures.forEach { (id, future) ->
             try {
                 future.get() ?: log.warn("Dependency not found: $id")
             } catch (e: Throwable) {
@@ -286,111 +273,87 @@ class PlanCoordinator(
         }
     }
 
-    private fun getAllDependencies(
-        subPlanTask: PlanTask,
-        subTasks: Map<String, PlanTask>,
-        visited: MutableSet<String>
-    ): List<String> {
-        val dependencies = subPlanTask.task_dependencies?.toMutableList() ?: mutableListOf()
-        subPlanTask.task_dependencies?.forEach { dep ->
-            if (dep in visited) return@forEach
-            val subTask = subTasks[dep]
-            if (subTask != null) {
-                visited.add(dep)
-                dependencies.addAll(getAllDependencies(subTask, subTasks, visited))
-            }
-        }
-        return dependencies
-    }
-
     companion object {
-        val log = LoggerFactory.getLogger(PlanCoordinator::class.java)
+        private val log = LoggerFactory.getLogger(PlanCoordinator::class.java)
 
-        fun executionOrder(tasks: Map<String, PlanTask>): List<String> {
-            val taskIds: MutableList<String> = mutableListOf()
-            val taskMap = tasks.toMutableMap()
-            while (taskMap.isNotEmpty()) {
-                val nextTasks =
-                    taskMap.filter { (_, task) -> task.task_dependencies?.all { taskIds.contains(it) } ?: true }
-                if (nextTasks.isEmpty()) {
-                    throw RuntimeException("Circular dependency detected in task breakdown")
-                }
-                taskIds.addAll(nextTasks.keys)
-                nextTasks.keys.forEach { taskMap.remove(it) }
-            }
-            return taskIds
-        }
-
-        val isWindows = System.getProperty("os.name").lowercase(Locale.getDefault()).contains("windows")
-        private fun sanitizeForMermaid(input: String) = input
-            .replace(" ", "_")
-            .replace("\"", "\\\"")
-            .replace("[", "\\[")
-            .replace("]", "\\]")
-            .replace("(", "\\(")
-            .replace(")", "\\)")
-            .let { "`$it`" }
-
-        private fun escapeMermaidCharacters(input: String) = input
-            .replace("\"", "\\\"")
-            .let { '"' + it + '"' }
-
-        fun buildMermaidGraph(subTasks: Map<String, PlanTask>): String {
-            val graphBuilder = StringBuilder("graph TD;\n")
-            subTasks.forEach { (taskId, task) ->
-                val sanitizedTaskId = sanitizeForMermaid(taskId)
-                val taskType = task.taskType?.name ?: "Unknown"
-                val escapedDescription = escapeMermaidCharacters(task.description ?: "")
-                val style = when (task.state) {
-                    AbstractTask.TaskState.Completed -> ":::completed"
-                    AbstractTask.TaskState.InProgress -> ":::inProgress"
-                    else -> ":::$taskType"
-                }
-                graphBuilder.append("    ${sanitizedTaskId}[$escapedDescription]$style;\n")
-                task.task_dependencies?.forEach { dependency ->
-                    val sanitizedDependency = sanitizeForMermaid(dependency)
-                    graphBuilder.append("    $sanitizedDependency --> ${sanitizedTaskId};\n")
-                }
-            }
-            graphBuilder.append("    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;\n")
-            graphBuilder.append("    classDef NewFile fill:lightblue,stroke:#333,stroke-width:2px;\n")
-            graphBuilder.append("    classDef EditFile fill:lightgreen,stroke:#333,stroke-width:2px;\n")
-            graphBuilder.append("    classDef Documentation fill:lightyellow,stroke:#333,stroke-width:2px;\n")
-            graphBuilder.append("    classDef Inquiry fill:orange,stroke:#333,stroke-width:2px;\n")
-            graphBuilder.append("    classDef TaskPlanning fill:lightgrey,stroke:#333,stroke-width:2px;\n")
-            graphBuilder.append("    classDef completed fill:#90EE90,stroke:#333,stroke-width:2px;\n")
-            graphBuilder.append("    classDef inProgress fill:#FFA500,stroke:#333,stroke-width:2px;\n")
-            return graphBuilder.toString()
-        }
-
-        fun filterPlan(obj: TaskBreakdownResult): TaskBreakdownResult {
-            val tasksByID = obj.tasksByID?.filter { (k, v) ->
-                when {
-                    v.taskType == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() -> false
-                    else -> true
-                }
-            } ?: mapOf()
-            if (tasksByID.size == obj.tasksByID?.size) return obj
-            return filterPlan(obj.copy(
-                tasksByID = tasksByID.mapValues { (_, v) ->
-                    v.copy(
-                        task_dependencies = v.task_dependencies?.filter { it in tasksByID.keys }
+        fun initialPlan(
+            codeFiles: Map<Path, String>,
+            files: Array<File>,
+            root: Path,
+            task: SessionTask,
+            userMessage: String,
+            ui: ApplicationInterface,
+            planSettings: PlanSettings,
+            api: API
+        ): PlanUtil.TaskBreakdownWithPrompt {
+            val toInput = inputFn(codeFiles, files, root)
+            return (
+                Discussable(
+                    task = task,
+                    heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
+                    userMessage = { userMessage },
+                    initialResponse = {
+                        planningActor(planSettings).answer(
+                            toInput(it),
+                            api = api
+                        ) as ParsedResponse<TaskBreakdownInterface>
+                    },
+                    outputFn = { render(
+                        withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                            prompt = userMessage,
+                            plan = it.obj as TaskBreakdownResult,
+                            planText = it.text
+                        ),
+                        ui = ui
+                    ) },
+                    ui = ui,
+                    reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+                        val messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                            .toTypedArray<ApiModel.ChatMessage>()
+                        planningActor(planSettings).respond(
+                            messages = messages,
+                            input = toInput(userMessage),
+                            api = api
+                        ) as ParsedResponse<TaskBreakdownInterface>
+                    },
+                ).call().let {
+                    PlanUtil.TaskBreakdownWithPrompt(
+                        prompt = userMessage,
+                        plan = filterPlan{it.obj} as TaskBreakdownResult,
+                        planText = it.text
                     )
                 }
-            ))
+            )
+        }
+
+
+        fun inputFn(
+            codeFiles: Map<Path, String>,
+            files: Array<File>,
+            root: Path
+        ): (String) -> List<String> {
+            val toInput = { it: String ->
+                listOf(
+                    if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
+                                            | Files:
+                                            | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
+                                             """.trimMargin() else {
+                        files.joinToString("\n\n") {
+                            val path = root.relativize(it.toPath())
+                            """
+                                    |## $path
+                                    |
+                                    |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
+                                    """.trimMargin()
+                        }
+                    },
+                    it
+                )
+            }
+            return toInput
         }
     }
 
-    data class GenState(
-        val subTasks: Map<String, PlanTask>,
-        val tasksByDescription: MutableMap<String?, PlanTask> = subTasks.entries.toTypedArray()
-            .associate { it.value.description to it.value }.toMutableMap(),
-        val taskIdProcessingQueue: MutableList<String> = executionOrder(subTasks).toMutableList(),
-        val taskResult: MutableMap<String, String> = mutableMapOf(),
-        val completedTasks: MutableList<String> = mutableListOf(),
-        val taskFutures: MutableMap<String, Future<*>> = mutableMapOf(),
-        val uitaskMap: MutableMap<String, SessionTask> = mutableMapOf()
-    )
 
 }
 

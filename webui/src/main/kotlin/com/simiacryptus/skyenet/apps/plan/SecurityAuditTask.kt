@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.apps.plan
 import org.slf4j.LoggerFactory
 
 class SecurityAuditTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractAnalysisTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName: String = "SecurityAudit"
     override val actorPrompt: String = """
 Perform a comprehensive security audit for the provided code files. Analyze the code for:

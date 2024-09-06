@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.apps.general
 
 
 import com.simiacryptus.diff.FileValidationUtils
-import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.set
@@ -16,7 +16,7 @@ class CmdPatchApp(
     root: Path,
     session: Session,
     settings: Settings,
-    api: OpenAIClient,
+    api: ChatClient,
     val files: Array<out File>?,
     model: OpenAITextModel
 ) : PatchApp(root.toFile(), session, settings, api, model) {

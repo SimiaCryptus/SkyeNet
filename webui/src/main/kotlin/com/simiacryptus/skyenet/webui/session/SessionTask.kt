@@ -8,6 +8,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
+import java.io.File
 
 abstract class SessionTask(
     val operationID: String,
@@ -202,6 +203,8 @@ abstract class SessionTask(
         }
 
     }
+
+    abstract fun createFile(relativePath: String): Pair<String, File?>
 }
 
 val Throwable.stackTraceTxt: String

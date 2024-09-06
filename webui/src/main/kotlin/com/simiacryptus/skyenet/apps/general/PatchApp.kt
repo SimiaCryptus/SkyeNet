@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.diff.addApplyFileDiffLinks
-import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.JsonUtil
@@ -26,8 +26,9 @@ abstract class PatchApp(
     override val root: File,
     val session: Session,
     val settings: Settings,
-    val api: OpenAIClient,
-    val model: OpenAITextModel
+    val api: ChatClient,
+    val model: OpenAITextModel,
+    val promptPrefix: String = """The following command was run and produced an error:"""
 ) : ApplicationServer(
     applicationName = "Magic Code Fixer",
     path = "/fixCmd",
@@ -152,7 +153,7 @@ abstract class PatchApp(
         output: OutputResult,
         task: SessionTask,
         ui: ApplicationInterface,
-        api: OpenAIClient,
+        api: ChatClient,
     ) {
         Retryable(ui, task) { content ->
             fixAllInternal(
@@ -174,7 +175,7 @@ abstract class PatchApp(
         task: SessionTask,
         ui: ApplicationInterface,
         changed: MutableSet<Path>,
-        api: OpenAIClient,
+        api: ChatClient,
     ) {
         val plan = ParsedActor(
             resultClass = ParsedErrors::class.java,
@@ -199,7 +200,7 @@ abstract class PatchApp(
         ).answer(
             listOf(
                 """
-                |The following command was run and produced an error:
+                |$promptPrefix
                 |
                 |${tripleTilde}
                 |${output.output}
@@ -259,7 +260,7 @@ abstract class PatchApp(
         content: StringBuilder,
         autoFix: Boolean,
         changed: MutableSet<Path>,
-        api: OpenAIClient,
+        api: ChatClient,
     ) {
         val paths =
             (
@@ -324,7 +325,7 @@ abstract class PatchApp(
         ).answer(
             listOf(
                 """
-                |The following command was run and produced an error:
+                |$promptPrefix
                 |
                 |${tripleTilde}
                 |${output.output}

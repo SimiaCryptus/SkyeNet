@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.core.util
 
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.audio.AudioRecorder
 import com.simiacryptus.jopenai.audio.LookbackLoudnessWindowBuffer
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 @Suppress("unused")
 open class Ears(
-    val api: OpenAIClient,
+    val api: ChatClient,
     private val secondsPerAudioPacket: Double = 0.25,
 ) {
 

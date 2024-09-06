@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.apps.plan
 import org.slf4j.LoggerFactory
 
 class TestGenerationTask(
-    settings: Settings,
-    planTask: PlanTask
-) : AbstractAnalysisTask(settings, planTask) {
+    planSettings: PlanSettings,
+    planTask: PlanningTask.PlanTask
+) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName: String = "TestGeneration"
     override val actorPrompt: String = """
                 |Generate comprehensive unit tests for the provided code files. The tests should:
