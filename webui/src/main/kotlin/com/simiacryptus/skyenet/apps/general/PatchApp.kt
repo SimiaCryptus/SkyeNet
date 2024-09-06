@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.JsonUtil
@@ -28,7 +27,8 @@ abstract class PatchApp(
     val session: Session,
     val settings: Settings,
     val api: ChatClient,
-    val model: OpenAITextModel
+    val model: OpenAITextModel,
+    val promptPrefix: String = """The following command was run and produced an error:"""
 ) : ApplicationServer(
     applicationName = "Magic Code Fixer",
     path = "/fixCmd",
@@ -200,7 +200,7 @@ abstract class PatchApp(
         ).answer(
             listOf(
                 """
-                |The following command was run and produced an error:
+                |$promptPrefix
                 |
                 |${tripleTilde}
                 |${output.output}
@@ -325,7 +325,7 @@ abstract class PatchApp(
         ).answer(
             listOf(
                 """
-                |The following command was run and produced an error:
+                |$promptPrefix
                 |
                 |${tripleTilde}
                 |${output.output}

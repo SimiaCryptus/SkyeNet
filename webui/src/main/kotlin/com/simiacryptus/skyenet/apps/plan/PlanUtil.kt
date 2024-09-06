@@ -123,9 +123,13 @@ object PlanUtil {
         try {
             executionOrder(tasksByID)
         } catch (e: RuntimeException) {
-            log.info("Circular dependency detected in task breakdown")
-            if (retries <= 0) throw e
-            return filterPlan(retries - 1, fn)
+            if (retries <= 0) {
+                log.warn("Error filtering plan: " + JsonUtil.toJson(obj), e)
+                throw e
+            } else {
+                log.info("Circular dependency detected in task breakdown")
+                return filterPlan(retries - 1, fn)
+            }
         }
         return if (tasksByID.size == obj.tasksByID?.size) {
             obj

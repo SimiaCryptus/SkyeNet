@@ -52,10 +52,10 @@ class CommandAutoFixTask(
                 val alias = this.planTask.command?.first()
                 val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
                 val cmds = commandAutoFixCommands
-                    ?.map { File(it).name }
-                    ?.filter { it.startsWith(alias ?: "") }
-                    ?: emptyList()
-                val executable = cmds.firstOrNull()
+                    ?.map { File(it) }?.associateBy { it.name }
+                    ?.filterKeys { it.startsWith(alias ?: "") }
+                    ?: emptyMap()
+                val executable = cmds.entries.firstOrNull()?.value
                 if (executable == null) {
                     throw IllegalArgumentException("Command not found: $alias")
                 }
@@ -66,7 +66,7 @@ class CommandAutoFixTask(
                     root = agent.root,
                     session = agent.session,
                     settings = PatchApp.Settings(
-                        executable = File(executable),
+                        executable = executable,
                         arguments = this.planTask.command?.drop(1)?.joinToString(" ") ?: "",
                         workingDirectory = workingDirectory,
                         exitCodeOption = "nonzero",
