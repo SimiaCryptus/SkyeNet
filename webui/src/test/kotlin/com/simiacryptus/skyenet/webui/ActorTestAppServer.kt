@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.apps.general.PlanAheadApp
 import com.simiacryptus.skyenet.apps.general.StressTestApp
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.ImageActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
@@ -98,7 +99,7 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                         ),
                         env = mapOf(),
                         workingDir = ".",
-                        language = if (PlanCoordinator.isWindows) "powershell" else "bash",
+                        language = if (isWindows) "powershell" else "bash",
                     ),
                     model = ChatModels.GPT4o,
                     parsingModel = ChatModels.GPT4oMini,
