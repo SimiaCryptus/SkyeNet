@@ -33,6 +33,7 @@ kotlin {
 val kotlin_version = "2.0.0-Beta5"
 val jetty_version = "11.0.18"
 val jackson_version = "2.17.0"
+
 dependencies {
 
     implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.0") {
@@ -42,6 +43,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":kotlin"))
 
+    implementation("org.apache.pdfbox:pdfbox:2.0.27")
     implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
     compileOnly("org.jsoup:jsoup:1.17.2")
 
@@ -114,7 +116,6 @@ sass {
 
 
 tasks {
-
     compileKotlin {
         compilerOptions {
             javaParameters.set(true)
