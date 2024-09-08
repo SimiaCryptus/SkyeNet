@@ -2,9 +2,9 @@ package com.simiacryptus.skyenet.webui
 
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
+import com.simiacryptus.skyenet.apps.general.DocumentParserApp
 import com.simiacryptus.skyenet.apps.general.PlanAheadApp
 import com.simiacryptus.skyenet.apps.general.StressTestApp
-import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
 import com.simiacryptus.skyenet.core.actors.CodingActor
@@ -80,7 +80,6 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                 CodingActorTestApp(CodingActor(GroovyInterpreter::class, model = ChatModels.GPT35Turbo))
             ),
             ChildWebApp("/test_file_patch", FilePatchTestApp()),
-            /*PlanAheadApp*/
             ChildWebApp(
                 "/taskDev",
                 PlanAheadApp(
@@ -106,8 +105,8 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                     parsingModel = ChatModels.GPT4oMini,
                 )
             ),
-            /*StressTestApp*/
             ChildWebApp("/stressTest", StressTestApp()),
+            ChildWebApp("/pdfExtractor", DocumentParserApp()),
         )
     }
 

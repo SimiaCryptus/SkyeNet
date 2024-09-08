@@ -101,7 +101,12 @@ open class ParsedActor<T : Any>(
 
                 // if input is wrapped in a ```json block, remove the block
                 if (contentUnwrapped.startsWith("```json")) {
-                    contentUnwrapped = contentUnwrapped.substring(7, contentUnwrapped.lastIndexOf("```"))
+                    val endIndex = contentUnwrapped.lastIndexOf("```")
+                    if (endIndex > 7) {
+                        contentUnwrapped = contentUnwrapped.substring(7, endIndex)
+                    } else {
+                        throw RuntimeException("Failed to parse response: ${contentUnwrapped.replace("\n", "\n  ")}")
+                    }
                 }
 
                 contentUnwrapped.let {
