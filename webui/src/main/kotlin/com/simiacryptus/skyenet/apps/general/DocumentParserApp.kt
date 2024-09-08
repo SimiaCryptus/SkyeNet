@@ -4,10 +4,10 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.apps.general.parsers.ParsingModel
-import com.simiacryptus.skyenet.apps.general.parsers.DefaultParsingModel
 import com.simiacryptus.skyenet.TabbedDisplay
+import com.simiacryptus.skyenet.apps.general.parsers.DefaultParsingModel
 import com.simiacryptus.skyenet.apps.general.parsers.PDFReader
+import com.simiacryptus.skyenet.apps.general.parsers.ParsingModel
 import com.simiacryptus.skyenet.apps.general.parsers.TextReader
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
@@ -25,7 +25,7 @@ import java.util.*
 import javax.imageio.ImageIO
 import kotlin.math.min
 
-class DocumentParserApp(
+open class DocumentParserApp(
     applicationName: String = "Document Extractor",
     path: String = "/pdfExtractor",
     val api: API = ChatClient(),
@@ -130,7 +130,9 @@ class DocumentParserApp(
                     })
                     try {
                         val text = reader.getText(batchStart + 1, batchEnd)
-                        outputDir.resolve("pages_${batchStart + 1}_to_${batchEnd}_text.txt").writeText(text)
+                        if (settings.saveTextFiles) {
+                            outputDir.resolve("pages_${batchStart + 1}_to_${batchEnd}_text.txt").writeText(text)
+                        }
                         val promptList = mutableListOf<String>()
                         promptList.add(
                             """
@@ -194,14 +196,16 @@ class DocumentParserApp(
                                     image(image)
                                 }
                             }
-                            val imageFile =
-                                outputDir.resolve("page_${pageIndex + 1}.${settings.outputFormat.lowercase(Locale.getDefault())}")
-                            when (settings.outputFormat.uppercase(Locale.getDefault())) {
-                                "PNG" -> ImageIO.write(image, "PNG", imageFile)
-                                "JPEG", "JPG" -> ImageIO.write(image, "JPEG", imageFile)
-                                "GIF" -> ImageIO.write(image, "GIF", imageFile)
-                                "BMP" -> ImageIO.write(image, "BMP", imageFile)
-                                else -> throw IllegalArgumentException("Unsupported output format: ${settings.outputFormat}")
+                            if (settings.saveImageFiles) {
+                                val imageFile =
+                                    outputDir.resolve("page_${pageIndex + 1}.${settings.outputFormat.lowercase(Locale.getDefault())}")
+                                when (settings.outputFormat.uppercase(Locale.getDefault())) {
+                                    "PNG" -> ImageIO.write(image, "PNG", imageFile)
+                                    "JPEG", "JPG" -> ImageIO.write(image, "JPEG", imageFile)
+                                    "GIF" -> ImageIO.write(image, "GIF", imageFile)
+                                    "BMP" -> ImageIO.write(image, "BMP", imageFile)
+                                    else -> throw IllegalArgumentException("Unsupported output format: ${settings.outputFormat}")
+                                }
                             }
                         }
                         runningDocument = parsingModel.merge(runningDocument, jsonResult)
@@ -238,6 +242,17 @@ class DocumentParserApp(
                         """.trimMargin(), ui = ui
                     )
                 )
+                // Save final JSON if enabled in settings
+                if (settings.saveFinalJson) {
+                    val finalJsonFile = outputDir.resolve("final_document.json")
+                    finalJsonFile.writeText(JsonUtil.toJson(runningDocument))
+                    task.add(
+                        MarkdownUtil.renderMarkdown(
+                            "Final JSON saved to: ${finalJsonFile.absolutePath}",
+                            ui = ui
+                        )
+                    )
+                }
             }
         } catch (e: Throwable) {
             task.error(ui, e)
@@ -250,7 +265,10 @@ class DocumentParserApp(
         val outputFormat: String = "PNG",
         val fileInput: String? = "",
         val showImages: Boolean = true,
-        val pagesPerBatch: Int = 1
+        val pagesPerBatch: Int = 1,
+        val saveImageFiles: Boolean = true,
+        val saveTextFiles: Boolean = true,
+        val saveFinalJson: Boolean = false
     )
 
     override val settingsClass: Class<*> get() = Settings::class.java
