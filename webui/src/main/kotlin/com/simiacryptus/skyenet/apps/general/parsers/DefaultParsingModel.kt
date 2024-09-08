@@ -4,6 +4,14 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.core.actors.ParsedActor
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
+import org.apache.parquet.avro.AvroParquetWriter
+import org.apache.parquet.hadoop.ParquetWriter
+import org.apache.parquet.hadoop.metadata.CompressionCodecName
+import java.io.File
 
 open class DefaultParsingModel(
     private val chatModels: ChatModels,
@@ -131,6 +139,42 @@ open class DefaultParsingModel(
 
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(DefaultParsingModel::class.java)
+        
+        fun saveAsParquet(document: DocumentData, outputPath: String) {
+            val schema = Schema.Parser().parse(File("document_schema.avsc"))
+            val rows = mutableListOf<GenericData.Record>()
+            fun processContent(content: ContentData, parentId: String? = null) {
+                val record = GenericData.Record(schema)
+                record.put("id", content.hashCode().toString())
+                record.put("parent_id", parentId)
+                record.put("type", content.type)
+                record.put("text", content.text)
+                record.put("entities", content.entities?.joinToString(","))
+                record.put("tags", content.tags?.joinToString(","))
+                rows.add(record)
+                content.content?.forEach { childContent ->
+                    processContent(childContent, content.hashCode().toString())
+                }
+            }
+            document.content?.forEach { processContent(it) }
+            document.entities?.forEach { (entityId, entityData) ->
+                val record = GenericData.Record(schema)
+                record.put("id", entityId)
+                record.put("type", "entity")
+                record.put("text", entityData.aliases?.joinToString(", "))
+                record.put("properties", entityData.properties?.entries?.joinToString(", ") { "${it.key}:${it.value}" })
+                record.put("relations", entityData.relations?.entries?.joinToString(", ") { "${it.key}:${it.value}" })
+                rows.add(record)
+            }
+            val conf = Configuration()
+            val writer: ParquetWriter<GenericData.Record> = AvroParquetWriter.builder<GenericData.Record>(Path(outputPath))
+                .withSchema(schema)
+                .withConf(conf)
+                .withCompressionCodec(CompressionCodecName.SNAPPY)
+                .build()
+            rows.forEach { writer.write(it) }
+            writer.close()
+        }
     }
 
 }

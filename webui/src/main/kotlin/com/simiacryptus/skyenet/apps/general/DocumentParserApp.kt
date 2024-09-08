@@ -23,6 +23,7 @@ import java.io.File
 import java.nio.file.Path
 import java.util.*
 import javax.imageio.ImageIO
+import kotlin.io.path.name
 import kotlin.math.min
 
 open class DocumentParserApp(
@@ -65,7 +66,6 @@ open class DocumentParserApp(
                 maxPages = settings.maxPages.coerceAtMost(Int.MAX_VALUE),
                 settings = settings,
                 pagesPerBatch = settings.pagesPerBatch,
-                root = dataStorage.getDataDir(user, session)
             )
         }
         return socketManager
@@ -85,7 +85,6 @@ open class DocumentParserApp(
                 maxPages = settings.maxPages.coerceAtMost(Int.MAX_VALUE),
                 settings = settings,
                 pagesPerBatch = settings.pagesPerBatch,
-                root = dataStorage.getDataDir(user, session)
             )
         }
     }
@@ -97,7 +96,6 @@ open class DocumentParserApp(
         maxPages: Int,
         settings: Settings,
         pagesPerBatch: Int,
-        root: File
     ) {
         try {
             val pdfFile = fileInput.toFile()
@@ -244,7 +242,7 @@ open class DocumentParserApp(
                 )
                 // Save final JSON if enabled in settings
                 if (settings.saveFinalJson) {
-                    val finalJsonFile = outputDir.resolve("final_document.json")
+                    val finalJsonFile = root.resolve(fileInput.name.reversed().split(delimiters = arrayOf("."), false, 2)[1].reversed() + ".parsed.json")
                     finalJsonFile.writeText(JsonUtil.toJson(runningDocument))
                     task.add(
                         MarkdownUtil.renderMarkdown(

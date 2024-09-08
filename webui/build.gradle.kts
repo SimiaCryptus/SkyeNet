@@ -63,6 +63,11 @@ dependencies {
     }
     testRuntimeOnly("org.openapitools:openapi-generator-cli:7.3.0")
 
+    implementation("org.apache.parquet:parquet-common:1.12.3")
+    implementation("org.apache.parquet:parquet-avro:1.12.3")
+    implementation("org.apache.hadoop:hadoop-common:3.3.4")
+    implementation("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.4")
+
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-annotations", version = jetty_version)
