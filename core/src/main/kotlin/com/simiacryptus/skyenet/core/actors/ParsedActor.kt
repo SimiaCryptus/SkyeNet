@@ -58,7 +58,7 @@ open class ParsedActor<T : Any>(
         override val obj get() = _obj
     }
 
-    fun getParser(api: API) = Function<String, T> { input ->
+    fun getParser(api: API, promptSuffix: String? = null) = Function<String, T> { input ->
         describer.coverMethods = false
         val describe = resultClass?.let { describer.describe(it) } ?: ""
         val exceptions = mutableListOf<Exception>()
@@ -73,6 +73,7 @@ open class ParsedActor<T : Any>(
             |```json
             |${JsonUtil.toJson(exampleInstance!!)/*.indent("  ")*/}
             |```
+            |${promptSuffix?.let { "\n$it" } ?: ""}
             |
           """.trimMargin()
         for (i in 0 until deserializerRetries) {
