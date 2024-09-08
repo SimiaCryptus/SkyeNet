@@ -1,25 +1,29 @@
-package com.simiacryptus.skyenet.apps.general
+package com.simiacryptus.skyenet.apps.general.parsers
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.core.actors.ParsedActor
-import java.time.LocalDateTime
 
-class ParsingModel(
+class DefaultParsingModel(
     private val chatModels: ChatModels,
     private val temperature: Double
-) {
+) : ParsingModel {
 
-    fun merge(
-        runningDocument: DocumentData,
-        newData: DocumentData
-    ) = DocumentData(
-        id = newData.id ?: runningDocument.id,
-        content = mergeContent(runningDocument.content, newData.content).takeIf { it.isNotEmpty() },
-        entities = mergeEntities(runningDocument.entities, newData.entities).takeIf { it.isNotEmpty() },
-        metadata = mergeMetadata(runningDocument.metadata, newData.metadata)
-    )
+    override fun merge(
+        runningDocument: ParsingModel.DocumentData,
+        newData: ParsingModel.DocumentData
+    ) : ParsingModel.DocumentData {
+        val runningDocument = runningDocument as DocumentData
+        val newData = newData as DocumentData
+        return DocumentData(
+            id = newData.id ?: runningDocument.id,
+            content = mergeContent(runningDocument.content, newData.content).takeIf { it.isNotEmpty() },
+            entities = mergeEntities(runningDocument.entities, newData.entities).takeIf { it.isNotEmpty() },
+            metadata = mergeMetadata(runningDocument.metadata, newData.metadata)
+        )
+    }
+
     private fun mergeMetadata(existing: DocumentMetadata?, new: DocumentMetadata?): DocumentMetadata {
         return DocumentMetadata(
             title = new?.title ?: existing?.title,
@@ -27,7 +31,6 @@ class ParsingModel(
             properties = ((existing?.properties ?: emptyMap()) + (new?.properties ?: emptyMap())).takeIf { it.isNotEmpty() }
         )
     }
-
 
     private fun mergeContent(
         existingContent: List<ContentData>?,
@@ -52,7 +55,6 @@ class ParsingModel(
         tags = ((existing.tags ?: emptyList()) + (new.tags ?: emptyList())).distinct().takeIf { it.isNotEmpty() }
     )
 
-
     private fun mergeEntities(
         existingEntities: Map<String, EntityData>?,
         newEntities: Map<String, EntityData>?
@@ -74,13 +76,36 @@ class ParsingModel(
         type = new.type ?: existing.type
     )
 
+    override fun getParser(api: API): (String) -> DocumentData {
+        val parser = ParsedActor(
+            resultClass = DocumentData::class.java,
+            prompt = "",
+            parsingModel = chatModels,
+            temperature = temperature
+        ).getParser(
+            api, promptSuffix = """
+    Parse the text into a hierarchical structure that describes the content of the page:
+    1. Separate the content into sections, paragraphs, statements, etc.
+    2. The final level of the hierarchy should contain singular, short, standalone sentences.
+    3. Capture any entities, relationships, and properties that can be extracted from the text of the current page(s).
+    4. For each entity, include mentions with their exact text and location (start and end indices) in the document.
+    5. Extract document metadata such as title, author, creation date, and keywords if available.
+    6. Assign relevant tags to each content section to improve searchability and categorization.
+    7. Do not copy data from the accumulated document JSON to your response; it is provided for context only.
+        """.trimIndent()
+        )
+        return { text -> parser.apply(text) }
+    }
+
+    override fun newDocument() = DocumentData()
+
 
     data class DocumentData(
         @Description("Document/Page identifier") val id: String? = null,
         @Description("Entities extracted") val entities: Map<String, EntityData>? = null,
         @Description("Hierarchical structure and data") val content: List<ContentData>? = null,
         @Description("Document metadata") val metadata: DocumentMetadata? = null
-    )
+    ) : ParsingModel.DocumentData
 
     data class EntityData(
         @Description("Aliases for the entity") val aliases: List<String>? = null,
@@ -102,25 +127,4 @@ class ParsingModel(
         @Description("Other metadata") val properties: Map<String, Any>? = null,
     )
 
-
-    fun getParser(api: API) = ParsedActor(
-        resultClass = DocumentData::class.java,
-        prompt = "",
-        parsingModel = chatModels,
-        temperature = temperature
-    ).getParser(api, promptSuffix = """
-            |Parse the text into a hierarchical structure that describes the content of the page:
-            |1. Separate the content into sections, paragraphs, statements, etc.
-            |2. The final level of the hierarchy should contain singular, short, standalone sentences.
-            |3. Capture any entities, relationships, and properties that can be extracted from the text of the current page(s).
-            |4. For each entity, include mentions with their exact text and location (start and end indices) in the document.
-            |5. Extract document metadata such as title, author, creation date, and keywords if available.
-            |6. Assign relevant tags to each content section to improve searchability and categorization.
-            |7. Do not copy data from the accumulated document JSON to your response; it is provided for context only.
-            """.trimMargin()
-    )
-
-    companion object {
-        private val log = org.slf4j.LoggerFactory.getLogger(ParsingModel::class.java)
-    }
 }

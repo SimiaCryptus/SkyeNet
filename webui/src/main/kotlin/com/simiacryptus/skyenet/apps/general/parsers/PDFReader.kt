@@ -1,12 +1,13 @@
-package com.simiacryptus.skyenet.apps.general
+package com.simiacryptus.skyenet.apps.general.parsers
 
+import com.simiacryptus.skyenet.apps.general.DocumentParserApp
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.rendering.PDFRenderer
 import org.apache.pdfbox.text.PDFTextStripper
 import java.awt.image.BufferedImage
 import java.io.File
 
-class PDFReader(pdfFile: File) : DocumentParserApp.DocumentReader, AutoCloseable {
+class PDFReader(pdfFile: File) : DocumentParserApp.DocumentReader {
     private val document: PDDocument = PDDocument.load(pdfFile)
     private val renderer: PDFRenderer = PDFRenderer(document)
     private val stripper: PDFTextStripper = PDFTextStripper().apply { sortByPosition = true }

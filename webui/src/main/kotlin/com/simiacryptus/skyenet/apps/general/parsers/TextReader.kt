@@ -1,5 +1,6 @@
-package com.simiacryptus.skyenet.apps.general
+package com.simiacryptus.skyenet.apps.general.parsers
 
+import com.simiacryptus.skyenet.apps.general.DocumentParserApp
 import java.awt.image.BufferedImage
 import java.io.File
 

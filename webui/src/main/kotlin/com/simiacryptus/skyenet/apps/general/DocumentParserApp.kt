@@ -4,7 +4,11 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.apps.general.parsers.ParsingModel
+import com.simiacryptus.skyenet.apps.general.parsers.DefaultParsingModel
 import com.simiacryptus.skyenet.TabbedDisplay
+import com.simiacryptus.skyenet.apps.general.parsers.PDFReader
+import com.simiacryptus.skyenet.apps.general.parsers.TextReader
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -25,7 +29,7 @@ class DocumentParserApp(
     applicationName: String = "Document Extractor",
     path: String = "/pdfExtractor",
     val api: API = ChatClient(),
-    val parsingModel: ParsingModel = ParsingModel(ChatModels.Claude35Sonnet, 0.1),
+    val parsingModel: ParsingModel = DefaultParsingModel(ChatModels.Claude35Sonnet, 0.1),
     val reader: (File) -> DocumentReader = {
         when {
             it.name.endsWith(".pdf", ignoreCase = true) -> PDFReader(it)
@@ -104,8 +108,7 @@ class DocumentParserApp(
             val outputDir = root.resolve("output").apply { mkdirs() }
             lateinit var runningDocument: ParsingModel.DocumentData
             reader(pdfFile).use { reader ->
-                runningDocument =
-                    ParsingModel.DocumentData(id = pdfFile.name, content = ArrayList(), entities = mutableMapOf())
+                runningDocument = parsingModel.newDocument()
                 var previousPageText = "" // Keep this for context
                 task.add(
                     MarkdownUtil.renderMarkdown(
@@ -158,9 +161,9 @@ class DocumentParserApp(
                             |```
                             """.trimMargin()
                         )
-                        @Language("Markdown") val jsonResult = parsingModel.getParser(api).apply(
-                            promptList.toList().joinToString("\n\n")
-                        )
+                        @Language("Markdown") val jsonResult = parsingModel.getParser(api).let {
+                            it(promptList.toList().joinToString("\n\n"))
+                        }
                         val jsonFile = outputDir.resolve("pages_${batchStart + 1}_to_${batchEnd}_content.json")
                         jsonFile.writeText(JsonUtil.toJson(jsonResult))
                         ui.newTask(false).apply {
@@ -240,7 +243,7 @@ class DocumentParserApp(
             task.error(ui, e)
         }
     }
-    
+
     data class Settings(
         val dpi: Float = 120f,
         val maxPages: Int = Int.MAX_VALUE,
