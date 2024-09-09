@@ -1,0 +1,233 @@
+package com.simiacryptus.skyenet.apps.general.parsers
+
+import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.EmbeddingModels
+import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.actors.ParsedActor
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
+import org.apache.parquet.avro.AvroParquetWriter
+import org.apache.parquet.hadoop.ParquetWriter
+import org.apache.parquet.hadoop.metadata.CompressionCodecName
+import java.io.File
+
+open class DefaultParsingModel(
+    private val chatModels: ChatModels,
+    private val temperature: Double
+) : ParsingModel {
+
+    override fun merge(
+        runningDocument: ParsingModel.DocumentData,
+        newData: ParsingModel.DocumentData
+    ) : ParsingModel.DocumentData {
+        val runningDocument = runningDocument as DocumentData
+        val newData = newData as DocumentData
+        return DocumentData(
+            id = newData.id ?: runningDocument.id,
+            content = mergeContent(runningDocument.content, newData.content).takeIf { it.isNotEmpty() },
+            entities = mergeEntities(runningDocument.entities, newData.entities).takeIf { it.isNotEmpty() },
+            metadata = mergeMetadata(runningDocument.metadata, newData.metadata)
+        )
+    }
+
+    protected open fun mergeMetadata(existing: DocumentMetadata?, new: DocumentMetadata?): DocumentMetadata {
+        return DocumentMetadata(
+            title = new?.title ?: existing?.title,
+            keywords = ((existing?.keywords ?: emptyList()) + (new?.keywords ?: emptyList())).distinct(),
+            properties = ((existing?.properties ?: emptyMap()) + (new?.properties ?: emptyMap())).takeIf { it.isNotEmpty() }
+        )
+    }
+
+    protected open fun mergeContent(
+        existingContent: List<ContentData>?,
+        newContent: List<ContentData>?
+    ): List<ContentData> {
+        val mergedContent = (existingContent ?: emptyList()).toMutableList()
+        (newContent ?: emptyList()).forEach { newItem ->
+            val existingIndex = mergedContent.indexOfFirst { it.type == newItem.type && it.text?.trim() == newItem.text?.trim() }
+            if (existingIndex != -1) {
+                mergedContent[existingIndex] = mergeContentData(mergedContent[existingIndex], newItem)
+            } else {
+                mergedContent.add(newItem)
+            }
+        }
+        return mergedContent
+    }
+
+    protected open fun mergeContentData(existing: ContentData, new: ContentData) = existing.copy(
+        content = mergeContent(existing.content, new.content).takeIf { it.isNotEmpty() },
+        entities = ((existing.entities ?: emptyList()) + (new.entities ?: emptyList())).distinct()
+            .takeIf { it.isNotEmpty() },
+        tags = ((existing.tags ?: emptyList()) + (new.tags ?: emptyList())).distinct().takeIf { it.isNotEmpty() }
+    )
+
+    protected open fun mergeEntities(
+        existingEntities: Map<String, EntityData>?,
+        newEntities: Map<String, EntityData>?
+    ) = ((existingEntities?.keys ?: emptySet()) + (newEntities?.keys ?: emptySet())).associateWith { key ->
+        val existing = existingEntities?.get(key)
+        val new = newEntities?.get(key)
+        when {
+            existing == null -> new!!
+            new == null -> existing
+            else -> mergeEntityData(existing, new)
+        }
+    }
+
+    protected open fun mergeEntityData(existing: EntityData, new: EntityData) = existing.copy(
+        aliases = ((existing.aliases ?: emptyList()) + (new.aliases ?: emptyList())).distinct()
+            .takeIf { it.isNotEmpty() },
+        properties = ((existing.properties ?: emptyMap()) + (new.properties ?: emptyMap())).takeIf { it.isNotEmpty() },
+        relations = ((existing.relations ?: emptyMap()) + (new.relations ?: emptyMap())).takeIf { it.isNotEmpty() },
+        type = new.type ?: existing.type
+    )
+
+    open val promptSuffix = """
+        |Parse the text into a hierarchical structure that describes the content of the page:
+        |1. Separate the content into sections, paragraphs, statements, etc.
+        |2. The final level of the hierarchy should contain singular, short, standalone sentences.
+        |3. Capture any entities, relationships, and properties that can be extracted from the text of the current page(s).
+        |4. For each entity, include mentions with their exact text and location (start and end indices) in the document.
+        |5. Extract document metadata such as title, author, creation date, and keywords if available.
+        |6. Assign relevant tags to each content section to improve searchability and categorization.
+        |7. Do not copy data from the accumulated document JSON to your response; it is provided for context only.
+        """.trimMargin()
+    open val exampleInstance = DocumentData()
+    override fun getParser(api: API): (String) -> DocumentData {
+        val parser = ParsedActor(
+            resultClass = DocumentData::class.java,
+            exampleInstance = exampleInstance,
+            prompt = "",
+            parsingModel = chatModels,
+            temperature = temperature
+        ).getParser(
+            api, promptSuffix = promptSuffix
+        )
+        return { text -> parser.apply(text) }
+    }
+
+    override fun newDocument() = DocumentData()
+
+    data class DocumentData(
+        @Description("Document/Page identifier") val id: String? = null,
+        @Description("Entities extracted") val entities: Map<String, EntityData>? = null,
+        @Description("Hierarchical structure and data") val content: List<ContentData>? = null,
+        @Description("Document metadata") val metadata: DocumentMetadata? = null
+    ) : ParsingModel.DocumentData
+
+    data class EntityData(
+        @Description("Aliases for the entity") val aliases: List<String>? = null,
+        @Description("Entity attributes extracted from the page") val properties: Map<String, Any>? = null,
+        @Description("Entity relationships extracted from the page") val relations: Map<String, String>? = null,
+        @Description("Entity type (e.g., person, organization, location)") val type: String? = null
+    )
+
+    data class ContentData(
+        @Description("Content type, e.g. heading, paragraph, statement, list") val type: String = "",
+        @Description("Brief, self-contained text either copied, paraphrased, or summarized") val text: String? = null,
+        @Description("Sub-elements") val content: List<ContentData>? = null,
+        @Description("Related entities by ID") val entities: List<String>? = null,
+        @Description("Tags - related topics and non-entity indexing") val tags: List<String>? = null
+    )
+    data class DocumentMetadata(
+        @Description("Document title") val title: String? = null,
+        @Description("Keywords or tags associated with the document") val keywords: List<String>? = null,
+        @Description("Other metadata") val properties: Map<String, Any>? = null,
+    )
+
+    companion object {
+        val log = org.slf4j.LoggerFactory.getLogger(DefaultParsingModel::class.java)
+
+        fun saveAsParquet(outputPath: String, openAIClient: OpenAIClient, vararg inputPaths: String) {
+            val schema = Schema.Parser().parse(File("document_schema.avsc"))
+            val rows = mutableListOf<GenericData.Record>()
+            inputPaths.forEach { inputPath ->
+                processDocument(
+                    inputPath,
+                    JsonUtil.fromJson(File(inputPath).readText(), DocumentData::class.java),
+                    schema,
+                    rows,
+                    openAIClient
+                )
+            }
+            writeParquet(outputPath, schema, rows)
+        }
+
+        private fun processDocument(
+            inputPath: String,
+            document: DocumentData,
+            schema: Schema,
+            rows: MutableList<GenericData.Record>,
+            openAIClient: OpenAIClient
+        ) {
+            fun processContent(content: ContentData, parentId: String? = null, depth: Int = 0, path: String = "") {
+                val record = GenericData.Record(schema)
+                record.put("id", content.hashCode().toString())
+                record.put("parent_id", parentId)
+                record.put("type", content.type)
+                record.put("text", content.text)
+                record.put("entities", content.entities?.joinToString(","))
+                record.put("tags", content.tags?.joinToString(","))
+                record.put("source_path", inputPath)
+                record.put("depth", depth)
+                record.put("json_path", path)
+                // Generate vector embedding
+                val textToEmbed = "${content.type}: ${content.text}"
+                val embedding: DoubleArray = openAIClient.createEmbedding(
+                    ApiModel.EmbeddingRequest(
+                        EmbeddingModels.Large.modelName, textToEmbed
+                    )
+                ).data.get(0).embedding ?: DoubleArray(0)
+                record.put("vector", embedding)
+                
+                rows.add(record)
+                content.content?.forEachIndexed { index, childContent ->
+                    processContent(childContent, content.hashCode().toString(), depth + 1, "$path.content[$index]")
+                }
+            }
+            document.content?.forEachIndexed { index, content ->
+                processContent(content, null, 0, "content[$index]")
+            }
+            document.entities?.forEach { (entityId, entityData) ->
+                val record = GenericData.Record(schema)
+                record.put("id", entityId)
+                record.put("type", "entity")
+                record.put("text", entityData.aliases?.joinToString(", "))
+                record.put("properties", entityData.properties?.entries?.joinToString(", ") { "${it.key}:${it.value}" })
+                record.put("relations", entityData.relations?.entries?.joinToString(", ") { "${it.key}:${it.value}" })
+                record.put("source_path", inputPath)
+                record.put("depth", -1)  // Use -1 to indicate it's an entity, not part of the content hierarchy
+                record.put("json_path", "entities.$entityId")
+                // Generate vector embedding for entity
+                val textToEmbed = "Entity ${entityData.type}: ${entityData.aliases?.joinToString(", ")}"
+                val embedding = openAIClient.createEmbedding(
+                    ApiModel.EmbeddingRequest(
+                        EmbeddingModels.Large.modelName, textToEmbed
+                    )
+                ).data.get(0).embedding ?: DoubleArray(0)
+                record.put("vector", embedding)
+                
+                rows.add(record)
+            }
+        }
+
+        private fun writeParquet(outputPath: String, schema: Schema, rows: List<GenericData.Record>) {
+            log.info("Writing ${rows.size} rows to $outputPath")
+            val conf = Configuration()
+            val writer: ParquetWriter<GenericData.Record> = AvroParquetWriter.builder<GenericData.Record>(Path(outputPath))
+                .withSchema(schema)
+                .withConf(conf)
+                .withCompressionCodec(CompressionCodecName.SNAPPY)
+                .build()
+            rows.forEach { writer.write(it) }
+            writer.close()
+        }
+    }
+
+}

@@ -33,15 +33,17 @@ kotlin {
 val kotlin_version = "2.0.0-Beta5"
 val jetty_version = "11.0.18"
 val jackson_version = "2.17.0"
+
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.0") {
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.1") {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
 
     implementation(project(":core"))
     implementation(project(":kotlin"))
 
+    implementation("org.apache.pdfbox:pdfbox:2.0.27")
     implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
     compileOnly("org.jsoup:jsoup:1.17.2")
 
@@ -60,6 +62,11 @@ dependencies {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
     testRuntimeOnly("org.openapitools:openapi-generator-cli:7.3.0")
+
+    implementation("org.apache.parquet:parquet-common:1.12.3")
+    implementation("org.apache.parquet:parquet-avro:1.12.3")
+    implementation("org.apache.hadoop:hadoop-common:3.3.4")
+    implementation("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.4")
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
@@ -114,7 +121,6 @@ sass {
 
 
 tasks {
-
     compileKotlin {
         compilerOptions {
             javaParameters.set(true)

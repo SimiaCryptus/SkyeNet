@@ -187,7 +187,7 @@ abstract class SessionTask(
     fun image(
         @Description("The image to display")
         image: BufferedImage
-    ) = add("""<img src="${saveFile("${long64()}.png", image.toPng())}" />""")
+    ) = add("""<img src="${saveFile("images/${long64()}.png", image.toPng())}" />""")
 
     companion object {
         val log = LoggerFactory.getLogger(SessionTask::class.java)
