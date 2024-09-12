@@ -277,7 +277,11 @@ class PlanCoordinator(
                     heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
                     userMessage = { userMessage },
                     initialResponse = {
-                        newPlan(api, planSettings, toInput, userMessage, emptyArray())
+                        newPlan(
+                            api,
+                            planSettings,
+                            toInput(userMessage)
+                        )
                     },
                     outputFn = {
                         render(
@@ -291,9 +295,12 @@ class PlanCoordinator(
                     },
                     ui = ui,
                     reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                        val messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                            .toTypedArray<ApiModel.ChatMessage>()
-                        newPlan(api, planSettings, toInput, userMessage, messages)
+                        newPlan(
+                            api,
+                            planSettings,
+                            toInput(userMessage),
+                            userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                                .toTypedArray<ApiModel.ChatMessage>())
                     },
                 ).call().let {
                     PlanUtil.TaskBreakdownWithPrompt(
@@ -302,7 +309,11 @@ class PlanCoordinator(
                         planText = it.text
                     )
                 }
-            else newPlan(api, planSettings, toInput, userMessage, emptyArray()).let {
+            else newPlan(
+                api,
+                planSettings,
+                toInput(userMessage)
+            ).let {
                 PlanUtil.TaskBreakdownWithPrompt(
                     prompt = userMessage,
                     plan = filterPlan { it.obj } as TaskBreakdownResult,
@@ -314,12 +325,11 @@ class PlanCoordinator(
         fun newPlan(
             api: API,
             planSettings: PlanSettings,
-            toInput: (String) -> List<String>,
-            userMessage: String,
-            messages: Array<ApiModel.ChatMessage>
+            inStrings: List<String>,
+            messages: Array<ApiModel.ChatMessage> = inStrings.map { ApiModel.ChatMessage(ApiModel.Role.user, it.toContentList()) }.toTypedArray()
         ) = planningActor(planSettings).respond(
             messages = messages,
-            input = toInput(userMessage),
+            input = inStrings,
             api = api
         ) as ParsedResponse<TaskBreakdownInterface>
 
@@ -328,30 +338,25 @@ class PlanCoordinator(
             codeFiles: Map<Path, String>,
             files: Array<File>,
             root: Path
-        ): (String) -> List<String> {
-            val toInput = { it: String ->
-                listOf(
-                    if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
-                                            | Files:
-                                            | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
-                                             """.trimMargin() else {
-                        files.joinToString("\n\n") {
-                            val path = root.relativize(it.toPath())
-                            """
-                                    |## $path
-                                    |
-                                    |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-                                    """.trimMargin()
-                        }
-                    },
-                    it
-                )
-            }
-            return toInput
+        ) = { str: String ->
+            listOf(
+                if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
+                                        | Files:
+                                        | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
+                                         """.trimMargin() else {
+                    files.joinToString("\n\n") {
+                        val path = root.relativize(it.toPath())
+                        """
+                                |## $path
+                                |
+                                |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
+                                """.trimMargin()
+                    }
+                },
+                str
+            )
         }
     }
-
-
 }
 
 const val TRIPLE_TILDE = "```"

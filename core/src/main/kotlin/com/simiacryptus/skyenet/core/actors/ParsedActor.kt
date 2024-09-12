@@ -50,7 +50,7 @@ open class ParsedActor<T : Any>(
         )
     }
 
-    private inner class ParsedResponseImpl(vararg messages: ApiModel.ChatMessage, api: API) :
+    private inner class ParsedResponseImpl(api: API, vararg messages: ApiModel.ChatMessage) :
         ParsedResponse<T>(resultClass!!) {
         override val text =
             response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
@@ -125,7 +125,7 @@ open class ParsedActor<T : Any>(
 
     override fun respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage): ParsedResponse<T> {
         try {
-            return ParsedResponseImpl(*messages, api = api)
+            return ParsedResponseImpl(api, *messages)
         } catch (e: Exception) {
             log.info("Failed to parse response", e)
             throw e
