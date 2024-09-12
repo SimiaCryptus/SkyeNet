@@ -5,7 +5,7 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.*
+import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
@@ -14,9 +14,7 @@ import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTyp
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
-import kotlin.text.set
 
 class PlanningTask(
     planSettings: PlanSettings,
@@ -69,10 +67,9 @@ class PlanningTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
-        if (!agent.planSettings.taskPlanningEnabled) throw RuntimeException("Task planning is disabled")
+        if (!agent.planSettings.getTaskSettings(TaskType.TaskPlanning).enabled) throw RuntimeException("Task planning is disabled")
         @Suppress("NAME_SHADOWING") val task = agent.ui.newTask(false).apply { task.add(placeholder) }
         fun toInput(s: String) = listOf(
             userMessage,
@@ -166,7 +163,7 @@ class PlanningTask(
                         |
                         |${getAvailableTaskTypes(planSettings).joinToString("\n") { "* ${it.promptSegment()}" }}
                         |
-                        |${if (planSettings.taskPlanningEnabled) "Do not start your plan with a plan to plan!\n" else ""}
+                        |${if (planSettings.getTaskSettings(TaskType.TaskPlanning).enabled) "Do not start your plan with a plan to plan!\n" else ""}
                         """.trimMargin(),
             model = planSettings.model,
             parsingModel = planSettings.parsingModel,

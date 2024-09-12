@@ -6,6 +6,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
@@ -24,11 +25,10 @@ import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
-import com.simiacryptus.jopenai.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ThreadPoolExecutor
 
 class PlanCoordinator(
@@ -59,24 +59,6 @@ class PlanCoordinator(
                 }
             }
 
-    fun startProcess(userMessage: String, api: API) {
-        val task = ui.newTask()
-        executePlan(
-            (
-                    initialPlan(
-                        codeFiles = codeFiles,
-                        files = files,
-                        root = root,
-                        task = task,
-                        userMessage = userMessage,
-                        ui = ui,
-                        planSettings = planSettings,
-                        api = api
-                    )
-                    ).plan, task, userMessage, api
-        )
-    }
-
     fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API) {
         val task = ui.newTask()
         try {
@@ -105,11 +87,9 @@ class PlanCoordinator(
         task: SessionTask,
         userMessage: String,
         api: API
-    ) {
+    ): PlanProcessingState {
+        val planProcessingState = newState(plan)
         try {
-            val planProcessingState =
-                PlanProcessingState((filterPlan{plan}.tasksByID?.entries?.toTypedArray<Map.Entry<String, PlanTask>>()
-                    ?.associate { it.key to it.value } ?: mapOf()).toMutableMap())
             val diagramTask = ui.newTask(false).apply { task.add(placeholder) }
             executePlan(
                 task = task,
@@ -132,7 +112,12 @@ class PlanCoordinator(
             log.warn("Error during incremental code generation process", e)
             task.error(ui, e)
         }
+        return planProcessingState
     }
+
+    private fun newState(plan: TaskBreakdownInterface) =
+        PlanProcessingState((filterPlan { plan }.tasksByID?.entries?.toTypedArray<Map.Entry<String, PlanTask>>()
+            ?.associate { it.key to it.value } ?: mapOf()).toMutableMap())
 
     fun executePlan(
         task: SessionTask,
@@ -250,7 +235,6 @@ class PlanCoordinator(
                         plan = plan,
                         planProcessingState = planProcessingState,
                         task = task1,
-                        taskTabs = taskTabs,
                         api = api
                     )
                 } catch (e: Throwable) {
@@ -287,44 +271,57 @@ class PlanCoordinator(
             api: API
         ): PlanUtil.TaskBreakdownWithPrompt {
             val toInput = inputFn(codeFiles, files, root)
-            return (
+            return if (planSettings.allowBlocking)
                 Discussable(
                     task = task,
                     heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
                     userMessage = { userMessage },
                     initialResponse = {
-                        planningActor(planSettings).answer(
-                            toInput(it),
-                            api = api
-                        ) as ParsedResponse<TaskBreakdownInterface>
+                        newPlan(api, planSettings, toInput, userMessage, emptyArray())
                     },
-                    outputFn = { render(
-                        withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                            prompt = userMessage,
-                            plan = it.obj as TaskBreakdownResult,
-                            planText = it.text
-                        ),
-                        ui = ui
-                    ) },
+                    outputFn = {
+                        render(
+                            withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                                prompt = userMessage,
+                                plan = it.obj as TaskBreakdownResult,
+                                planText = it.text
+                            ),
+                            ui = ui
+                        )
+                    },
                     ui = ui,
                     reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
                         val messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
                             .toTypedArray<ApiModel.ChatMessage>()
-                        planningActor(planSettings).respond(
-                            messages = messages,
-                            input = toInput(userMessage),
-                            api = api
-                        ) as ParsedResponse<TaskBreakdownInterface>
+                        newPlan(api, planSettings, toInput, userMessage, messages)
                     },
                 ).call().let {
                     PlanUtil.TaskBreakdownWithPrompt(
                         prompt = userMessage,
-                        plan = filterPlan{it.obj} as TaskBreakdownResult,
+                        plan = filterPlan { it.obj } as TaskBreakdownResult,
                         planText = it.text
                     )
                 }
-            )
+            else newPlan(api, planSettings, toInput, userMessage, emptyArray()).let {
+                PlanUtil.TaskBreakdownWithPrompt(
+                    prompt = userMessage,
+                    plan = filterPlan { it.obj } as TaskBreakdownResult,
+                    planText = it.text
+                )
+            }
         }
+
+        fun newPlan(
+            api: API,
+            planSettings: PlanSettings,
+            toInput: (String) -> List<String>,
+            userMessage: String,
+            messages: Array<ApiModel.ChatMessage>
+        ) = planningActor(planSettings).respond(
+            messages = messages,
+            input = toInput(userMessage),
+            api = api
+        ) as ParsedResponse<TaskBreakdownInterface>
 
 
         fun inputFn(

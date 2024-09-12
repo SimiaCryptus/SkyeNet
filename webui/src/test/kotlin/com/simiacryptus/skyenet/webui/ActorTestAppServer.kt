@@ -7,6 +7,8 @@ import com.simiacryptus.skyenet.apps.general.PlanAheadApp
 import com.simiacryptus.skyenet.apps.general.StressTestApp
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
+import com.simiacryptus.skyenet.apps.plan.TaskSettings
+import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.ImageActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
@@ -90,8 +92,6 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                         command = listOf("task"),
                         temperature = 0.2,
                         budget = 2.0,
-                        taskPlanningEnabled = true,
-                        shellCommandTaskEnabled = false,
                         autoFix = true,
                         enableCommandAutoFix = true,
                         commandAutoFixCommands = listOf(
@@ -100,7 +100,10 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                         env = mapOf(),
                         workingDir = ".",
                         language = if (isWindows) "powershell" else "bash",
-                    ),
+                    ).apply {
+                        setTaskSettings(TaskType.TaskPlanning, TaskSettings(enabled = true))
+                        setTaskSettings(TaskType.RunShellCommand, TaskSettings(enabled = false))
+                    },
                     model = ChatModels.GPT4o,
                     parsingModel = ChatModels.GPT4oMini,
                 )

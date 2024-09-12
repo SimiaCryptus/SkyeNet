@@ -1,11 +1,10 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
-import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 
 class ForeachTask(
@@ -28,7 +27,6 @@ ForeachTask - Execute a task for each item in a list
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
         val items = planTask.foreachItems ?: throw RuntimeException("No items specified for ForeachTask")

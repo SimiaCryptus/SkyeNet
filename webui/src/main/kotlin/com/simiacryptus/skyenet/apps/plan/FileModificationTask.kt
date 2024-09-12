@@ -4,7 +4,6 @@ import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -83,7 +82,6 @@ class FileModificationTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
         if(((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf())).isEmpty()) {
@@ -116,8 +114,6 @@ class FileModificationTask(
                     api = api,
                     shouldAutoApply = { true }
                 )
-                taskTabs.selectedTab += 1
-                taskTabs.update()
                 task.complete()
                 onComplete()
                 MarkdownUtil.renderMarkdown(diffLinks + "\n\n## Auto-applied changes", ui = agent.ui)
@@ -134,8 +130,6 @@ class FileModificationTask(
                         ui = agent.ui,
                         api = api
                     ) + acceptButtonFooter(agent.ui) {
-                        taskTabs.selectedTab += 1
-                        taskTabs.update()
                         task.complete()
                         onComplete()
                     }, ui = agent.ui

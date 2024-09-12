@@ -9,7 +9,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "2.0.0-Beta5"
+    id("org.jetbrains.kotlin.jvm") version "2.0.20"
     `maven-publish`
     id("signing")
     id("io.freefair.sass-base") version "8.4"
@@ -30,14 +30,14 @@ kotlin {
 //    jvmToolchain(17)
 }
 
-val kotlin_version = "2.0.0-Beta5"
-val jetty_version = "11.0.18"
-val jackson_version = "2.17.0"
+val kotlin_version = "2.0.20"
+val jetty_version = "11.0.24"
+val jackson_version = "2.17.2"
 
 dependencies {
 
     implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.1") {
-        exclude(group = "org.slf4j", module = "slf4j-api")
+        exclude(group = "org.slf4j")
     }
 
     implementation(project(":core"))
@@ -50,23 +50,16 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.zxing:javase:3.5.3")
 
-    compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
-    runtimeOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+    compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
+    runtimeOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
 
     implementation("org.openapitools:openapi-generator:7.3.0") {
-        exclude(group = "org.slf4j", module = "slf4j-api")
-        exclude(group = "org.slf4j", module = "slf4j-ext")
-        exclude(group = "org.slf4j", module = "slf4j-simple")
+        exclude(group = "org.slf4j")
     }
     compileOnly("org.openapitools:openapi-generator-cli:7.3.0") {
-        exclude(group = "org.slf4j", module = "slf4j-api")
+        exclude(group = "org.slf4j")
     }
     testRuntimeOnly("org.openapitools:openapi-generator-cli:7.3.0")
-
-    implementation("org.apache.parquet:parquet-common:1.12.3")
-    implementation("org.apache.parquet:parquet-avro:1.12.3")
-    implementation("org.apache.hadoop:hadoop-common:3.3.4")
-    implementation("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.4")
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)
@@ -102,9 +95,9 @@ dependencies {
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
     implementation(group = "commons-codec", name = "commons-codec", version = "1.16.0")
 
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
-    runtimeOnly(group = "ch.qos.logback", name = "logback-classic", version = "1.4.14")
-    runtimeOnly(group = "ch.qos.logback", name = "logback-core", version = "1.4.14")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.16")
+    runtimeOnly(group = "ch.qos.logback", name = "logback-classic", version = "1.5.8")
+    runtimeOnly(group = "ch.qos.logback", name = "logback-core", version = "1.5.8")
 
     testImplementation(kotlin("script-runtime"))
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")

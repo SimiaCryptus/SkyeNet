@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.initialPlan
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil
 import com.simiacryptus.skyenet.core.platform.Session
@@ -16,7 +17,7 @@ import com.simiacryptus.skyenet.webui.session.SocketManager
 import org.slf4j.LoggerFactory
 import java.io.File
 
-class PlanAheadApp(
+open class PlanAheadApp(
     applicationName: String = "Task Planning v1.1",
     path: String = "/taskDev",
      val rootFile: File,
@@ -85,7 +86,18 @@ class PlanAheadApp(
                 root = rootFile.toPath(),
                 planSettings = planSettings!!
             )
-            coordinator.startProcess(userMessage = userMessage, api = api)
+            val task = coordinator.ui.newTask()
+            val plan = initialPlan(
+                codeFiles = coordinator.codeFiles,
+                files = coordinator.files,
+                root = coordinator.root,
+                task = task,
+                userMessage = userMessage,
+                ui = coordinator.ui,
+                planSettings = coordinator.planSettings,
+                api = api
+            )
+            coordinator.executePlan(plan.plan, task, userMessage = userMessage, api = api)
         } catch (e: Throwable) {
             ui.newTask().error(ui, e)
             log.warn("Error", e)

@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "2.0.0-Beta5"
+    id("org.jetbrains.kotlin.jvm") version "2.0.20"
     `maven-publish`
     id("signing")
 }
@@ -28,7 +28,7 @@ kotlin {
 
 val junit_version = "5.10.1"
 val logback_version = "1.4.11"
-val jackson_version = "2.17.0"
+val jackson_version = "2.17.2"
 val hsqldb_version = "2.7.2"
 
 dependencies {
@@ -38,7 +38,7 @@ dependencies {
 
     implementation("org.apache.commons:commons-text:1.11.0")
 
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.16")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
     implementation(group = "com.google.guava", name = "guava", version = "32.1.3-jre")
     implementation(group = "com.google.code.gson", name = "gson", version = "2.10.1")
@@ -62,9 +62,9 @@ dependencies {
     compileOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = junit_version)
 
     compileOnly(platform("software.amazon.awssdk:bom:2.21.29"))
-    compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+    compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
     testImplementation(platform("software.amazon.awssdk:bom:2.21.29"))
-    testImplementation(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.21.9")
+    testImplementation(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
 
     compileOnly(group = "ch.qos.logback", name = "logback-classic", version = logback_version)
     compileOnly(group = "ch.qos.logback", name = "logback-core", version = logback_version)

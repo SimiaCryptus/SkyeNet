@@ -2,16 +2,15 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import java.io.File
-import java.nio.file.Path
-import java.nio.file.Files
 import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.streams.asSequence
 
 abstract class AbstractTask(
@@ -94,7 +93,6 @@ abstract class AbstractTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     )
 

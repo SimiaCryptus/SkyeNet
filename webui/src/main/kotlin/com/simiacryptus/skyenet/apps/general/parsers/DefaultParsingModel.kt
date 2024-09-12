@@ -1,21 +1,11 @@
 package com.simiacryptus.skyenet.apps.general.parsers
 
+//import org.apache.avro.Schema
+//import org.apache.avro.generic.GenericData
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.models.EmbeddingModels
-import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.core.actors.ParsedActor
-import org.apache.avro.Schema
-import org.apache.avro.generic.GenericData
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
-import org.apache.parquet.avro.AvroParquetWriter
-import org.apache.parquet.hadoop.ParquetWriter
-import org.apache.parquet.hadoop.metadata.CompressionCodecName
-import java.io.File
 
 open class DefaultParsingModel(
     private val chatModels: ChatModels,
@@ -144,90 +134,90 @@ open class DefaultParsingModel(
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(DefaultParsingModel::class.java)
 
-        fun saveAsParquet(outputPath: String, openAIClient: OpenAIClient, vararg inputPaths: String) {
-            val schema = Schema.Parser().parse(File("document_schema.avsc"))
-            val rows = mutableListOf<GenericData.Record>()
-            inputPaths.forEach { inputPath ->
-                processDocument(
-                    inputPath,
-                    JsonUtil.fromJson(File(inputPath).readText(), DocumentData::class.java),
-                    schema,
-                    rows,
-                    openAIClient
-                )
-            }
-            writeParquet(outputPath, schema, rows)
-        }
+//        fun saveAsParquet(outputPath: String, openAIClient: OpenAIClient, vararg inputPaths: String) {
+//            val schema = Schema.Parser().parse(File("document_schema.avsc"))
+//            val rows = mutableListOf<GenericData.Record>()
+//            inputPaths.forEach { inputPath ->
+//                processDocument(
+//                    inputPath,
+//                    JsonUtil.fromJson(File(inputPath).readText(), DocumentData::class.java),
+//                    schema,
+//                    rows,
+//                    openAIClient
+//                )
+//            }
+//            //writeParquet(outputPath, schema, rows)
+//        }
 
-        private fun processDocument(
-            inputPath: String,
-            document: DocumentData,
-            schema: Schema,
-            rows: MutableList<GenericData.Record>,
-            openAIClient: OpenAIClient
-        ) {
-            fun processContent(content: ContentData, parentId: String? = null, depth: Int = 0, path: String = "") {
-                val record = GenericData.Record(schema)
-                record.put("id", content.hashCode().toString())
-                record.put("parent_id", parentId)
-                record.put("type", content.type)
-                record.put("text", content.text)
-                record.put("entities", content.entities?.joinToString(","))
-                record.put("tags", content.tags?.joinToString(","))
-                record.put("source_path", inputPath)
-                record.put("depth", depth)
-                record.put("json_path", path)
-                // Generate vector embedding
-                val textToEmbed = "${content.type}: ${content.text}"
-                val embedding: DoubleArray = openAIClient.createEmbedding(
-                    ApiModel.EmbeddingRequest(
-                        EmbeddingModels.Large.modelName, textToEmbed
-                    )
-                ).data.get(0).embedding ?: DoubleArray(0)
-                record.put("vector", embedding)
-                
-                rows.add(record)
-                content.content?.forEachIndexed { index, childContent ->
-                    processContent(childContent, content.hashCode().toString(), depth + 1, "$path.content[$index]")
-                }
-            }
-            document.content?.forEachIndexed { index, content ->
-                processContent(content, null, 0, "content[$index]")
-            }
-            document.entities?.forEach { (entityId, entityData) ->
-                val record = GenericData.Record(schema)
-                record.put("id", entityId)
-                record.put("type", "entity")
-                record.put("text", entityData.aliases?.joinToString(", "))
-                record.put("properties", entityData.properties?.entries?.joinToString(", ") { "${it.key}:${it.value}" })
-                record.put("relations", entityData.relations?.entries?.joinToString(", ") { "${it.key}:${it.value}" })
-                record.put("source_path", inputPath)
-                record.put("depth", -1)  // Use -1 to indicate it's an entity, not part of the content hierarchy
-                record.put("json_path", "entities.$entityId")
-                // Generate vector embedding for entity
-                val textToEmbed = "Entity ${entityData.type}: ${entityData.aliases?.joinToString(", ")}"
-                val embedding = openAIClient.createEmbedding(
-                    ApiModel.EmbeddingRequest(
-                        EmbeddingModels.Large.modelName, textToEmbed
-                    )
-                ).data.get(0).embedding ?: DoubleArray(0)
-                record.put("vector", embedding)
-                
-                rows.add(record)
-            }
-        }
+//        private fun processDocument(
+//            inputPath: String,
+//            document: DocumentData,
+//            schema: Schema,
+//            rows: MutableList<GenericData.Record>,
+//            openAIClient: OpenAIClient
+//        ) {
+//            fun processContent(content: ContentData, parentId: String? = null, depth: Int = 0, path: String = "") {
+//                val record = GenericData.Record(schema)
+//                record.put("id", content.hashCode().toString())
+//                record.put("parent_id", parentId)
+//                record.put("type", content.type)
+//                record.put("text", content.text)
+//                record.put("entities", content.entities?.joinToString(","))
+//                record.put("tags", content.tags?.joinToString(","))
+//                record.put("source_path", inputPath)
+//                record.put("depth", depth)
+//                record.put("json_path", path)
+//                // Generate vector embedding
+//                val textToEmbed = "${content.type}: ${content.text}"
+//                val embedding: DoubleArray = openAIClient.createEmbedding(
+//                    ApiModel.EmbeddingRequest(
+//                        EmbeddingModels.Large.modelName, textToEmbed
+//                    )
+//                ).data.get(0).embedding ?: DoubleArray(0)
+//                record.put("vector", embedding)
+//
+//                rows.add(record)
+//                content.content?.forEachIndexed { index, childContent ->
+//                    processContent(childContent, content.hashCode().toString(), depth + 1, "$path.content[$index]")
+//                }
+//            }
+//            document.content?.forEachIndexed { index, content ->
+//                processContent(content, null, 0, "content[$index]")
+//            }
+//            document.entities?.forEach { (entityId, entityData) ->
+//                val record = GenericData.Record(schema)
+//                record.put("id", entityId)
+//                record.put("type", "entity")
+//                record.put("text", entityData.aliases?.joinToString(", "))
+//                record.put("properties", entityData.properties?.entries?.joinToString(", ") { "${it.key}:${it.value}" })
+//                record.put("relations", entityData.relations?.entries?.joinToString(", ") { "${it.key}:${it.value}" })
+//                record.put("source_path", inputPath)
+//                record.put("depth", -1)  // Use -1 to indicate it's an entity, not part of the content hierarchy
+//                record.put("json_path", "entities.$entityId")
+//                // Generate vector embedding for entity
+//                val textToEmbed = "Entity ${entityData.type}: ${entityData.aliases?.joinToString(", ")}"
+//                val embedding = openAIClient.createEmbedding(
+//                    ApiModel.EmbeddingRequest(
+//                        EmbeddingModels.Large.modelName, textToEmbed
+//                    )
+//                ).data.get(0).embedding ?: DoubleArray(0)
+//                record.put("vector", embedding)
+//
+//                rows.add(record)
+//            }
+//        }
 
-        private fun writeParquet(outputPath: String, schema: Schema, rows: List<GenericData.Record>) {
-            log.info("Writing ${rows.size} rows to $outputPath")
-            val conf = Configuration()
-            val writer: ParquetWriter<GenericData.Record> = AvroParquetWriter.builder<GenericData.Record>(Path(outputPath))
-                .withSchema(schema)
-                .withConf(conf)
-                .withCompressionCodec(CompressionCodecName.SNAPPY)
-                .build()
-            rows.forEach { writer.write(it) }
-            writer.close()
-        }
+//        private fun writeParquet(outputPath: String, schema: Schema, rows: List<GenericData.Record>) {
+//            log.info("Writing ${rows.size} rows to $outputPath")
+//            val conf = Configuration()
+//            val writer: ParquetWriter<GenericData.Record> = AvroParquetWriter.builder<GenericData.Record>(HadoopOutputFile.fromPath(Path(outputPath), conf))
+//                .withSchema(schema)
+//                .withConf(conf)
+//                .withCompressionCodec(CompressionCodecName.SNAPPY)
+//                .build()
+//            rows.forEach { writer.write(it) }
+//            writer.close()
+//        }
     }
 
 }

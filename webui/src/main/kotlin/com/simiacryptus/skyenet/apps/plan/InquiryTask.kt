@@ -5,7 +5,6 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
-import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -18,7 +17,7 @@ class InquiryTask(
     planSettings: PlanSettings,
     planTask: PlanningTask.PlanTask
 ) : AbstractTask(planSettings, planTask) {
-    val inquiryActor by lazy {
+    private val inquiryActor by lazy {
         SimpleActor(
             name = "Inquiry",
             prompt = """
@@ -30,9 +29,9 @@ class InquiryTask(
                 
                 |When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
                 |Focus on generating insights and information that support the task types available in the system (Requirements, NewFile, EditFile, ${
-                    if (!planSettings.taskPlanningEnabled) "" else "TaskPlanning, "
+                if (!planSettings.getTaskSettings(TaskType.TaskPlanning).enabled) "" else "TaskPlanning, "
                 }${
-                    if (!planSettings.shellCommandTaskEnabled) "" else "RunShellCommand, "
+                if (!planSettings.getTaskSettings(TaskType.RunShellCommand).enabled) "" else "RunShellCommand, "
                 }Documentation).
                 |This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
                 """.trimMargin(),
@@ -56,7 +55,6 @@ class InquiryTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
         val toInput = { it: String ->
@@ -68,7 +66,8 @@ class InquiryTask(
                 it,
             ).filter { it.isNotBlank() }
         }
-        val inquiryResult = Discussable(
+
+        val inquiryResult = if (planSettings.allowBlocking) Discussable(
             task = task,
             userMessage = { "Expand ${this.planTask.description ?: ""}\n${JsonUtil.toJson(data = this)}" },
             heading = "",
@@ -78,16 +77,23 @@ class InquiryTask(
             },
             ui = agent.ui,
             reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+                val inStr = "Expand ${this.planTask.description ?: ""}\n${JsonUtil.toJson(data = this)}"
+                val messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                    .toTypedArray<ApiModel.ChatMessage>()
                 inquiryActor.respond(
-                    messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                        .toTypedArray<ApiModel.ChatMessage>()),
-                    input = toInput("Expand ${this.planTask.description ?: ""}\n${JsonUtil.toJson(data = this)}"),
+                    messages = messages,
+                    input = toInput(inStr),
                     api = api
                 )
             },
             atomicRef = AtomicReference(),
             semaphore = Semaphore(0),
-        ).call()
+        ).call() else inquiryActor.answer(
+            toInput("Expand ${this.planTask.description ?: ""}\n${JsonUtil.toJson(data = this)}"),
+            api = api
+        ).apply {
+            task.add(MarkdownUtil.renderMarkdown(this, ui = agent.ui))
+        }
         planProcessingState.taskResult[taskId] = inquiryResult
     }
 

@@ -19,67 +19,67 @@ enum class TaskType {
 
         fun getImpl(planSettings: PlanSettings, planTask: PlanningTask.PlanTask): AbstractTask {
             return when (planTask.taskType) {
-                TaskPlanning -> if (planSettings.taskPlanningEnabled) PlanningTask(
+                TaskPlanning -> if (planSettings.getTaskSettings(TaskPlanning).enabled) PlanningTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                Documentation -> if (planSettings.documentationEnabled) DocumentationTask(
+                Documentation -> if (planSettings.getTaskSettings(Documentation).enabled) DocumentationTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                FileModification -> if (planSettings.fileModificationEnabled) FileModificationTask(
+                FileModification -> if (planSettings.getTaskSettings(FileModification).enabled) FileModificationTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                RunShellCommand -> if (planSettings.shellCommandTaskEnabled) RunShellCommandTask(
+                RunShellCommand -> if (planSettings.getTaskSettings(RunShellCommand).enabled) RunShellCommandTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                CommandAutoFix -> if (planSettings.enableCommandAutoFix) CommandAutoFixTask(
+                CommandAutoFix -> if (planSettings.getTaskSettings(CommandAutoFix).enabled) CommandAutoFixTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                Inquiry -> if (planSettings.inquiryEnabled) InquiryTask(
+                Inquiry -> if (planSettings.getTaskSettings(Inquiry).enabled) InquiryTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                CodeReview -> if (planSettings.codeReviewEnabled) CodeReviewTask(
+                CodeReview -> if (planSettings.getTaskSettings(CodeReview).enabled) CodeReviewTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                TestGeneration -> if (planSettings.testGenerationEnabled) TestGenerationTask(
+                TestGeneration -> if (planSettings.getTaskSettings(TestGeneration).enabled) TestGenerationTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                Optimization -> if (planSettings.optimizationEnabled) CodeOptimizationTask(
+                Optimization -> if (planSettings.getTaskSettings(Optimization).enabled) CodeOptimizationTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                SecurityAudit -> if (planSettings.securityAuditEnabled) SecurityAuditTask(
+                SecurityAudit -> if (planSettings.getTaskSettings(SecurityAudit).enabled) SecurityAuditTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                PerformanceAnalysis -> if (planSettings.performanceAnalysisEnabled) PerformanceAnalysisTask(
+                PerformanceAnalysis -> if (planSettings.getTaskSettings(PerformanceAnalysis).enabled) PerformanceAnalysisTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                RefactorTask -> if (planSettings.refactorTaskEnabled) RefactorTask(
+                RefactorTask -> if (planSettings.getTaskSettings(RefactorTask).enabled) RefactorTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
 
-                ForeachTask -> if (planSettings.foreachTaskEnabled) ForeachTask(
+                ForeachTask -> if (planSettings.getTaskSettings(ForeachTask).enabled) ForeachTask(
                     planSettings,
                     planTask
                 ) else throw DisabledTaskException(planTask.taskType)
@@ -89,21 +89,7 @@ enum class TaskType {
         }
 
         fun getAvailableTaskTypes(planSettings: PlanSettings): List<AbstractTask> = TaskType.values().filter {
-            when (it) {
-                TaskPlanning -> planSettings.taskPlanningEnabled
-                RunShellCommand -> planSettings.shellCommandTaskEnabled
-                Documentation -> planSettings.documentationEnabled
-                FileModification -> planSettings.fileModificationEnabled
-                Inquiry -> planSettings.inquiryEnabled
-                CodeReview -> planSettings.codeReviewEnabled
-                TestGeneration -> planSettings.testGenerationEnabled
-                Optimization -> planSettings.optimizationEnabled
-                CommandAutoFix -> planSettings.enableCommandAutoFix
-                SecurityAudit -> planSettings.securityAuditEnabled
-                PerformanceAnalysis -> planSettings.performanceAnalysisEnabled
-                RefactorTask -> planSettings.refactorTaskEnabled
-                ForeachTask -> planSettings.foreachTaskEnabled
-            }
+            planSettings.getTaskSettings(it).enabled
         }.map { getImpl(planSettings, PlanningTask.PlanTask(taskType = it)) }
     }
 }
