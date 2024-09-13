@@ -41,10 +41,10 @@ class PlanningTask(
         val command: List<String>? = null,
         @Description("Working directory for the command execution")
         val workingDir: String? = null,
-        @Description("List of items to iterate over")
-        val foreachItems: List<String>? = null,
-        @Description("When applicable, sub-tasks to execute")
-        val subTasksByID: Map<String, PlanTask>? = null,
+        @Description("List of items to iterate over in ForEach tasks")
+        val foreach_items: List<String>? = null,
+        @Description("sub-tasks to execute for each item in ForEach tasks")
+        val foreach_subplan: Map<String, PlanTask>? = null,
     )
 
     private val taskBreakdownActor by lazy { planSettings.planningActor() }

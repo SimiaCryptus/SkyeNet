@@ -5,7 +5,6 @@ import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
@@ -88,6 +87,13 @@ class PlanCoordinator(
         userMessage: String,
         api: API
     ): PlanProcessingState {
+        val api = (api as ChatClient).getChildClient().apply {
+            val createFile = task.createFile("api-${UUID.randomUUID()}.log")
+            createFile.second?.apply {
+                logStreams += this.outputStream().buffered()
+                task.verbose("API log: <a href=\"${createFile.first}\">$this</a>")
+            }
+        }
         val planProcessingState = newState(plan)
         try {
             val diagramTask = ui.newTask(false).apply { task.add(placeholder) }
@@ -228,6 +234,13 @@ class PlanCoordinator(
                           """.trimMargin(), ui = ui
                         )
                     )
+                    val api = (api as ChatClient).getChildClient().apply {
+                        val createFile = task1.createFile("api-${UUID.randomUUID()}.log")
+                        createFile.second?.apply {
+                            logStreams += this.outputStream().buffered()
+                            task1.verbose("API log: <a href=\"${createFile.first}\">$this</a>")
+                        }
+                    }
                     getImpl(planSettings, subTask).run(
                         agent = this,
                         taskId = taskId,
@@ -274,6 +287,13 @@ class PlanCoordinator(
             planSettings: PlanSettings,
             api: API
         ): PlanUtil.TaskBreakdownWithPrompt {
+            val api = (api as ChatClient).getChildClient().apply {
+                val createFile = task.createFile("api-${UUID.randomUUID()}.log")
+                createFile.second?.apply {
+                    logStreams += this.outputStream().buffered()
+                    task.verbose("API log: <a href=\"${createFile.first}\">$this</a>")
+                }
+            }
             val toInput = inputFn(codeFiles, files, root)
             return if (planSettings.allowBlocking)
                 Discussable(
@@ -302,9 +322,7 @@ class PlanCoordinator(
                         newPlan(
                             api,
                             planSettings,
-                            toInput(userMessage),
-                            userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                                .toTypedArray<ApiModel.ChatMessage>())
+                            userMessages.map { it.first })
                     },
                 ).call().let {
                     PlanUtil.TaskBreakdownWithPrompt(
@@ -329,18 +347,15 @@ class PlanCoordinator(
         private fun newPlan(
             api: API,
             planSettings: PlanSettings,
-            inStrings: List<String>,
-            messages: Array<ApiModel.ChatMessage> = inStrings.map {
-                ApiModel.ChatMessage(
-                    ApiModel.Role.user,
-                    it.toContentList()
-                )
-            }.toTypedArray()
-        ) = planSettings.planningActor().respond(
-            messages = messages,
-            input = inStrings,
-            api = api
-        ) as ParsedResponse<TaskBreakdownInterface>
+            inStrings: List<String>
+        ): ParsedResponse<TaskBreakdownInterface> {
+            val planningActor = planSettings.planningActor()
+            return planningActor.respond(
+                messages = planningActor.chatMessages(inStrings),
+                input = inStrings,
+                api = api
+            ) as ParsedResponse<TaskBreakdownInterface>
+        }
 
 
         private fun inputFn(

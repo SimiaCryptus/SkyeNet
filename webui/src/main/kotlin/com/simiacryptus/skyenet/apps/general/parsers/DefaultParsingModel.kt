@@ -7,7 +7,7 @@ import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 
 open class DefaultParsingModel(
-    private val chatModels: ChatModels,
+    private val parsingModel: ChatModels,
     private val temperature: Double
 ) : ParsingModel {
 
@@ -93,7 +93,7 @@ open class DefaultParsingModel(
             resultClass = DocumentData::class.java,
             exampleInstance = exampleInstance,
             prompt = "",
-            parsingModel = chatModels,
+            parsingModel = parsingModel,
             temperature = temperature
         ).getParser(
             api, promptSuffix = promptSuffix

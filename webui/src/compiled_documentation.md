@@ -219,7 +219,7 @@ val codingAgent = CodingAgent(
   symbols = mapOf("exampleSymbol" to Any()),
   temperature = 0.1,
   details = "Optional details",
-  model = ChatModels.GPT35Turbo
+  model = OpenAIModels.GPT35Turbo
 )
 
 // Start the code generation process with a user message
@@ -279,7 +279,7 @@ interpreter: KClass<T>,
 symbols: Map<String, Any>,
 temperature: Double = 0.1,
 details: String?,
-model: ChatModels = ChatModels.GPT35Turbo,
+model: ChatModels = OpenAIModels.GPT35Turbo,
 actorMap: Map<ActorTypes, CodingActor>
 )
 ```
@@ -1041,7 +1041,7 @@ sending and receiving messages, processing user inputs, and generating responses
 ### Constructor Parameters
 
 - `session`: The current user session.
-- `model`: The OpenAI text model to use for generating responses. Default is `ChatModels.GPT35Turbo`.
+- `model`: The OpenAI text model to use for generating responses. Default is `OpenAIModels.GPT35Turbo`.
 - `userInterfacePrompt`: A prompt displayed to the user at the start of the chat session.
 - `initialAssistantPrompt`: The initial message from the assistant. Default is an empty string.
 - `systemPrompt`: A system-level prompt that influences the assistant's responses.

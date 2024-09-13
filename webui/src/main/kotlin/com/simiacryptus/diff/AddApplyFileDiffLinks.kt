@@ -4,6 +4,7 @@ import com.simiacryptus.diff.FileValidationUtils.Companion.isGitignore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.set
@@ -320,7 +321,7 @@ private fun SocketManagerBase.renderDiffBlock(
                         | });
                         |```
                         """.trimMargin(),
-                        model = ChatModels.GPT4o,
+                        model = OpenAIModels.GPT4o,
                         temperature = 0.3
                     )
 

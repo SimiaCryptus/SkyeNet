@@ -24,7 +24,7 @@ abstract class AbstractAnalysisTask(
         SimpleActor(
             name = actorName,
             prompt = actorPrompt,
-            model = planSettings.model,
+            model = planSettings.getTaskSettings(planTask.taskType!!).model ?: planSettings.parsingModel,
             temperature = planSettings.temperature,
         )
     }
@@ -65,7 +65,7 @@ abstract class AbstractAnalysisTask(
                 autoFix = agent.planSettings.autoFix
             ),
             api = api as ChatClient,
-            model = agent.planSettings.model,
+            model = agent.planSettings.getTaskSettings(planTask.taskType!!).model ?: agent.planSettings.parsingModel,
             files = agent.files,
             command = analysisResult
         ).run(

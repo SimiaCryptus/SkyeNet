@@ -73,7 +73,6 @@ class PlanChatApp(
             try {
                 messageHistory.add(userMessage)
                 val planSettings = (getSettings(session, user, PlanSettings::class.java) ?: PlanSettings(
-                    model = model,
                     parsingModel = parsingModel,
                     command = planSettings.command,
                     temperature = planSettings.temperature,

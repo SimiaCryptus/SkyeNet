@@ -16,8 +16,8 @@ class DocumentationTask(
 ) : AbstractTask(planSettings, planTask) {
     override fun promptSegment(): String {
         return """
-            |Documentation - Generate documentation
-            |  ** List input files/tasks to be examined
+ Documentation - Generate documentation
+   ** List input files/tasks to be examined
             """.trimMargin()
     }
 
@@ -25,12 +25,12 @@ class DocumentationTask(
         SimpleActor(
             name = "DocumentationGenerator",
             prompt = """
-                |Create detailed and clear documentation for the provided code, covering its purpose, functionality, inputs, outputs, and any assumptions or limitations.
-                |Use a structured and consistent format that facilitates easy understanding and navigation. 
-                |Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
-                |Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
+ Create detailed and clear documentation for the provided code, covering its purpose, functionality, inputs, outputs, and any assumptions or limitations.
+ Use a structured and consistent format that facilitates easy understanding and navigation. 
+ Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
+ Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
                 """.trimMargin(),
-            model = planSettings.model,
+            model = planSettings.getTaskSettings(planTask.taskType!!).model ?: planSettings.parsingModel,
             temperature = planSettings.temperature,
         )
     }

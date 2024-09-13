@@ -29,8 +29,8 @@ ForeachTask - Execute a task for each item in a list
         task: SessionTask,
         api: API
     ) {
-        val items = planTask.foreachItems ?: throw RuntimeException("No items specified for ForeachTask")
-        val subTasks = planTask.subTasksByID ?: throw RuntimeException("No subTasks specified for ForeachTask")
+        val items = planTask.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
+        val subTasks = planTask.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")
         val subPlanTask = agent.ui.newTask(false)
         task.add(subPlanTask.placeholder)
         
