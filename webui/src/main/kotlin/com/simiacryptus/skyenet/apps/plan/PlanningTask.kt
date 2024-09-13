@@ -76,50 +76,58 @@ class PlanningTask(
             getInputFileCode(),
             s
         ).filter { it.isNotBlank() }
-        if (!planSettings.autoFix) {
-            val subPlan = Discussable(
-                task = task,
-                userMessage = { "Expand ${planTask.description ?: ""}" },
-                heading = "",
-                initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = api) },
-                outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
-                    render(
-                        withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                            plan = filterPlan { design.obj } as TaskBreakdownResult,
-                            planText = design.text,
-                            prompt = userMessage
-                        ),
-                        ui = agent.ui
-                    )
-                },
-                ui = agent.ui,
-                reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                    taskBreakdownActor.respond(
-                        messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                            .toTypedArray<ApiModel.ChatMessage>()),
-                        input = toInput("Expand ${planTask.description ?: ""}\n${JsonUtil.toJson(this)}"),
-                        api = api
-                    )
-                },
-            ).call()
-            // Execute sub-tasks
-            executeSubTasks(agent, userMessage, filterPlan{subPlan.obj}, task, api)
+        val subPlan = if (planSettings.allowBlocking && !planSettings.autoFix) {
+            createSubPlanDiscussable(agent, task, userMessage, ::toInput, api).call().obj
         } else {
-            // Execute sub-tasks
-/*
-            Retryable(agent.ui,task) { sb ->
-                val task = agent.ui.newTask(false)
-                sb.set(task.placeholder)
-                task.placeholder
-            }
-*/
-            executeSubTasks(agent, userMessage, filterPlan{
-                taskBreakdownActor.answer(
-                    toInput("Expand ${planTask.description ?: ""}"),
-                    api = api
-                ).obj
-            }, task, api)
+            val design = taskBreakdownActor.answer(
+                toInput("Expand ${planTask.description ?: ""}"),
+                api = api
+            )
+            render(
+                withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                    plan = filterPlan { design.obj } as TaskBreakdownResult,
+                    planText = design.text,
+                    prompt = userMessage
+                ),
+                ui = agent.ui
+            )
+            design.obj
         }
+        executeSubTasks(agent, userMessage, filterPlan { subPlan }, task, api)
+    }
+
+    private fun createSubPlanDiscussable(
+        agent: PlanCoordinator,
+        task: SessionTask,
+        userMessage: String,
+        toInput: (String) -> List<String>,
+        api: API
+    ): Discussable<ParsedResponse<TaskBreakdownResult>> {
+        return Discussable(
+            task = task,
+            userMessage = { "Expand ${planTask.description ?: ""}" },
+            heading = "",
+            initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = api) },
+            outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
+                render(
+                    withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                        plan = filterPlan { design.obj } as TaskBreakdownResult,
+                        planText = design.text,
+                        prompt = userMessage
+                    ),
+                    ui = agent.ui
+                )
+            },
+            ui = agent.ui,
+            reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+                taskBreakdownActor.respond(
+                    messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                        .toTypedArray<ApiModel.ChatMessage>(),
+                    input = toInput("Expand ${planTask.description ?: ""}\n${JsonUtil.toJson(this)}"),
+                    api = api
+                )
+            },
+        )
     }
     private fun executeSubTasks(
         agent: PlanCoordinator,

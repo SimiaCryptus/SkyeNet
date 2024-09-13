@@ -29,6 +29,7 @@ import java.io.File
 import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 class PlanCoordinator(
     val user: User?,
@@ -247,9 +248,13 @@ class PlanCoordinator(
                 }
             }
         }
+        val start = System.currentTimeMillis()
         planProcessingState.taskFutures.forEach { (id, future) ->
             try {
-                future.get() ?: log.warn("Dependency not found: $id")
+                future.get(
+                    (TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)).coerceAtLeast(0),
+                    TimeUnit.MILLISECONDS
+                ) ?: log.warn("Dependency not found: $id")
             } catch (e: Throwable) {
                 log.warn("Error", e)
             }
@@ -321,7 +326,7 @@ class PlanCoordinator(
             }
         }
 
-        fun newPlan(
+        private fun newPlan(
             api: API,
             planSettings: PlanSettings,
             inStrings: List<String>,
@@ -338,7 +343,7 @@ class PlanCoordinator(
         ) as ParsedResponse<TaskBreakdownInterface>
 
 
-        fun inputFn(
+        private fun inputFn(
             codeFiles: Map<Path, String>,
             files: Array<File>,
             root: Path
