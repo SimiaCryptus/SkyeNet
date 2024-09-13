@@ -164,8 +164,10 @@ open class DocumentParserApp(
                         @Language("Markdown") val jsonResult = parsingModel.getParser(api).let {
                             it(promptList.toList().joinToString("\n\n"))
                         }
-                        val jsonFile = outputDir.resolve("pages_${batchStart + 1}_to_${batchEnd}_content.json")
-                        jsonFile.writeText(JsonUtil.toJson(jsonResult))
+                        if(settings.saveTextFiles) {
+                            val jsonFile = outputDir.resolve("pages_${batchStart + 1}_to_${batchEnd}_content.json")
+                            jsonFile.writeText(JsonUtil.toJson(jsonResult))
+                        }
                         ui.newTask(false).apply {
                             pageTabs["Text"] = this.placeholder
                             add(

@@ -10,8 +10,6 @@ import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
-import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
-import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -49,7 +47,7 @@ class PlanningTask(
         val subTasksByID: Map<String, PlanTask>? = null,
     )
 
-    private val taskBreakdownActor by lazy { planningActor(planSettings) }
+    private val taskBreakdownActor by lazy { planSettings.planningActor() }
 
     override fun promptSegment(): String {
         return """
@@ -151,24 +149,5 @@ class PlanningTask(
 
     companion object {
         private val log = LoggerFactory.getLogger(PlanningTask::class.java)
-        fun planningActor(planSettings: PlanSettings) = ParsedActor(
-            name = "TaskBreakdown",
-            resultClass = TaskBreakdownResult::class.java,
-            prompt = """
-                        |Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
-                        |Detail files input and output as well as task execution dependencies.
-                        |Creating directories and initializing source control are out of scope.
-                        |
-                        |Tasks can be of the following types: 
-                        |
-                        |${getAvailableTaskTypes(planSettings).joinToString("\n") { "* ${it.promptSegment()}" }}
-                        |
-                        |${if (planSettings.getTaskSettings(TaskType.TaskPlanning).enabled) "Do not start your plan with a plan to plan!\n" else ""}
-                        """.trimMargin(),
-            model = planSettings.model,
-            parsingModel = planSettings.parsingModel,
-            temperature = planSettings.temperature,
-        )
-
     }
 }

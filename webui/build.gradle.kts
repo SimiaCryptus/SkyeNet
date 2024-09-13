@@ -36,7 +36,7 @@ val jackson_version = "2.17.2"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.1") {
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.2") {
         exclude(group = "org.slf4j")
     }
 
@@ -60,23 +60,6 @@ dependencies {
         exclude(group = "org.slf4j")
     }
     testRuntimeOnly("org.openapitools:openapi-generator-cli:7.3.0")
-
-    implementation("org.apache.parquet:parquet-common:1.12.3") {
-        exclude(group = "org.slf4j")
-    }
-    implementation("org.apache.parquet:parquet-avro:1.12.3") {
-        exclude(group = "org.slf4j")
-    }
-    implementation("org.apache.hadoop:hadoop-common:3.3.4") {
-        exclude(group = "org.eclipse.jetty")
-        exclude(group = "org.slf4j")
-        exclude(group = "com.sun.jersey")
-        exclude(group = "org.apache.hadoop")
-        exclude(group = "org.apache.hadoop.thirdparty")
-        exclude(group = "org.apache.zookeeper")
-        exclude(group = "javax.servlet")
-        exclude(group = "jakarta.activation")
-    }
 
     implementation(group = "org.eclipse.jetty", name = "jetty-server", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-servlet", version = jetty_version)

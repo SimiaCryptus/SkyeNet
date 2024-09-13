@@ -14,7 +14,6 @@ import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.Companion.planningActor
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
@@ -326,8 +325,13 @@ class PlanCoordinator(
             api: API,
             planSettings: PlanSettings,
             inStrings: List<String>,
-            messages: Array<ApiModel.ChatMessage> = inStrings.map { ApiModel.ChatMessage(ApiModel.Role.user, it.toContentList()) }.toTypedArray()
-        ) = planningActor(planSettings).respond(
+            messages: Array<ApiModel.ChatMessage> = inStrings.map {
+                ApiModel.ChatMessage(
+                    ApiModel.Role.user,
+                    it.toContentList()
+                )
+            }.toTypedArray()
+        ) = planSettings.planningActor().respond(
             messages = messages,
             input = inStrings,
             api = api

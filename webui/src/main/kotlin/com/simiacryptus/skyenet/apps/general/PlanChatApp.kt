@@ -10,6 +10,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.*
 
 class PlanChatApp(
     applicationName: String = "Task Planning Chat v1.0",
@@ -92,6 +93,13 @@ class PlanChatApp(
                 )
                 val mainTask = coordinator.ui.newTask()
                 val sessionTask = ui.newTask(false).apply { mainTask.verbose(placeholder) }
+                val api = (api as ChatClient).getChildClient().apply {
+                    val createFile = sessionTask.createFile("api-${UUID.randomUUID()}.log")
+                    createFile.second?.apply {
+                        logStreams += this.outputStream().buffered()
+                        sessionTask.add("API log: <a href=\"${createFile.first}\">$this</a>")
+                    }
+                }
                 val plan = PlanCoordinator.initialPlan(
                     codeFiles = coordinator.codeFiles,
                     files = coordinator.files,
