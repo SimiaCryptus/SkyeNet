@@ -1,5 +1,9 @@
-import {closeModal, findAncestor, getSessionId, showModal} from './functions.js';
+import {closeModal, findAncestor, getSessionId, showModal, toggleVerbose} from './functions.js';
 import {queueMessage} from './chat.js';
+function isCtrlOrCmd(event) {
+    return event.ctrlKey || (navigator.platform.toLowerCase().indexOf('mac') !== -1 && event.metaKey);
+}
+
 
 export function setupUIHandlers() {
     const historyElement = document.getElementById('history');
@@ -34,6 +38,14 @@ export function setupUIHandlers() {
 
     let filesElement = document.getElementById("files");
     if (filesElement) filesElement.addEventListener("click", handleFilesClick);
+    // Add keyboard event listener for toggling verbose mode
+    document.addEventListener('keydown', (event) => {
+        if (isCtrlOrCmd(event) && event.shiftKey && event.key.toLowerCase() === 'v') {
+            event.preventDefault();
+            toggleVerbose();
+            console.log('Verbose mode toggled via hotkey');
+        }
+    });
 }
 
 function handleBodyClick(event) {

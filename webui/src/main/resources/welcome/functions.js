@@ -126,7 +126,7 @@ function closeModal() {
 })();
 
 
-function toggleVerbose() {
+export function toggleVerbose() {
     let verboseToggle = document.getElementById('verbose');
     if (verboseToggle.innerText === 'Hide Verbose') {
         const elements = document.getElementsByClassName('verbose');

@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -43,7 +42,6 @@ class DocumentationTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
         val semaphore = Semaphore(0)
@@ -61,8 +59,6 @@ class DocumentationTask(
             )
             planProcessingState.taskResult[taskId] = docResult
             if (agent.planSettings.autoFix) {
-                taskTabs.selectedTab += 1
-                taskTabs.update()
                 task.complete()
                 onComplete()
                 MarkdownUtil.renderMarkdown("## Generated Documentation\n$docResult\nAuto-accepted", ui = agent.ui)
@@ -71,8 +67,6 @@ class DocumentationTask(
                     "## Generated Documentation\n$docResult",
                     ui = agent.ui
                 ) + acceptButtonFooter(agent.ui) {
-                    taskTabs.selectedTab += 1
-                    taskTabs.update()
                     task.complete()
                     onComplete()
                 }

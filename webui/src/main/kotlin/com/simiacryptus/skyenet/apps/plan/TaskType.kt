@@ -1,109 +1,67 @@
 package com.simiacryptus.skyenet.apps.plan
 
-enum class TaskType {
-    TaskPlanning,
-    Inquiry,
-    FileModification,
-    Documentation,
-    RunShellCommand,
-    CommandAutoFix,
-    CodeReview,
-    TestGeneration,
-    Optimization,
-    SecurityAudit,
-    PerformanceAnalysis,
-    RefactorTask,
-    ForeachTask;
 
+class TaskType(val name: String) {
     companion object {
+        private val registry = mutableMapOf<String, TaskType>()
+        private val taskConstructors = mutableMapOf<TaskType, (PlanSettings, PlanningTask.PlanTask) -> AbstractTask>()
+        val TaskPlanning = TaskType("TaskPlanning")
+        val Inquiry = TaskType("Inquiry")
+        val FileModification = TaskType("FileModification")
+        val Documentation = TaskType("Documentation")
+        val RunShellCommand = TaskType("RunShellCommand")
+        val CommandAutoFix = TaskType("CommandAutoFix")
+        val CodeReview = TaskType("CodeReview")
+        val TestGeneration = TaskType("TestGeneration")
+        val Optimization = TaskType("Optimization")
+        val SecurityAudit = TaskType("SecurityAudit")
+        val PerformanceAnalysis = TaskType("PerformanceAnalysis")
+        val RefactorTask = TaskType("RefactorTask")
+        val ForeachTask = TaskType("ForeachTask")
 
+        init {
+            // Register built-in task types
+            register(TaskPlanning) { settings, task -> PlanningTask(settings, task) }
+            register(Inquiry) { settings, task -> InquiryTask(settings, task) }
+            register(FileModification) { settings, task -> FileModificationTask(settings, task) }
+            register(Documentation) { settings, task -> DocumentationTask(settings, task) }
+            register(RunShellCommand) { settings, task -> RunShellCommandTask(settings, task) }
+            register(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
+            register(CodeReview) { settings, task -> CodeReviewTask(settings, task) }
+            register(TestGeneration) { settings, task -> TestGenerationTask(settings, task) }
+            register(Optimization) { settings, task -> CodeOptimizationTask(settings, task) }
+            register(SecurityAudit) { settings, task -> SecurityAuditTask(settings, task) }
+            register(PerformanceAnalysis) { settings, task -> PerformanceAnalysisTask(settings, task) }
+            register(RefactorTask) { settings, task -> RefactorTask(settings, task) }
+            register(ForeachTask) { settings, task -> ForeachTask(settings, task) }
+        }
+
+        fun register(taskType: TaskType, constructor: (PlanSettings, PlanningTask.PlanTask) -> AbstractTask) {
+            registry[taskType.name] = taskType
+            taskConstructors[taskType] = constructor
+        }
+
+        fun getTaskType(name: String): TaskType? {
+            return registry[name]
+        }
+
+        fun values(): Collection<TaskType> = registry.values
         fun getImpl(planSettings: PlanSettings, planTask: PlanningTask.PlanTask): AbstractTask {
-            return when (planTask.taskType) {
-                TaskPlanning -> if (planSettings.taskPlanningEnabled) PlanningTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                Documentation -> if (planSettings.documentationEnabled) DocumentationTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                FileModification -> if (planSettings.fileModificationEnabled) FileModificationTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                RunShellCommand -> if (planSettings.shellCommandTaskEnabled) RunShellCommandTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                CommandAutoFix -> if (planSettings.enableCommandAutoFix) CommandAutoFixTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                Inquiry -> if (planSettings.inquiryEnabled) InquiryTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                CodeReview -> if (planSettings.codeReviewEnabled) CodeReviewTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                TestGeneration -> if (planSettings.testGenerationEnabled) TestGenerationTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                Optimization -> if (planSettings.optimizationEnabled) CodeOptimizationTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                SecurityAudit -> if (planSettings.securityAuditEnabled) SecurityAuditTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                PerformanceAnalysis -> if (planSettings.performanceAnalysisEnabled) PerformanceAnalysisTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                RefactorTask -> if (planSettings.refactorTaskEnabled) RefactorTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                ForeachTask -> if (planSettings.foreachTaskEnabled) ForeachTask(
-                    planSettings,
-                    planTask
-                ) else throw DisabledTaskException(planTask.taskType)
-
-                else -> throw RuntimeException("Unknown task type: ${planTask.taskType}")
+            val taskType = planTask.taskType ?: throw RuntimeException("Task type is null")
+            if (!planSettings.getTaskSettings(taskType).enabled) {
+                throw DisabledTaskException(taskType)
             }
+            val constructor =
+                taskConstructors[taskType] ?: throw RuntimeException("Unknown task type: ${taskType.name}")
+            return constructor(planSettings, planTask)
         }
 
         fun getAvailableTaskTypes(planSettings: PlanSettings): List<AbstractTask> = TaskType.values().filter {
-            when (it) {
-                TaskPlanning -> planSettings.taskPlanningEnabled
-                RunShellCommand -> planSettings.shellCommandTaskEnabled
-                Documentation -> planSettings.documentationEnabled
-                FileModification -> planSettings.fileModificationEnabled
-                Inquiry -> planSettings.inquiryEnabled
-                CodeReview -> planSettings.codeReviewEnabled
-                TestGeneration -> planSettings.testGenerationEnabled
-                Optimization -> planSettings.optimizationEnabled
-                CommandAutoFix -> planSettings.enableCommandAutoFix
-                SecurityAudit -> planSettings.securityAuditEnabled
-                PerformanceAnalysis -> planSettings.performanceAnalysisEnabled
-                RefactorTask -> planSettings.refactorTaskEnabled
-                ForeachTask -> planSettings.foreachTaskEnabled
-            }
+            planSettings.getTaskSettings(it).enabled
         }.map { getImpl(planSettings, PlanningTask.PlanTask(taskType = it)) }
+
+        fun valueOf(name: String): TaskType {
+            return registry[name] ?: throw IllegalArgumentException("No enum constant $name")
+        }
     }
 }

@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "2.0.0-Beta5"
+    id("org.jetbrains.kotlin.jvm") version "2.0.20"
     `maven-publish`
     id("signing")
 }
@@ -26,7 +26,7 @@ kotlin {
     jvmToolchain(11)
 }
 
-val kotlin_version = "2.0.0-Beta5"
+val kotlin_version = "2.0.20"
 dependencies {
     implementation(project(":core"))
 
@@ -36,7 +36,7 @@ dependencies {
     compileOnly(group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version = kotlin_version)
     compileOnly(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version = kotlin_version)
 
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.16")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
 
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")

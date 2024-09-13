@@ -2,14 +2,13 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.core.actors.SimpleActor
-import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.apps.general.PatchApp
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.apps.general.CommandPatchApp
+import com.simiacryptus.skyenet.apps.general.PatchApp
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.core.actors.SimpleActor
+import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -37,7 +36,6 @@ abstract class AbstractAnalysisTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
         val analysisResult = analysisActor.answer(

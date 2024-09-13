@@ -307,7 +307,7 @@ data class User(
 }
 
 data class Session(
-    internal val sessionId: String
+    val sessionId: String
 ) {
     init {
         StorageInterface.validateSessionId(this)

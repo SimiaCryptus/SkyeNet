@@ -5,18 +5,14 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.*
+import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
-import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
-import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
-import kotlin.text.set
 
 class PlanningTask(
     planSettings: PlanSettings,
@@ -51,7 +47,7 @@ class PlanningTask(
         val subTasksByID: Map<String, PlanTask>? = null,
     )
 
-    private val taskBreakdownActor by lazy { planningActor(planSettings) }
+    private val taskBreakdownActor by lazy { planSettings.planningActor() }
 
     override fun promptSegment(): String {
         return """
@@ -69,10 +65,9 @@ class PlanningTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
-        if (!agent.planSettings.taskPlanningEnabled) throw RuntimeException("Task planning is disabled")
+        if (!agent.planSettings.getTaskSettings(TaskType.TaskPlanning).enabled) throw RuntimeException("Task planning is disabled")
         @Suppress("NAME_SHADOWING") val task = agent.ui.newTask(false).apply { task.add(placeholder) }
         fun toInput(s: String) = listOf(
             userMessage,
@@ -81,50 +76,58 @@ class PlanningTask(
             getInputFileCode(),
             s
         ).filter { it.isNotBlank() }
-        if (!planSettings.autoFix) {
-            val subPlan = Discussable(
-                task = task,
-                userMessage = { "Expand ${planTask.description ?: ""}" },
-                heading = "",
-                initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = api) },
-                outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
-                    render(
-                        withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                            plan = filterPlan { design.obj } as TaskBreakdownResult,
-                            planText = design.text,
-                            prompt = userMessage
-                        ),
-                        ui = agent.ui
-                    )
-                },
-                ui = agent.ui,
-                reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                    taskBreakdownActor.respond(
-                        messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                            .toTypedArray<ApiModel.ChatMessage>()),
-                        input = toInput("Expand ${planTask.description ?: ""}\n${JsonUtil.toJson(this)}"),
-                        api = api
-                    )
-                },
-            ).call()
-            // Execute sub-tasks
-            executeSubTasks(agent, userMessage, filterPlan{subPlan.obj}, task, api)
+        val subPlan = if (planSettings.allowBlocking && !planSettings.autoFix) {
+            createSubPlanDiscussable(agent, task, userMessage, ::toInput, api).call().obj
         } else {
-            // Execute sub-tasks
-/*
-            Retryable(agent.ui,task) { sb ->
-                val task = agent.ui.newTask(false)
-                sb.set(task.placeholder)
-                task.placeholder
-            }
-*/
-            executeSubTasks(agent, userMessage, filterPlan{
-                taskBreakdownActor.answer(
-                    toInput("Expand ${planTask.description ?: ""}"),
-                    api = api
-                ).obj
-            }, task, api)
+            val design = taskBreakdownActor.answer(
+                toInput("Expand ${planTask.description ?: ""}"),
+                api = api
+            )
+            render(
+                withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                    plan = filterPlan { design.obj } as TaskBreakdownResult,
+                    planText = design.text,
+                    prompt = userMessage
+                ),
+                ui = agent.ui
+            )
+            design.obj
         }
+        executeSubTasks(agent, userMessage, filterPlan { subPlan }, task, api)
+    }
+
+    private fun createSubPlanDiscussable(
+        agent: PlanCoordinator,
+        task: SessionTask,
+        userMessage: String,
+        toInput: (String) -> List<String>,
+        api: API
+    ): Discussable<ParsedResponse<TaskBreakdownResult>> {
+        return Discussable(
+            task = task,
+            userMessage = { "Expand ${planTask.description ?: ""}" },
+            heading = "",
+            initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = api) },
+            outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
+                render(
+                    withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                        plan = filterPlan { design.obj } as TaskBreakdownResult,
+                        planText = design.text,
+                        prompt = userMessage
+                    ),
+                    ui = agent.ui
+                )
+            },
+            ui = agent.ui,
+            reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+                taskBreakdownActor.respond(
+                    messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                        .toTypedArray<ApiModel.ChatMessage>(),
+                    input = toInput("Expand ${planTask.description ?: ""}\n${JsonUtil.toJson(this)}"),
+                    api = api
+                )
+            },
+        )
     }
     private fun executeSubTasks(
         agent: PlanCoordinator,
@@ -154,24 +157,5 @@ class PlanningTask(
 
     companion object {
         private val log = LoggerFactory.getLogger(PlanningTask::class.java)
-        fun planningActor(planSettings: PlanSettings) = ParsedActor(
-            name = "TaskBreakdown",
-            resultClass = TaskBreakdownResult::class.java,
-            prompt = """
-                        |Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
-                        |Detail files input and output as well as task execution dependencies.
-                        |Creating directories and initializing source control are out of scope.
-                        |
-                        |Tasks can be of the following types: 
-                        |
-                        |${getAvailableTaskTypes(planSettings).joinToString("\n") { "* ${it.promptSegment()}" }}
-                        |
-                        |${if (planSettings.taskPlanningEnabled) "Do not start your plan with a plan to plan!\n" else ""}
-                        """.trimMargin(),
-            model = planSettings.model,
-            parsingModel = planSettings.parsingModel,
-            temperature = planSettings.temperature,
-        )
-
     }
 }

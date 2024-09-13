@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
@@ -36,7 +35,6 @@ class CommandAutoFixTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
         val semaphore = Semaphore(0)
@@ -83,8 +81,6 @@ class CommandAutoFixTask(
                 planProcessingState.taskResult[taskId] = "Command Auto Fix completed"
                 task.add(if (outputResult.exitCode == 0) {
                     if (agent.planSettings.autoFix) {
-                        taskTabs.selectedTab += 1
-                        taskTabs.update()
                         onComplete()
                         MarkdownUtil.renderMarkdown("## Auto-applied Command Auto Fix\n", ui = agent.ui)
                     } else {
@@ -94,8 +90,6 @@ class CommandAutoFixTask(
                         ) + acceptButtonFooter(
                             agent.ui
                         ) {
-                            taskTabs.selectedTab += 1
-                            taskTabs.update()
                             onComplete()
                         }
                     }
@@ -106,8 +100,6 @@ class CommandAutoFixTask(
                     ) + acceptButtonFooter(
                         agent.ui
                     ) {
-                        taskTabs.selectedTab += 1
-                        taskTabs.update()
                         onComplete()
                     }
                 })

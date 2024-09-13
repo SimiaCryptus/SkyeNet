@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.JsonUtil
-import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.CodingActor
@@ -54,10 +53,9 @@ class RunShellCommandTask(
         plan: TaskBreakdownInterface,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        taskTabs: TabbedDisplay,
         api: API
     ) {
-        if (!agent.planSettings.shellCommandTaskEnabled) throw RuntimeException("Shell command task is disabled")
+        if (!agent.planSettings.getTaskSettings(TaskType.RunShellCommand).enabled) throw RuntimeException("Shell command task is disabled")
         val semaphore = Semaphore(0)
         object : CodingAgent<ProcessInterpreter>(
             api = api,

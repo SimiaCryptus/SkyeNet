@@ -8,7 +8,7 @@ version = properties("libraryVersion")
 plugins {
     java
     `java-library`
-    id("org.jetbrains.kotlin.jvm") version "2.0.0-Beta5"
+    id("org.jetbrains.kotlin.jvm") version "2.0.20"
     `maven-publish`
     id("signing")
 }
@@ -47,7 +47,7 @@ dependencies {
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")
     testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.10.1")
 
-    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.9")
+    implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.16")
     testImplementation(group = "ch.qos.logback", name = "logback-classic", version = "1.4.11")
     testImplementation(group = "ch.qos.logback", name = "logback-core", version = "1.4.11")
     testImplementation("org.ow2.asm:asm:9.6")

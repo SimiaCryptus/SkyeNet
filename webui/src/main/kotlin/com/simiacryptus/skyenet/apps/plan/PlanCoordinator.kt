@@ -6,6 +6,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
+import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
@@ -13,7 +14,6 @@ import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.Companion.planningActor
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
@@ -24,12 +24,12 @@ import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
-import com.simiacryptus.jopenai.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 class PlanCoordinator(
     val user: User?,
@@ -59,24 +59,6 @@ class PlanCoordinator(
                 }
             }
 
-    fun startProcess(userMessage: String, api: API) {
-        val task = ui.newTask()
-        executePlan(
-            (
-                    initialPlan(
-                        codeFiles = codeFiles,
-                        files = files,
-                        root = root,
-                        task = task,
-                        userMessage = userMessage,
-                        ui = ui,
-                        planSettings = planSettings,
-                        api = api
-                    )
-                    ).plan, task, userMessage, api
-        )
-    }
-
     fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API) {
         val task = ui.newTask()
         try {
@@ -105,11 +87,9 @@ class PlanCoordinator(
         task: SessionTask,
         userMessage: String,
         api: API
-    ) {
+    ): PlanProcessingState {
+        val planProcessingState = newState(plan)
         try {
-            val planProcessingState =
-                PlanProcessingState((filterPlan{plan}.tasksByID?.entries?.toTypedArray<Map.Entry<String, PlanTask>>()
-                    ?.associate { it.key to it.value } ?: mapOf()).toMutableMap())
             val diagramTask = ui.newTask(false).apply { task.add(placeholder) }
             executePlan(
                 task = task,
@@ -132,7 +112,12 @@ class PlanCoordinator(
             log.warn("Error during incremental code generation process", e)
             task.error(ui, e)
         }
+        return planProcessingState
     }
+
+    private fun newState(plan: TaskBreakdownInterface) =
+        PlanProcessingState((filterPlan { plan }.tasksByID?.entries?.toTypedArray<Map.Entry<String, PlanTask>>()
+            ?.associate { it.key to it.value } ?: mapOf()).toMutableMap())
 
     fun executePlan(
         task: SessionTask,
@@ -250,7 +235,6 @@ class PlanCoordinator(
                         plan = plan,
                         planProcessingState = planProcessingState,
                         task = task1,
-                        taskTabs = taskTabs,
                         api = api
                     )
                 } catch (e: Throwable) {
@@ -264,9 +248,13 @@ class PlanCoordinator(
                 }
             }
         }
+        val start = System.currentTimeMillis()
         planProcessingState.taskFutures.forEach { (id, future) ->
             try {
-                future.get() ?: log.warn("Dependency not found: $id")
+                future.get(
+                    (TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)).coerceAtLeast(0),
+                    TimeUnit.MILLISECONDS
+                ) ?: log.warn("Dependency not found: $id")
             } catch (e: Throwable) {
                 log.warn("Error", e)
             }
@@ -287,74 +275,97 @@ class PlanCoordinator(
             api: API
         ): PlanUtil.TaskBreakdownWithPrompt {
             val toInput = inputFn(codeFiles, files, root)
-            return (
+            return if (planSettings.allowBlocking)
                 Discussable(
                     task = task,
                     heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
                     userMessage = { userMessage },
                     initialResponse = {
-                        planningActor(planSettings).answer(
-                            toInput(it),
-                            api = api
-                        ) as ParsedResponse<TaskBreakdownInterface>
+                        newPlan(
+                            api,
+                            planSettings,
+                            toInput(userMessage)
+                        )
                     },
-                    outputFn = { render(
-                        withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                            prompt = userMessage,
-                            plan = it.obj as TaskBreakdownResult,
-                            planText = it.text
-                        ),
-                        ui = ui
-                    ) },
+                    outputFn = {
+                        render(
+                            withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                                prompt = userMessage,
+                                plan = it.obj as TaskBreakdownResult,
+                                planText = it.text
+                            ),
+                            ui = ui
+                        )
+                    },
                     ui = ui,
                     reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                        val messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                            .toTypedArray<ApiModel.ChatMessage>()
-                        planningActor(planSettings).respond(
-                            messages = messages,
-                            input = toInput(userMessage),
-                            api = api
-                        ) as ParsedResponse<TaskBreakdownInterface>
+                        newPlan(
+                            api,
+                            planSettings,
+                            toInput(userMessage),
+                            userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                                .toTypedArray<ApiModel.ChatMessage>())
                     },
                 ).call().let {
                     PlanUtil.TaskBreakdownWithPrompt(
                         prompt = userMessage,
-                        plan = filterPlan{it.obj} as TaskBreakdownResult,
+                        plan = filterPlan { it.obj } as TaskBreakdownResult,
                         planText = it.text
                     )
                 }
-            )
+            else newPlan(
+                api,
+                planSettings,
+                toInput(userMessage)
+            ).let {
+                PlanUtil.TaskBreakdownWithPrompt(
+                    prompt = userMessage,
+                    plan = filterPlan { it.obj } as TaskBreakdownResult,
+                    planText = it.text
+                )
+            }
         }
 
+        private fun newPlan(
+            api: API,
+            planSettings: PlanSettings,
+            inStrings: List<String>,
+            messages: Array<ApiModel.ChatMessage> = inStrings.map {
+                ApiModel.ChatMessage(
+                    ApiModel.Role.user,
+                    it.toContentList()
+                )
+            }.toTypedArray()
+        ) = planSettings.planningActor().respond(
+            messages = messages,
+            input = inStrings,
+            api = api
+        ) as ParsedResponse<TaskBreakdownInterface>
 
-        fun inputFn(
+
+        private fun inputFn(
             codeFiles: Map<Path, String>,
             files: Array<File>,
             root: Path
-        ): (String) -> List<String> {
-            val toInput = { it: String ->
-                listOf(
-                    if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
-                                            | Files:
-                                            | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
-                                             """.trimMargin() else {
-                        files.joinToString("\n\n") {
-                            val path = root.relativize(it.toPath())
-                            """
-                                    |## $path
-                                    |
-                                    |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-                                    """.trimMargin()
-                        }
-                    },
-                    it
-                )
-            }
-            return toInput
+        ) = { str: String ->
+            listOf(
+                if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
+                                        | Files:
+                                        | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
+                                         """.trimMargin() else {
+                    files.joinToString("\n\n") {
+                        val path = root.relativize(it.toPath())
+                        """
+                                |## $path
+                                |
+                                |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
+                                """.trimMargin()
+                    }
+                },
+                str
+            )
         }
     }
-
-
 }
 
 const val TRIPLE_TILDE = "```"
