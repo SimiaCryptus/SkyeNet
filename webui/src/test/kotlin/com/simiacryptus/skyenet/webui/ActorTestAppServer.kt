@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui
 
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
 import com.simiacryptus.skyenet.apps.general.DocumentParserApp
 import com.simiacryptus.skyenet.apps.general.PlanAheadApp
@@ -87,13 +88,11 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                 PlanAheadApp(
                     rootFile = File("."),
                     planSettings = PlanSettings(
-                        model = OpenAIModels.GPT4o,
                         parsingModel = OpenAIModels.GPT4oMini,
                         command = listOf("task"),
                         temperature = 0.2,
                         budget = 2.0,
                         autoFix = true,
-                        enableCommandAutoFix = true,
                         commandAutoFixCommands = listOf(
                             "C:\\Program Files\\nodejs\\npx.cmd", "C:\\Program Files\\nodejs\\npm.cmd"
                         ),
@@ -101,8 +100,12 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                         workingDir = ".",
                         language = if (isWindows) "powershell" else "bash",
                     ).apply {
-                        setTaskSettings(TaskType.TaskPlanning, TaskSettings(enabled = true))
-                        setTaskSettings(TaskType.RunShellCommand, TaskSettings(enabled = false))
+                        setTaskSettings(TaskType.TaskPlanning, TaskSettings(
+                            enabled = true,
+                            model = OpenAIModels.GPT4o,))
+                        setTaskSettings(TaskType.RunShellCommand, TaskSettings(
+                            enabled = false,
+                            model = OpenAIModels.GPT4o,))
                     },
                     model = OpenAIModels.GPT4o,
                     parsingModel = OpenAIModels.GPT4oMini,
