@@ -71,14 +71,18 @@ open class PlanSettings(
         name = "TaskBreakdown",
         resultClass = TaskBreakdownResult::class.java,
         prompt = """
-     Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
-     Detail files input and output as well as task execution dependencies.
-     Creating directories and initializing source control are out of scope.
+                |Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
+                |
+                |For each task:
+                |* Detail files input and output file
+                |* Describe task execution dependencies and order
+                |* Provide a brief description of the task
+                |* Specify important interface and integration details (each task will run independently off of a copy of this plan)
                 |
                 |Tasks can be of the following types: 
-                |
                 |${getAvailableTaskTypes(this).joinToString("\n") { "* ${it.promptSegment()}" }}
                 |
+                |Creating directories and initializing source control are out of scope.
                 |${if (this.getTaskSettings(TaskType.TaskPlanning).enabled) "Do not start your plan with a plan to plan!\n" else ""}
                 """.trimMargin(),
         model = this.getTaskSettings(TaskType.TaskPlanning).model ?: this.parsingModel,

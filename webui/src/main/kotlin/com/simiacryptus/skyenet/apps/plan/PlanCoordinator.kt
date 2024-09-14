@@ -88,10 +88,10 @@ class PlanCoordinator(
         api: API
     ): PlanProcessingState {
         val api = (api as ChatClient).getChildClient().apply {
-            val createFile = task.createFile("api-${UUID.randomUUID()}.log")
+            val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
             createFile.second?.apply {
                 logStreams += this.outputStream().buffered()
-                task.verbose("API log: <a href=\"${createFile.first}\">$this</a>")
+                task.verbose("API log: <a href=\"file:///$this\">$this</a>")
             }
         }
         val planProcessingState = newState(plan)
@@ -139,10 +139,10 @@ class PlanCoordinator(
     ) {
         val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
         val api = (api as ChatClient).getChildClient().apply {
-            val createFile = sessionTask.createFile("api-${UUID.randomUUID()}.log")
+            val createFile = sessionTask.createFile(".logs/api-${UUID.randomUUID()}.log")
             createFile.second?.apply {
                 logStreams += this.outputStream().buffered()
-                sessionTask.add("API log: <a href=\"${createFile.first}\">$this</a>")
+                sessionTask.verbose("API log: <a href=\"file:///$this\">$this</a>")
             }
         }
         val taskTabs = object : TabbedDisplay(sessionTask) {
@@ -235,10 +235,10 @@ class PlanCoordinator(
                         )
                     )
                     val api = (api as ChatClient).getChildClient().apply {
-                        val createFile = task1.createFile("api-${UUID.randomUUID()}.log")
+                        val createFile = task1.createFile(".logs/api-${UUID.randomUUID()}.log")
                         createFile.second?.apply {
                             logStreams += this.outputStream().buffered()
-                            task1.verbose("API log: <a href=\"${createFile.first}\">$this</a>")
+                            task1.verbose("API log: <a href=\"file:///$this\">$this</a>")
                         }
                     }
                     getImpl(planSettings, subTask).run(
@@ -288,10 +288,10 @@ class PlanCoordinator(
             api: API
         ): PlanUtil.TaskBreakdownWithPrompt {
             val api = (api as ChatClient).getChildClient().apply {
-                val createFile = task.createFile("api-${UUID.randomUUID()}.log")
+                val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
                 createFile.second?.apply {
                     logStreams += this.outputStream().buffered()
-                    task.verbose("API log: <a href=\"${createFile.first}\">$this</a>")
+                    task.verbose("API log: <a href=\"file:///$this\">$this</a>")
                 }
             }
             val toInput = inputFn(codeFiles, files, root)

@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.AgentPatterns
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.TaskState
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -87,8 +88,8 @@ object PlanUtil {
             val taskType = task.taskType?.name ?: "Unknown"
             val escapedDescription = escapeMermaidCharacters(task.description ?: "")
             val style = when (task.state) {
-                AbstractTask.TaskState.Completed -> ":::completed"
-                AbstractTask.TaskState.InProgress -> ":::inProgress"
+                TaskState.Completed -> ":::completed"
+                TaskState.InProgress -> ":::inProgress"
                 else -> ":::$taskType"
             }
             graphBuilder.append("    ${sanitizedTaskId}[$escapedDescription]$style;\n")
@@ -112,14 +113,23 @@ object PlanUtil {
         val obj = fn()
         var tasksByID = obj.tasksByID?.filter { (k, v) ->
             when {
-                v.taskType == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() -> false
+                v.taskType == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() ->
+                    if (retries <= 0) {
+                        log.warn("Error filtering plan: " + JsonUtil.toJson(obj))
+                        throw IllegalArgumentException("TaskPlanning task $k has no dependencies")
+                    } else {
+                        log.info("Circular dependency detected in task breakdown")
+                        return filterPlan(retries - 1, fn)
+                    }
                 else -> true
             }
-        }?.map {
+        } ?: emptyMap()
+        tasksByID = tasksByID.map {
             it.key to it.value.copy(
-                task_dependencies = it.value.task_dependencies?.filter { it in (obj.tasksByID?.keys ?: setOf()) }
+                task_dependencies = it.value.task_dependencies?.filter { it in tasksByID.keys },
+                state = TaskState.Pending
             )
-        }?.toMap() ?: emptyMap()
+        }.toMap()
         try {
             executionOrder(tasksByID)
         } catch (e: RuntimeException) {
@@ -134,11 +144,6 @@ object PlanUtil {
         return if (tasksByID.size == obj.tasksByID?.size) {
             obj
         } else filterPlan {
-            tasksByID = tasksByID.mapValues { (_, v) ->
-                v.copy(
-                    task_dependencies = v.task_dependencies?.filter { it in tasksByID.keys }
-                )
-            }
             PlanningTask.TaskBreakdownResult(tasksByID, obj.finalTaskID)
         }
     }

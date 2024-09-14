@@ -81,7 +81,7 @@ abstract class SocketManagerBase(
         }
         override fun createFile(relativePath: String): Pair<String, File?> {
             log.debug("Saving file at path: {}", relativePath)
-            return Pair("fileIndex/$session/$relativePath", dataStorage?.getSessionDir(owner, session)?.let { dir ->
+            return Pair("fileIndex/$session/$relativePath", dataStorage?.getDataDir(owner, session)?.let { dir ->
                 dir.mkdirs()
                 val resolve = dir.resolve(relativePath)
                 resolve.parentFile.mkdirs()
@@ -110,7 +110,7 @@ abstract class SocketManagerBase(
             try {
                 val ver = messageVersions[messageID]?.get()
                 val v = messageStates[messageID]
-                log.info("Publish Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
+                log.debug("Publish Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
                 sockets.keys.toTypedArray<ChatSocket>().forEach<ChatSocket> { chatSocket ->
                     try {
                         val deque = sendQueues.computeIfAbsent(chatSocket) { ConcurrentLinkedDeque() }
@@ -125,7 +125,7 @@ abstract class SocketManagerBase(
                                         val v = messageStates[messageID]
                                         msg = "$messageID,$ver,$v"
                                     } finally {
-                                        log.info("Sending message: {} to socket: {}", msg, chatSocket)
+                                        log.debug("Sending message: {} to socket: {}", msg, chatSocket)
                                         synchronized(chatSocket) {
                                             chatSocket.remote.sendString(msg)
                                         }

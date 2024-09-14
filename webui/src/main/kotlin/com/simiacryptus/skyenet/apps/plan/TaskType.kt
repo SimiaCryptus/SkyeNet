@@ -12,27 +12,26 @@ class TaskType(name: String) : DynamicEnum<TaskType>(name) {
     companion object {
         private val taskConstructors = mutableMapOf<TaskType, (PlanSettings, PlanningTask.PlanTask) -> AbstractTask>()
 
-        val TaskPlanning = TaskType("TaskPlanning").also { register(it) }
-        val Inquiry = TaskType("Inquiry").also { register(it) }
-        val FileModification = TaskType("FileModification").also { register(it) }
-        val Documentation = TaskType("Documentation").also { register(it) }
-        val RunShellCommand = TaskType("RunShellCommand").also { register(it) }
-        val CommandAutoFix = TaskType("CommandAutoFix").also { register(it) }
-        val CodeReview = TaskType("CodeReview").also { register(it) }
-        val TestGeneration = TaskType("TestGeneration").also { register(it) }
-        val Optimization = TaskType("Optimization").also { register(it) }
-        val SecurityAudit = TaskType("SecurityAudit").also { register(it) }
-        val PerformanceAnalysis = TaskType("PerformanceAnalysis").also { register(it) }
-        val RefactorTask = TaskType("RefactorTask").also { register(it) }
-        val ForeachTask = TaskType("ForeachTask").also { register(it) }
+        val TaskPlanning = TaskType("TaskPlanning")
+        val Inquiry = TaskType("Inquiry")
+        val FileModification = TaskType("FileModification")
+        val Documentation = TaskType("Documentation")
+        val RunShellCommand = TaskType("RunShellCommand")
+        val CommandAutoFix = TaskType("CommandAutoFix")
+        val CodeReview = TaskType("CodeReview")
+        val TestGeneration = TaskType("TestGeneration")
+        val Optimization = TaskType("Optimization")
+        val SecurityAudit = TaskType("SecurityAudit")
+        val PerformanceAnalysis = TaskType("PerformanceAnalysis")
+        val RefactorTask = TaskType("RefactorTask")
+        val ForeachTask = TaskType("ForeachTask")
 
         init {
-            registerConstructor(TaskPlanning) { settings, task -> PlanningTask(settings, task) }
+            registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
             registerConstructor(Inquiry) { settings, task -> InquiryTask(settings, task) }
             registerConstructor(FileModification) { settings, task -> FileModificationTask(settings, task) }
             registerConstructor(Documentation) { settings, task -> DocumentationTask(settings, task) }
             registerConstructor(RunShellCommand) { settings, task -> RunShellCommandTask(settings, task) }
-            registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
             registerConstructor(CodeReview) { settings, task -> CodeReviewTask(settings, task) }
             registerConstructor(TestGeneration) { settings, task -> TestGenerationTask(settings, task) }
             registerConstructor(Optimization) { settings, task -> CodeOptimizationTask(settings, task) }
@@ -40,6 +39,7 @@ class TaskType(name: String) : DynamicEnum<TaskType>(name) {
             registerConstructor(PerformanceAnalysis) { settings, task -> PerformanceAnalysisTask(settings, task) }
             registerConstructor(RefactorTask) { settings, task -> RefactorTask(settings, task) }
             registerConstructor(ForeachTask) { settings, task -> ForeachTask(settings, task) }
+            registerConstructor(TaskPlanning) { settings, task -> PlanningTask(settings, task) }
         }
 
         private fun registerConstructor(
@@ -47,6 +47,7 @@ class TaskType(name: String) : DynamicEnum<TaskType>(name) {
             constructor: (PlanSettings, PlanningTask.PlanTask) -> AbstractTask
         ) {
             taskConstructors[taskType] = constructor
+            register(taskType)
         }
 
         fun values() = values(TaskType::class.java)

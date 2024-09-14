@@ -18,13 +18,13 @@ class CommandAutoFixTask(
 ) : AbstractTask(planSettings, planTask) {
     override fun promptSegment(): String {
         return """
- CommandAutoFix - Run a command and automatically fix any issues that arise
-   ** Specify the command to be executed and any additional instructions
-   ** Specify the working directory relative to the root directory
-   ** Provide the command arguments in the 'commandArguments' field
-   ** List input files/tasks to be examined when fixing issues
-   ** Available commands:
-     ${planSettings.commandAutoFixCommands?.joinToString("\n    ") { "* ${File(it).name}" }}
+             |CommandAutoFix - Run a command and automatically fix any issues that arise
+             |  ** Specify the command to be executed and any additional instructions
+             |  ** Specify the working directory relative to the root directory
+             |  ** Provide the command arguments in the 'commandArguments' field
+             |  ** List input files/tasks to be examined when fixing issues
+             |  ** Available commands:
+             |${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}" }}
         """.trimMargin()
     }
 

@@ -93,10 +93,10 @@ class PlanChatApp(
                 val mainTask = coordinator.ui.newTask()
                 val sessionTask = ui.newTask(false).apply { mainTask.verbose(placeholder) }
                 val api = (api as ChatClient).getChildClient().apply {
-                    val createFile = sessionTask.createFile("api-${UUID.randomUUID()}.log")
+                    val createFile = sessionTask.createFile(".logs/api-${UUID.randomUUID()}.log")
                     createFile.second?.apply {
                         logStreams += this.outputStream().buffered()
-                        sessionTask.add("API log: <a href=\"${createFile.first}\">$this</a>")
+                        sessionTask.verbose("API log: <a href=\"file:///$this\">$this</a>")
                     }
                 }
                 val plan = PlanCoordinator.initialPlan(
