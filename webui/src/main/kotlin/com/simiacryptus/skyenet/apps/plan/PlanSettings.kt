@@ -14,7 +14,7 @@ data class TaskSettings(
 
 
 open class PlanSettings(
-    val parsingModel: OpenAITextModel,
+    var parsingModel: OpenAITextModel,
     val command: List<String> = listOf(if (isWindows) "powershell" else "bash"),
     var temperature: Double = 0.2,
     val budget: Double = 2.0,
