@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.webui
 
-import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
 import com.simiacryptus.skyenet.apps.general.DocumentParserApp
@@ -86,8 +85,8 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
             ChildWebApp(
                 "/taskDev",
                 PlanAheadApp(
-                    rootFile = File("."),
                     planSettings = PlanSettings(
+                        defaultModel = OpenAIModels.GPT4o,
                         parsingModel = OpenAIModels.GPT4oMini,
                         command = listOf("task"),
                         temperature = 0.2,

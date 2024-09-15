@@ -43,7 +43,7 @@ class CommandAutoFixTask(
         }
         Retryable(agent.ui, task = task) {
             val task = agent.ui.newTask(false).apply { it.append(placeholder) }
-            val alias = this.planTask.command?.first()
+            val alias = this.planTask.execution_task?.command?.first()
             val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
             val cmds = commandAutoFixCommands
                 ?.map { File(it) }?.associateBy { it.name }
@@ -53,7 +53,7 @@ class CommandAutoFixTask(
             if (executable == null) {
                 throw IllegalArgumentException("Command not found: $alias")
             }
-            val workingDirectory = (this.planTask.workingDir
+            val workingDirectory = (this.planTask.execution_task?.workingDir
                 ?.let { agent.root.toFile().resolve(it) } ?: agent.root.toFile())
                 .apply { mkdirs() }
             val outputResult = CmdPatchApp(
@@ -61,7 +61,7 @@ class CommandAutoFixTask(
                 session = agent.session,
                 settings = PatchApp.Settings(
                     executable = executable,
-                    arguments = this.planTask.command?.drop(1)?.joinToString(" ") ?: "",
+                    arguments = this.planTask.execution_task?.command?.drop(1)?.joinToString(" ") ?: "",
                     workingDirectory = workingDirectory,
                     exitCodeOption = "nonzero",
                     additionalInstructions = "",
@@ -69,7 +69,7 @@ class CommandAutoFixTask(
                 ),
                 api = api as ChatClient,
                 files = agent.files,
-                model = agent.planSettings.getTaskSettings(planTask.taskType!!).model ?: agent.planSettings.parsingModel,
+                model = agent.planSettings.getTaskSettings(planTask.task_type!!).model ?: agent.planSettings.defaultModel,
             ).run(
                 ui = agent.ui,
                 task = task

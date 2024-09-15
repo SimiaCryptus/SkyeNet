@@ -3,7 +3,6 @@ package com.simiacryptus.diff
 import com.simiacryptus.diff.FileValidationUtils.Companion.isGitignore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
-import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
 import com.simiacryptus.skyenet.core.actors.SimpleActor
@@ -101,7 +100,7 @@ private fun SocketManagerBase.renderNewFile(
                 |${codeValue}
                 |```
                 |
-                |<div class="cmd-button">Automatically Saved ${filename}</div>
+                |<div class="cmd-button">Automatically Saved ${filepath}</div>
                 |""".trimMargin()
         } catch (e: Throwable) {
             return """
@@ -120,7 +119,7 @@ private fun SocketManagerBase.renderNewFile(
                 filepath.parent?.toFile()?.mkdirs()
                 filepath.toFile().writeText(codeValue, Charsets.UTF_8)
                 handle(mapOf(File(filename).toPath() to codeValue))
-                hrefLink.set("""<div class="cmd-button">Saved ${filename}</div>""")
+                hrefLink.set("""<div class="cmd-button">Saved ${filepath}</div>""")
                 commandTask.complete()
             } catch (e: Throwable) {
                 hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
@@ -151,7 +150,7 @@ fun resolve(root: Path, filename: String): String {
 
     filename = try {
         val path = File(filename).toPath()
-        if (root.contains(path)) root.relativize(path).toString() else filename
+        if (root.contains(path)) path.toString().relativizeFrom(root) else filename
     } catch (e: Throwable) {
         filename
     }
@@ -159,16 +158,22 @@ fun resolve(root: Path, filename: String): String {
     if (!root.resolve(filename).toFile().exists()) {
         root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }
             ?.toString()?.apply {
-                filename = root.relativize(File(this).toPath()).toString()
+                filename = relativizeFrom(root)
             }
     }
 
     return filename
 }
 
+private fun String.relativizeFrom(root: Path) = try {
+    root.relativize(File(this).toPath()).toString()
+} catch (e: Throwable) {
+    this
+}
+
 private fun File.listFilesRecursively(): List<File> {
     val files = mutableListOf<File>()
-    this.listFiles().filter { !isGitignore(it.toPath()) }.forEach {
+    this.listFiles()?.filter { !isGitignore(it.toPath()) }?.forEach {
         files.add(it.absoluteFile)
         if (it.isDirectory) {
             files.addAll(it.listFilesRecursively())

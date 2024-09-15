@@ -52,7 +52,7 @@ class TaskType(name: String) : DynamicEnum<TaskType>(name) {
 
         fun values() = values(TaskType::class.java)
         fun getImpl(planSettings: PlanSettings, planTask: PlanningTask.PlanTask): AbstractTask {
-            val taskType = planTask.taskType ?: throw RuntimeException("Task type is null")
+            val taskType = planTask.task_type ?: throw RuntimeException("Task type is null")
             if (!planSettings.getTaskSettings(taskType).enabled) {
                 throw DisabledTaskException(taskType)
             }
@@ -63,7 +63,7 @@ class TaskType(name: String) : DynamicEnum<TaskType>(name) {
 
         fun getAvailableTaskTypes(planSettings: PlanSettings) = values().filter {
             planSettings.getTaskSettings(it).enabled
-        }.map { getImpl(planSettings, PlanningTask.PlanTask(taskType = it)) }
+        }.map { getImpl(planSettings, PlanningTask.PlanTask(task_type = it)) }
 
         fun valueOf(name: String): TaskType = valueOf(TaskType::class.java, name)
         private fun register(taskType: TaskType) = register(TaskType::class.java, taskType)

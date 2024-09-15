@@ -85,8 +85,8 @@ object PlanUtil {
         val graphBuilder = StringBuilder("graph TD;\n")
         subTasks.forEach { (taskId, task) ->
             val sanitizedTaskId = sanitizeForMermaid(taskId)
-            val taskType = task.taskType?.name ?: "Unknown"
-            val escapedDescription = escapeMermaidCharacters(task.description ?: "")
+            val taskType = task.task_type?.name ?: "Unknown"
+            val escapedDescription = escapeMermaidCharacters(task.task_description ?: "")
             val style = when (task.state) {
                 TaskState.Completed -> ":::completed"
                 TaskState.InProgress -> ":::inProgress"
@@ -113,12 +113,12 @@ object PlanUtil {
         val obj = fn()
         var tasksByID = obj.tasksByID?.filter { (k, v) ->
             when {
-                v.taskType == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() ->
+                v.task_type == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() ->
                     if (retries <= 0) {
-                        log.warn("Error filtering plan: " + JsonUtil.toJson(obj))
-                        throw IllegalArgumentException("TaskPlanning task $k has no dependencies")
+                        log.warn("TaskPlanning task $k has no dependencies: " + JsonUtil.toJson(obj))
+                        true
                     } else {
-                        log.info("Circular dependency detected in task breakdown")
+                        log.info("TaskPlanning task $k has no dependencies")
                         return filterPlan(retries - 1, fn)
                     }
                 else -> true
@@ -144,7 +144,7 @@ object PlanUtil {
         return if (tasksByID.size == obj.tasksByID?.size) {
             obj
         } else filterPlan {
-            PlanningTask.TaskBreakdownResult(tasksByID, obj.finalTaskID)
+            PlanningTask.TaskBreakdownResult(tasksByID)
         }
     }
 

@@ -73,6 +73,7 @@ class PlanChatApp(
             try {
                 messageHistory.add(userMessage)
                 val planSettings = (getSettings(session, user, PlanSettings::class.java) ?: PlanSettings(
+                    defaultModel = model,
                     parsingModel = parsingModel,
                     command = planSettings.command,
                     temperature = planSettings.temperature,
@@ -87,7 +88,7 @@ class PlanChatApp(
                     session = session,
                     dataStorage = dataStorage,
                     ui = ui,
-                    root = rootFile.toPath(),
+                    root = root.toPath(),
                     planSettings = planSettings
                 )
                 val mainTask = coordinator.ui.newTask()
@@ -138,14 +139,13 @@ class PlanChatApp(
         val respondTaskId = "respond_to_chat"
 
         tasksByID[respondTaskId] = PlanningTask.PlanTask(
-            description = "Respond to the user's chat message based on the executed plan",
-            taskType = TaskType.Inquiry,
+            task_description = "Respond to the user's chat message based on the executed plan",
+            task_type = TaskType.Inquiry,
             task_dependencies = tasksByID.keys.toList()
         )
 
         return PlanningTask.TaskBreakdownResult(
             tasksByID = tasksByID,
-            finalTaskID = respondTaskId
         )
     }
 

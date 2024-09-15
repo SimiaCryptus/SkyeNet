@@ -62,7 +62,7 @@ class FileModificationTask(
                 |}
  ${TRIPLE_TILDE}
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(planTask.taskType!!).model ?: planSettings.parsingModel,
+            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }
@@ -97,7 +97,7 @@ class FileModificationTask(
                     JsonUtil.toJson(plan),
                     getPriorCode(planProcessingState),
                     getInputFileCode(),
-                    this.planTask.description ?: "",
+                    this.planTask.task_description ?: "",
                 ).filter { it.isNotBlank() }, api
             )
             planProcessingState.taskResult[taskId] = codeResult

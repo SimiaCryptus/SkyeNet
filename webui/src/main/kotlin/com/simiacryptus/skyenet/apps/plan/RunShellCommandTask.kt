@@ -28,11 +28,11 @@ class RunShellCommandTask(
                 """.trimMargin(),
             symbols = mapOf<String, Any>(
                 "env" to (planSettings.env ?: emptyMap()),
-                "workingDir" to (planTask.workingDir?.let { File(it).absolutePath } ?: File(planSettings.workingDir).absolutePath),
+                "workingDir" to (planTask.execution_task?.workingDir?.let { File(it).absolutePath } ?: File(planSettings.workingDir).absolutePath),
                 "language" to (planSettings.language ?: "bash"),
                 "command" to planSettings.command,
             ),
-            model = planSettings.getTaskSettings(planTask.taskType!!).model ?: planSettings.parsingModel,
+            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }

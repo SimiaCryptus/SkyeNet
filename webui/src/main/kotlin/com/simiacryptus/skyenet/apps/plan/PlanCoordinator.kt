@@ -183,7 +183,7 @@ class PlanCoordinator(
             val newTask = ui.newTask(false)
             planProcessingState.uitaskMap[taskId] = newTask
             val subtask = planProcessingState.subTasks[taskId]
-            val description = subtask?.description
+            val description = subtask?.task_description
             log.debug("Creating task tab: $taskId ${System.identityHashCode(subtask)} $description")
             taskTabs[description ?: taskId] = newTask.placeholder
         }
@@ -206,7 +206,7 @@ class PlanCoordinator(
                     }
                 subTask.state = AbstractTask.TaskState.InProgress
                 taskTabs.update()
-                log.debug("Running task: ${System.identityHashCode(subTask)} ${subTask.description}")
+                log.debug("Running task: ${System.identityHashCode(subTask)} ${subTask.task_description}")
                 val task1 = planProcessingState.uitaskMap.get(taskId) ?: ui.newTask(false).apply {
                     taskTabs[taskId] = placeholder
                 }
@@ -222,7 +222,7 @@ class PlanCoordinator(
                         MarkdownUtil.renderMarkdown(
                             """
                  ## Task `${taskId}`
-                 ${subTask.description ?: ""}
+                 ${subTask.task_description ?: ""}
                           |
                           |${TRIPLE_TILDE}json
                           |${JsonUtil.toJson(data = subTask)/*.indent("  ")*/}

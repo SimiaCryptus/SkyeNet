@@ -30,7 +30,7 @@ class DocumentationTask(
  Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
  Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(planTask.taskType!!).model ?: planSettings.parsingModel,
+            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }
