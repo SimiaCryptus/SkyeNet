@@ -1,5 +1,4 @@
 import {closeModal, findAncestor, getSessionId, showModal, toggleVerbose} from './functions.js';
-import {queueMessage} from './chat.js';
 
 function isCtrlOrCmd(event) {
     return event.ctrlKey || (navigator.platform.toLowerCase().indexOf('mac') !== -1 && event.metaKey);
@@ -35,11 +34,6 @@ export function setupUIHandlers() {
 
     document.body.addEventListener('click', handleBodyClick);
 
-    function handleMessageAction(messageId, action) {
-        if (messageId && messageId !== '' && messageId !== null) {
-            queueMessage(`!${messageId},${action}`);
-        }
-    }
     let filesElement = document.getElementById("files");
     if (filesElement) filesElement.addEventListener("click", handleFilesClick);
     // Add keyboard event listener for toggling verbose mode
