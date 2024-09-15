@@ -4,6 +4,29 @@ const tabCache = new Map();
 let isRestoringTabs = false;
 const MAX_RECURSION_DEPTH = 10;
 const OPERATION_TIMEOUT = 5000; // 5 seconds
+function setActiveTab(button, tabsContainer) {
+    const forTab = button.getAttribute('data-for-tab');
+    const tabsContainerId = tabsContainer.id;
+    if (button.classList.contains('active')) return;
+    try {
+        localStorage.setItem(`selectedTab_${tabsContainerId}`, forTab);
+        tabCache.set(tabsContainerId, forTab);
+    } catch (e) {
+        console.warn('Failed to save tab state to localStorage:', e);
+    }
+    tabsContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+    tabsContainer.querySelectorAll('.tab-content').forEach(content => {
+        if (content.getAttribute('data-tab') === forTab) {
+            content.classList.add('active');
+            content.style.display = 'block';
+            updateNestedTabs(content, 0);
+        } else {
+            content.classList.remove('active');
+            content.style.display = 'none';
+        }
+    });
+}
 
 export function updateTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -11,33 +34,8 @@ export function updateTabs() {
     const clickHandler = (event) => {
         event.stopPropagation();
         const button = event.currentTarget;
-        const forTab = button.getAttribute('data-for-tab');
         const tabsContainer = button.closest('.tabs-container');
-        const tabsContainerId = tabsContainer.id;
-        if (button.classList.contains('active')) return;
-        try {
-            localStorage.setItem(`selectedTab_${tabsContainerId}`, forTab);
-            tabCache.set(tabsContainerId, forTab);
-        } catch (e) {
-            console.warn('Failed to save tab state to localStorage:', e);
-        }
-        const buttons = tabsContainer.querySelectorAll('.tab-button');
-        for (let i = 0; i < buttons.length; i++) {
-            buttons[i].classList.remove('active');
-        }
-        button.classList.add('active');
-        const contents = tabsContainer.querySelectorAll('.tab-content');
-        for (let i = 0; i < contents.length; i++) {
-            const content = contents[i];
-            if (content.getAttribute('data-tab') === forTab) {
-                content.classList.add('active');
-                content.style.display = 'block';
-                updateNestedTabs(content, 0);
-            } else {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            }
-        }
+        setActiveTab(button, tabsContainer);
     };
 
     tabButtons.forEach(button => {

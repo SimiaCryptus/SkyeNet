@@ -1,25 +1,24 @@
 import {closeModal, findAncestor, getSessionId, showModal, toggleVerbose} from './functions.js';
 import {queueMessage} from './chat.js';
+
 function isCtrlOrCmd(event) {
     return event.ctrlKey || (navigator.platform.toLowerCase().indexOf('mac') !== -1 && event.metaKey);
 }
 
+function addClickHandler(elementId, action) {
+    const element = document.getElementById(elementId);
+    if (element) element.addEventListener('click', action);
+}
+
 
 export function setupUIHandlers() {
-    const historyElement = document.getElementById('history');
-    if (historyElement) historyElement.addEventListener('click', () => showModal('sessions'));
-    const settingsElement = document.getElementById('settings');
-    if (settingsElement) settingsElement.addEventListener('click', () => showModal('settings'));
-    const usageElement = document.getElementById('usage');
-    if (usageElement) usageElement.addEventListener('click', () => showModal('usage'));
-    const verboseElement = document.getElementById('verbose');
-    if (verboseElement) verboseElement.addEventListener('click', () => toggleVerbose());
-    const deleteElement = document.getElementById('delete');
-    if (deleteElement) deleteElement.addEventListener('click', () => showModal('delete'));
-    const cancelElement = document.getElementById('cancel');
-    if (cancelElement) cancelElement.addEventListener('click', () => showModal('cancel'));
-    const threadsElement = document.getElementById('threads');
-    if (threadsElement) threadsElement.addEventListener('click', () => showModal('threads'));
+    addClickHandler('history', () => showModal('sessions'));
+    addClickHandler('settings', () => showModal('settings'));
+    addClickHandler('usage', () => showModal('usage'));
+    addClickHandler('verbose', toggleVerbose);
+    addClickHandler('delete', () => showModal('delete'));
+    addClickHandler('cancel', () => showModal('cancel'));
+    addClickHandler('threads', () => showModal('threads'));
     const shareElement = document.getElementById('share');
     if (shareElement) {
         shareElement.addEventListener('click', () => showModal('share?url=' + encodeURIComponent(window.location.href) + "&loadImages=true", false));
@@ -36,6 +35,11 @@ export function setupUIHandlers() {
 
     document.body.addEventListener('click', handleBodyClick);
 
+    function handleMessageAction(messageId, action) {
+        if (messageId && messageId !== '' && messageId !== null) {
+            queueMessage(`!${messageId},${action}`);
+        }
+    }
     let filesElement = document.getElementById("files");
     if (filesElement) filesElement.addEventListener("click", handleFilesClick);
     // Add keyboard event listener for toggling verbose mode
@@ -55,25 +59,25 @@ function handleBodyClick(event) {
     if (hrefLink) {
         const messageId = hrefLink.getAttribute('data-id');
         console.log('Href link clicked, messageId:', messageId);
-        if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',link');
+        handleMessageAction(messageId, 'link');
     } else {
         const playButton = findAncestor(target, '.play-button');
         if (playButton) {
             const messageId = playButton.getAttribute('data-id');
             console.log('Play button clicked, messageId:', messageId);
-            if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',run');
+            handleMessageAction(messageId, 'run');
         } else {
             const regenButton = findAncestor(target, '.regen-button');
             if (regenButton) {
                 const messageId = regenButton.getAttribute('data-id');
                 console.log('Regen button clicked, messageId:', messageId);
-                if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',regen');
+                handleMessageAction(messageId, 'regen');
             } else {
                 const cancelButton = findAncestor(target, '.cancel-button');
                 if (cancelButton) {
                     const messageId = cancelButton.getAttribute('data-id');
                     console.log('Cancel button clicked, messageId:', messageId);
-                    if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',stop');
+                    handleMessageAction(messageId, 'stop');
                 } else {
                     const textSubmitButton = findAncestor(target, '.text-submit-button');
                     if (textSubmitButton) {
@@ -81,7 +85,7 @@ function handleBodyClick(event) {
                         console.log('Text submit button clicked, messageId:', messageId);
                         const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
                         const escapedText = encodeURIComponent(text);
-                        if (messageId && messageId !== '' && messageId !== null) queueMessage('!' + messageId + ',userTxt,' + escapedText);
+                        handleMessageAction(messageId, `userTxt,${escapedText}`);
                     }
                 }
             }

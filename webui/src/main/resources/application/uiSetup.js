@@ -1,6 +1,21 @@
 import {showModal} from './functions.js';
 import {queueMessage} from './chat.js';
 
+function adjustTextareaHeight(textarea, maxLines) {
+    textarea.style.height = 'auto';
+    textarea.style.height = (textarea.scrollHeight) + 'px';
+    const computedStyle = window.getComputedStyle(textarea);
+    let lineHeight = computedStyle.lineHeight === 'normal'
+        ? parseInt(computedStyle.fontSize) * 1.2
+        : parseInt(computedStyle.lineHeight);
+    if (textarea.scrollHeight > lineHeight * maxLines) {
+        textarea.style.height = (lineHeight * maxLines) + 'px';
+        textarea.style.overflowY = 'scroll';
+    } else {
+        textarea.style.overflowY = 'hidden';
+    }
+}
+
 export function setupMessageInput(form, messageInput) {
     if (messageInput) {
         messageInput.addEventListener('keydown', (event) => {
@@ -17,24 +32,9 @@ export function setupMessageInput(form, messageInput) {
         messageInput.style.height = '';
         messageInput.addEventListener('input', function () {
             console.log('Input event on message input');
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight - heightAdjustment) + 'px';
 
-            const computedStyle = window.getComputedStyle(this);
-            let lineHeight = computedStyle.lineHeight;
-            if (lineHeight === 'normal') {
-                lineHeight = parseInt(computedStyle.fontSize) * 1.2;
-            } else {
-                lineHeight = parseInt(lineHeight);
-            }
 
-            const maxLines = 20;
-            if (this.scrollHeight > lineHeight * maxLines) {
-                this.style.height = (lineHeight * maxLines) + 'px';
-                this.style.overflowY = 'scroll'; // Enable vertical scrolling
-            } else {
-                this.style.overflowY = 'hidden'; // Hide the scrollbar when not needed
-            }
+            adjustTextareaHeight(this, 20);
         });
         messageInput.focus();
     }
