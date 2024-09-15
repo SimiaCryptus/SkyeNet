@@ -1,5 +1,5 @@
 import {connect} from './chat.js';
-import {applyToAllSvg, getSessionId, refreshReplyForms, refreshVerbose} from './functions.js';
+import {getCachedElement, getSessionId, refreshReplyForms, refreshVerbose} from './functions.js';
 import {updateTabs} from './tabs.js';
 import {setupUIHandlers} from './uiHandlers.js';
 import {onWebSocketText} from './messageHandling.js';
@@ -43,7 +43,7 @@ const updateDocumentComponents = debounce(function () {
     }
     try {
         if (typeof mermaid !== 'undefined') {
-            const mermaidDiagrams = document.querySelectorAll('.mermaid:not(.mermaid-processed)');
+            const mermaidDiagrams = Array.from(document.getElementsByClassName('mermaid')).filter(el => !el.classList.contains('mermaid-processed'));
             if (mermaidDiagrams.length > 0) {
                 mermaid.run();
                 mermaidDiagrams.forEach(diagram => diagram.classList.add('mermaid-processed'));
@@ -66,15 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTabs();
     setupUIHandlers();
 
-    const loginLink = document.getElementById('login');
-    const usernameLink = document.getElementById('username');
-    const userSettingsLink = document.getElementById('user-settings');
-    const userUsageLink = document.getElementById('user-usage');
-    const logoutLink = document.getElementById('logout');
-    const form = document.getElementById('main-input');
-    const messageInput = document.getElementById('chat-input');
+    const loginLink = getCachedElement('login');
+    const usernameLink = getCachedElement('username');
+    const userSettingsLink = getCachedElement('user-settings');
+    const userUsageLink = getCachedElement('user-usage');
+    const logoutLink = getCachedElement('logout');
+    const form = getCachedElement('main-input');
+    const messageInput = getCachedElement('chat-input');
     const sessionId = getSessionId();
-    const messages = document.getElementById('messages');
+    const messages = getCachedElement('messages');
 
     if (sessionId) {
         console.log(`Connecting with session ID: ${sessionId}`);
@@ -99,11 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateTabs();
 
-    document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
+    Array.from(document.getElementsByClassName('tabs-container')).forEach(tabsContainer => {
         console.log('Restoring tabs for container:', tabsContainer.id);
         const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
         if (savedTab) {
-            const savedButton = tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
+            const savedButton = tabsContainer.querySelector(`[data-for-tab="${savedTab}"]`);
             console.log('Main script finished loading');
             if (savedButton) {
                 savedButton.click();

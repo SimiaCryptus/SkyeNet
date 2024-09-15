@@ -1,10 +1,17 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.simiacryptus.util.DynamicEnum
+import com.simiacryptus.util.DynamicEnumDeserializer
+import com.simiacryptus.util.DynamicEnumSerializer
 
-class TaskType(val name: String) {
+@JsonDeserialize(using = TaskTypeDeserializer::class)
+@JsonSerialize(using = TaskTypeSerializer::class)
+class TaskType(name: String) : DynamicEnum<TaskType>(name) {
     companion object {
-        private val registry = mutableMapOf<String, TaskType>()
         private val taskConstructors = mutableMapOf<TaskType, (PlanSettings, PlanningTask.PlanTask) -> AbstractTask>()
+
         val TaskPlanning = TaskType("TaskPlanning")
         val Inquiry = TaskType("Inquiry")
         val FileModification = TaskType("FileModification")
@@ -20,34 +27,32 @@ class TaskType(val name: String) {
         val ForeachTask = TaskType("ForeachTask")
 
         init {
-            // Register built-in task types
-            register(TaskPlanning) { settings, task -> PlanningTask(settings, task) }
-            register(Inquiry) { settings, task -> InquiryTask(settings, task) }
-            register(FileModification) { settings, task -> FileModificationTask(settings, task) }
-            register(Documentation) { settings, task -> DocumentationTask(settings, task) }
-            register(RunShellCommand) { settings, task -> RunShellCommandTask(settings, task) }
-            register(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
-            register(CodeReview) { settings, task -> CodeReviewTask(settings, task) }
-            register(TestGeneration) { settings, task -> TestGenerationTask(settings, task) }
-            register(Optimization) { settings, task -> CodeOptimizationTask(settings, task) }
-            register(SecurityAudit) { settings, task -> SecurityAuditTask(settings, task) }
-            register(PerformanceAnalysis) { settings, task -> PerformanceAnalysisTask(settings, task) }
-            register(RefactorTask) { settings, task -> RefactorTask(settings, task) }
-            register(ForeachTask) { settings, task -> ForeachTask(settings, task) }
+            registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
+            registerConstructor(Inquiry) { settings, task -> InquiryTask(settings, task) }
+            registerConstructor(FileModification) { settings, task -> FileModificationTask(settings, task) }
+            registerConstructor(Documentation) { settings, task -> DocumentationTask(settings, task) }
+            registerConstructor(RunShellCommand) { settings, task -> RunShellCommandTask(settings, task) }
+            registerConstructor(CodeReview) { settings, task -> CodeReviewTask(settings, task) }
+            registerConstructor(TestGeneration) { settings, task -> TestGenerationTask(settings, task) }
+            registerConstructor(Optimization) { settings, task -> CodeOptimizationTask(settings, task) }
+            registerConstructor(SecurityAudit) { settings, task -> SecurityAuditTask(settings, task) }
+            registerConstructor(PerformanceAnalysis) { settings, task -> PerformanceAnalysisTask(settings, task) }
+            registerConstructor(RefactorTask) { settings, task -> RefactorTask(settings, task) }
+            registerConstructor(ForeachTask) { settings, task -> ForeachTask(settings, task) }
+            registerConstructor(TaskPlanning) { settings, task -> PlanningTask(settings, task) }
         }
 
-        fun register(taskType: TaskType, constructor: (PlanSettings, PlanningTask.PlanTask) -> AbstractTask) {
-            registry[taskType.name] = taskType
+        private fun registerConstructor(
+            taskType: TaskType,
+            constructor: (PlanSettings, PlanningTask.PlanTask) -> AbstractTask
+        ) {
             taskConstructors[taskType] = constructor
+            register(taskType)
         }
 
-        fun getTaskType(name: String): TaskType? {
-            return registry[name]
-        }
-
-        fun values(): Collection<TaskType> = registry.values
+        fun values() = values(TaskType::class.java)
         fun getImpl(planSettings: PlanSettings, planTask: PlanningTask.PlanTask): AbstractTask {
-            val taskType = planTask.taskType ?: throw RuntimeException("Task type is null")
+            val taskType = planTask.task_type ?: throw RuntimeException("Task type is null")
             if (!planSettings.getTaskSettings(taskType).enabled) {
                 throw DisabledTaskException(taskType)
             }
@@ -56,12 +61,14 @@ class TaskType(val name: String) {
             return constructor(planSettings, planTask)
         }
 
-        fun getAvailableTaskTypes(planSettings: PlanSettings): List<AbstractTask> = TaskType.values().filter {
+        fun getAvailableTaskTypes(planSettings: PlanSettings) = values().filter {
             planSettings.getTaskSettings(it).enabled
-        }.map { getImpl(planSettings, PlanningTask.PlanTask(taskType = it)) }
+        }.map { getImpl(planSettings, PlanningTask.PlanTask(task_type = it)) }
 
-        fun valueOf(name: String): TaskType {
-            return registry[name] ?: throw IllegalArgumentException("No enum constant $name")
-        }
+        fun valueOf(name: String): TaskType = valueOf(TaskType::class.java, name)
+        private fun register(taskType: TaskType) = register(TaskType::class.java, taskType)
     }
 }
+
+class TaskTypeSerializer : DynamicEnumSerializer<TaskType>(TaskType::class.java)
+class TaskTypeDeserializer : DynamicEnumDeserializer<TaskType>(TaskType::class.java)

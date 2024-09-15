@@ -22,27 +22,27 @@ class RunShellCommandTask(
             name = "RunShellCommand",
             interpreterClass = ProcessInterpreter::class,
             details = """
- Execute the following shell command(s) and provide the output. Ensure to handle any errors or exceptions gracefully.
+                |Execute the following shell command(s) and provide the output. Ensure to handle any errors or exceptions gracefully.
                 |
- Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
+                |Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
                 """.trimMargin(),
             symbols = mapOf<String, Any>(
                 "env" to (planSettings.env ?: emptyMap()),
-                "workingDir" to (planTask.workingDir?.let { File(it).absolutePath } ?: File(planSettings.workingDir).absolutePath),
+                "workingDir" to (planTask.execution_task?.workingDir?.let { File(it).absolutePath } ?: File(planSettings.workingDir).absolutePath),
                 "language" to (planSettings.language ?: "bash"),
                 "command" to planSettings.command,
             ),
-            model = planSettings.model,
+            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }
 
     override fun promptSegment(): String {
         return """
- RunShellCommand - Execute shell commands and provide the output
-   ** Specify the command to be executed, or describe the task to be performed
-   ** List input files/tasks to be examined when writing the command
-   ** Optionally specify a working directory for the command execution
+            |RunShellCommand - Execute shell commands and provide the output
+            |  ** Specify the command to be executed, or describe the task to be performed
+            |  ** List input files/tasks to be examined when writing the command
+            |  ** Optionally specify a working directory for the command execution
             """.trimMargin()
     }
 
@@ -55,7 +55,6 @@ class RunShellCommandTask(
         task: SessionTask,
         api: API
     ) {
-        if (!agent.planSettings.getTaskSettings(TaskType.RunShellCommand).enabled) throw RuntimeException("Shell command task is disabled")
         val semaphore = Semaphore(0)
         object : CodingAgent<ProcessInterpreter>(
             api = api,
@@ -79,11 +78,11 @@ class RunShellCommandTask(
                 var formHandle: StringBuilder? = null
                 formHandle = task.add(
                     """
-                    |<div style="display: flex;flex-direction: column;">
-                    |${if (!super.canPlay) "" else super.playButton(task, request, response, formText) { formHandle!! }}
-                    |${acceptButton(response)}
-                    |</div>
-                    |${super.reviseMsg(task, request, response, formText) { formHandle!! }}
+ <div style="display: flex;flex-direction: column;">
+ ${if (!super.canPlay) "" else super.playButton(task, request, response, formText) { formHandle!! }}
+ ${acceptButton(response)}
+ </div>
+ ${super.reviseMsg(task, request, response, formText) { formHandle!! }}
                     """.trimMargin(), className = "reply-message"
                 )
                 formText.append(formHandle.toString())
@@ -103,9 +102,10 @@ class RunShellCommandTask(
                         |${response.code}
                         |$TRIPLE_TILDE
                         |
-                        |$TRIPLE_TILDE
+                        |${TRIPLE_TILDE}
                         |${response.renderedResponse}
-                        |$TRIPLE_TILDE
+                        |${TRIPLE_TILDE}
+                        |
                         """.trimMargin()
                     }
                     semaphore.release()

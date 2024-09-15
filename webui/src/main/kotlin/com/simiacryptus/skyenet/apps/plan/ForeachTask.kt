@@ -29,14 +29,14 @@ ForeachTask - Execute a task for each item in a list
         task: SessionTask,
         api: API
     ) {
-        val items = planTask.foreachItems ?: throw RuntimeException("No items specified for ForeachTask")
-        val subTasks = planTask.subTasksByID ?: throw RuntimeException("No subTasks specified for ForeachTask")
+        val items = planTask.foreach_task?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
+        val subTasks = planTask.foreach_task?.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")
         val subPlanTask = agent.ui.newTask(false)
         task.add(subPlanTask.placeholder)
         
         items.forEachIndexed { index, item ->
             val itemSubTasks = subTasks.mapValues { (_, subTaskPlan) ->
-                subTaskPlan.copy(description = "${subTaskPlan.description} - Item $index: $item")
+                subTaskPlan.copy(task_description = "${subTaskPlan.task_description} - Item $index: $item")
             }
             val itemPlanProcessingState = PlanProcessingState(itemSubTasks.toMutableMap())
             agent.executePlan(
@@ -50,7 +50,6 @@ ForeachTask - Execute a task for each item in a list
                 userMessage = "$userMessage\nProcessing item $index: $item",
                 plan = object : TaskBreakdownInterface {
                     override val tasksByID = itemSubTasks
-                    override val finalTaskID = null
                 },
                 api = api
             )

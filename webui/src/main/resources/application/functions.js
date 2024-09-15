@@ -7,9 +7,12 @@ export async function fetchData(endpoint, useSession = true) {
                 endpoint = endpoint + "?sessionId=" + sessionId;
             }
         }
-        const modalContent = document.getElementById('modal-content');
+        const modalContent = getCachedElement('modal-content');
         if (modalContent) modalContent.innerHTML = "<div>Loading...</div>";
         const response = await fetch(endpoint);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const text = await response.text();
         if (modalContent) modalContent.innerHTML = "<div>" + text + "</div>";
         if (typeof Prism !== 'undefined') {
@@ -17,37 +20,56 @@ export async function fetchData(endpoint, useSession = true) {
         }
     } catch (error) {
         console.error('Error fetching data:', error);
+        const modalContent = document.getElementById('modal-content');
+        if (modalContent) modalContent.innerHTML = "<div>Error loading content. Please try again later.</div>";
+        throw error; // Re-throw the error for the caller to handle if needed
     }
 }
 
 export function getSessionId() {
     if (!window.location.hash) {
-        fetch('newSession')
+        return fetch('newSession')
             .then(response => {
                 if (response.ok) {
                     return response.text();
                 } else {
-                    throw new Error('Failed to get new session ID');
+                    throw new Error(`Failed to get new session ID. Status: ${response.status}`);
                 }
             })
             .then(sessionId => {
                 window.location.hash = sessionId;
-                connect(sessionId);
+                return sessionId;
+            })
+            .catch(error => {
+                console.error('Error getting session ID:', error.message);
+                throw error; // Re-throw the error for the caller to handle
             });
     } else {
         return window.location.hash.substring(1);
     }
 }
 
+const elementCache = new Map();
+
+export function getCachedElement(id) {
+    if (!elementCache.has(id)) {
+        const element = document.getElementById(id);
+        if (element) {
+            elementCache.set(id, element);
+        }
+    }
+    return elementCache.get(id);
+}
+
 export function showModal(endpoint, useSession = true) {
     fetchData(endpoint, useSession).then(r => {
-        const modal = document.getElementById('modal');
+        const modal = getCachedElement('modal');
         if (modal) modal.style.display = 'block';
     });
 }
 
 export function closeModal() {
-    const modal = document.getElementById('modal');
+    const modal = getCachedElement('modal');
     if (modal) modal.style.display = 'none';
 }
 
@@ -147,15 +169,15 @@ export function closeModal() {
 
 
 export function toggleVerbose() {
-    let verboseToggle = document.getElementById('verbose');
+    let verboseToggle = getCachedElement('verbose');
     if (verboseToggle.innerText === 'Hide Verbose') {
-        const elements = document.getElementsByClassName('verbose');
+        const elements = Array.from(document.getElementsByClassName('verbose'));
         for (let i = 0; i < elements.length; i++) {
             elements[i].classList.add('verbose-hidden'); // Add the 'verbose-hidden' class to hide
         }
         verboseToggle.innerText = 'Show Verbose';
     } else if (verboseToggle.innerText === 'Show Verbose') {
-        const elements = document.getElementsByClassName('verbose');
+        const elements = Array.from(document.getElementsByClassName('verbose'));
         for (let i = 0; i < elements.length; i++) {
             elements[i].classList.remove('verbose-hidden'); // Remove the 'verbose-hidden' class to show
         }
@@ -166,13 +188,13 @@ export function toggleVerbose() {
 }
 
 export function refreshReplyForms() {
-    document.querySelectorAll('.reply-input').forEach(messageInput => {
+    Array.from(document.getElementsByClassName('reply-input')).forEach(messageInput => {
         messageInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 let form = messageInput.closest('form');
                 if (form) {
-                    let textSubmitButton = form.querySelector('.text-submit-button');
+                    let textSubmitButton = form.getElementsByClassName('text-submit-button')[0];
                     if (textSubmitButton) {
                         textSubmitButton.click();
                     } else {
@@ -186,14 +208,14 @@ export function refreshReplyForms() {
 
 
 export function refreshVerbose() {
-    let verboseToggle = document.getElementById('verbose');
+    let verboseToggle = getCachedElement('verbose');
     if (verboseToggle.innerText === 'Hide Verbose') {
-        const elements = document.getElementsByClassName('verbose');
+        const elements = Array.from(document.getElementsByClassName('verbose'));
         for (let i = 0; i < elements.length; i++) {
             elements[i].classList.remove('verbose-hidden'); // Remove the 'verbose-hidden' class to show
         }
     } else if (verboseToggle.innerText === 'Show Verbose') {
-        const elements = document.getElementsByClassName('verbose');
+        const elements = Array.from(document.getElementsByClassName('verbose'));
         for (let i = 0; i < elements.length; i++) {
             elements[i].classList.add('verbose-hidden'); // Add the 'verbose-hidden' class to hide
         }
@@ -211,7 +233,7 @@ export function findAncestor(element, selector) {
 
 
 export function applyToAllSvg() {
-    document.querySelectorAll('svg').forEach(svg => {
+    Array.from(document.getElementsByTagName('svg')).forEach(svg => {
         if (!svg.dataset.svgPanZoomInitialized) {
             new SvgPanZoom().init(svg);
         }

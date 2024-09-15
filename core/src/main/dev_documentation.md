@@ -444,7 +444,7 @@ sequenceDiagram
 ```kotlin
 val imageActor = ImageActor(
     prompt = "Transform the user request into an image generation prompt that the user will like",
-    textModel = ChatModels.GPT3_5_Turbo,
+    textModel = OpenAIModels.GPT3_5_Turbo,
     imageModel = ImageModels.DallE2,
     temperature = 0.3,
     width = 1024,
@@ -757,8 +757,8 @@ Creates a new instance of `ParsedActor<T>` with the specified OpenAI model.
 val actor = ParsedActor(
     resultClass = MyClass::class.java,
     prompt = "Please parse the following message:",
-    model = ChatModels.GPT_3_5_Turbo,
-    parsingModel = ChatModels.GPT_3_5_Turbo
+    model = OpenAIModels.GPT_3_5_Turbo,
+    parsingModel = OpenAIModels.GPT_3_5_Turbo
 )
 
 val api = OpenAIClient("your_api_key")
@@ -1388,7 +1388,7 @@ Intercepts calls to the `render` method of the `TextToSpeechActor`. It allows fo
 
 ```kotlin
 // Create an instance of TextToSpeechActor
-val originalActor = TextToSpeechActor("actorName", audioModel, "alloy", 1.0, ChatModels.GPT35Turbo)
+val originalActor = TextToSpeechActor("actorName", audioModel, "alloy", 1.0, OpenAIModels.GPT35Turbo)
 
 // Define a function wrapper to intercept calls
 val interceptor = FunctionWrapper()
@@ -1452,7 +1452,7 @@ classDiagram
 
 #### Methods
 
-- `override fun actorFactory(prompt: String): CodingActor`: Creates an instance of `CodingActor` with the specified `interpreterClass`, `details` (prompt), and the model set to `ChatModels.GPT35Turbo`.
+- `override fun actorFactory(prompt: String): CodingActor`: Creates an instance of `CodingActor` with the specified `interpreterClass`, `details` (prompt), and the model set to `OpenAIModels.GPT35Turbo`.
 - `override fun getPrompt(actor: BaseActor<CodeRequest, CodeResult>): String`: Retrieves the prompt details from the given `CodingActor` instance.
 - `override fun resultMapper(result: CodeResult): String`: Maps the `CodeResult` to its `code` property, effectively extracting the generated code snippet.
 
@@ -2761,7 +2761,7 @@ This test method validates the functionality of the `incrementUsage` method with
 
 1. **Setup**: A test user is created with predefined attributes. A session ID is generated using `StorageInterface.newGlobalID()`. A predefined usage object is created to simulate the consumption of resources.
 
-2. **Action**: The `incrementUsage` method of the `UsageInterface` implementation is called with the session ID, test user, a model (in this case, `ChatModels.GPT35Turbo`), and the predefined usage object.
+2. **Action**: The `incrementUsage` method of the `UsageInterface` implementation is called with the session ID, test user, a model (in this case, `OpenAIModels.GPT35Turbo`), and the predefined usage object.
 
 3. **Verification**:
     - The method `getSessionUsageSummary` is called with the session ID to retrieve the usage summary for the session. The test verifies that the returned usage summary matches the predefined usage object.

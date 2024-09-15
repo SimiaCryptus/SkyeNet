@@ -19,59 +19,59 @@ class FileModificationTask(
         SimpleActor(
             name = "FileModification",
             prompt = """
-                |Generate patches for existing files or create new files based on the given requirements and context.
-                |For existing files:
-                |- Ensure modifications are efficient, maintain readability, and adhere to coding standards.
-                |- Carefully review the existing code and project structure to ensure changes are consistent and do not introduce bugs.
-                |- Consider the impact of modifications on other parts of the codebase.
+ Generate patches for existing files or create new files based on the given requirements and context.
+ For existing files:
+ Ensure modifications are efficient, maintain readability, and adhere to coding standards.
+ Carefully review the existing code and project structure to ensure changes are consistent and do not introduce bugs.
+ Consider the impact of modifications on other parts of the codebase.
                 
-                |For new files:
-                |- Provide a clear relative file path based on the content and purpose of the file.
-                |- Ensure the code is well-structured, follows best practices, and meets the specified functionality.
-                |- Carefully consider how the new file fits into the existing project structure and architecture.
-                |- Avoid creating files that duplicate functionality or introduce inconsistencies.
+ For new files:
+ Provide a clear relative file path based on the content and purpose of the file.
+ Ensure the code is well-structured, follows best practices, and meets the specified functionality.
+ Carefully consider how the new file fits into the existing project structure and architecture.
+ Avoid creating files that duplicate functionality or introduce inconsistencies.
                 
-                |Provide a summary of the changes made.
+ Provide a summary of the changes made.
                 
-                |Response format:
-                |- For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
-                |- For new files: Use ${TRIPLE_TILDE} code blocks with a header specifying the new file path.
-                |- The diff format should use + for line additions, - for line deletions.
-                |- Include 2 lines of context before and after every change in diffs.
-                |- Separate code blocks with a single blank line.
-                |- For new files, specify the language for syntax highlighting after the opening triple backticks.
+ Response format:
+ For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
+ For new files: Use ${TRIPLE_TILDE} code blocks with a header specifying the new file path.
+ The diff format should use + for line additions, - for line deletions.
+ Include 2 lines of context before and after every change in diffs.
+ Separate code blocks with a single blank line.
+ For new files, specify the language for syntax highlighting after the opening triple backticks.
                 
-                |Example:
+ Example:
                 
-                |Here are the modifications:
+ Here are the modifications:
                 
-                |### src/utils/existingFile.js
-                |${TRIPLE_TILDE}diff
-                | // Existing utility functions
-                | function existingFunction() {
-                |-  return 'old result';
-                |+  return 'new result';
+ ### src/utils/existingFile.js
+ ${TRIPLE_TILDE}diff
+  // Existing utility functions
+  function existingFunction() {
+  return 'old result';
+  return 'new result';
                 | }
-                |${TRIPLE_TILDE}
+ ${TRIPLE_TILDE}
                 
-                |### src/utils/newFile.js
-                |${TRIPLE_TILDE}js
-                |// New utility functions
-                |function newFunction() {
-                |  return 'new functionality';
+ ### src/utils/newFile.js
+ ${TRIPLE_TILDE}js
+ // New utility functions
+ function newFunction() {
+   return 'new functionality';
                 |}
-                |${TRIPLE_TILDE}
+ ${TRIPLE_TILDE}
                 """.trimMargin(),
-            model = planSettings.model,
+            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }
 
     override fun promptSegment(): String {
         return """
-            |FileModification - Modify existing files or create new files
-            |  ** For each file, specify the relative file path and the goal of the modification or creation
-            |  ** List input files/tasks to be examined when designing the modifications or new files
+ FileModification - Modify existing files or create new files
+   ** For each file, specify the relative file path and the goal of the modification or creation
+   ** List input files/tasks to be examined when designing the modifications or new files
         """.trimMargin()
     }
 
@@ -97,7 +97,7 @@ class FileModificationTask(
                     JsonUtil.toJson(plan),
                     getPriorCode(planProcessingState),
                     getInputFileCode(),
-                    this.planTask.description ?: "",
+                    this.planTask.task_description ?: "",
                 ).filter { it.isNotBlank() }, api
             )
             planProcessingState.taskResult[taskId] = codeResult
@@ -112,7 +112,7 @@ class FileModificationTask(
                     },
                     ui = agent.ui,
                     api = api,
-                    shouldAutoApply = { true }
+                    shouldAutoApply = { agent.planSettings.autoFix }
                 )
                 task.complete()
                 onComplete()

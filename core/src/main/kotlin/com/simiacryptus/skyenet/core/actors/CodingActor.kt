@@ -7,6 +7,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.OutputInterceptor
@@ -25,7 +26,7 @@ open class CodingActor(
     name: String? = interpreterClass.simpleName,
     val details: String? = null,
     model: OpenAITextModel,
-    val fallbackModel: ChatModels = ChatModels.GPT4o,
+    val fallbackModel: ChatModels = OpenAIModels.GPT4o,
     temperature: Double = 0.1,
     val runtimeSymbols: Map<String, Any> = mapOf()
 ) : BaseActor<CodingActor.CodeRequest, CodingActor.CodeResult>(

@@ -255,7 +255,7 @@ The `BaseActor` class abstracts the process of sending prompts to an OpenAI mode
 
 - `prompt`: The initial prompt or question to be sent to the model.
 - `name`: An optional name for the actor. Useful for identification purposes in more complex scenarios.
-- `model`: The OpenAI model to be used. Defaults to `ChatModels.GPT35Turbo`.
+- `model`: The OpenAI model to be used. Defaults to `OpenAIModels.GPT35Turbo`.
 - `temperature`: Controls the randomness of the model's responses. Lower values make responses more deterministic.
 
 
@@ -349,8 +349,8 @@ To create an instance of `CodingActor`, you need to provide the following parame
 - `describer`: An instance of `TypeDescriber` used to describe the types of the provided symbols.
 - `name`: An optional name for the actor.
 - `details`: Optional additional details to be included in the prompt sent to the OpenAI API.
-- `model`: The OpenAI model to be used for code generation (default is `ChatModels.GPT35Turbo`).
-- `fallbackModel`: A fallback OpenAI model to be used in case of failure with the primary model (default is `ChatModels.GPT4o`).
+- `model`: The OpenAI model to be used for code generation (default is `OpenAIModels.GPT35Turbo`).
+- `fallbackModel`: A fallback OpenAI model to be used in case of failure with the primary model (default is `OpenAIModels.GPT4o`).
 - `temperature`: The temperature parameter for the OpenAI API requests (default is `0.1`).
 - `runtimeSymbols`: Additional symbols to be added at runtime.
 
@@ -362,7 +362,7 @@ val codingActor = CodingActor(
     symbols = mapOf("exampleSymbol" to Any()),
     name = "MyCodingActor",
     details = "This is a detailed description of what the actor does.",
-    model = ChatModels.GPT35Turbo
+    model = OpenAIModels.GPT35Turbo
 )
 ```
 
@@ -435,7 +435,7 @@ To create an instance of `ImageActor`, you can use the following constructor:
 val imageActor = ImageActor(
     prompt = "Transform the user request into an image generation prompt that the user will like",
     name = null,
-    textModel = ChatModels.GPT35Turbo,
+    textModel = OpenAIModels.GPT35Turbo,
     imageModel = ImageModels.DallE2,
     temperature = 0.3,
     width = 1024,
@@ -474,7 +474,7 @@ You can customize the `ImageActor` by changing its model settings:
 - To change the chat model:
 
 ```kotlin
-val newChatModel: ChatModels = ChatModels.GPT4
+val newChatModel: ChatModels = OpenAIModels.GPT4
 val updatedActor = imageActor.withModel(newChatModel)
 ```
 
@@ -649,9 +649,9 @@ The `ParsedActor` class is a specialized actor designed to parse responses from 
 - `parserClass`: The class of the parser function used to convert chat model responses into the desired data type.
 - `prompt`: The initial prompt to send to the chat model.
 - `name`: An optional name for the actor. Defaults to the simple name of the parser class if not provided.
-- `model`: The chat model to use for generating responses. Defaults to `ChatModels.GPT35Turbo`.
+- `model`: The chat model to use for generating responses. Defaults to `OpenAIModels.GPT35Turbo`.
 - `temperature`: The temperature setting for the chat model, affecting the randomness of responses. Defaults to `0.3`.
-- `parsingModel`: The chat model to use specifically for parsing responses. Defaults to `ChatModels.GPT35Turbo`.
+- `parsingModel`: The chat model to use specifically for parsing responses. Defaults to `OpenAIModels.GPT35Turbo`.
 - `deserializerRetries`: The number of retries for deserialization in case of parsing errors. Defaults to `2`.
 
 
@@ -1349,7 +1349,7 @@ The `SimpleActor` class is part of the `com.simiacryptus.skyenet.core.actors` pa
 
 - `prompt`: A `String` representing the initial prompt or context to be sent to the model.
 - `name`: An optional `String` parameter that specifies the name of the actor. It defaults to `null` if not provided.
-- `model`: Specifies the model to be used for generating responses. It defaults to `ChatModels.GPT35Turbo`.
+- `model`: Specifies the model to be used for generating responses. It defaults to `OpenAIModels.GPT35Turbo`.
 - `temperature`: A `Double` value that controls the randomness of the model's responses. Lower values make the model more deterministic. It defaults to `0.3`.
 
 
@@ -1405,7 +1405,7 @@ Creates a new instance of `SimpleActor` with the specified model while retaining
 val simpleActor = SimpleActor(
     prompt = "Hello, how can I assist you today?",
     name = "Assistant",
-    model = ChatModels.GPT35Turbo,
+    model = OpenAIModels.GPT35Turbo,
     temperature = 0.3
 )
 
@@ -1530,7 +1530,7 @@ The `ParsedActorTestBase` class is designed to streamline the process of testing
 override fun actorFactory(prompt: String): ParsedActor
 ```
 
-- **Description**: Creates an instance of `ParsedActor` with the specified prompt and parser class. The parsing model is set to `ChatModels.GPT35Turbo` by default.
+- **Description**: Creates an instance of `ParsedActor` with the specified prompt and parser class. The parsing model is set to `OpenAIModels.GPT35Turbo` by default.
 - **Parameters**:
   - `prompt`: A string representing the prompt to be used by the actor.
 - **Returns**: An instance of `ParsedActor` configured with the provided prompt and parser.

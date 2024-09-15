@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.platform.test
 
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.UsageInterface
 import com.simiacryptus.skyenet.core.platform.User
@@ -24,7 +25,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
 
     @Test
     fun `incrementUsage should increment usage for session`() {
-        val model = ChatModels.GPT35Turbo
+        val model = OpenAIModels.GPT4oMini
         val session = StorageInterface.newGlobalID()
         val usage = ApiModel.Usage(
             prompt_tokens = 10,
@@ -40,7 +41,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
 
     @Test
     fun `getUserUsageSummary should return correct usage summary`() {
-        val model = ChatModels.GPT35Turbo
+        val model = OpenAIModels.GPT4oMini
         val session = StorageInterface.newGlobalID()
         val usage = ApiModel.Usage(
             prompt_tokens = 15,
@@ -54,7 +55,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
 
     @Test
     fun `clear should reset all usage data`() {
-        val model = ChatModels.GPT35Turbo
+        val model = OpenAIModels.GPT4oMini
         val session = StorageInterface.newGlobalID()
         val usage = ApiModel.Usage(
             prompt_tokens = 20,
@@ -71,8 +72,8 @@ abstract class UsageTest(private val impl: UsageInterface) {
 
     @Test
     fun `incrementUsage should handle multiple models correctly`() {
-        val model1 = ChatModels.GPT35Turbo
-        val model2 = ChatModels.GPT4Turbo
+        val model1 = OpenAIModels.GPT4oMini
+        val model2 = OpenAIModels.GPT4Turbo
         val session = StorageInterface.newGlobalID()
         val usage1 = ApiModel.Usage(
             prompt_tokens = 10,
@@ -96,7 +97,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
 
     @Test
     fun `incrementUsage should accumulate usage for the same model`() {
-        val model = ChatModels.GPT35Turbo
+        val model = OpenAIModels.GPT4oMini
         val session = StorageInterface.newGlobalID()
         val usage1 = ApiModel.Usage(
             prompt_tokens = 10,

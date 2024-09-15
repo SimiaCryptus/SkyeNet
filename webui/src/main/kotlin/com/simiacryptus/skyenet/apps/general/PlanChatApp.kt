@@ -15,7 +15,7 @@ import java.util.*
 class PlanChatApp(
     applicationName: String = "Task Planning Chat v1.0",
     path: String = "/taskChat",
-    rootFile: File,
+    rootFile: File? = null,
     planSettings: PlanSettings,
     model: OpenAITextModel,
     parsingModel: OpenAITextModel,
@@ -73,7 +73,7 @@ class PlanChatApp(
             try {
                 messageHistory.add(userMessage)
                 val planSettings = (getSettings(session, user, PlanSettings::class.java) ?: PlanSettings(
-                    model = model,
+                    defaultModel = model,
                     parsingModel = parsingModel,
                     command = planSettings.command,
                     temperature = planSettings.temperature,
@@ -88,22 +88,22 @@ class PlanChatApp(
                     session = session,
                     dataStorage = dataStorage,
                     ui = ui,
-                    root = rootFile.toPath(),
+                    root = dataStorage.getDataDir(user, session).toPath(),
                     planSettings = planSettings
                 )
                 val mainTask = coordinator.ui.newTask()
                 val sessionTask = ui.newTask(false).apply { mainTask.verbose(placeholder) }
                 val api = (api as ChatClient).getChildClient().apply {
-                    val createFile = sessionTask.createFile("api-${UUID.randomUUID()}.log")
+                    val createFile = sessionTask.createFile(".logs/api-${UUID.randomUUID()}.log")
                     createFile.second?.apply {
                         logStreams += this.outputStream().buffered()
-                        sessionTask.add("API log: <a href=\"${createFile.first}\">$this</a>")
+                        sessionTask.verbose("API log: <a href=\"file:///$this\">$this</a>")
                     }
                 }
                 val plan = PlanCoordinator.initialPlan(
                     codeFiles = coordinator.codeFiles,
                     files = coordinator.files,
-                    root = coordinator.root,
+                    root = dataStorage.getDataDir(user, session).toPath(),
                     task = sessionTask,
                     userMessage = userMessage,
                     ui = coordinator.ui,
@@ -139,14 +139,13 @@ class PlanChatApp(
         val respondTaskId = "respond_to_chat"
 
         tasksByID[respondTaskId] = PlanningTask.PlanTask(
-            description = "Respond to the user's chat message based on the executed plan",
-            taskType = TaskType.Inquiry,
+            task_description = "Respond to the user's chat message based on the executed plan",
+            task_type = TaskType.Inquiry,
             task_dependencies = tasksByID.keys.toList()
         )
 
         return PlanningTask.TaskBreakdownResult(
             tasksByID = tasksByID,
-            finalTaskID = respondTaskId
         )
     }
 

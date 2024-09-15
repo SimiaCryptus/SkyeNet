@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.webui
 
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
 import com.simiacryptus.skyenet.apps.general.DocumentParserApp
 import com.simiacryptus.skyenet.apps.general.PlanAheadApp
@@ -54,7 +54,7 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                     SimpleActor(
                         "Translate the user's request into pig latin.",
                         "PigLatin",
-                        model = ChatModels.GPT35Turbo
+                        model = OpenAIModels.GPT4oMini
                     )
                 )
             ),
@@ -63,37 +63,35 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                     ParsedActor(
                         resultClass = TestJokeDataStructure::class.java,
                         prompt = "Tell me a joke",
-                        parsingModel = ChatModels.GPT35Turbo,
-                        model = ChatModels.GPT35Turbo,
+                        parsingModel = OpenAIModels.GPT4oMini,
+                        model = OpenAIModels.GPT4oMini,
                     )
                 )
             ),
-            ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = ChatModels.GPT35Turbo))),
+            ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = OpenAIModels.GPT4oMini))),
             ChildWebApp(
                 "/test_coding_scala",
-                CodingActorTestApp(CodingActor(ScalaLocalInterpreter::class, model = ChatModels.GPT35Turbo))
+                CodingActorTestApp(CodingActor(ScalaLocalInterpreter::class, model = OpenAIModels.GPT4oMini))
             ),
             ChildWebApp(
                 "/test_coding_kotlin",
-                CodingActorTestApp(CodingActor(KotlinInterpreter::class, model = ChatModels.GPT35Turbo))
+                CodingActorTestApp(CodingActor(KotlinInterpreter::class, model = OpenAIModels.GPT4oMini))
             ),
             ChildWebApp(
                 "/test_coding_groovy",
-                CodingActorTestApp(CodingActor(GroovyInterpreter::class, model = ChatModels.GPT35Turbo))
+                CodingActorTestApp(CodingActor(GroovyInterpreter::class, model = OpenAIModels.GPT4oMini))
             ),
             ChildWebApp("/test_file_patch", FilePatchTestApp()),
             ChildWebApp(
                 "/taskDev",
                 PlanAheadApp(
-                    rootFile = File("."),
                     planSettings = PlanSettings(
-                        model = ChatModels.GPT4o,
-                        parsingModel = ChatModels.GPT4oMini,
+                        defaultModel = OpenAIModels.GPT4o,
+                        parsingModel = OpenAIModels.GPT4oMini,
                         command = listOf("task"),
                         temperature = 0.2,
                         budget = 2.0,
                         autoFix = true,
-                        enableCommandAutoFix = true,
                         commandAutoFixCommands = listOf(
                             "C:\\Program Files\\nodejs\\npx.cmd", "C:\\Program Files\\nodejs\\npm.cmd"
                         ),
@@ -101,11 +99,15 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                         workingDir = ".",
                         language = if (isWindows) "powershell" else "bash",
                     ).apply {
-                        setTaskSettings(TaskType.TaskPlanning, TaskSettings(enabled = true))
-                        setTaskSettings(TaskType.RunShellCommand, TaskSettings(enabled = false))
+                        setTaskSettings(TaskType.TaskPlanning, TaskSettings(
+                            enabled = true,
+                            model = OpenAIModels.GPT4o,))
+                        setTaskSettings(TaskType.RunShellCommand, TaskSettings(
+                            enabled = false,
+                            model = OpenAIModels.GPT4o,))
                     },
-                    model = ChatModels.GPT4o,
-                    parsingModel = ChatModels.GPT4oMini,
+                    model = OpenAIModels.GPT4o,
+                    parsingModel = OpenAIModels.GPT4oMini,
                 )
             ),
             ChildWebApp("/stressTest", StressTestApp()),

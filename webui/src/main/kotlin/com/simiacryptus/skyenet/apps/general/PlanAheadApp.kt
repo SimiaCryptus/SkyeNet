@@ -20,7 +20,7 @@ import java.io.File
 open class PlanAheadApp(
     applicationName: String = "Task Planning v1.1",
     path: String = "/taskDev",
-     val rootFile: File,
+     val rootFile: File? = null,
     val planSettings: PlanSettings,
     val model: OpenAITextModel,
     val parsingModel: OpenAITextModel,
@@ -34,7 +34,7 @@ open class PlanAheadApp(
     showMenubar = showMenubar,
 ) {
     override val singleInput: Boolean get() = true
-    override val root: File get() = rootFile
+    override val root: File get() = rootFile ?: super.root
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> initSettings(session: Session): T = planSettings.let {
@@ -55,7 +55,7 @@ open class PlanAheadApp(
                         session = session,
                         dataStorage = dataStorage,
                         ui = ui,
-                        root = rootFile.toPath(),
+                        root = dataStorage.getDataDir(user, session).toPath(),
                         planSettings = planSettings!!
                     )
                     coordinator.executeTaskBreakdownWithPrompt(JsonUtil.toJson(initialPlan), api!!)
@@ -83,7 +83,7 @@ open class PlanAheadApp(
                 session = session,
                 dataStorage = dataStorage,
                 ui = ui,
-                root = rootFile.toPath(),
+                root = dataStorage.getDataDir(user, session).toPath(),
                 planSettings = planSettings!!
             )
             val task = coordinator.ui.newTask()

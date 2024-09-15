@@ -43,25 +43,19 @@ object IterativePatchUtil {
             return sb.toString()
         }
 
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
-
             other as LineRecord
-
             if (index != other.index) return false
             if (line != other.line) return false
-            if (type != other.type) return false
-            if (metrics != other.metrics) return false
-
             return true
         }
 
         override fun hashCode(): Int {
             var result = index
             result = 31 * result + (line?.hashCode() ?: 0)
-            result = 31 * result + type.hashCode()
-            result = 31 * result + metrics.hashCode()
             return result
         }
 
@@ -147,6 +141,8 @@ object IterativePatchUtil {
         log.debug("Starting to mark moved lines")
         // We start with the first line of the new (patched) code
         var newLine = newLines.firstOrNull()
+        var iterationCount = 0
+        val maxIterations = newLines.size * 2 // Arbitrary limit to prevent infinite loops
         // We'll iterate through all lines of the new code
         while (null != newLine) {
             try {
@@ -169,6 +165,11 @@ object IterativePatchUtil {
                         // Skip any lines in the source that don't have a match or are deletions
                         // This helps us find the next "anchor" point in the source code
                         while (nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) {
+                            // Safeguard to prevent infinite loop
+                            if (++iterationCount > maxIterations) {
+                                log.error("Exceeded maximum iterations in markMovedLines")
+                                break
+                            }
                             nextSourceLine = nextSourceLine.nextLine ?: break
                         }
                         if(nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) break
@@ -190,8 +191,13 @@ object IterativePatchUtil {
                             }
                         }
                     } finally {
-                        // Move to the next line to process in the outer loop
-                        newLine = nextNewLine
+                        // Safeguard to prevent infinite loop
+                        if (++iterationCount > maxIterations) {
+                            log.error("Exceeded maximum iterations in markMovedLines")
+                                newLine = nextNewLine
+                            // Move to the next line to process in the outer loop
+                                 // newLine = nextNewLine
+                        }
                     }
                 } else {
                     // If the current line doesn't have a match, move to the next one
@@ -287,8 +293,9 @@ object IterativePatchUtil {
      * @return The normalized line.
      */
     private fun normalizeLine(line: String): String {
-        return line.replace("\\s".toRegex(), "")
+        return line.replace(whitespaceRegex, "")
     }
+    private val whitespaceRegex = "\\s".toRegex()
 
     private fun link(
         sourceLines: List<LineRecord>,
@@ -697,26 +704,26 @@ private fun generatePatchedText(
      */
     private fun calculateLineMetrics(lines: List<LineRecord>) {
         log.debug("Starting to calculate line metrics for ${lines.size} lines")
-        var parenthesesDepth = 0
-        var squareBracketsDepth = 0
-        var curlyBracesDepth = 0
-
-        lines.forEach { lineRecord ->
-            lineRecord.line?.forEach { char ->
+        lines.fold(
+            Triple(0, 0, 0)
+        ) { (parenDepth, squareDepth, curlyDepth), lineRecord ->
+            val updatedDepth = lineRecord.line?.fold(Triple(parenDepth, squareDepth, curlyDepth)) { acc, char ->
                 when (char) {
-                    '(' -> parenthesesDepth++
-                    ')' -> parenthesesDepth = maxOf(0, parenthesesDepth - 1)
-                    '[' -> squareBracketsDepth++
-                    ']' -> squareBracketsDepth = maxOf(0, squareBracketsDepth - 1)
-                    '{' -> curlyBracesDepth++
-                    '}' -> curlyBracesDepth = maxOf(0, curlyBracesDepth - 1)
+                    '(' -> Triple(acc.first + 1, acc.second, acc.third)
+                    ')' -> Triple(max(0, acc.first - 1), acc.second, acc.third)
+                    '[' -> Triple(acc.first, acc.second + 1, acc.third)
+                    ']' -> Triple(acc.first, max(0, acc.second - 1), acc.third)
+                    '{' -> Triple(acc.first, acc.second, acc.third + 1)
+                    '}' -> Triple(acc.first, acc.second, max(0, acc.third - 1))
+                    else -> acc
                 }
-            }
+            } ?: Triple(parenDepth, squareDepth, curlyDepth)
             lineRecord.metrics = LineMetrics(
-                parenthesesDepth = parenthesesDepth,
-                squareBracketsDepth = squareBracketsDepth,
-                curlyBracesDepth = curlyBracesDepth
+                parenthesesDepth = updatedDepth.first,
+                squareBracketsDepth = updatedDepth.second,
+                curlyBracesDepth = updatedDepth.third
             )
+            updatedDepth
         }
         log.debug("Finished calculating line metrics")
     }

@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.models.AnthropicModels
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.TabbedDisplay
@@ -30,7 +31,7 @@ open class DocumentParserApp(
     applicationName: String = "Document Extractor",
     path: String = "/pdfExtractor",
     val api: API = ChatClient(),
-    val parsingModel: ParsingModel = DefaultParsingModel(ChatModels.Claude35Sonnet, 0.1),
+    val parsingModel: ParsingModel = DefaultParsingModel(AnthropicModels.Claude35Sonnet, 0.1),
     val reader: (File) -> DocumentReader = {
         when {
             it.name.endsWith(".pdf", ignoreCase = true) -> PDFReader(it)
