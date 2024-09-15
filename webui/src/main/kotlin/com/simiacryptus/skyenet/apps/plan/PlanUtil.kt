@@ -8,6 +8,7 @@ import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 object PlanUtil {
 
@@ -15,7 +16,7 @@ object PlanUtil {
         ui: ApplicationInterface,
         taskMap: Map<String, PlanTask>
     ) = MarkdownUtil.renderMarkdown(
-        """
+            """
             |## Sub-Plan Task Dependency Graph
             |${TRIPLE_TILDE}mermaid
             |${buildMermaidGraph(taskMap)}
@@ -81,32 +82,48 @@ object PlanUtil {
         .replace("\"", "\\\"")
         .let { '"' + it + '"' }
 
+    // Cache for memoizing buildMermaidGraph results
+    private val mermaidGraphCache = ConcurrentHashMap<String, String>()
+    private val mermaidExceptionCache = ConcurrentHashMap<String, Exception>()
+
     fun buildMermaidGraph(subTasks: Map<String, PlanTask>): String {
-        val graphBuilder = StringBuilder("graph TD;\n")
-        subTasks.forEach { (taskId, task) ->
-            val sanitizedTaskId = sanitizeForMermaid(taskId)
-            val taskType = task.task_type?.name ?: "Unknown"
-            val escapedDescription = escapeMermaidCharacters(task.task_description ?: "")
-            val style = when (task.state) {
-                TaskState.Completed -> ":::completed"
-                TaskState.InProgress -> ":::inProgress"
-                else -> ":::$taskType"
+        // Generate a unique key based on the subTasks map
+        val cacheKey = JsonUtil.toJson(subTasks)
+        // Return cached result if available
+        mermaidGraphCache[cacheKey]?.let { return it }
+        mermaidExceptionCache[cacheKey]?.let { throw it }
+        try {
+            val graphBuilder = StringBuilder("graph TD;\n")
+            subTasks.forEach { (taskId, task) ->
+                val sanitizedTaskId = sanitizeForMermaid(taskId)
+                val taskType = task.task_type?.name ?: "Unknown"
+                val escapedDescription = escapeMermaidCharacters(task.task_description ?: "")
+                val style = when (task.state) {
+                    TaskState.Completed -> ":::completed"
+                    TaskState.InProgress -> ":::inProgress"
+                    else -> ":::$taskType"
+                }
+                graphBuilder.append("    ${sanitizedTaskId}[$escapedDescription]$style;\n")
+                task.task_dependencies?.forEach { dependency ->
+                    val sanitizedDependency = sanitizeForMermaid(dependency)
+                    graphBuilder.append("    $sanitizedDependency --> ${sanitizedTaskId};\n")
+                }
             }
-            graphBuilder.append("    ${sanitizedTaskId}[$escapedDescription]$style;\n")
-            task.task_dependencies?.forEach { dependency ->
-                val sanitizedDependency = sanitizeForMermaid(dependency)
-                graphBuilder.append("    $sanitizedDependency --> ${sanitizedTaskId};\n")
-            }
+            graphBuilder.append("    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef NewFile fill:lightblue,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef EditFile fill:lightgreen,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef Documentation fill:lightyellow,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef Inquiry fill:orange,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef TaskPlanning fill:lightgrey,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef completed fill:#90EE90,stroke:#333,stroke-width:2px;\n")
+            graphBuilder.append("    classDef inProgress fill:#FFA500,stroke:#333,stroke-width:2px;\n")
+            val graph = graphBuilder.toString()
+            mermaidGraphCache[cacheKey] = graph
+            return graph
+        } catch (e: Exception) {
+            mermaidExceptionCache[cacheKey] = e
+            throw e
         }
-        graphBuilder.append("    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;\n")
-        graphBuilder.append("    classDef NewFile fill:lightblue,stroke:#333,stroke-width:2px;\n")
-        graphBuilder.append("    classDef EditFile fill:lightgreen,stroke:#333,stroke-width:2px;\n")
-        graphBuilder.append("    classDef Documentation fill:lightyellow,stroke:#333,stroke-width:2px;\n")
-        graphBuilder.append("    classDef Inquiry fill:orange,stroke:#333,stroke-width:2px;\n")
-        graphBuilder.append("    classDef TaskPlanning fill:lightgrey,stroke:#333,stroke-width:2px;\n")
-        graphBuilder.append("    classDef completed fill:#90EE90,stroke:#333,stroke-width:2px;\n")
-        graphBuilder.append("    classDef inProgress fill:#FFA500,stroke:#333,stroke-width:2px;\n")
-        return graphBuilder.toString()
     }
 
     fun filterPlan(retries: Int = 3, fn: () -> TaskBreakdownInterface): TaskBreakdownInterface {

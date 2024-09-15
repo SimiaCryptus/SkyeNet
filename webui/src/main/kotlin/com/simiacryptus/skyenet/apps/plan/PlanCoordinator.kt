@@ -193,7 +193,7 @@ class PlanCoordinator(
             val subTask = planProcessingState.subTasks[taskId] ?: throw RuntimeException("Task not found: $taskId")
             planProcessingState.taskFutures[taskId] = pool.submit {
                 subTask.state = AbstractTask.TaskState.Pending
-                taskTabs.update()
+                //taskTabs.update()
                 log.debug("Awaiting dependencies: ${subTask.task_dependencies?.joinToString(", ") ?: ""}")
                 subTask.task_dependencies
                     ?.associate { it to planProcessingState.taskFutures[it] }
@@ -205,7 +205,7 @@ class PlanCoordinator(
                         }
                     }
                 subTask.state = AbstractTask.TaskState.InProgress
-                taskTabs.update()
+                //taskTabs.update()
                 log.debug("Running task: ${System.identityHashCode(subTask)} ${subTask.task_description}")
                 val task1 = planProcessingState.uitaskMap.get(taskId) ?: ui.newTask(false).apply {
                     taskTabs[taskId] = placeholder
@@ -221,16 +221,16 @@ class PlanCoordinator(
                     task1.add(
                         MarkdownUtil.renderMarkdown(
                             """
-                 ## Task `${taskId}`
-                 ${subTask.task_description ?: ""}
-                          |
-                          |${TRIPLE_TILDE}json
-                          |${JsonUtil.toJson(data = subTask)/*.indent("  ")*/}
-                          |$TRIPLE_TILDE
-                          |
-                          |### Dependencies:
-                          |${dependencies.joinToString("\n") { "- $it" }}
-                          |
+                            |## Task `${taskId}`
+                            |${subTask.task_description ?: ""}
+                            |
+                            |${TRIPLE_TILDE}json
+                            |${JsonUtil.toJson(data = subTask)/*.indent("  ")*/}
+                            |$TRIPLE_TILDE
+                            |
+                            |### Dependencies:
+                            |${dependencies.joinToString("\n") { "- $it" }}
+                            |
                           """.trimMargin(), ui = ui
                         )
                     )
@@ -365,16 +365,16 @@ class PlanCoordinator(
         ) = { str: String ->
             listOf(
                 if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
-                                        | Files:
-                                        | ${codeFiles.keys.joinToString("\n") { "* $it" }}  
+                                        |Files:
+                                        |${codeFiles.keys.joinToString("\n") { "* $it" }}  
                                          """.trimMargin() else {
                     files.joinToString("\n\n") {
                         val path = root.relativize(it.toPath())
                         """
-                                |## $path
-                                |
-                                |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-                                """.trimMargin()
+                        |## $path
+                        |
+                        |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
+                        """.trimMargin()
                     }
                 },
                 str

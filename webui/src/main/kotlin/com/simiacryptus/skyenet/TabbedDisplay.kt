@@ -85,7 +85,7 @@ open class TabbedDisplay(
 
     open fun update() {
         log.debug("Updating container content")
-        if (container != null) synchronized(container) {
+        synchronized(container) {
             if (tabs.isNotEmpty() && (selectedTab < 0 || selectedTab >= tabs.size)) {
                 selectedTab = 0
             }

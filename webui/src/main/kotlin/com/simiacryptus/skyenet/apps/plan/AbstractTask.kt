@@ -18,9 +18,9 @@ abstract class AbstractTask(
     val planTask: PlanTask
 ) {
     var state: TaskState? = TaskState.Pending
-    val codeFiles = mutableMapOf<Path, String>()
+    protected val codeFiles = mutableMapOf<Path, String>()
 
-    open val root: Path
+    protected open val root: Path
         get() = File(planSettings.workingDir).toPath()
 
     enum class TaskState {
@@ -29,7 +29,7 @@ abstract class AbstractTask(
         Completed,
     }
 
-    fun getPriorCode(planProcessingState: PlanProcessingState) =
+    protected fun getPriorCode(planProcessingState: PlanProcessingState) =
         planTask.task_dependencies?.joinToString("\n\n\n") { dependency ->
             """
         |# $dependency
@@ -38,7 +38,7 @@ abstract class AbstractTask(
         """.trimMargin()
         } ?: ""
 
-    fun getInputFileCode(): String = ((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf()))
+    protected fun getInputFileCode(): String = ((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf()))
         .flatMap { pattern: String ->
             val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
             Files.walk(root).asSequence()
@@ -69,7 +69,7 @@ abstract class AbstractTask(
             }
         }
 
-    fun acceptButtonFooter(ui: ApplicationInterface, fn: () -> Unit): String {
+    protected fun acceptButtonFooter(ui: ApplicationInterface, fn: () -> Unit): String {
         val footerTask = ui.newTask(false)
         lateinit var textHandle: StringBuilder
         textHandle = footerTask.complete(ui.hrefLink("Accept", classname = "href-link cmd-button") {
