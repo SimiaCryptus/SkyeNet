@@ -132,7 +132,7 @@ private fun SocketManagerBase.renderNewFile(
             |```
             |
             |${commandTask.placeholder}
-            |""".trimMargin()
+            """.trimMargin()
     }
 }
 

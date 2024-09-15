@@ -15,7 +15,7 @@ import java.util.*
 class PlanChatApp(
     applicationName: String = "Task Planning Chat v1.0",
     path: String = "/taskChat",
-    rootFile: File,
+    rootFile: File? = null,
     planSettings: PlanSettings,
     model: OpenAITextModel,
     parsingModel: OpenAITextModel,
@@ -88,7 +88,7 @@ class PlanChatApp(
                     session = session,
                     dataStorage = dataStorage,
                     ui = ui,
-                    root = root.toPath(),
+                    root = dataStorage.getDataDir(user, session).toPath(),
                     planSettings = planSettings
                 )
                 val mainTask = coordinator.ui.newTask()
@@ -103,7 +103,7 @@ class PlanChatApp(
                 val plan = PlanCoordinator.initialPlan(
                     codeFiles = coordinator.codeFiles,
                     files = coordinator.files,
-                    root = coordinator.root,
+                    root = dataStorage.getDataDir(user, session).toPath(),
                     task = sessionTask,
                     userMessage = userMessage,
                     ui = coordinator.ui,

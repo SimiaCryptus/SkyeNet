@@ -55,7 +55,7 @@ open class PlanAheadApp(
                         session = session,
                         dataStorage = dataStorage,
                         ui = ui,
-                        root = root.toPath(),
+                        root = dataStorage.getDataDir(user, session).toPath(),
                         planSettings = planSettings!!
                     )
                     coordinator.executeTaskBreakdownWithPrompt(JsonUtil.toJson(initialPlan), api!!)
@@ -83,7 +83,7 @@ open class PlanAheadApp(
                 session = session,
                 dataStorage = dataStorage,
                 ui = ui,
-                root = root.toPath(),
+                root = dataStorage.getDataDir(user, session).toPath(),
                 planSettings = planSettings!!
             )
             val task = coordinator.ui.newTask()
