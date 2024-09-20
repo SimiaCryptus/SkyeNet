@@ -21,7 +21,6 @@ import com.simiacryptus.skyenet.groovy.GroovyInterpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.scala.ScalaLocalInterpreter
 import com.simiacryptus.skyenet.webui.test.*
-import java.io.File
 
 
 object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.ApplicationDirectory(port = 8082) {

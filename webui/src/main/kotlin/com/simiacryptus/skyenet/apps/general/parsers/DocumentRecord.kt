@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet.apps.general.parsers
 
-import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.EmbeddingModels
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import java.io.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit

@@ -4,7 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.AnthropicModels
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.general.parsers.DefaultParsingModel
 import com.simiacryptus.skyenet.apps.general.parsers.PDFReader

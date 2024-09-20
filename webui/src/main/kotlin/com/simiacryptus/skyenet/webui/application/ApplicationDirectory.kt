@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.webui.application
 
 
 import com.simiacryptus.jopenai.util.ClientUtil
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.isLocked

@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.core.platform
 
 import com.google.common.util.concurrent.AtomicDouble
-import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModel
 import org.slf4j.Logger

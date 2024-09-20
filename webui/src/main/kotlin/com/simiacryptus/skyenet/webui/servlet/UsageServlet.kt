@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.webui.servlet
 
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
@@ -29,7 +30,7 @@ class UsageServlet : HttpServlet() {
 
     private fun serve(
         resp: HttpServletResponse,
-        usage: Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage>
+        usage: Map<OpenAIModel, ApiModel.Usage>
     ) {
         val totalPromptTokens = usage.values.sumOf { it.prompt_tokens }
         val totalCompletionTokens = usage.values.sumOf { it.completion_tokens }

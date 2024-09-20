@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.jopenai.models.ApiModel
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface

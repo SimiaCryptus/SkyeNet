@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.core.platform.test
 
-import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.core.platform.StorageInterface
