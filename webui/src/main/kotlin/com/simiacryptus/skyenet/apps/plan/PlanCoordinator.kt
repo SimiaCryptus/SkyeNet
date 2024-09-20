@@ -8,6 +8,7 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies
@@ -128,7 +129,7 @@ class PlanCoordinator(
     fun executePlan(
         task: SessionTask,
         diagramBuffer: StringBuilder?,
-        subTasks: Map<String, PlanTask>,
+        subTasks: Map<String, PlanTaskBaseInterface>,
         diagramTask: SessionTask,
         planProcessingState: PlanProcessingState,
         taskIdProcessingQueue: MutableList<String>,

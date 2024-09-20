@@ -8,4 +8,4 @@ include("kotlin")
 //include("kotlin-hack-test")
 include("webui")
 
-//includeBuild("../jo-penai/")
+includeBuild("../jo-penai/")

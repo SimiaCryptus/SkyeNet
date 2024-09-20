@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -13,10 +13,18 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.streams.asSequence
 
-abstract class AbstractTask(
+abstract class AbstractTask<T : PlanTaskBaseInterface>(
     val planSettings: PlanSettings,
-    val planTask: PlanTask
+    val planTask: T?
 ) {
+    interface PlanTaskBaseInterface {
+        val task_type: Any?
+        val task_description: String?
+        val task_dependencies: List<String>?
+        val input_files: List<String>?
+        val output_files: List<String>?
+        var state: TaskState?
+    }
     var state: TaskState? = TaskState.Pending
     protected val codeFiles = mutableMapOf<Path, String>()
 
@@ -30,7 +38,7 @@ abstract class AbstractTask(
     }
 
     protected fun getPriorCode(planProcessingState: PlanProcessingState) =
-        planTask.task_dependencies?.joinToString("\n\n\n") { dependency ->
+        planTask?.task_dependencies?.joinToString("\n\n\n") { dependency ->
             """
         |# $dependency
         |
@@ -38,7 +46,8 @@ abstract class AbstractTask(
         """.trimMargin()
         } ?: ""
 
-    protected fun getInputFileCode(): String = ((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf()))
+    protected fun getInputFileCode(): String =
+        ((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf()))
         .flatMap { pattern: String ->
             val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
             Files.walk(root).asSequence()

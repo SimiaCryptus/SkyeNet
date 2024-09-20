@@ -4,6 +4,7 @@ import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -13,8 +14,8 @@ import java.util.concurrent.Semaphore
 
 class FileModificationTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractTask(planSettings, planTask) {
+    planTask: PlanTaskBaseInterface?
+) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
     val fileModificationActor by lazy {
         SimpleActor(
             name = "FileModification",
@@ -62,7 +63,7 @@ class FileModificationTask(
                 |}
  ${TRIPLE_TILDE}
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
+            model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }
@@ -84,7 +85,7 @@ class FileModificationTask(
         task: SessionTask,
         api: API
     ) {
-        if(((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf())).isEmpty()) {
+        if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
             task.complete("No input files specified")
             return
         }
@@ -97,7 +98,7 @@ class FileModificationTask(
                     JsonUtil.toJson(plan),
                     getPriorCode(planProcessingState),
                     getInputFileCode(),
-                    this.planTask.task_description ?: "",
+                    this.planTask?.task_description ?: "",
                 ).filter { it.isNotBlank() }, api
             )
             planProcessingState.taskResult[taskId] = codeResult

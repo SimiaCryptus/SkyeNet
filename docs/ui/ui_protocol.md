@@ -122,7 +122,6 @@ val retryable = Retryable(appInterface, task) { content ->
     // Process content
     "Processed content"
 }
-retryable.update()
 ```
 
 ### 6. AgentPatterns

@@ -1,4 +1,4 @@
-package com.github.simiacryptus.aicoder.actions.generic
+package com.simiacryptus.skyenet.core.util
 
 import java.io.File
 

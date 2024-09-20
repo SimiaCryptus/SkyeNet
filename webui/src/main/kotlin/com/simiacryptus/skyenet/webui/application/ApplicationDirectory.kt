@@ -57,7 +57,6 @@ abstract class ApplicationDirectory(
     open val proxyHttpServlet: HttpServlet = ProxyHttpServlet()
     open val apiKeyServlet: HttpServlet = ApiKeyServlet()
     open val welcomeServlet: HttpServlet = WelcomeServlet(this)
-//    abstract val toolServlet: ToolServlet?
 
     open fun authenticatedWebsite(): OAuthBase? = OAuthGoogle(
         redirectUri = "$domainName/oauth2callback",
@@ -134,6 +133,9 @@ abstract class ApplicationDirectory(
         newWebAppContext("/", welcomeResources, "welcome", welcomeServlet).let {
             authenticatedWebsite()?.configure(it, false) ?: it
         },
+        newWebAppContext("/api", welcomeServlet).let {
+            authenticatedWebsite()?.configure(it, false) ?: it
+        },
     ).toTypedArray() + childWebApps.map {
         newWebAppContext(it.path, it.server)
     }
@@ -184,7 +186,7 @@ abstract class ApplicationDirectory(
 
     protected open fun newWebAppContext(path: String, server: ChatServer): WebAppContext {
         val baseResource = server.baseResource ?: throw IllegalStateException("No base resource")
-        val webAppContext = newWebAppContext(path, baseResource, resourceBase = "applicaton")
+        val webAppContext = newWebAppContext(path, baseResource, resourceBase = "application")
         server.configure(webAppContext)
         log.info("WebAppContext configured for path: $path with ChatServer")
         return webAppContext

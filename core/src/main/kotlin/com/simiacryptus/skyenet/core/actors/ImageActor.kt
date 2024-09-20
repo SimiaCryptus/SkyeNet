@@ -66,7 +66,7 @@ open class ImageActor(
     override fun respond(input: List<String>, api: API, vararg messages: ChatMessage): ImageResponse {
         var text = response(*messages, api = api).choices.first().message?.content
             ?: throw RuntimeException("No response")
-        while (imageModel.maxPrompt <= text.length) {
+        while (imageModel.maxPrompt <= text.length && null != openAI) {
             text = response(
                 *listOf(
                     messages.toList(),
@@ -79,7 +79,7 @@ open class ImageActor(
                 api = api
             ).choices.first().message?.content ?: throw RuntimeException("No response")
         }
-        return ImageResponseImpl(text, api = api)
+        return ImageResponseImpl(text, api = this.openAI!!)
     }
 
     override fun withModel(model: ChatModels): ImageActor = ImageActor(
@@ -91,6 +91,12 @@ open class ImageActor(
         width = width,
         height = height,
     )
+
+    var openAI: OpenAIClient? = null
+    fun setImageAPI(openAI: OpenAIClient): ImageActor {
+        this.openAI = openAI
+        return this
+    }
 
 }
 

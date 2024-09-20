@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 
 class SecurityAuditTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
+    planTask: PlanTaskBaseInterface?
 ) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName: String = "SecurityAudit"
     override val actorPrompt: String = """

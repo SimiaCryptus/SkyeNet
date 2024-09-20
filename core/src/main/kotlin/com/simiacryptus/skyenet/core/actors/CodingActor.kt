@@ -25,7 +25,7 @@ open class CodingActor(
     ),
     name: String? = interpreterClass.simpleName,
     val details: String? = null,
-    model: OpenAITextModel,
+    model: OpenAITextModel = OpenAIModels.GPT4o,
     val fallbackModel: ChatModels = OpenAIModels.GPT4o,
     temperature: Double = 0.1,
     val runtimeSymbols: Map<String, Any> = mapOf()

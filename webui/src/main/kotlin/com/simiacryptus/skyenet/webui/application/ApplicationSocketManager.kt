@@ -25,7 +25,7 @@ abstract class ApplicationSocketManager(
             user = socket.user,
             userMessage = userMessage,
             socketManager = this,
-            api = ApplicationServices.clientManager.getClient(
+            api = ApplicationServices.clientManager.getChatClient(
                 session,
                 socket.user
             )

@@ -6,6 +6,7 @@ import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.ExecutionTaskInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.util.MarkdownUtil
 import org.slf4j.LoggerFactory
@@ -14,8 +15,8 @@ import java.util.concurrent.Semaphore
 
 class CommandAutoFixTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractTask(planSettings, planTask) {
+    planTask: ExecutionTaskInterface?
+) : AbstractTask<ExecutionTaskInterface>(planSettings, planTask) {
     override fun promptSegment(): String {
         return """
              |CommandAutoFix - Run a command and automatically fix any issues that arise
@@ -43,7 +44,7 @@ class CommandAutoFixTask(
         }
         Retryable(agent.ui, task = task) {
             val task = agent.ui.newTask(false).apply { it.append(placeholder) }
-            val alias = this.planTask.execution_task?.command?.first()
+            val alias = this.planTask?.execution_task?.command?.first()
             val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
             val cmds = commandAutoFixCommands
                 ?.map { File(it) }?.associateBy { it.name }
@@ -53,7 +54,7 @@ class CommandAutoFixTask(
             if (executable == null) {
                 throw IllegalArgumentException("Command not found: $alias")
             }
-            val workingDirectory = (this.planTask.execution_task?.workingDir
+            val workingDirectory = (this.planTask?.execution_task?.workingDir
                 ?.let { agent.root.toFile().resolve(it) } ?: agent.root.toFile())
                 .apply { mkdirs() }
             val outputResult = CmdPatchApp(
@@ -61,7 +62,7 @@ class CommandAutoFixTask(
                 session = agent.session,
                 settings = PatchApp.Settings(
                     executable = executable,
-                    arguments = this.planTask.execution_task?.command?.drop(1)?.joinToString(" ") ?: "",
+                    arguments = this.planTask?.execution_task?.command?.drop(1)?.joinToString(" ") ?: "",
                     workingDirectory = workingDirectory,
                     exitCodeOption = "nonzero",
                     additionalInstructions = "",
@@ -69,7 +70,8 @@ class CommandAutoFixTask(
                 ),
                 api = api as ChatClient,
                 files = agent.files,
-                model = agent.planSettings.getTaskSettings(planTask.task_type!!).model ?: agent.planSettings.defaultModel,
+                model = agent.planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
+                    ?: agent.planSettings.defaultModel,
             ).run(
                 ui = agent.ui,
                 task = task

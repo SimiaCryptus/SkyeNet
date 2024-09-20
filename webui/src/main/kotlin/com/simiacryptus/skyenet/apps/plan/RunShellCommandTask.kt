@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
@@ -15,8 +16,11 @@ import kotlin.reflect.KClass
 
 class RunShellCommandTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractTask(planSettings, planTask) {
+    planTask: ExecutionTaskInterface?
+) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
+    interface ExecutionTaskInterface : PlanTaskBaseInterface {
+        val execution_task: PlanningTask.ExecutionTask?
+    }
     val shellCommandActor by lazy {
         CodingActor(
             name = "RunShellCommand",
@@ -28,11 +32,14 @@ class RunShellCommandTask(
                 """.trimMargin(),
             symbols = mapOf<String, Any>(
                 "env" to (planSettings.env ?: emptyMap()),
-                "workingDir" to (planTask.execution_task?.workingDir?.let { File(it).absolutePath } ?: File(planSettings.workingDir).absolutePath),
+                "workingDir" to (planTask?.execution_task?.workingDir?.let { File(it).absolutePath } ?: File(
+                    planSettings.workingDir
+                ).absolutePath),
                 "language" to (planSettings.language ?: "bash"),
                 "command" to planSettings.command,
             ),
-            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
+            model = planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
+                ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }

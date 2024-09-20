@@ -20,6 +20,12 @@ open class TextToSpeechActor(
     name = name,
     model = models,
 ) {
+    var openAI: OpenAIClient? = null
+    fun setOpenAI(openAI: OpenAIClient): TextToSpeechActor {
+        this.openAI = openAI
+        return this
+    }
+
     override fun chatMessages(questions: List<String>) = questions.map {
         ChatMessage(
             role = ApiModel.Role.user,
@@ -50,14 +56,14 @@ open class TextToSpeechActor(
     override fun respond(input: List<String>, api: API, vararg messages: ChatMessage) =
         SpeechResponseImpl(
             messages.joinToString("\n") { it.content?.joinToString("\n") { it.text ?: "" } ?: "" },
-            api = api
+            api = this.openAI ?: throw RuntimeException("OpenAI client not set")
         )
 
 
-    override fun withModel(model: ChatModels) = this
+    override fun withModel(model: ChatModels) = TextToSpeechActor(name, audioModel, voice, speed, model)
+        .also { it.openAI = this.openAI }
 }
 
 interface SpeechResponse {
     val mp3data: ByteArray?
 }
-

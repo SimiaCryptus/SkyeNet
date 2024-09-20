@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Retryable
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -12,8 +13,8 @@ import java.util.concurrent.Semaphore
 
 class DocumentationTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractTask(planSettings, planTask) {
+    planTask: PlanTaskBaseInterface?
+) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
     override fun promptSegment(): String {
         return """
  Documentation - Generate documentation
@@ -30,7 +31,7 @@ class DocumentationTask(
  Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
  Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
+            model = planSettings.getTaskSettings(TaskType.Documentation).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }

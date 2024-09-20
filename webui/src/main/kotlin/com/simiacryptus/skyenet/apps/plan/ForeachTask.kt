@@ -1,16 +1,21 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskInterface
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.ForEachTask
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 
 class ForeachTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractTask(planSettings, planTask) {
+    planTask: ForeachTaskInterface?
+) : AbstractTask<ForeachTaskInterface>(planSettings, planTask) {
+    interface ForeachTaskInterface : PlanTaskBaseInterface {
+        val foreach_task: ForEachTask?
+    }
 
     override fun promptSegment(): String {
         return """
@@ -29,7 +34,8 @@ ForeachTask - Execute a task for each item in a list
         task: SessionTask,
         api: API
     ) {
-        val items = planTask.foreach_task?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
+        val items =
+            planTask?.foreach_task?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
         val subTasks = planTask.foreach_task?.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")
         val subPlanTask = agent.ui.newTask(false)
         task.add(subPlanTask.placeholder)

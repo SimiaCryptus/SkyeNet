@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -15,8 +16,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 class InquiryTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractTask(planSettings, planTask) {
+    planTask: PlanTaskBaseInterface?
+) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
     private val inquiryActor by lazy {
         SimpleActor(
             name = "Inquiry",
@@ -33,7 +34,8 @@ class InquiryTask(
                 }).
  This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
+            model = planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
+                ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }
@@ -67,7 +69,7 @@ class InquiryTask(
 
         val inquiryResult = if (planSettings.allowBlocking) Discussable(
             task = task,
-            userMessage = { "Expand ${this.planTask.task_description ?: ""}\n${JsonUtil.toJson(data = this)}" },
+            userMessage = { "Expand ${this.planTask?.task_description ?: ""}\n${JsonUtil.toJson(data = this)}" },
             heading = "",
             initialResponse = { it: String -> inquiryActor.answer(toInput(it), api = api) },
             outputFn = { design: String ->
@@ -75,7 +77,7 @@ class InquiryTask(
             },
             ui = agent.ui,
             reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                val inStr = "Expand ${this.planTask.task_description ?: ""}\n${JsonUtil.toJson(data = this)}"
+                val inStr = "Expand ${this.planTask?.task_description ?: ""}\n${JsonUtil.toJson(data = this)}"
                 val messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
                     .toTypedArray<ApiModel.ChatMessage>()
                 inquiryActor.respond(
@@ -87,7 +89,7 @@ class InquiryTask(
             atomicRef = AtomicReference(),
             semaphore = Semaphore(0),
         ).call() else inquiryActor.answer(
-            toInput("Expand ${this.planTask.task_description ?: ""}\n${JsonUtil.toJson(data = this)}"),
+            toInput("Expand ${this.planTask?.task_description ?: ""}\n${JsonUtil.toJson(data = this)}"),
             api = api
         ).apply {
             task.add(MarkdownUtil.renderMarkdown(this, ui = agent.ui))

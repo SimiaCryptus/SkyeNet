@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 
 class CodeOptimizationTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
+    planTask: PlanTaskBaseInterface
 ) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName = "CodeOptimization"
     override val actorPrompt = """

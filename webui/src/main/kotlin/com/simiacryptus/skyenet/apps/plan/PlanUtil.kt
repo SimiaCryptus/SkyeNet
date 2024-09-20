@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.util.JsonUtil
 import com.simiacryptus.skyenet.AgentPatterns
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.TaskState
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
@@ -14,7 +15,7 @@ object PlanUtil {
 
     fun diagram(
         ui: ApplicationInterface,
-        taskMap: Map<String, PlanTask>
+        taskMap: Map<String, PlanTaskBaseInterface>
     ) = MarkdownUtil.renderMarkdown(
             """
             |## Sub-Plan Task Dependency Graph
@@ -86,7 +87,7 @@ object PlanUtil {
     private val mermaidGraphCache = ConcurrentHashMap<String, String>()
     private val mermaidExceptionCache = ConcurrentHashMap<String, Exception>()
 
-    fun buildMermaidGraph(subTasks: Map<String, PlanTask>): String {
+    fun buildMermaidGraph(subTasks: Map<String, PlanTaskBaseInterface>): String {
         // Generate a unique key based on the subTasks map
         val cacheKey = JsonUtil.toJson(subTasks)
         // Return cached result if available
@@ -96,7 +97,7 @@ object PlanUtil {
             val graphBuilder = StringBuilder("graph TD;\n")
             subTasks.forEach { (taskId, task) ->
                 val sanitizedTaskId = sanitizeForMermaid(taskId)
-                val taskType = task.task_type?.name ?: "Unknown"
+                val taskType = (task.task_type as? TaskType<*>)?.name ?: "Unknown"
                 val escapedDescription = escapeMermaidCharacters(task.task_description ?: "")
                 val style = when (task.state) {
                     TaskState.Completed -> ":::completed"
@@ -166,8 +167,8 @@ object PlanUtil {
     }
 
     fun getAllDependencies(
-        subPlanTask: PlanTask,
-        subTasks: Map<String, PlanTask>,
+        subPlanTask: PlanTaskBaseInterface,
+        subTasks: Map<String, PlanTaskBaseInterface>,
         visited: MutableSet<String>
     ): List<String> {
         val dependencies = subPlanTask.task_dependencies?.toMutableList() ?: mutableListOf()

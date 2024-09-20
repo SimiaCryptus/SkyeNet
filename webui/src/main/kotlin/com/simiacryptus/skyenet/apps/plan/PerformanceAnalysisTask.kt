@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory
 
 class PerformanceAnalysisTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
+    planTask: PlanTaskBaseInterface?
 ) : AbstractAnalysisTask(planSettings, planTask) {
     override val actorName = "PerformanceAnalysis"
     override val actorPrompt = """

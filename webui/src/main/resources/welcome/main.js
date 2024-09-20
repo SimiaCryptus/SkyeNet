@@ -1,17 +1,9 @@
-let messageMap = {};
-let singleInput = false;
-let stickyInput = false;
+import {closeModal, showModal} from "./functions.js";
+
 let loadImages = "true";
-let showMenubar = true;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof mermaid !== 'undefined') mermaid.run();
-    applyToAllSvg();
-
-    // Set a timer to periodically apply svgPanZoom to all SVG elements
-    setInterval(() => {
-        applyToAllSvg();
-    }, 5000); // Adjust the interval as needed
 
     // Restore the selected tabs from localStorage before adding event listeners
     document.querySelectorAll('.tabs-container').forEach(tabsContainer => {
@@ -68,96 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const userUsageLink = document.getElementById('user-usage');
     const logoutLink = document.getElementById('logout');
 
-    const form = document.getElementById('main-input');
-    const messageInput = document.getElementById('chat-input');
-
     window.addEventListener('click', (event) => {
         if (event.target === document.getElementById('modal')) {
             closeModal();
         }
     });
 
-    if (form) form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        send(messageInput.value);
-        messageInput.value = '';
-    });
-
-    if (messageInput) {
-        messageInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                form.dispatchEvent(new Event('submit'));
-            }
-        });
-        let originalScrollHeight = messageInput.scrollHeight;
-        messageInput.style.height = (messageInput.scrollHeight) + 'px';
-        let postEditScrollHeight = messageInput.scrollHeight;
-        let heightAdjustment = postEditScrollHeight - originalScrollHeight;
-        messageInput.style.height = '';
-        messageInput.addEventListener('input', function () {
-            // Reset the height to a single row to get the scroll height for the current content
-            this.style.height = 'auto';
-            // Set the height to the scroll height, which represents the height of the content
-            this.style.height = (this.scrollHeight - heightAdjustment) + 'px';
-
-            // Get the computed style for the element
-            const computedStyle = window.getComputedStyle(this);
-            // Get the line height, check if it's 'normal', and calculate it based on the font size if needed
-            let lineHeight = computedStyle.lineHeight;
-            if (lineHeight === 'normal') {
-                // Use a typical browser default multiplier for 'normal' line-height
-                lineHeight = parseInt(computedStyle.fontSize) * 1.2;
-            } else {
-                lineHeight = parseInt(lineHeight);
-            }
-
-            const maxLines = 20;
-            if (this.scrollHeight > lineHeight * maxLines) {
-                this.style.height = (lineHeight * maxLines) + 'px';
-                this.style.overflowY = 'scroll'; // Enable vertical scrolling
-            } else {
-                this.style.overflowY = 'hidden'; // Hide the scrollbar when not needed
-            }
-        });
-        messageInput.focus();
-    }
-
-    document.body.addEventListener('click', (event) => {
-        const target = event.target;
-        const hrefLink = findAncestor(target, '.href-link');
-        if (hrefLink) {
-            const messageId = hrefLink.getAttribute('data-id');
-            if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',link');
-        } else {
-            const playButton = findAncestor(target, '.play-button');
-            if (playButton) {
-                const messageId = playButton.getAttribute('data-id');
-                if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',run');
-            } else {
-                const regenButton = findAncestor(target, '.regen-button');
-                if (regenButton) {
-                    const messageId = regenButton.getAttribute('data-id');
-                    if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',regen');
-                } else {
-                    const cancelButton = findAncestor(target, '.cancel-button');
-                    if (cancelButton) {
-                        const messageId = cancelButton.getAttribute('data-id');
-                        if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',stop');
-                    } else {
-                        const textSubmitButton = findAncestor(target, '.text-submit-button');
-                        if (textSubmitButton) {
-                            const messageId = textSubmitButton.getAttribute('data-id');
-                            const text = document.querySelector('.reply-input[data-id="' + messageId + '"]').value;
-                            // url escape the text
-                            const escapedText = encodeURIComponent(text);
-                            if (messageId && messageId !== '' && messageId !== null) send('!' + messageId + ',userTxt,' + escapedText);
-                        }
-                    }
-                }
-            }
-        }
-    });
 
     fetch('/userInfo')
         .then(response => {

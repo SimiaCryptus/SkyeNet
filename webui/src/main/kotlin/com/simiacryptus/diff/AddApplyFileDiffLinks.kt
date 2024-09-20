@@ -33,7 +33,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         // Single diff block without the closing ``` due to LLM limitations... add it back and recurse
         return addApplyFileDiffLinks(
             root,
-            response + "\n```",
+            response + "\n```\n",
             handle,
             ui,
             api
@@ -207,22 +207,22 @@ private fun SocketManagerBase.renderDiffBlock(
     val echoDiff = try {
         IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
     } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+        renderMarkdown("```\n${e.stackTraceToString()}\n```\n", ui = ui)
     }
 
     if (echoDiff.isNotBlank() && newCode.isValid && shouldAutoApply(filepath ?: root.resolve(filename))) {
         try {
             filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8)
             handle(mapOf(relativize to newCode.newCode))
-            return "```diff\n$diffVal\n```" + """<div class="cmd-button">Diff Automatically Applied to ${filepath}</div>"""
+            return "```diff\n$diffVal\n```\n" + """<div class="cmd-button">Diff Automatically Applied to ${filepath}</div>"""
         } catch (e: Throwable) {
             log.error("Error auto-applying diff", e)
-            return "```diff\n$diffVal\n```" + """<div class="cmd-button">Error Auto-Applying Diff to ${filepath}: ${e.message}</div>"""
+            return "```diff\n$diffVal\n```\n" + """<div class="cmd-button">Error Auto-Applying Diff to ${filepath}: ${e.message}</div>"""
         }
     }
 
     val diffTask = ui.newTask(root = false)
-    diffTask.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
+    diffTask.complete(renderMarkdown("```diff\n$diffVal\n```\n", ui = ui))
 
     // Create tasks for displaying code and patch information
     val prevCodeTask = ui.newTask(root = false)
@@ -333,7 +333,7 @@ private fun SocketManagerBase.renderDiffBlock(
                     val echoDiff = try {
                         IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
                     } catch (e: Throwable) {
-                        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+                        renderMarkdown("```\n${e.stackTraceToString()}\n```\n", ui = ui)
                     }
 
                     var answer = patchFixer.answer(
@@ -403,21 +403,21 @@ private fun SocketManagerBase.renderDiffBlock(
 
     newCodeTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```\n",
             ui = ui, tabs = false
         )
     )
     newCodeTask.complete("")
     prevCodeTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```\n",
             ui = ui, tabs = false
         )
     )
     prevCodeTask.complete("")
     patchTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```diff\n  ${echoDiff}\n```",
+            "# $filename\n\n```diff\n  ${echoDiff}\n```\n",
             ui = ui,
             tabs = false
         )
@@ -430,25 +430,25 @@ private fun SocketManagerBase.renderDiffBlock(
     val echoDiff2 = try {
         IterativePatchUtil.generatePatch(prevCode, newCode2)
     } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+        renderMarkdown("```\n${e.stackTraceToString()}\n```\n", ui = ui)
     }
     newCode2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```\n",
             ui = ui, tabs = false
         )
     )
     newCode2Task.complete("")
     prevCode2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```\n",
             ui = ui, tabs = false
         )
     )
     prevCode2Task.complete("")
     patch2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```diff\n  ${echoDiff2}\n```",
+            "# $filename\n\n```diff\n  ${echoDiff2}\n```\n",
             ui = ui,
             tabs = false
         )

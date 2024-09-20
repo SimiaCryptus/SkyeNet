@@ -19,7 +19,7 @@ open class PlanSettings(
     val command: List<String> = listOf(if (isWindows) "powershell" else "bash"),
     var temperature: Double = 0.2,
     val budget: Double = 2.0,
-    val taskSettings: MutableMap<TaskType, TaskSettings> = TaskType.values().associateWith { taskType ->
+    val taskSettings: MutableMap<TaskType<*>, TaskSettings> = TaskType.values().associateWith { taskType ->
         TaskSettings(
             when (taskType) {
                 TaskType.FileModification, TaskType.Inquiry -> true
@@ -35,10 +35,10 @@ open class PlanSettings(
     val language: String? = if (isWindows) "powershell" else "bash",
 ) {
 
-    fun getTaskSettings(taskType: TaskType): TaskSettings =
+    fun getTaskSettings(taskType: TaskType<*>): TaskSettings =
         taskSettings[taskType] ?: TaskSettings()
 
-    fun setTaskSettings(taskType: TaskType, settings: TaskSettings) {
+    fun setTaskSettings(taskType: TaskType<*>, settings: TaskSettings) {
         taskSettings[taskType] = settings
     }
 
@@ -48,7 +48,7 @@ open class PlanSettings(
         command: List<String> = this.command,
         temperature: Double = this.temperature,
         budget: Double = this.budget,
-        taskSettings: MutableMap<TaskType, TaskSettings> = this.taskSettings,
+        taskSettings: MutableMap<TaskType<*>, TaskSettings> = this.taskSettings,
         autoFix: Boolean = this.autoFix,
         allowBlocking: Boolean = this.allowBlocking,
         commandAutoFixCommands: List<String>? = this.commandAutoFixCommands,
@@ -104,7 +104,7 @@ open class PlanSettings(
             resultClass = TaskBreakdownResult::class.java,
             exampleInstance = exampleInstance,
             prompt = """
-                    |Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
+ Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
                     |
                     |For each task:
                     |* Detail files input and output file
@@ -115,8 +115,8 @@ open class PlanSettings(
                     |Tasks can be of the following types: 
                     |${getAvailableTaskTypes(this).joinToString("\n") { "* ${it.promptSegment()}" }}
                     |
-                    |Creating directories and initializing source control are out of scope.
-                    |${if (planTaskSettings.enabled) "Do not start your plan with a plan to plan!\n" else ""}
+ Creating directories and initializing source control are out of scope.
+ ${if (planTaskSettings.enabled) "Do not start your plan with a plan to plan!\n" else ""}
                     """.trimMargin(),
             model = planTaskSettings.model ?: this.defaultModel,
             parsingModel = this.parsingModel,
