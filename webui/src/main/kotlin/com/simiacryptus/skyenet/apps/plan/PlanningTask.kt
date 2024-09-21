@@ -23,19 +23,15 @@ class PlanningTask(
     planTask: PlanTaskBaseInterface?
 ) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
 
-    interface TaskBreakdownInterface {
-        val tasksByID: Map<String, PlanTask>?
-    }
-
     data class TaskBreakdownResult(
         @Description("A map where each task ID is associated with its corresponding PlanTask object. Crucial for defining task relationships and information flow.")
-        override val tasksByID: Map<String, PlanTask>? = null,
-    ) : TaskBreakdownInterface
+        val tasksByID: Map<String, PlanTask>? = null,
+    )
 
     data class PlanTask(
         @Description("A detailed description of the specific task to be performed, including its role in the overall plan and its dependencies on other tasks.")
         override val task_description: String? = null,
-        @Description("An enumeration indicating the type of task to be executed.")
+        @Description("An enumeration indicating the type of task to be executed. Must be a single value from the TaskType enum.")
         override val task_type: TaskType<*>? = null,
         @Description("A list of IDs of tasks that must be completed before this task can be executed. This defines upstream dependencies ensuring proper task order and information flow.")
         override var task_dependencies: List<String>? = null,
@@ -85,7 +81,7 @@ class PlanningTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBaseInterface>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API
@@ -107,7 +103,7 @@ class PlanningTask(
             )
             render(
                 withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                    plan = filterPlan { design.obj } as TaskBreakdownResult,
+                    plan = filterPlan { design.obj.tasksByID } ?: emptyMap(),
                     planText = design.text,
                     prompt = userMessage
                 ),
@@ -115,7 +111,7 @@ class PlanningTask(
             )
             design.obj
         }
-        executeSubTasks(agent, userMessage, filterPlan { subPlan }, task, api)
+        executeSubTasks(agent, userMessage, filterPlan { subPlan.tasksByID } ?: emptyMap(), task, api)
     }
 
     private fun createSubPlanDiscussable(
@@ -133,7 +129,7 @@ class PlanningTask(
             outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
                 render(
                     withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                        plan = filterPlan { design.obj } as TaskBreakdownResult,
+                        plan = filterPlan { design.obj.tasksByID } ?: emptyMap(),
                         planText = design.text,
                         prompt = userMessage
                     ),
@@ -155,13 +151,13 @@ class PlanningTask(
     private fun executeSubTasks(
         agent: PlanCoordinator,
         userMessage: String,
-        subPlan: TaskBreakdownInterface,
+        subPlan: Map<String, PlanTaskBaseInterface>,
         parentTask: SessionTask,
         api: API
     ) {
         val subPlanTask = agent.ui.newTask(false)
         parentTask.add(subPlanTask.placeholder)
-        val subTasks = subPlan.tasksByID ?: emptyMap()
+        val subTasks = subPlan ?: emptyMap()
         val planProcessingState = PlanProcessingState(subTasks.toMutableMap())
         agent.executePlan(
             task = subPlanTask,

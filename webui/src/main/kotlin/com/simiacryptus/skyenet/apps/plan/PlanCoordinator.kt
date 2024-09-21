@@ -3,9 +3,8 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
@@ -21,9 +20,10 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.set
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
@@ -67,7 +67,8 @@ class PlanCoordinator(
                 taskBreakdownWithPrompt = JsonUtil.fromJson(jsonInput, PlanUtil.TaskBreakdownWithPrompt::class.java)
                 taskBreakdownWithPrompt.plan
             }
-            task.add(MarkdownUtil.renderMarkdown(
+            task.add(
+                MarkdownUtil.renderMarkdown(
                 """
                 |## Executing TaskBreakdownWithPrompt
                 |Prompt: ${taskBreakdownWithPrompt.prompt}
@@ -76,14 +77,14 @@ class PlanCoordinator(
                 |${taskBreakdownWithPrompt.planText}
                 |```
                 """.trimMargin(), ui = ui))
-            executePlan(plan, task, taskBreakdownWithPrompt.prompt, api)
+            executePlan(plan ?: emptyMap(), task, taskBreakdownWithPrompt.prompt, api)
         } catch (e: Exception) {
             task.error(ui, e)
         }
     }
 
     fun executePlan(
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBaseInterface>,
         task: SessionTask,
         userMessage: String,
         api: API
@@ -122,9 +123,11 @@ class PlanCoordinator(
         return planProcessingState
     }
 
-    private fun newState(plan: TaskBreakdownInterface) =
-        PlanProcessingState((filterPlan { plan }.tasksByID?.entries?.toTypedArray<Map.Entry<String, PlanTask>>()
-            ?.associate { it.key to it.value } ?: mapOf()).toMutableMap())
+    private fun newState(plan: Map<String, PlanTaskBaseInterface>) =
+        PlanProcessingState(
+            subTasks = (filterPlan { plan }?.entries?.toTypedArray<Map.Entry<String, PlanTaskBaseInterface>>()
+                ?.associate { it.key to it.value } ?: mapOf()).toMutableMap()
+        )
 
     fun executePlan(
         task: SessionTask,
@@ -135,7 +138,7 @@ class PlanCoordinator(
         taskIdProcessingQueue: MutableList<String>,
         pool: ThreadPoolExecutor,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBaseInterface>,
         api: API
     ) {
         val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
@@ -309,14 +312,20 @@ class PlanCoordinator(
                         )
                     },
                     outputFn = {
-                        render(
-                            withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                                prompt = userMessage,
-                                plan = it.obj as TaskBreakdownResult,
-                                planText = it.text
-                            ),
-                            ui = ui
-                        )
+                        try {
+                            render(
+                                withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                                    prompt = userMessage,
+                                    plan = it.obj ?: emptyMap(),
+                                    planText = it.text
+                                ),
+                                ui = ui
+                            )
+                        } catch (e: Throwable) {
+                            log.warn("Error rendering task breakdown", e)
+                            task.error(ui, e)
+                            e.message ?: e.javaClass.simpleName
+                        }
                     },
                     ui = ui,
                     reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
@@ -328,7 +337,7 @@ class PlanCoordinator(
                 ).call().let {
                     PlanUtil.TaskBreakdownWithPrompt(
                         prompt = userMessage,
-                        plan = filterPlan { it.obj } as TaskBreakdownResult,
+                        plan = filterPlan { it.obj } ?: emptyMap(),
                         planText = it.text
                     )
                 }
@@ -339,7 +348,7 @@ class PlanCoordinator(
             ).let {
                 PlanUtil.TaskBreakdownWithPrompt(
                     prompt = userMessage,
-                    plan = filterPlan { it.obj } as TaskBreakdownResult,
+                    plan = filterPlan { it.obj } ?: emptyMap(),
                     planText = it.text
                 )
             }
@@ -349,13 +358,13 @@ class PlanCoordinator(
             api: API,
             planSettings: PlanSettings,
             inStrings: List<String>
-        ): ParsedResponse<TaskBreakdownInterface> {
+        ): ParsedResponse<Map<String, PlanTaskBaseInterface>> {
             val planningActor = planSettings.planningActor()
             return planningActor.respond(
                 messages = planningActor.chatMessages(inStrings),
                 input = inStrings,
                 api = api
-            ) as ParsedResponse<TaskBreakdownInterface>
+            ).map(Map::class.java) { it.tasksByID ?: emptyMap<String, PlanTaskBaseInterface>() } as ParsedResponse<Map<String, PlanTaskBaseInterface>>
         }
 
 

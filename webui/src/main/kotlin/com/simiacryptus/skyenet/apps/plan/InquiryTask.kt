@@ -6,10 +6,10 @@ import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicReference
@@ -52,7 +52,7 @@ class InquiryTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBaseInterface>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -20,10 +20,11 @@ abstract class AbstractTask<T : PlanTaskBaseInterface>(
     interface PlanTaskBaseInterface {
         val task_type: Any?
         val task_description: String?
-        val task_dependencies: List<String>?
+        var task_dependencies: List<String>?
         val input_files: List<String>?
         val output_files: List<String>?
         var state: TaskState?
+//        val taskResult: MutableMap<String, String>
     }
     var state: TaskState? = TaskState.Pending
     protected val codeFiles = mutableMapOf<Path, String>()
@@ -99,7 +100,7 @@ abstract class AbstractTask<T : PlanTaskBaseInterface>(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBaseInterface>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

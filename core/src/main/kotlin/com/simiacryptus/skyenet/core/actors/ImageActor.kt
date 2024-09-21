@@ -99,7 +99,3 @@ open class ImageActor(
 
 }
 
-interface ImageResponse {
-    val text: String
-    val image: BufferedImage
-}

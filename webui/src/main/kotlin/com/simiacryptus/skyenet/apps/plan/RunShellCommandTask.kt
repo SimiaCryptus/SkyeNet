@@ -5,7 +5,7 @@ import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -57,7 +57,7 @@ class RunShellCommandTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBaseInterface>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

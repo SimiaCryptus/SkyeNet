@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui.util
+package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
 import com.simiacryptus.skyenet.core.util.Selenium
@@ -34,7 +34,7 @@ open class Selenium2S3(
     var loadImages: Boolean = false
     open val driver: WebDriver by lazy {
         chromeDriver(loadImages = loadImages).apply {
-            Companion.setCookies(
+            setCookies(
                 this,
                 cookies
             )

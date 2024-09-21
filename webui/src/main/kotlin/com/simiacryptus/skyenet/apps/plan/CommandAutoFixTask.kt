@@ -5,10 +5,10 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.ExecutionTaskInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.Semaphore
@@ -33,7 +33,7 @@ class CommandAutoFixTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBaseInterface>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

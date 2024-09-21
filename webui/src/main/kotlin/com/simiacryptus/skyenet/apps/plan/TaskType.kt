@@ -49,9 +49,10 @@ class TaskType<out T : PlanTaskBaseInterface>(name: String) : DynamicEnum<TaskTy
 
         private fun <T : PlanTaskBaseInterface> registerConstructor(
             taskType: TaskType<T>,
-            constructor: (PlanSettings, T) -> AbstractTask<out PlanTaskBaseInterface>
+            constructor: (PlanSettings, T?) -> AbstractTask<out PlanTaskBaseInterface>
         ) {
-            taskConstructors[taskType] = { settings, task -> constructor(settings, task as T) }
+            taskConstructors[taskType] = { settings : PlanSettings, task : T? -> constructor(settings, task) }
+                    as (PlanSettings, PlanTaskBaseInterface?) -> AbstractTask<out PlanTaskBaseInterface>
             register(taskType)
         }
 

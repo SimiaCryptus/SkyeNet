@@ -9,7 +9,7 @@ import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.readText
@@ -96,20 +96,21 @@ private fun SocketManagerBase.renderNewFile(
             filepath.toFile().writeText(codeValue, Charsets.UTF_8)
             handle(mapOf(File(filename).toPath() to codeValue))
             return """
-                |```${codeLang}
-                |${codeValue}
-                |```
-                |
-                |<div class="cmd-button">Automatically Saved ${filepath}</div>
-                |""".trimMargin()
+```${codeLang}
+${codeValue}
+```
+
+<div class="cmd-button">Automatically Saved ${filepath}</div>
+
+"""
         } catch (e: Throwable) {
             return """
-                |```${codeLang}
-                |${codeValue}
-                |```
-                |
-                |<div class="cmd-button">Error Auto-Saving ${filename}: ${e.message}</div>
-                |""".trimMargin()
+```${codeLang}
+${codeValue}
+```
+
+<div class="cmd-button">Error Auto-Saving ${filename}: ${e.message}</div>
+"""
         }
     } else {
         val commandTask = ui.newTask(false)
@@ -127,12 +128,12 @@ private fun SocketManagerBase.renderNewFile(
             }
         })!!
         return """
-            |```${codeLang}
-            |${codeValue}
-            |```
-            |
-            |${commandTask.placeholder}
-            """.trimMargin()
+```${codeLang}
+${codeValue}
+```
+
+${commandTask.placeholder}
+"""
     }
 }
 
@@ -291,41 +292,41 @@ private fun SocketManagerBase.renderDiffBlock(
 
                     val patchFixer = SimpleActor(
                         prompt = """
-                        |You are a helpful AI that helps people with coding.
-                        |
-                        |Response should use one or more code patches in diff format within ```diff code blocks.
-                        |Each diff should be preceded by a header that identifies the file being modified.
-                        |The diff format should use + for line additions, - for line deletions.
-                        |The diff should include 2 lines of context before and after every change.
-                        |
-                        |Example:
-                        |
-                        |Here are the patches:
-                        |
-                        |### src/utils/exampleUtils.js
-                        |```diff
-                        | // Utility functions for example feature
-                        | const b = 2;
-                        | function exampleFunction() {
-                        |-   return b + 1;
-                        |+   return b + 2;
-                        | }
-                        |```
-                        |
-                        |### tests/exampleUtils.test.js
-                        |```diff
-                        | // Unit tests for exampleUtils
-                        | const assert = require('assert');
-                        | const { exampleFunction } = require('../src/utils/exampleUtils');
-                        | 
-                        | describe('exampleFunction', () => {
-                        |-   it('should return 3', () => {
-                        |+   it('should return 4', () => {
-                        |     assert.equal(exampleFunction(), 3);
-                        |   });
-                        | });
-                        |```
-                        """.trimMargin(),
+You are a helpful AI that helps people with coding.
+
+Response should use one or more code patches in diff format within ```diff code blocks.
+Each diff should be preceded by a header that identifies the file being modified.
+The diff format should use + for line additions, - for line deletions.
+The diff should include 2 lines of context before and after every change.
+
+Example:
+
+Here are the patches:
+
+### src/utils/exampleUtils.js
+```diff
+ // Utility functions for example feature
+ const b = 2;
+ function exampleFunction() {
+-   return b + 1;
++   return b + 2;
+ }
+```
+
+### tests/exampleUtils.test.js
+```diff
+ // Unit tests for exampleUtils
+ const assert = require('assert');
+ const { exampleFunction } = require('../src/utils/exampleUtils');
+ 
+ describe('exampleFunction', () => {
+-   it('should return 3', () => {
++   it('should return 4', () => {
+     assert.equal(exampleFunction(), 3);
+   });
+ });
+```
+""",
                         model = OpenAIModels.GPT4o,
                         temperature = 0.3
                     )
@@ -339,23 +340,23 @@ private fun SocketManagerBase.renderDiffBlock(
                     var answer = patchFixer.answer(
                         listOf(
                             """
-                        |Code:
-                        |```${filename.split('.').lastOrNull() ?: ""}
-                        |$prevCode
-                        |```
-                        |
-                        |Patch:
-                        |```diff
-                        |$diffVal
-                        |```
-                        |
-                        |Effective Patch:
-                        |```diff
-                        |  $echoDiff
-                        |```
-                        |
-                        |Please provide a fix for the diff above in the form of a diff patch.
-                        """.trimMargin()
+Code:
+```${filename.split('.').lastOrNull() ?: ""}
+$prevCode
+```
+
+Patch:
+```diff
+$diffVal
+```
+
+Effective Patch:
+```diff
+$echoDiff
+```
+
+Please provide a fix for the diff above in the form of a diff patch.
+"""
                         ), api as OpenAIClient
                     )
                     answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
@@ -471,9 +472,7 @@ private fun SocketManagerBase.renderDiffBlock(
     val newValue = if (newCode.isValid) {
         mainTabs + "\n" + applydiffTask.placeholder
     } else {
-        mainTabs + """
-            <div class="warning">Warning: The patch is not valid. Please fix the patch before applying.</div>
-            """.trimIndent() + applydiffTask.placeholder
+        mainTabs + """<div class="warning">Warning: The patch is not valid. Please fix the patch before applying.</div>""" + applydiffTask.placeholder
     }
     return newValue
 }
@@ -506,7 +505,7 @@ private fun load(
     filepath: Path?
 ) = try {
     if (true != filepath?.toFile()?.exists()) {
-        log.warn("""File not found: $filepath""".trimMargin())
+        log.warn("File not found: $filepath")
         ""
     } else {
         filepath.readText(Charsets.UTF_8)

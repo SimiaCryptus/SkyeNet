@@ -63,6 +63,3 @@ open class TextToSpeechActor(
         .also { it.openAI = this.openAI }
 }
 
-interface SpeechResponse {
-    val mp3data: ByteArray?
-}

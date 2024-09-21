@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui.util
+package com.simiacryptus.skyenet.util
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper

@@ -4,10 +4,12 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.*
@@ -134,8 +136,8 @@ class PlanChatApp(
 
     }
 
-    private fun addRespondToChatTask(plan: PlanningTask.TaskBreakdownInterface): PlanningTask.TaskBreakdownInterface {
-        val tasksByID = plan.tasksByID?.toMutableMap() ?: mutableMapOf()
+    private fun addRespondToChatTask(plan: Map<String, PlanTaskBaseInterface>): Map<String, PlanTaskBaseInterface> {
+        val tasksByID = plan?.toMutableMap() ?: mutableMapOf()
         val respondTaskId = "respond_to_chat"
 
         tasksByID[respondTaskId] = PlanningTask.PlanTask(
@@ -144,9 +146,7 @@ class PlanChatApp(
             task_dependencies = tasksByID.keys.toList()
         )
 
-        return PlanningTask.TaskBreakdownResult(
-            tasksByID = tasksByID,
-        )
+        return tasksByID
     }
 
     companion object {

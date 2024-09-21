@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.core.actors
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.ApiModel.*
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.describe.AbbrevWhitelistTSDescriber
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
@@ -15,10 +16,14 @@ import java.util.*
 import javax.script.ScriptException
 import kotlin.reflect.KClass
 
+private const val TT = "`"+"`"+"`"
+typealias CodeInterceptor = (String) -> String
+
+
 open class CodingActor(
     val interpreterClass: KClass<out Interpreter>,
     val symbols: Map<String, Any> = mapOf(),
-    val describer: TypeDescriber = AbbrevWhitelistYamlDescriber(
+    val describer: TypeDescriber = AbbrevWhitelistTSDescriber(
         "com.simiacryptus",
         "com.github.simiacryptus"
     ),
@@ -27,7 +32,8 @@ open class CodingActor(
     model: OpenAITextModel = OpenAIModels.GPT4o,
     val fallbackModel: ChatModels = OpenAIModels.GPT4o,
     temperature: Double = 0.1,
-    val runtimeSymbols: Map<String, Any> = mapOf()
+    val runtimeSymbols: Map<String, Any> = mapOf(),
+    var codeInterceptor: CodeInterceptor = { it }
 ) : BaseActor<CodingActor.CodeRequest, CodingActor.CodeResult>(
     prompt = "",
     name = name,
@@ -66,43 +72,45 @@ open class CodingActor(
         get() {
             val formatInstructions =
                 if (evalFormat) """Code should be structured as appropriately parameterized function(s) 
-              |with the final line invoking the function with the appropriate request parameters.""" else ""
+ with the final line invoking the function with the appropriate request parameters.""" else ""
             return if (symbols.isNotEmpty()) {
                 """
-                  |You are a coding assistant allows users actions to be enacted using $language and the script context.
-                  |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
-                  |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
-                  |Each response should have EXACTLY ONE code block. Do not use inline blocks.
-                  |$formatInstructions
-                  |
-                  |Defined symbols include ${symbols.keys.joinToString(", ")} described below:
-                  |
-                  |```${this.describer.markupLanguage}
-                  |${this.apiDescription}
-                  |```
-                  |
-                  |THESE VARIABLES ARE READ-ONLY: ${symbols.keys.joinToString(", ")}
-                  |They are already defined for you.
-                  |
-                  |${details ?: ""}
-                  |""".trimMargin().trim()
-            } else """
-                |You are a coding assistant allowing users actions to be enacted using $language and the script context.
-                |Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
-                |Use ``` code blocks labeled with $language where appropriate. (i.e. ```$language)
-                |Each response should have EXACTLY ONE code block. Do not use inline blocks.
-                |$formatInstructions
-                |
-                |${details ?: ""}
-                |""".trimMargin().trim()
+You are a coding assistant allows users actions to be enacted using $language and the script context.
+Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
+Use $TT code blocks labeled with $language where appropriate. (i.e. ${TT}$language)
+Each response should have EXACTLY ONE code block. Do not use inline blocks.
+$formatInstructions
+
+Defined symbols include ${symbols.keys.joinToString(", ")} described below:
+
+$TT${this.describer.markupLanguage}
+${this.apiDescription}
+${TT}
+
+THESE VARIABLES ARE READ-ONLY: ${symbols.keys.joinToString(", ")}
+They are already defined for you.
+
+${details ?: ""}
+""".trim()
+           } else """
+You are a coding assistant allowing users actions to be enacted using $language and the script context.
+Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
+Use $TT code blocks labeled with $language where appropriate. (i.e. ${TT}$language)
+Each response should have EXACTLY ONE code block. Do not use inline blocks.
+$formatInstructions
+
+${details ?: ""}
+""".trim()
         }
 
     open val apiDescription: String
         get() = this.symbols.map { (name, utilityObj) ->
+            val describe = this.describer.describe(utilityObj.javaClass)
+            log.info("Describing $name (${utilityObj.javaClass}) in ${describe.length} characters")
             """
-            |$name:
-            |    ${this.describer.describe(utilityObj.javaClass).indent("    ")}
-            |""".trimMargin().trim()
+ $name:
+     ${describe.indent("    ")}
+ """.trimMargin().trim()
         }.joinToString("\n")
 
 
@@ -122,7 +130,7 @@ open class CodingActor(
         }
         if (questions.codePrefix.isNotBlank()) {
             chatMessages = (chatMessages.dropLast(1) + listOf(
-                ChatMessage(Role.assistant, "Code Prefix:\n```\n${questions.codePrefix}\n```".toContentList())
+                ChatMessage(Role.assistant, "Code Prefix:\n$TT\n${questions.codePrefix}\n${TT}".toContentList())
             ) + chatMessages.last()).toTypedArray<ChatMessage>()
         }
         return chatMessages
@@ -155,7 +163,7 @@ open class CodingActor(
             val respondWithCode = fixCommand(api, result.code, ex, *messages, model = model)
             val blocks = extractTextBlocks(respondWithCode)
             val renderedResponse = getRenderedResponse(blocks)
-            val codedInstruction = getCode(language, blocks)
+            val codedInstruction = codeInterceptor(getCode(language, blocks))
             log.debug("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
             log.debug("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
             result = CodeResultImpl(
@@ -174,7 +182,7 @@ open class CodingActor(
         log.debug("Running $code")
         OutputInterceptor.clearGlobalOutput()
         val result = try {
-            interpreter.run((prefix + "\n" + code).sortCode())
+            interpreter.run((prefix + "\n" + codeInterceptor(code)).sortCode())
         } catch (e: Exception) {
             when {
                 e is FailedToImplementException -> throw e
@@ -246,14 +254,14 @@ open class CodingActor(
                 try {
                     val codeBlocks = extractTextBlocks(chat(api, request, model))
                     val renderedResponse = getRenderedResponse(codeBlocks)
-                    val codedInstruction = getCode(language, codeBlocks)
+                    val codedInstruction = codeInterceptor(getCode(language, codeBlocks))
                     log.debug("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
                     log.debug("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
                     var workingCode = codedInstruction
                     var workingRenderedResponse = renderedResponse
                     for (fixAttempt in 0..input.fixIterations) {
                         try {
-                            val validate = interpreter.validate((input.codePrefix + "\n" + workingCode).sortCode())
+                            val validate = interpreter.validate((input.codePrefix + "\n" + codeInterceptor(workingCode)).sortCode())
                             if (validate != null) throw validate
                             log.debug("Validation succeeded")
                             _status = CodeResult.Status.Success
@@ -263,12 +271,12 @@ open class CodingActor(
                                 throw if (ex is FailedToImplementException) ex else FailedToImplementException(
                                     cause = ex,
                                     message = """
-                  |**ERROR**
-                  |
-                  |```text
-                  |${ex.stackTraceToString()}
-                  |```
-                  |""".trimMargin().trim(),
+**ERROR**
+              |
+${TT}text
+${ex.stackTraceToString()}
+${TT}
+""".trim(),
                                     language = language,
                                     code = workingCode,
                                     prefix = input.codePrefix
@@ -278,7 +286,7 @@ open class CodingActor(
                             val respondWithCode = fixCommand(api, workingCode, ex, *messages, model = model)
                             val codeBlocks = extractTextBlocks(respondWithCode)
                             workingRenderedResponse = getRenderedResponse(codeBlocks)
-                            workingCode = getCode(language, codeBlocks)
+                            workingCode = codeInterceptor(getCode(language, codeBlocks))
                             log.debug(
                                 "Response: \n\t${
                                     workingRenderedResponse.replace(
@@ -323,22 +331,22 @@ open class CodingActor(
                     ChatMessage(
                         Role.assistant,
                         """
-            |```${language.lowercase()}
-            |${previousCode.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
-            |```
-            |""".trimMargin().trim().toContentList()
+$TT${language.lowercase()}
+${previousCode.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
+${TT}
+""".trim().toContentList()
                     ),
                     ChatMessage(
                         Role.system,
                         """
-            |The previous code failed with the following error:
-            |
-            |```
-            |${error.message?.trim() ?: "".let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
-            |```
-            |
-            |Correct the code and try again.
-            |""".trimMargin().trim().toContentList()
+The previous code failed with the following error:
+
+$TT
+${error.message?.trim() ?: "".let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
+${TT}
+
+Correct the code and try again.
+""".trim().toContentList()
                     )
                 )
             )
@@ -360,7 +368,8 @@ open class CodingActor(
         model = model,
         fallbackModel = fallbackModel,
         temperature = temperature,
-        runtimeSymbols = runtimeSymbols
+         runtimeSymbols = runtimeSymbols,
+        codeInterceptor = codeInterceptor
     )
 
     companion object {
@@ -369,7 +378,7 @@ open class CodingActor(
         fun String.indent(indent: String = "  ") = this.replace("\n", "\n$indent")
 
         fun extractTextBlocks(response: String): List<Pair<String, String>> {
-            val codeBlockRegex = Regex("(?s)```(.*?)\\n(.*?)```")
+            val codeBlockRegex = Regex("(?s)$TT(.*?)\\n(.*?)${TT}")
             val languageRegex = Regex("([a-zA-Z0-9-_]+)")
 
             val result = mutableListOf<Pair<String, String>>()
@@ -406,9 +415,9 @@ open class CodingActor(
         fun getRenderedResponse(respondWithCode: List<Pair<String, String>>, defaultLanguage: String = "") =
             respondWithCode.joinToString("\n") {
                 when (it.first) {
-                    "code" -> "```$defaultLanguage\n${it.second.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n```"
+                    "code" -> "$TT$defaultLanguage\n${it.second.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n${TT}"
                     "text" -> it.second.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }.toString()
-                    else -> "```${it.first}\n${it.second.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n```"
+                    else -> "$TT${it.first}\n${it.second.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n${TT}"
                 }
             }
 
@@ -425,7 +434,7 @@ open class CodingActor(
 
         fun String.sortCode(bodyWrapper: (String) -> String = { it }): String {
             val (imports, otherCode) = this.split("\n").partition { it.trim().startsWith("import ") }
-            return imports.distinct().sorted().joinToString("\n") + "\n\n" + bodyWrapper(otherCode.joinToString("\n"))
+            return imports.map { it.trim() }.distinct().sorted().joinToString("\n") + "\n\n" + bodyWrapper(otherCode.joinToString("\n"))
         }
 
         fun String.camelCase(locale: Locale = Locale.getDefault()): String {
@@ -480,11 +489,11 @@ open class CodingActor(
 
         fun errorMessage(ex: ScriptException, code: String) = try {
             """
-          |```text
+          |${TT}text
           |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
           |  ${if (ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}
           |  ${if (ex.columnNumber > 0) " ".repeat(ex.columnNumber - 1) + "^" else ""}
-          |```
+          |${TT}
           """.trimMargin().trim()
         } catch (_: Exception) {
             ex.message ?: ""

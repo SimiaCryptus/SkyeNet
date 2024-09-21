@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui.util
+package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface

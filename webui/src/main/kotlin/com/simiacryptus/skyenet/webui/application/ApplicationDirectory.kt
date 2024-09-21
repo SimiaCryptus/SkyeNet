@@ -8,7 +8,7 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.isLocked
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
-import com.simiacryptus.skyenet.webui.util.Selenium2S3
+import com.simiacryptus.skyenet.util.Selenium2S3
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.MultipartConfigElement
 import jakarta.servlet.Servlet

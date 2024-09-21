@@ -4,8 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskInterface
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.ForEachTask
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 
@@ -29,7 +28,7 @@ ForeachTask - Execute a task for each item in a list
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBaseInterface>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API
@@ -54,9 +53,7 @@ ForeachTask - Execute a task for each item in a list
                 taskIdProcessingQueue = executionOrder(itemSubTasks).toMutableList(),
                 pool = agent.pool,
                 userMessage = "$userMessage\nProcessing item $index: $item",
-                plan = object : TaskBreakdownInterface {
-                    override val tasksByID = itemSubTasks
-                },
+                plan = itemSubTasks,
                 api = api
             )
         }

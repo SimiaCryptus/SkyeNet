@@ -5,9 +5,8 @@ import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.TaskState
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -28,7 +27,7 @@ object PlanUtil {
 
     data class TaskBreakdownWithPrompt(
         val prompt: String,
-        val plan: PlanningTask.TaskBreakdownResult,
+        val plan: Map<String, PlanTaskBaseInterface>,
         val planText: String
     )
 
@@ -46,20 +45,20 @@ object PlanUtil {
                 "```mermaid\n" + buildMermaidGraph(
                     (filterPlan {
                         withPrompt.plan
-                    }.tasksByID ?: emptyMap()).toMutableMap()
+                    } ?: emptyMap()).toMutableMap()
                 ) + "\n```\n", ui = ui
             )
         )
     )
 
-    fun executionOrder(tasks: Map<String, PlanTask>): List<String> {
+    fun executionOrder(tasks: Map<String, PlanTaskBaseInterface>): List<String> {
         val taskIds: MutableList<String> = mutableListOf()
-        val taskMap = tasks.mapValues { it.value.copy(task_dependencies = it.value.task_dependencies?.filter { entry ->
-            entry in tasks.keys
-        }) }.toMutableMap()
+        val taskMap = tasks.toMutableMap()
         while (taskMap.isNotEmpty()) {
             val nextTasks =
-                taskMap.filter { (_, task) -> task.task_dependencies?.all { taskIds.contains(it) } ?: true }
+                taskMap.filter { (_, task) -> task.task_dependencies?.filter { entry ->
+                    entry in tasks.keys
+                }?.all { taskIds.contains(it) } ?: true }
             if (nextTasks.isEmpty()) {
                 throw RuntimeException("Circular dependency detected in task breakdown")
             }
@@ -127,9 +126,9 @@ object PlanUtil {
         }
     }
 
-    fun filterPlan(retries: Int = 3, fn: () -> TaskBreakdownInterface): TaskBreakdownInterface {
-        val obj = fn()
-        var tasksByID = obj.tasksByID?.filter { (k, v) ->
+    fun filterPlan(retries: Int = 3, fn: () -> Map<String, PlanTaskBaseInterface>?): Map<String, PlanTaskBaseInterface>? {
+        val obj = fn() ?: emptyMap()
+        var tasksByID = obj?.filter { (k, v) ->
             when {
                 v.task_type == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() ->
                     if (retries <= 0) {
@@ -142,12 +141,10 @@ object PlanUtil {
                 else -> true
             }
         } ?: emptyMap()
-        tasksByID = tasksByID.map {
-            it.key to it.value.copy(
-                task_dependencies = it.value.task_dependencies?.filter { it in tasksByID.keys },
-                state = TaskState.Pending
-            )
-        }.toMap()
+        tasksByID.forEach {
+            it.value.task_dependencies = it.value.task_dependencies?.filter { it in tasksByID.keys }
+            it.value.state = TaskState.Pending
+        }
         try {
             executionOrder(tasksByID)
         } catch (e: RuntimeException) {
@@ -159,10 +156,10 @@ object PlanUtil {
                 return filterPlan(retries - 1, fn)
             }
         }
-        return if (tasksByID.size == obj.tasksByID?.size) {
+        return if (tasksByID.size == obj?.size) {
             obj
         } else filterPlan {
-            PlanningTask.TaskBreakdownResult(tasksByID)
+            tasksByID
         }
     }
 
