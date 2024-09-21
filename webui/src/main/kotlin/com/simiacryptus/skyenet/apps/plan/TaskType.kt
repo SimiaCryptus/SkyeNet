@@ -29,7 +29,7 @@ class TaskType<out T : PlanTaskBaseInterface>(name: String) : DynamicEnum<TaskTy
         val RefactorTask = TaskType<PlanTaskBaseInterface>("RefactorTask")
         val RunShellCommand = TaskType<ExecutionTaskInterface>("RunShellCommand")
         val CommandAutoFix = TaskType<ExecutionTaskInterface>("CommandAutoFix")
-        val ForeachTask = TaskType<ForeachTaskInterface>("ForeachTask")
+        val ForeachTask = TaskType<ForeachTaskInterface<*>>("ForeachTask")
 
         init {
             registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }

@@ -3,13 +3,12 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.core.actors.SimpleActor
-import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.util.MarkdownUtil
+import com.simiacryptus.skyenet.webui.session.SessionTask
+import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicReference

@@ -1,9 +1,11 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownResult
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
@@ -11,7 +13,6 @@ data class TaskSettings(
     var enabled: Boolean = false,
     var model: OpenAITextModel? = null
 )
-
 
 open class PlanSettings(
     var defaultModel: OpenAITextModel,
@@ -70,39 +71,12 @@ open class PlanSettings(
         language = language,
     )
 
-    var exampleInstance = TaskBreakdownResult(
-        tasksByID = mapOf(
-            "1" to PlanningTask.PlanTask(
-                task_description = "Task 1",
-                task_type = TaskType.CommandAutoFix,
-                task_dependencies = listOf(),
-                execution_task = PlanningTask.ExecutionTask(
-                    command = listOf("npx", "create-react-app", ".", "--template", "typescript"),
-                    workingDir = ".",
-                )
-            ),
-            "2" to PlanningTask.PlanTask(
-                task_description = "Task 2",
-                task_type = TaskType.FileModification,
-                task_dependencies = listOf("1"),
-                input_files = listOf("input2.txt"),
-                output_files = listOf("output2.txt"),
-            ),
-            "3" to PlanningTask.PlanTask(
-                task_description = "Task 3",
-                task_type = TaskType.TaskPlanning,
-                task_dependencies = listOf("2"),
-                input_files = listOf("input3.txt"),
-            )
-        ),
-    )
-
-    open fun planningActor(): ParsedActor<TaskBreakdownResult> {
+    open fun <T : TaskBreakdownInterface<*>> planningActor(): ParsedActor<T> {
         val planTaskSettings = this.getTaskSettings(TaskType.TaskPlanning)
         return ParsedActor(
             name = "TaskBreakdown",
-            resultClass = TaskBreakdownResult::class.java,
-            exampleInstance = exampleInstance,
+            resultClass = Companion.resultClass as Class<T>,
+            exampleInstance = Companion.exampleInstance as T,
             prompt = """
  Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
                     |
@@ -137,5 +111,35 @@ open class PlanSettings(
                 super.getEnumValues(clazz)
             }
         }
+    }
+
+    companion object {
+        var exampleInstance: TaskBreakdownInterface<out PlanTaskBaseInterface> = TaskBreakdownResult(
+            tasksByID = mapOf(
+                "1" to PlanTask(
+                    task_description = "Task 1",
+                    task_type = TaskType.CommandAutoFix,
+                    task_dependencies = listOf(),
+                    execution_task = ExecutionTask(
+                        command = listOf("npx", "create-react-app", ".", "--template", "typescript"),
+                        workingDir = ".",
+                    )
+                ),
+                "2" to PlanTask(
+                    task_description = "Task 2",
+                    task_type = TaskType.FileModification,
+                    task_dependencies = listOf("1"),
+                    input_files = listOf("input2.txt"),
+                    output_files = listOf("output2.txt"),
+                ),
+                "3" to PlanTask(
+                    task_description = "Task 3",
+                    task_type = TaskType.TaskPlanning,
+                    task_dependencies = listOf("2"),
+                    input_files = listOf("input3.txt"),
+                )
+            ),
+        )
+        var resultClass: Class<out TaskBreakdownInterface<*>> = TaskBreakdownResult::class.java
     }
 }

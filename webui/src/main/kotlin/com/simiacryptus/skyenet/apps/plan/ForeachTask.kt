@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskInterface
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
@@ -8,12 +9,12 @@ import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 
-class ForeachTask(
+class ForeachTask<T: PlanTaskBaseInterface>(
     planSettings: PlanSettings,
-    planTask: ForeachTaskInterface?
-) : AbstractTask<ForeachTaskInterface>(planSettings, planTask) {
-    interface ForeachTaskInterface : PlanTaskBaseInterface {
-        val foreach_task: ForEachTask?
+    planTask: ForeachTaskInterface<T>?
+) : AbstractTask<ForeachTaskInterface<T>>(planSettings, planTask) {
+    interface ForeachTaskInterface<T : PlanTaskBaseInterface> : PlanTaskBaseInterface {
+        val foreach_task: ForEachTask<T>?
     }
 
     override fun promptSegment(): String {
@@ -41,9 +42,10 @@ ForeachTask - Execute a task for each item in a list
         
         items.forEachIndexed { index, item ->
             val itemSubTasks = subTasks.mapValues { (_, subTaskPlan) ->
-                subTaskPlan.copy(task_description = "${subTaskPlan.task_description} - Item $index: $item")
+                subTaskPlan.task_description = "${subTaskPlan.task_description} - Item $index: $item"
+                subTaskPlan
             }
-            val itemPlanProcessingState = PlanProcessingState(itemSubTasks.toMutableMap())
+            val itemPlanProcessingState = PlanProcessingState(itemSubTasks)
             agent.executePlan(
                 task = subPlanTask,
                 diagramBuffer = subPlanTask.add(diagram(agent.ui, itemPlanProcessingState.subTasks)),

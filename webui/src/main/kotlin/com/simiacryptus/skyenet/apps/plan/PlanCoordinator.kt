@@ -359,7 +359,7 @@ class PlanCoordinator(
             planSettings: PlanSettings,
             inStrings: List<String>
         ): ParsedResponse<Map<String, PlanTaskBaseInterface>> {
-            val planningActor = planSettings.planningActor()
+            val planningActor = planSettings.planningActor<TaskBreakdownInterface<*>>()
             return planningActor.respond(
                 messages = planningActor.chatMessages(inStrings),
                 input = inStrings,

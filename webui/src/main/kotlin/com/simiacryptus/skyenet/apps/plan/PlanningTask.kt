@@ -1,10 +1,9 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskInterface
@@ -16,21 +15,26 @@ import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.ExecutionTaskInter
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
+import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 
-class PlanningTask(
+class PlanningTask<T:PlanTaskBaseInterface>(
     planSettings: PlanSettings,
-    planTask: PlanTaskBaseInterface?
-) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
+    planTask: T?
+) : AbstractTask<T>(planSettings, planTask) {
+
+    interface TaskBreakdownInterface<T:PlanTaskBaseInterface> {
+        val tasksByID: Map<String, T>?
+    }
 
     data class TaskBreakdownResult(
         @Description("A map where each task ID is associated with its corresponding PlanTask object. Crucial for defining task relationships and information flow.")
-        val tasksByID: Map<String, PlanTask>? = null,
-    )
+        override val tasksByID: Map<String, PlanTask>? = null,
+    ) : TaskBreakdownInterface<PlanTask>
 
     data class PlanTask(
         @Description("A detailed description of the specific task to be performed, including its role in the overall plan and its dependencies on other tasks.")
-        override val task_description: String? = null,
+        override var task_description: String? = null,
         @Description("An enumeration indicating the type of task to be executed. Must be a single value from the TaskType enum.")
         override val task_type: TaskType<*>? = null,
         @Description("A list of IDs of tasks that must be completed before this task can be executed. This defines upstream dependencies ensuring proper task order and information flow.")
@@ -42,16 +46,16 @@ class PlanningTask(
         @Description("The current execution state of the task. Important for coordinating task execution and managing dependencies.")
         override var state: TaskState? = TaskState.Pending,
         @Description("Only applicable in Foreach tasks - details specific to the Foreach task.")
-        override val foreach_task: ForEachTask? = null,
+        override val foreach_task: ForEachTask<PlanTask>? = null,
         @Description("Only applicable in CommandAutoFix tasks - details specific to the CommandAutoFix task.")
         override val execution_task: ExecutionTask? = null,
-    ) : PlanTaskBaseInterface, ExecutionTaskInterface, ForeachTaskInterface
+    ) : PlanTaskBaseInterface, ExecutionTaskInterface, ForeachTaskInterface<PlanTask>
 
-    data class ForEachTask(
+    data class ForEachTask<T:PlanTaskBaseInterface>(
         @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")
         val foreach_items: List<String>? = null,
         @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
-        val foreach_subplan: Map<String, PlanTask>? = null,
+        val foreach_subplan: Map<String, T>? = null,
     )
 
     data class ExecutionTask(
@@ -61,7 +65,7 @@ class PlanningTask(
         val workingDir: String? = null,
     )
 
-    private val taskBreakdownActor by lazy { planSettings.planningActor() }
+    private val taskBreakdownActor by lazy { planSettings.planningActor<TaskBreakdownInterface<T>>() }
 
     override fun promptSegment(): String {
         return """
@@ -120,33 +124,31 @@ class PlanningTask(
         toInput: (String) -> List<String>,
         api: API,
         ui: ApplicationInterface
-    ): Discussable<ParsedResponse<TaskBreakdownResult>> {
-        return Discussable(
-            task = task,
-            userMessage = { "Expand ${planTask?.task_description ?: ""}" },
-            heading = "",
-            initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = api) },
-            outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
-                render(
-                    withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                        plan = filterPlan { design.obj.tasksByID } ?: emptyMap(),
-                        planText = design.text,
-                        prompt = userMessage
-                    ),
-                    ui = ui
-                )
-            },
-            ui = ui,
-            reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                taskBreakdownActor.respond(
-                    messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                        .toTypedArray<ApiModel.ChatMessage>(),
-                    input = toInput("Expand ${planTask?.task_description ?: ""}\n${JsonUtil.toJson(this)}"),
-                    api = api
-                )
-            },
-        )
-    }
+    ) = Discussable(
+        task = task,
+        userMessage = { "Expand ${planTask?.task_description ?: ""}" },
+        heading = "",
+        initialResponse = { it: String -> taskBreakdownActor.answer(toInput(it), api = api) as ParsedResponse<TaskBreakdownInterface<*>> },
+        outputFn = { design : ParsedResponse<TaskBreakdownInterface<*>> ->
+            render(
+                withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                    plan = filterPlan { design.obj.tasksByID } ?: emptyMap(),
+                    planText = design.text,
+                    prompt = userMessage
+                ),
+                ui = ui
+            )
+        },
+        ui = ui,
+        reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+            taskBreakdownActor.respond(
+                messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                    .toTypedArray<ApiModel.ChatMessage>(),
+                input = toInput("Expand ${planTask?.task_description ?: ""}\n${JsonUtil.toJson(this)}"),
+                api = api
+            ) as ParsedResponse<TaskBreakdownInterface<*>>
+        },
+    )
 
     private fun executeSubTasks(
         agent: PlanCoordinator,

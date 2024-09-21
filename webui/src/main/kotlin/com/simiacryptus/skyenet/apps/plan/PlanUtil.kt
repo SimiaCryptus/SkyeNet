@@ -1,12 +1,11 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.TaskState
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
-import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.util.MarkdownUtil
+import com.simiacryptus.skyenet.webui.application.ApplicationInterface
+import com.simiacryptus.util.JsonUtil
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
