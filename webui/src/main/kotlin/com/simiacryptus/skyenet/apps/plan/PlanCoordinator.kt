@@ -7,7 +7,7 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies
@@ -84,7 +84,7 @@ class PlanCoordinator(
     }
 
     fun executePlan(
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         task: SessionTask,
         userMessage: String,
         api: API
@@ -123,22 +123,22 @@ class PlanCoordinator(
         return planProcessingState
     }
 
-    private fun newState(plan: Map<String, PlanTaskBaseInterface>) =
+    private fun newState(plan: Map<String, PlanTaskBase>) =
         PlanProcessingState(
-            subTasks = (filterPlan { plan }?.entries?.toTypedArray<Map.Entry<String, PlanTaskBaseInterface>>()
+            subTasks = (filterPlan { plan }?.entries?.toTypedArray<Map.Entry<String, PlanTaskBase>>()
                 ?.associate { it.key to it.value } ?: mapOf()).toMutableMap()
         )
 
     fun executePlan(
         task: SessionTask,
         diagramBuffer: StringBuilder?,
-        subTasks: Map<String, PlanTaskBaseInterface>,
+        subTasks: Map<String, PlanTaskBase>,
         diagramTask: SessionTask,
         planProcessingState: PlanProcessingState,
         taskIdProcessingQueue: MutableList<String>,
         pool: ThreadPoolExecutor,
         userMessage: String,
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         api: API
     ) {
         val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
@@ -358,13 +358,13 @@ class PlanCoordinator(
             api: API,
             planSettings: PlanSettings,
             inStrings: List<String>
-        ): ParsedResponse<Map<String, PlanTaskBaseInterface>> {
+        ): ParsedResponse<Map<String, PlanTaskBase>> {
             val planningActor = planSettings.planningActor<TaskBreakdownInterface<*>>()
             return planningActor.respond(
                 messages = planningActor.chatMessages(inStrings),
                 input = inStrings,
                 api = api
-            ).map(Map::class.java) { it.tasksByID ?: emptyMap<String, PlanTaskBaseInterface>() } as ParsedResponse<Map<String, PlanTaskBaseInterface>>
+            ).map(Map::class.java) { it.tasksByID ?: emptyMap<String, PlanTaskBase>() } as ParsedResponse<Map<String, PlanTaskBase>>
         }
 
 

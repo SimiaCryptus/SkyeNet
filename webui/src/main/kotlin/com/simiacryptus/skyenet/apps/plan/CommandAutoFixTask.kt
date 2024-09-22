@@ -2,10 +2,11 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.ExecutionTaskInterface
+import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -14,17 +15,37 @@ import java.util.concurrent.Semaphore
 
 class CommandAutoFixTask(
     planSettings: PlanSettings,
-    planTask: ExecutionTaskInterface?
-) : AbstractTask<ExecutionTaskInterface>(planSettings, planTask) {
+    planTask: CommandAutoFixTaskData?
+) : AbstractTask<CommandAutoFixTaskData>(planSettings, planTask) {
+    class CommandAutoFixTaskData(
+        @Description("The command to be executed")
+        val command: List<String>? = null,
+        @Description("The working directory for the command execution")
+        val workingDir: String? = null,
+        task_type: String? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = task_type,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     override fun promptSegment(): String {
         return """
-             |CommandAutoFix - Run a command and automatically fix any issues that arise
-             |  ** Specify the command to be executed and any additional instructions
-             |  ** Specify the working directory relative to the root directory
-             |  ** Provide the command arguments in the 'commandArguments' field
-             |  ** List input files/tasks to be examined when fixing issues
-             |  ** Available commands:
-             |${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}" }}
+CommandAutoFix - Run a command and automatically fix any issues that arise
+    ** Specify the command to be executed and any additional instructions
+    ** Specify the working directory relative to the root directory
+    ** Provide the command and its arguments in the 'command' field
+    ** List input files/tasks to be examined when fixing issues
+    ** Available commands:
+    ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}" }}
         """.trimMargin()
     }
 
@@ -32,7 +53,7 @@ class CommandAutoFixTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API
@@ -43,7 +64,7 @@ class CommandAutoFixTask(
         }
         Retryable(agent.ui, task = task) {
             val task = agent.ui.newTask(false).apply { it.append(placeholder) }
-            val alias = this.planTask?.execution_task?.command?.first()
+            val alias = this.planTask?.command?.first()
             val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
             val cmds = commandAutoFixCommands
                 ?.map { File(it) }?.associateBy { it.name }
@@ -53,7 +74,7 @@ class CommandAutoFixTask(
             if (executable == null) {
                 throw IllegalArgumentException("Command not found: $alias")
             }
-            val workingDirectory = (this.planTask?.execution_task?.workingDir
+            val workingDirectory = (this.planTask?.workingDir
                 ?.let { agent.root.toFile().resolve(it) } ?: agent.root.toFile())
                 .apply { mkdirs() }
             val outputResult = CmdPatchApp(
@@ -61,7 +82,7 @@ class CommandAutoFixTask(
                 session = agent.session,
                 settings = PatchApp.Settings(
                     executable = executable,
-                    arguments = this.planTask?.execution_task?.command?.drop(1)?.joinToString(" ") ?: "",
+                    arguments = this.planTask?.command?.drop(1)?.joinToString(" ") ?: "",
                     workingDirectory = workingDirectory,
                     exitCodeOption = "nonzero",
                     additionalInstructions = "",

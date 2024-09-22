@@ -1,9 +1,10 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
-import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.OpenAITextModel
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
+import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
+import com.simiacryptus.skyenet.apps.plan.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
@@ -114,25 +115,23 @@ open class PlanSettings(
     }
 
     companion object {
-        var exampleInstance: TaskBreakdownInterface<out PlanTaskBaseInterface> = TaskBreakdownResult(
+        var exampleInstance: TaskBreakdownInterface<out PlanTaskBase> = TaskBreakdownResult(
             tasksByID = mapOf(
-                "1" to PlanTask(
+                "1" to CommandAutoFixTaskData(
                     task_description = "Task 1",
                     task_type = TaskType.CommandAutoFix.name,
                     task_dependencies = listOf(),
-                    execution_task = ExecutionTask(
-                        command = listOf("npx", "create-react-app", ".", "--template", "typescript"),
-                        workingDir = ".",
-                    )
+                    command = listOf("npx", "create-react-app", ".", "--template", "typescript"),
+                    workingDir = "."
                 ),
-                "2" to PlanTask(
+                "2" to FileModificationTaskData(
                     task_description = "Task 2",
                     task_type = TaskType.FileModification.name,
                     task_dependencies = listOf("1"),
                     input_files = listOf("input2.txt"),
                     output_files = listOf("output2.txt"),
                 ),
-                "3" to PlanTask(
+                "3" to PlanningTaskData(
                     task_description = "Task 3",
                     task_type = TaskType.TaskPlanning.name,
                     task_dependencies = listOf("2"),

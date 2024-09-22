@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.skyenet.AgentPatterns
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.TaskState
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -13,7 +13,7 @@ object PlanUtil {
 
     fun diagram(
         ui: ApplicationInterface,
-        taskMap: Map<String, PlanTaskBaseInterface>
+        taskMap: Map<String, PlanTaskBase>
     ) = MarkdownUtil.renderMarkdown(
             """
             |## Sub-Plan Task Dependency Graph
@@ -26,7 +26,7 @@ object PlanUtil {
 
     data class TaskBreakdownWithPrompt(
         val prompt: String,
-        val plan: Map<String, PlanTaskBaseInterface>,
+        val plan: Map<String, PlanTaskBase>,
         val planText: String
     )
 
@@ -50,7 +50,7 @@ object PlanUtil {
         )
     )
 
-    fun executionOrder(tasks: Map<String, PlanTaskBaseInterface>): List<String> {
+    fun executionOrder(tasks: Map<String, PlanTaskBase>): List<String> {
         val taskIds: MutableList<String> = mutableListOf()
         val taskMap = tasks.toMutableMap()
         while (taskMap.isNotEmpty()) {
@@ -85,7 +85,7 @@ object PlanUtil {
     private val mermaidGraphCache = ConcurrentHashMap<String, String>()
     private val mermaidExceptionCache = ConcurrentHashMap<String, Exception>()
 
-    fun buildMermaidGraph(subTasks: Map<String, PlanTaskBaseInterface>): String {
+    fun buildMermaidGraph(subTasks: Map<String, PlanTaskBase>): String {
         // Generate a unique key based on the subTasks map
         val cacheKey = JsonUtil.toJson(subTasks)
         // Return cached result if available
@@ -125,7 +125,7 @@ object PlanUtil {
         }
     }
 
-    fun filterPlan(retries: Int = 3, fn: () -> Map<String, PlanTaskBaseInterface>?): Map<String, PlanTaskBaseInterface>? {
+    fun filterPlan(retries: Int = 3, fn: () -> Map<String, PlanTaskBase>?): Map<String, PlanTaskBase>? {
         val obj = fn() ?: emptyMap()
         var tasksByID = obj?.filter { (k, v) ->
             when {
@@ -163,8 +163,8 @@ object PlanUtil {
     }
 
     fun getAllDependencies(
-        subPlanTask: PlanTaskBaseInterface,
-        subTasks: Map<String, PlanTaskBaseInterface>,
+        subPlanTask: PlanTaskBase,
+        subTasks: Map<String, PlanTaskBase>,
         visited: MutableSet<String>
     ): List<String> {
         val dependencies = subPlanTask.task_dependencies?.toMutableList() ?: mutableListOf()

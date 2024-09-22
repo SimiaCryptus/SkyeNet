@@ -1,8 +1,9 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.DocumentationTask.DocumentationTaskData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -12,8 +13,26 @@ import java.util.concurrent.Semaphore
 
 class DocumentationTask(
     planSettings: PlanSettings,
-    planTask: PlanTaskBaseInterface?
-) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
+    planTask: DocumentationTaskData?
+) : AbstractTask<DocumentationTaskData>(planSettings, planTask) {
+    class DocumentationTaskData(
+        @Description("List of files or tasks to be documented")
+        val items_to_document: List<String>? = null,
+        task_type: String? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = task_type,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     override fun promptSegment(): String {
         return """
  Documentation - Generate documentation
@@ -39,7 +58,7 @@ class DocumentationTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API
@@ -49,12 +68,14 @@ class DocumentationTask(
             semaphore.release()
         }
         val process = { sb: StringBuilder ->
+            val itemsToDocument = planTask?.items_to_document ?: emptyList()
             val docResult = documentationGeneratorActor.answer(
                 listOf<String>(
                     userMessage,
                     JsonUtil.toJson(plan),
                     getPriorCode(planProcessingState),
                     getInputFileCode(),
+                    "Items to document: ${itemsToDocument.joinToString(", ")}"
                 ).filter { it.isNotBlank() }, api
             )
             planProcessingState.taskResult[taskId] = docResult

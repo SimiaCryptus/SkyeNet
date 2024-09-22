@@ -13,18 +13,25 @@ class ForeachTask(
     planTask: ForeachTaskData?
 ) : AbstractTask<ForeachTaskData>(planSettings, planTask) {
 
-    data class ForeachTaskData(
+    class ForeachTaskData(
         @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")
         val foreach_items: List<String>? = null,
         @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
-        val foreach_subplan: Map<String, PlanTaskBaseInterface>? = null,
-        override val task_type: String?,
-        override var task_description: String?,
-        override var task_dependencies: List<String>?,
-        override val input_files: List<String>?,
-        override val output_files: List<String>?,
-        override var state: TaskState?,
-    ) : PlanTaskBaseInterface
+        val foreach_subplan: Map<String, PlanTaskBase>? = null,
+        task_type: String? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null,
+    ) : PlanTaskBase(
+        task_type = task_type,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
 
     override fun promptSegment(): String {
         return """
@@ -38,7 +45,7 @@ ForeachTask - Execute a task for each item in a list
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

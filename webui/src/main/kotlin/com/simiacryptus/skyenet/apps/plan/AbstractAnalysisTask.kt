@@ -4,17 +4,17 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.apps.general.CommandPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 
-abstract class AbstractAnalysisTask(
+abstract class AbstractAnalysisTask<T : PlanTaskBase>(
     planSettings: PlanSettings,
-    planTask: PlanTaskBaseInterface?
-) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
+    planTask: T?
+) : AbstractTask<T>(planSettings, planTask) {
 
     abstract val actorName: String
     abstract val actorPrompt: String
@@ -33,7 +33,7 @@ abstract class AbstractAnalysisTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

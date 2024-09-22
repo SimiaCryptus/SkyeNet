@@ -1,9 +1,10 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTaskData
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -15,27 +16,44 @@ import kotlin.reflect.KClass
 
 class RunShellCommandTask(
     planSettings: PlanSettings,
-    planTask: ExecutionTaskInterface?
-) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
-    interface ExecutionTaskInterface : PlanTaskBaseInterface {
-        val execution_task: PlanningTask.ExecutionTask?
-    }
+    planTask: RunShellCommandTaskData?
+) : AbstractTask<RunShellCommandTaskData>(planSettings, planTask) {
+
+    class RunShellCommandTaskData(
+        @Description("The shell command to be executed")
+        val command: String? = null,
+        @Description("The working directory for the command execution")
+        val workingDir: String? = null,
+        task_type: String? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = task_type,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     val shellCommandActor by lazy {
         CodingActor(
             name = "RunShellCommand",
             interpreterClass = ProcessInterpreter::class,
             details = """
-                |Execute the following shell command(s) and provide the output. Ensure to handle any errors or exceptions gracefully.
-                |
-                |Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
-                """.trimMargin(),
+Execute the following shell command(s) and provide the output. Ensure to handle any errors or exceptions gracefully.
+Note: This task is for running simple and safe commands. Avoid executing commands that can cause harm to the system or compromise security.
+            """.trimMargin(),
             symbols = mapOf<String, Any>(
                 "env" to (planSettings.env ?: emptyMap()),
-                "workingDir" to (planTask?.execution_task?.workingDir?.let { File(it).absolutePath } ?: File(
+                "workingDir" to (planTask?.workingDir?.let { File(it).absolutePath } ?: File(
                     planSettings.workingDir
                 ).absolutePath),
                 "language" to (planSettings.language ?: "bash"),
-                "command" to planSettings.command,
+                "command" to (planTask?.command ?: planSettings.command),
             ),
             model = planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
                 ?: planSettings.defaultModel,
@@ -56,7 +74,7 @@ class RunShellCommandTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

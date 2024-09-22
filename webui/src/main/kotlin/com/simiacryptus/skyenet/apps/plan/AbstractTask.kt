@@ -1,9 +1,10 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTaskTypeIdResolver
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -13,19 +14,21 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.streams.asSequence
 
-abstract class AbstractTask<T : PlanTaskBaseInterface>(
+abstract class AbstractTask<T : PlanTaskBase>(
     val planSettings: PlanSettings,
     val planTask: T?
 ) {
 
-    interface PlanTaskBaseInterface {
-        val task_type: String?
-        var task_description: String?
-        var task_dependencies: List<String>?
-        val input_files: List<String>?
-        val output_files: List<String>?
-        var state: TaskState?
-    }
+    @JsonTypeIdResolver(PlanTaskTypeIdResolver::class)
+    open class PlanTaskBase(
+        val task_type: String? = null,
+        var task_description: String? = null,
+        var task_dependencies: List<String>? = null,
+        val input_files: List<String>? = null,
+        val output_files: List<String>? = null,
+        var state: TaskState? = null
+    )
+
     var state: TaskState? = TaskState.Pending
     protected val codeFiles = mutableMapOf<Path, String>()
 
@@ -100,7 +103,7 @@ abstract class AbstractTask<T : PlanTaskBaseInterface>(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

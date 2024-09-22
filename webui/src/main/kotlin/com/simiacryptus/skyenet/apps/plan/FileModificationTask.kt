@@ -2,8 +2,9 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
+import com.simiacryptus.skyenet.apps.plan.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -13,8 +14,28 @@ import java.util.concurrent.Semaphore
 
 class FileModificationTask(
     planSettings: PlanSettings,
-    planTask: PlanTaskBaseInterface?
-) : AbstractTask<PlanTaskBaseInterface>(planSettings, planTask) {
+    planTask: FileModificationTaskData?
+) : AbstractTask<FileModificationTaskData>(planSettings, planTask) {
+    class FileModificationTaskData(
+        @Description("List of input files to be examined when designing the modifications")
+        input_files: List<String>? = null,
+        @Description("List of output files to be modified or created")
+        output_files: List<String>? = null,
+        @Description("Specific modifications to be made to the files")
+        val modifications: Map<String, String>? = null,
+        task_type: String? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = task_type,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     val fileModificationActor by lazy {
         SimpleActor(
             name = "FileModification",
@@ -79,7 +100,7 @@ class FileModificationTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: Map<String, PlanTaskBaseInterface>,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

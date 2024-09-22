@@ -1,14 +1,38 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.TestGenerationTask.TestGenerationTaskData
+
 import org.slf4j.LoggerFactory
 
 class TestGenerationTask(
     planSettings: PlanSettings,
-    planTask: PlanTaskBaseInterface?
-) : AbstractAnalysisTask(planSettings, planTask) {
+    planTask: TestGenerationTaskData?
+) : AbstractAnalysisTask<TestGenerationTaskData>(planSettings, planTask) {
+
+    class TestGenerationTaskData(
+        @Description("List of files for which tests should be generated")
+        val filesToTest: List<String>? = null,
+        @Description("List of input files or tasks to be examined when generating tests")
+        val inputReferences: List<String>? = null,
+        task_type: String? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = task_type,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     override val actorName: String = "TestGeneration"
     override val actorPrompt: String = """
-                |Generate comprehensive unit tests for the provided code files. The tests should:
+ Generate comprehensive unit tests for the provided code files. The tests should:
                 |1. Cover all public methods and functions
                 |2. Include both positive and negative test cases
                 |3. Test edge cases and boundary conditions
@@ -57,9 +81,13 @@ class TestGenerationTask(
 
     override fun promptSegment(): String {
         return """
-            |TestGeneration - Generate unit tests for the specified code files
-            |  ** Specify the files for which tests should be generated
-            |  ** List input files/tasks to be examined when generating tests
+ TestGeneration - Generate unit tests for the specified code files
+  ** Specify the files for which tests should be generated using the 'filesToTest' field
+  ** List input files/tasks to be examined when generating tests using the 'inputReferences' field
+  ** The task will generate test files for each specified file in 'filesToTest'
+  ** Test files will be created in a 'test' directory parallel to the source files
+   ** Specify the files for which tests should be generated
+   ** List input files/tasks to be examined when generating tests
         """.trimMargin()
     }
 

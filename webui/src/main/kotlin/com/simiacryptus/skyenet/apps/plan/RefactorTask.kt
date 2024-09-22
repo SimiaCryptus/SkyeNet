@@ -1,11 +1,34 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.RefactorTask.RefactorTaskData
+
 import org.slf4j.LoggerFactory
 
 class RefactorTask(
     planSettings: PlanSettings,
-    planTask: PlanTaskBaseInterface?
-) : AbstractAnalysisTask(planSettings, planTask) {
+    planTask: RefactorTaskData?
+) : AbstractAnalysisTask<RefactorTaskData>(planSettings, planTask) {
+    class RefactorTaskData(
+        @Description("List of files to be refactored")
+        val filesToRefactor: List<String>? = null,
+        @Description("Specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)")
+        val refactoringFocus: List<String>? = null,
+        task_type: String? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = task_type,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     override val actorName: String = "Refactor"
     override val actorPrompt: String = """
 Analyze the provided code and suggest refactoring to improve code structure, readability, and maintainability. Focus on:
@@ -34,7 +57,6 @@ RefactorTask - Analyze and refactor existing code to improve structure, readabil
   ** Optionally provide specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)
         """.trimMargin()
     }
-
 
     companion object {
         private val log = LoggerFactory.getLogger(RefactorTask::class.java)

@@ -1,12 +1,35 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.PerformanceAnalysisTask.PerformanceAnalysisTaskData
+
 import org.slf4j.LoggerFactory
 
 
 class PerformanceAnalysisTask(
     planSettings: PlanSettings,
-    planTask: PlanTaskBaseInterface?
-) : AbstractAnalysisTask(planSettings, planTask) {
+    planTask: PerformanceAnalysisTaskData?
+) : AbstractAnalysisTask<PerformanceAnalysisTaskData>(planSettings, planTask) {
+    class PerformanceAnalysisTaskData(
+        @Description("Files to be analyzed for performance issues")
+        val files_to_analyze: List<String>? = null,
+        @Description("Specific areas of focus for the analysis (e.g., time complexity, memory usage, I/O operations)")
+        val analysis_focus: List<String>? = null,
+        task_type: String? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null,
+    ) : PlanTaskBase(
+        task_type = task_type,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     override val actorName = "PerformanceAnalysis"
     override val actorPrompt = """
 Analyze the provided code for performance issues and bottlenecks. Focus exclusively on:
@@ -32,6 +55,10 @@ PerformanceAnalysis - Analyze code for performance issues and suggest improvemen
   ** Optionally provide specific areas of focus for the analysis (e.g., time complexity, memory usage, I/O operations)
         """.trimMargin()
     }
+    fun getFiles(): List<String> {
+        return planTask?.files_to_analyze ?: emptyList()
+    }
+
 
     override fun getAnalysisInstruction(): String {
         return "Analyze the following code for performance issues and provide a detailed report"
