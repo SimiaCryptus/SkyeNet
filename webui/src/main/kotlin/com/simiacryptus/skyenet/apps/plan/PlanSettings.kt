@@ -2,12 +2,13 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.models.OpenAITextModel
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
 import com.simiacryptus.skyenet.apps.plan.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownResult
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
+import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 data class TaskSettings(
@@ -72,13 +73,9 @@ open class PlanSettings(
         language = language,
     )
 
-    open fun <T : TaskBreakdownInterface<*>> planningActor(): ParsedActor<T> {
+    fun planningActor(): ParsedActor<TaskBreakdownResult> {
         val planTaskSettings = this.getTaskSettings(TaskType.TaskPlanning)
-        return ParsedActor(
-            name = "TaskBreakdown",
-            resultClass = Companion.resultClass as Class<T>,
-            exampleInstance = Companion.exampleInstance as T,
-            prompt = """
+        val prompt = """
                     |Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
                     |
                     |For each task:
@@ -88,15 +85,35 @@ open class PlanSettings(
                     |* Specify important interface and integration details (each task will run independently off of a copy of this plan)
                     |
                     |Tasks can be of the following types: 
-                    |${getAvailableTaskTypes(this).joinToString("\n") { "* ${it.promptSegment()}" }}
+                    |${
+            getAvailableTaskTypes(this).joinToString("\n") { taskType ->
+                "* ${getImpl(this, taskType).promptSegment()}"
+            }
+        }
                     |
- Creating directories and initializing source control are out of scope.
- ${if (planTaskSettings.enabled) "Do not start your plan with a plan to plan!\n" else ""}
-                    """.trimMargin(),
+                    |Creating directories and initializing source control are out of scope.
+                    |${if (planTaskSettings.enabled) "Do not start your plan with a plan to plan!\n" else ""}
+                    """.trimMargin()
+        val describer = describer()
+        val parserPrompt = """
+Task Subtype Schema:
+
+${getAvailableTaskTypes(this).joinToString("\n\n") { taskType -> """
+${taskType.name}:
+  ${describer.describe(taskType.taskDataClass).replace("\n", "\n  ")}
+""".trim()
+                }}
+                """.trimIndent()
+        return ParsedActor(
+            name = "TaskBreakdown",
+            resultClass = TaskBreakdownResult::class.java,
+            exampleInstance = exampleInstance,
+            prompt = prompt,
             model = planTaskSettings.model ?: this.defaultModel,
             parsingModel = this.parsingModel,
             temperature = this.temperature,
-            describer = describer(),
+            describer = describer,
+            parserPrompt = parserPrompt
         )
     }
 
@@ -115,7 +132,7 @@ open class PlanSettings(
     }
 
     companion object {
-        var exampleInstance: TaskBreakdownInterface<out PlanTaskBase> = TaskBreakdownResult(
+        var exampleInstance = TaskBreakdownResult(
             tasksByID = mapOf(
                 "1" to CommandAutoFixTaskData(
                     task_description = "Task 1",
@@ -139,6 +156,5 @@ open class PlanSettings(
                 )
             ),
         )
-        var resultClass: Class<out TaskBreakdownInterface<*>> = TaskBreakdownResult::class.java
     }
 }

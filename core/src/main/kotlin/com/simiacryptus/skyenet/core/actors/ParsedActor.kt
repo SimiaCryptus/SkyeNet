@@ -28,6 +28,7 @@ open class ParsedActor<T : Any>(
     ) {
         override val includeMethods: Boolean get() = false
     },
+    var parserPrompt: String? = null,
 ) : BaseActor<List<String>, ParsedResponse<T>>(
     prompt = prompt,
     name = name,
@@ -56,7 +57,7 @@ open class ParsedActor<T : Any>(
         ParsedResponse<T>(resultClass!!) {
         override val text =
             response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
-        private val _obj: T by lazy { getParser(api).apply(text) }
+        private val _obj: T by lazy { getParser(api, parserPrompt).apply(text) }
         override val obj get() = _obj
     }
 

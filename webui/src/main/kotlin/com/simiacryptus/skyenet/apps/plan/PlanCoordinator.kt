@@ -12,7 +12,6 @@ import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
@@ -197,7 +196,6 @@ class PlanCoordinator(
             val subTask = planProcessingState.subTasks[taskId] ?: throw RuntimeException("Task not found: $taskId")
             planProcessingState.taskFutures[taskId] = pool.submit {
                 subTask.state = AbstractTask.TaskState.Pending
-                //taskTabs.update()
                 log.debug("Awaiting dependencies: ${subTask.task_dependencies?.joinToString(", ") ?: ""}")
                 subTask.task_dependencies
                     ?.associate { it to planProcessingState.taskFutures[it] }
@@ -359,7 +357,7 @@ class PlanCoordinator(
             planSettings: PlanSettings,
             inStrings: List<String>
         ): ParsedResponse<Map<String, PlanTaskBase>> {
-            val planningActor = planSettings.planningActor<TaskBreakdownInterface<*>>()
+            val planningActor = planSettings.planningActor()
             return planningActor.respond(
                 messages = planningActor.chatMessages(inStrings),
                 input = inStrings,

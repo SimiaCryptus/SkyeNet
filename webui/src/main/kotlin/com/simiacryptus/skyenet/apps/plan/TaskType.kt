@@ -63,10 +63,15 @@ class TaskType<out T : PlanTaskBase>(
 
         private fun <T : PlanTaskBase> registerConstructor(
             taskType: TaskType<T>,
-            constructor: (PlanSettings, T?) -> AbstractTask<out PlanTaskBase>
+            constructor: (PlanSettings, T?) -> AbstractTask<T>
         ) {
-            taskConstructors[taskType] = { settings : PlanSettings, task : T? -> constructor(settings, task) }
-                    as (PlanSettings, PlanTaskBase?) -> AbstractTask<out PlanTaskBase>
+            taskConstructors[taskType] = { settings : PlanSettings, task : PlanTaskBase? ->
+                val taskDataClass = taskType.taskDataClass
+                if (task != null && taskDataClass.isAssignableFrom(task.javaClass)) {
+                    throw RuntimeException("Task type mismatch: ${taskType.name} != ${task.javaClass.name}")
+                }
+                constructor(settings, task as T?)
+            }
             register(taskType)
         }
 
@@ -75,11 +80,12 @@ class TaskType<out T : PlanTaskBase>(
             planSettings: PlanSettings,
             planTask: PlanTaskBase?
         ): AbstractTask<out PlanTaskBase> {
-            val taskType = planTask?.task_type as TaskType<*>
+            val taskType = planTask?.task_type?.let { valueOf(it) }
+                ?: throw RuntimeException("Task type not specified")
             return getImpl(planSettings, taskType, planTask)
         }
 
-        private fun getImpl(
+        fun getImpl(
             planSettings: PlanSettings,
             taskType: TaskType<*>,
             planTask: PlanTaskBase? = null
@@ -94,7 +100,7 @@ class TaskType<out T : PlanTaskBase>(
 
         fun getAvailableTaskTypes(planSettings: PlanSettings) = values().filter {
             planSettings.getTaskSettings(it).enabled
-        }.map { getImpl(planSettings, it) }
+        }
 
         fun valueOf(name: String): TaskType<*> = valueOf(TaskType::class.java, name)
         private fun register(taskType: TaskType<*>) = register(TaskType::class.java, taskType)
