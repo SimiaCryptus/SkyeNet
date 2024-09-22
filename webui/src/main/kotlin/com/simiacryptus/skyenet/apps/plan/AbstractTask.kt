@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
@@ -16,14 +17,14 @@ abstract class AbstractTask<T : PlanTaskBaseInterface>(
     val planSettings: PlanSettings,
     val planTask: T?
 ) {
+
     interface PlanTaskBaseInterface {
-        val task_type: Any?
+        val task_type: String?
         var task_description: String?
         var task_dependencies: List<String>?
         val input_files: List<String>?
         val output_files: List<String>?
         var state: TaskState?
-//        val taskResult: MutableMap<String, String>
     }
     var state: TaskState? = TaskState.Pending
     protected val codeFiles = mutableMapOf<Path, String>()

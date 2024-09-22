@@ -3,7 +3,8 @@ package com.simiacryptus.skyenet.apps.plan
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
-import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskInterface
+import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskData
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
 import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.ExecutionTaskInterface
 import com.simiacryptus.util.DynamicEnum
 import com.simiacryptus.util.DynamicEnumDeserializer
@@ -11,25 +12,28 @@ import com.simiacryptus.util.DynamicEnumSerializer
 
 @JsonDeserialize(using = TaskTypeDeserializer::class)
 @JsonSerialize(using = TaskTypeSerializer::class)
-class TaskType<out T : PlanTaskBaseInterface>(name: String) : DynamicEnum<TaskType<*>>(name) {
+class TaskType<out T : PlanTaskBaseInterface>(
+    name: String,
+    val taskDataClass: Class<out T>
+) : DynamicEnum<TaskType<*>>(name) {
     companion object {
 
         private val taskConstructors =
             mutableMapOf<TaskType<*>, (PlanSettings, PlanTaskBaseInterface?) -> AbstractTask<out PlanTaskBaseInterface>>()
 
-        val TaskPlanning = TaskType<PlanTaskBaseInterface>("TaskPlanning")
-        val Inquiry = TaskType<PlanTaskBaseInterface>("Inquiry")
-        val FileModification = TaskType<PlanTaskBaseInterface>("FileModification")
-        val Documentation = TaskType<PlanTaskBaseInterface>("Documentation")
-        val CodeReview = TaskType<PlanTaskBaseInterface>("CodeReview")
-        val TestGeneration = TaskType<PlanTaskBaseInterface>("TestGeneration")
-        val Optimization = TaskType<PlanTaskBaseInterface>("Optimization")
-        val SecurityAudit = TaskType<PlanTaskBaseInterface>("SecurityAudit")
-        val PerformanceAnalysis = TaskType<PlanTaskBaseInterface>("PerformanceAnalysis")
-        val RefactorTask = TaskType<PlanTaskBaseInterface>("RefactorTask")
-        val RunShellCommand = TaskType<ExecutionTaskInterface>("RunShellCommand")
-        val CommandAutoFix = TaskType<ExecutionTaskInterface>("CommandAutoFix")
-        val ForeachTask = TaskType<ForeachTaskInterface<*>>("ForeachTask")
+        val TaskPlanning = TaskType<PlanTaskBaseInterface>("TaskPlanning", PlanTask::class.java)
+        val Inquiry = TaskType<PlanTaskBaseInterface>("Inquiry", PlanTask::class.java)
+        val FileModification = TaskType<PlanTaskBaseInterface>("FileModification", PlanTask::class.java)
+        val Documentation = TaskType<PlanTaskBaseInterface>("Documentation", PlanTask::class.java)
+        val CodeReview = TaskType<PlanTaskBaseInterface>("CodeReview", PlanTask::class.java)
+        val TestGeneration = TaskType<PlanTaskBaseInterface>("TestGeneration", PlanTask::class.java)
+        val Optimization = TaskType<PlanTaskBaseInterface>("Optimization", PlanTask::class.java)
+        val SecurityAudit = TaskType<PlanTaskBaseInterface>("SecurityAudit", PlanTask::class.java)
+        val PerformanceAnalysis = TaskType<PlanTaskBaseInterface>("PerformanceAnalysis", PlanTask::class.java)
+        val RefactorTask = TaskType<PlanTaskBaseInterface>("RefactorTask", PlanTask::class.java)
+        val RunShellCommand = TaskType<ExecutionTaskInterface>("RunShellCommand", PlanTask::class.java)
+        val CommandAutoFix = TaskType<ExecutionTaskInterface>("CommandAutoFix", PlanTask::class.java)
+        val ForeachTask = TaskType("ForeachTask", ForeachTaskData::class.java)
 
         init {
             registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }

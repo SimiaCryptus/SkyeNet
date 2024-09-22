@@ -20,14 +20,14 @@ open class PlanSettings(
     val command: List<String> = listOf(if (isWindows) "powershell" else "bash"),
     var temperature: Double = 0.2,
     val budget: Double = 2.0,
-    val taskSettings: MutableMap<TaskType<*>, TaskSettings> = TaskType.values().associateWith { taskType ->
+    val taskSettings: MutableMap<String, TaskSettings> = TaskType.values().associateWith { taskType ->
         TaskSettings(
             when (taskType) {
                 TaskType.FileModification, TaskType.Inquiry -> true
                 else -> false
             }
         )
-    }.toMutableMap(),
+    }.mapKeys { it.key.name }.toMutableMap(),
     var autoFix: Boolean = false,
     var allowBlocking: Boolean = true,
     var commandAutoFixCommands: List<String>? = listOf(),
@@ -37,10 +37,10 @@ open class PlanSettings(
 ) {
 
     fun getTaskSettings(taskType: TaskType<*>): TaskSettings =
-        taskSettings[taskType] ?: TaskSettings()
+        taskSettings[taskType.name] ?: TaskSettings()
 
     fun setTaskSettings(taskType: TaskType<*>, settings: TaskSettings) {
-        taskSettings[taskType] = settings
+        taskSettings[taskType.name] = settings
     }
 
     fun copy(
@@ -49,7 +49,7 @@ open class PlanSettings(
         command: List<String> = this.command,
         temperature: Double = this.temperature,
         budget: Double = this.budget,
-        taskSettings: MutableMap<TaskType<*>, TaskSettings> = this.taskSettings,
+        taskSettings: MutableMap<String, TaskSettings> = this.taskSettings,
         autoFix: Boolean = this.autoFix,
         allowBlocking: Boolean = this.allowBlocking,
         commandAutoFixCommands: List<String>? = this.commandAutoFixCommands,
@@ -78,7 +78,7 @@ open class PlanSettings(
             resultClass = Companion.resultClass as Class<T>,
             exampleInstance = Companion.exampleInstance as T,
             prompt = """
- Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
+                    |Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
                     |
                     |For each task:
                     |* Detail files input and output file
@@ -118,7 +118,7 @@ open class PlanSettings(
             tasksByID = mapOf(
                 "1" to PlanTask(
                     task_description = "Task 1",
-                    task_type = TaskType.CommandAutoFix,
+                    task_type = TaskType.CommandAutoFix.name,
                     task_dependencies = listOf(),
                     execution_task = ExecutionTask(
                         command = listOf("npx", "create-react-app", ".", "--template", "typescript"),
@@ -127,14 +127,14 @@ open class PlanSettings(
                 ),
                 "2" to PlanTask(
                     task_description = "Task 2",
-                    task_type = TaskType.FileModification,
+                    task_type = TaskType.FileModification.name,
                     task_dependencies = listOf("1"),
                     input_files = listOf("input2.txt"),
                     output_files = listOf("output2.txt"),
                 ),
                 "3" to PlanTask(
                     task_description = "Task 3",
-                    task_type = TaskType.TaskPlanning,
+                    task_type = TaskType.TaskPlanning.name,
                     task_dependencies = listOf("2"),
                     input_files = listOf("input3.txt"),
                 )

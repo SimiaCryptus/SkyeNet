@@ -1,21 +1,30 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
-import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskInterface
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.*
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 
-class ForeachTask<T: PlanTaskBaseInterface>(
+class ForeachTask(
     planSettings: PlanSettings,
-    planTask: ForeachTaskInterface<T>?
-) : AbstractTask<ForeachTaskInterface<T>>(planSettings, planTask) {
-    interface ForeachTaskInterface<T : PlanTaskBaseInterface> : PlanTaskBaseInterface {
-        val foreach_task: ForEachTask<T>?
-    }
+    planTask: ForeachTaskData?
+) : AbstractTask<ForeachTaskData>(planSettings, planTask) {
+
+    data class ForeachTaskData(
+        @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")
+        val foreach_items: List<String>? = null,
+        @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
+        val foreach_subplan: Map<String, PlanTaskBaseInterface>? = null,
+        override val task_type: String?,
+        override var task_description: String?,
+        override var task_dependencies: List<String>?,
+        override val input_files: List<String>?,
+        override val output_files: List<String>?,
+        override var state: TaskState?,
+    ) : PlanTaskBaseInterface
 
     override fun promptSegment(): String {
         return """
@@ -35,8 +44,8 @@ ForeachTask - Execute a task for each item in a list
         api: API
     ) {
         val items =
-            planTask?.foreach_task?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
-        val subTasks = planTask.foreach_task?.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")
+            planTask?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
+        val subTasks = planTask.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")
         val subPlanTask = agent.ui.newTask(false)
         task.add(subPlanTask.placeholder)
         

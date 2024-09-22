@@ -267,13 +267,13 @@ private fun SocketManagerBase.renderDiffBlock(
 
     var originalCode = prevCode // For reverting changes
     // Create "Apply Diff" button
-    var apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
+    val apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
             originalCode = load(filepath)
             newCode = patch(originalCode, diffVal)
-            filepath.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
             handle(mapOf(relativize to newCode.newCode))
-            hrefLink.set("""<div class="cmd-button">Diff Applied</div>""" + revert)
+            hrefLink.set("<div class=\"cmd-button\">Diff Applied</div>$revert")
             applydiffTask.complete()
         } catch (e: Throwable) {
             hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
@@ -402,23 +402,40 @@ Please provide a fix for the diff above in the form of a diff patch.
         hrefLink = applydiffTask.complete(apply1 + "\n" + apply2)!!
     }
 
+    val lang = filename.split('.').lastOrNull() ?: ""
     newCodeTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```\n",
+            """# $filename
+
+```$lang
+${newCode}
+```
+""",
             ui = ui, tabs = false
         )
     )
     newCodeTask.complete("")
     prevCodeTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```\n",
+            """# $filename
+
+```$lang
+${prevCode}
+```
+""",
             ui = ui, tabs = false
         )
     )
     prevCodeTask.complete("")
     patchTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```diff\n  ${echoDiff}\n```\n",
+            """
+# $filename
+
+```diff
+${echoDiff}
+```
+""",
             ui = ui,
             tabs = false
         )
@@ -431,25 +448,49 @@ Please provide a fix for the diff above in the form of a diff patch.
     val echoDiff2 = try {
         IterativePatchUtil.generatePatch(prevCode, newCode2)
     } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```\n", ui = ui)
+        renderMarkdown(
+            """
+
+```
+${e.stackTraceToString()}
+```
+""", ui = ui)
     }
     newCode2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```\n",
+            """
+# $filename
+
+```${filename.split('.').lastOrNull() ?: ""}
+${newCode2}
+```
+""",
             ui = ui, tabs = false
         )
     )
     newCode2Task.complete("")
     prevCode2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```\n",
+            """
+# $filename
+
+```${filename.split('.').lastOrNull() ?: ""}
+${prevCode}
+```
+""",
             ui = ui, tabs = false
         )
     )
     prevCode2Task.complete("")
     patch2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```diff\n  ${echoDiff2}\n```\n",
+            """
+# $filename
+
+```diff
+  ${echoDiff2}
+```
+""",
             ui = ui,
             tabs = false
         )

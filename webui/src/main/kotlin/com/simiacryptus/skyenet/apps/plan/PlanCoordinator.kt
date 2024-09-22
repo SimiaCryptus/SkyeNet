@@ -316,7 +316,7 @@ class PlanCoordinator(
                             render(
                                 withPrompt = PlanUtil.TaskBreakdownWithPrompt(
                                     prompt = userMessage,
-                                    plan = it.obj ?: emptyMap(),
+                                    plan = it.obj,
                                     planText = it.text
                                 ),
                                 ui = ui

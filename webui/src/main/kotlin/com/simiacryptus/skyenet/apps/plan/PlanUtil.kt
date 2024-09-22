@@ -129,7 +129,7 @@ object PlanUtil {
         val obj = fn() ?: emptyMap()
         var tasksByID = obj?.filter { (k, v) ->
             when {
-                v.task_type == TaskType.TaskPlanning && v.task_dependencies.isNullOrEmpty() ->
+                v.task_type == TaskType.TaskPlanning.name && v.task_dependencies.isNullOrEmpty() ->
                     if (retries <= 0) {
                         log.warn("TaskPlanning task $k has no dependencies: " + JsonUtil.toJson(obj))
                         true

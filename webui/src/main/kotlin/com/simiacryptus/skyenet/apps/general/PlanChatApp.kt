@@ -141,7 +141,7 @@ open class PlanChatApp(
 
         tasksByID[respondTaskId] = PlanningTask.PlanTask(
             task_description = "Respond to the user's chat message based on the executed plan",
-            task_type = TaskType.Inquiry,
+            task_type = TaskType.Inquiry.name,
             task_dependencies = tasksByID.keys.toList()
         )
 

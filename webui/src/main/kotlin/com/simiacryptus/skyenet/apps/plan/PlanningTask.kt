@@ -1,12 +1,21 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DatabindContext
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JavaType
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBaseInterface
-import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskInterface
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
@@ -23,6 +32,7 @@ class PlanningTask<T:PlanTaskBaseInterface>(
     planTask: T?
 ) : AbstractTask<T>(planSettings, planTask) {
 
+    @JsonTypeIdResolver(PlanTaskTypeIdResolver::class)
     interface TaskBreakdownInterface<T:PlanTaskBaseInterface> {
         val tasksByID: Map<String, T>?
     }
@@ -32,11 +42,12 @@ class PlanningTask<T:PlanTaskBaseInterface>(
         override val tasksByID: Map<String, PlanTask>? = null,
     ) : TaskBreakdownInterface<PlanTask>
 
-    data class PlanTask(
+    @JsonTypeIdResolver(PlanTaskTypeIdResolver::class)
+    class PlanTask(
+        @Description("An enumeration indicating the type of task to be executed. Must be a single value from the TaskType enum.")
+        override val task_type: String? = null,
         @Description("A detailed description of the specific task to be performed, including its role in the overall plan and its dependencies on other tasks.")
         override var task_description: String? = null,
-        @Description("An enumeration indicating the type of task to be executed. Must be a single value from the TaskType enum.")
-        override val task_type: TaskType<*>? = null,
         @Description("A list of IDs of tasks that must be completed before this task can be executed. This defines upstream dependencies ensuring proper task order and information flow.")
         override var task_dependencies: List<String>? = null,
         @Description("A list of file paths specifying the input files required by this task. These may be outputs from dependent tasks, facilitating data transfer between tasks.")
@@ -45,18 +56,34 @@ class PlanningTask<T:PlanTaskBaseInterface>(
         override val output_files: List<String>? = null,
         @Description("The current execution state of the task. Important for coordinating task execution and managing dependencies.")
         override var state: TaskState? = TaskState.Pending,
-        @Description("Only applicable in Foreach tasks - details specific to the Foreach task.")
-        override val foreach_task: ForEachTask<PlanTask>? = null,
         @Description("Only applicable in CommandAutoFix tasks - details specific to the CommandAutoFix task.")
         override val execution_task: ExecutionTask? = null,
-    ) : PlanTaskBaseInterface, ExecutionTaskInterface, ForeachTaskInterface<PlanTask>
+    ) : PlanTaskBaseInterface, ExecutionTaskInterface
 
-    data class ForEachTask<T:PlanTaskBaseInterface>(
-        @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")
-        val foreach_items: List<String>? = null,
-        @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
-        val foreach_subplan: Map<String, T>? = null,
-    )
+
+
+    class PlanTaskTypeIdResolver : TypeIdResolverBase() {
+        override fun idFromValue(value: Any): String {
+            return when (value) {
+                is PlanTaskBaseInterface -> value.task_type?.let {
+                    TaskType.valueOf(it).name
+                } ?: throw IllegalArgumentException("Unknown task type")
+                else -> throw IllegalArgumentException("Unexpected value type: ${value.javaClass}")
+            }
+        }
+        override fun idFromValueAndType(value: Any, suggestedType: Class<*>): String {
+            return idFromValue(value)
+        }
+        override fun typeFromId(context: DatabindContext, id: String): JavaType {
+            val taskType = TaskType.valueOf(id.replace(" ", ""))
+            val subType = context.constructType(taskType.taskDataClass)
+            return subType
+        }
+        override fun getMechanism(): JsonTypeInfo.Id {
+            return JsonTypeInfo.Id.NAME
+        }
+    }
+
 
     data class ExecutionTask(
         @Description("The command line for the task (Only applicable in CommandAutoFix tasks).")
@@ -90,16 +117,16 @@ class PlanningTask<T:PlanTaskBaseInterface>(
         task: SessionTask,
         api: API
     ) {
-        @Suppress("NAME_SHADOWING") val task = agent.ui.newTask(false).apply { task.add(placeholder) }
+        val newTask = agent.ui.newTask(false).apply { add(placeholder) }
         fun toInput(s: String) = listOf(
             userMessage,
-            JsonUtil.toJson(plan),
+            JsonUtil.toJson(plan.entries.associate { it.key to it.value }),
             getPriorCode(planProcessingState),
             getInputFileCode(),
             s
         ).filter { it.isNotBlank() }
         val subPlan = if (planSettings.allowBlocking && !planSettings.autoFix) {
-            createSubPlanDiscussable(task, userMessage, ::toInput, api, agent.ui).call().obj
+            createSubPlanDiscussable(newTask, userMessage, ::toInput, api, agent.ui).call().obj
         } else {
             val design = taskBreakdownActor.answer(
                 toInput("Expand ${planTask?.task_description ?: ""}"),
