@@ -18,14 +18,13 @@ class DocumentationTask(
     class DocumentationTaskData(
         @Description("List of files or tasks to be documented")
         val items_to_document: List<String>? = null,
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.Documentation.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,

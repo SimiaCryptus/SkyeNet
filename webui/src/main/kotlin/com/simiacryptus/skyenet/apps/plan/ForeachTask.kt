@@ -18,14 +18,13 @@ class ForeachTask(
         val foreach_items: List<String>? = null,
         @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
         val foreach_subplan: Map<String, PlanTaskBase>? = null,
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null,
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.ForeachTask.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,

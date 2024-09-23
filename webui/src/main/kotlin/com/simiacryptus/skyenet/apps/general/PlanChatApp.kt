@@ -4,7 +4,6 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.apps.plan.*
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.apps.plan.InquiryTask.InquiryTaskData
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
@@ -142,7 +141,6 @@ open class PlanChatApp(
 
         tasksByID[respondTaskId] = InquiryTaskData(
             task_description = "Respond to the user's chat message based on the executed plan",
-            task_type = TaskType.Inquiry.name,
             task_dependencies = tasksByID.keys.toList()
         )
 

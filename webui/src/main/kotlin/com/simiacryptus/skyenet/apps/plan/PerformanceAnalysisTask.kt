@@ -2,7 +2,6 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.PerformanceAnalysisTask.PerformanceAnalysisTaskData
-
 import org.slf4j.LoggerFactory
 
 
@@ -15,14 +14,13 @@ class PerformanceAnalysisTask(
         val files_to_analyze: List<String>? = null,
         @Description("Specific areas of focus for the analysis (e.g., time complexity, memory usage, I/O operations)")
         val analysis_focus: List<String>? = null,
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null,
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.PerformanceAnalysis.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,

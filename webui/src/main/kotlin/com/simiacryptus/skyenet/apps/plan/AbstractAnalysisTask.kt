@@ -4,7 +4,6 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.apps.general.CommandPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
@@ -23,7 +22,7 @@ abstract class AbstractAnalysisTask<T : PlanTaskBase>(
         SimpleActor(
             name = actorName,
             prompt = actorPrompt,
-            model = planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
+            model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
                 ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
@@ -65,7 +64,7 @@ abstract class AbstractAnalysisTask<T : PlanTaskBase>(
                 autoFix = agent.planSettings.autoFix
             ),
             api = api as ChatClient,
-            model = agent.planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
+            model = agent.planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
                 ?: agent.planSettings.defaultModel,
             files = agent.files,
             command = analysisResult

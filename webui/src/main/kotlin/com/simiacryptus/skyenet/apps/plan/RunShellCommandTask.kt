@@ -24,14 +24,13 @@ class RunShellCommandTask(
         val command: String? = null,
         @Description("The working directory for the command execution")
         val workingDir: String? = null,
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.RunShellCommand.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,
@@ -55,7 +54,7 @@ Note: This task is for running simple and safe commands. Avoid executing command
                 "language" to (planSettings.language ?: "bash"),
                 "command" to (planTask?.command ?: planSettings.command),
             ),
-            model = planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
+            model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
                 ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )

@@ -22,14 +22,13 @@ class CommandAutoFixTask(
         val command: List<String>? = null,
         @Description("The working directory for the command execution")
         val workingDir: String? = null,
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.CommandAutoFix.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,
@@ -90,7 +89,7 @@ CommandAutoFix - Run a command and automatically fix any issues that arise
                 ),
                 api = api as ChatClient,
                 files = agent.files,
-                model = agent.planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
+                model = agent.planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
                     ?: agent.planSettings.defaultModel,
             ).run(
                 ui = agent.ui,

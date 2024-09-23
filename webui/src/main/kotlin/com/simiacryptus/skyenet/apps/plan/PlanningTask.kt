@@ -21,14 +21,13 @@ class PlanningTask(
     planTask: PlanningTaskData?
 ) : AbstractTask<PlanningTaskData>(planSettings, planTask) {
     class PlanningTaskData(
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = TaskState.Pending,
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.TaskPlanning.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,

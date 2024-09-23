@@ -2,7 +2,6 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.SecurityAuditTask.SecurityAuditTaskData
-
 import org.slf4j.LoggerFactory
 
 class SecurityAuditTask(
@@ -16,14 +15,13 @@ class SecurityAuditTask(
         val filesToAudit: List<String>? = null,
         @Description("Specific areas of focus for the security audit")
         val focusAreas: List<String>? = null,
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.SecurityAudit.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,

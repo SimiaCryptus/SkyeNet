@@ -22,14 +22,13 @@ class InquiryTask(
         val inquiry_questions: List<String>? = null,
         @Description("The goal or purpose of the inquiry")
         val inquiry_goal: String? = null,
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.Inquiry.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,
@@ -53,7 +52,7 @@ class InquiryTask(
                 }).
                 This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(planTask?.task_type!! as TaskType<*>).model
+            model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
                 ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )

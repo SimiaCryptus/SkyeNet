@@ -136,21 +136,18 @@ ${taskType.name}:
             tasksByID = mapOf(
                 "1" to CommandAutoFixTaskData(
                     task_description = "Task 1",
-                    task_type = TaskType.CommandAutoFix.name,
                     task_dependencies = listOf(),
                     command = listOf("npx", "create-react-app", ".", "--template", "typescript"),
                     workingDir = "."
                 ),
                 "2" to FileModificationTaskData(
                     task_description = "Task 2",
-                    task_type = TaskType.FileModification.name,
                     task_dependencies = listOf("1"),
                     input_files = listOf("input2.txt"),
                     output_files = listOf("output2.txt"),
                 ),
                 "3" to PlanningTaskData(
                     task_description = "Task 3",
-                    task_type = TaskType.TaskPlanning.name,
                     task_dependencies = listOf("2"),
                     input_files = listOf("input3.txt"),
                 )

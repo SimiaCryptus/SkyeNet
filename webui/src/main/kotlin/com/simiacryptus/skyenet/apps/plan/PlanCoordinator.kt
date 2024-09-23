@@ -7,7 +7,6 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies

@@ -23,12 +23,11 @@ class FileModificationTask(
         output_files: List<String>? = null,
         @Description("Specific modifications to be made to the files")
         val modifications: Map<String, String>? = null,
-        task_type: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         state: TaskState? = null
     ) : PlanTaskBase(
-        task_type = task_type,
+        task_type = TaskType.FileModification.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
         input_files = input_files,

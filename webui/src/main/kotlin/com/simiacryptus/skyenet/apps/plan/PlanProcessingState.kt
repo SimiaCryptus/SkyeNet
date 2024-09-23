@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import java.util.concurrent.Future
 

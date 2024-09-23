@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.skyenet.AgentPatterns
-import com.simiacryptus.skyenet.apps.plan.AbstractTask.PlanTaskBase
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.TaskState
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -95,7 +94,7 @@ object PlanUtil {
             val graphBuilder = StringBuilder("graph TD;\n")
             subTasks.forEach { (taskId, task) ->
                 val sanitizedTaskId = sanitizeForMermaid(taskId)
-                val taskType = (task.task_type as? TaskType<*>)?.name ?: "Unknown"
+                val taskType = task.task_type ?: "Unknown"
                 val escapedDescription = escapeMermaidCharacters(task.task_description ?: "")
                 val style = when (task.state) {
                     TaskState.Completed -> ":::completed"
