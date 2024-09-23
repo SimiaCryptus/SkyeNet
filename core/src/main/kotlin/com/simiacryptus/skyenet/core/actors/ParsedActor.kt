@@ -1,16 +1,17 @@
 package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.ApiModel
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.skyenet.core.util.MultiExeption
+import com.simiacryptus.util.JsonUtil
+import org.slf4j.LoggerFactory
 import java.util.function.Function
 
 open class ParsedActor<T : Any>(
@@ -27,6 +28,7 @@ open class ParsedActor<T : Any>(
     ) {
         override val includeMethods: Boolean get() = false
     },
+    var parserPrompt: String? = null,
 ) : BaseActor<List<String>, ParsedResponse<T>>(
     prompt = prompt,
     name = name,
@@ -55,7 +57,7 @@ open class ParsedActor<T : Any>(
         ParsedResponse<T>(resultClass!!) {
         override val text =
             response(*messages, api = api).choices.first().message?.content ?: throw RuntimeException("No response")
-        private val _obj: T by lazy { getParser(api).apply(text) }
+        private val _obj: T by lazy { getParser(api, parserPrompt).apply(text) }
         override val obj get() = _obj
     }
 
@@ -83,7 +85,10 @@ open class ParsedActor<T : Any>(
                     ApiModel.ChatRequest(
                         messages = listOf(
                             ApiModel.ChatMessage(role = ApiModel.Role.system, content = prompt.toContentList()),
-                            ApiModel.ChatMessage(role = ApiModel.Role.user, content = "The user message to parse:\n\n$input".toContentList()),
+                            ApiModel.ChatMessage(
+                                role = ApiModel.Role.user,
+                                content = "The user message to parse:\n\n$input".toContentList()
+                            ),
                         ),
                         temperature = temperature,
                         model = parsingModel.modelName,
@@ -106,7 +111,14 @@ open class ParsedActor<T : Any>(
                     if (endIndex > 7) {
                         contentUnwrapped = contentUnwrapped.substring(7, endIndex)
                     } else {
-                        throw RuntimeException("Failed to parse response: ${contentUnwrapped.replace("\n", "\n  ")}")
+                        throw RuntimeException(
+                            "Failed to parse response: ${
+                                contentUnwrapped.replace(
+                                    "\n",
+                                    "\n  "
+                                )
+                            }"
+                        )
                     }
                 }
 
@@ -143,6 +155,8 @@ open class ParsedActor<T : Any>(
     )
 
     companion object {
-        private val log = org.slf4j.LoggerFactory.getLogger(ParsedActor::class.java)
+        private val log = LoggerFactory.getLogger(ParsedActor::class.java)
     }
+
+
 }

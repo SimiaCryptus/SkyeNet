@@ -15,14 +15,14 @@ open class TabbedDisplay(
 
     val size: Int get() = tabs.size
     open fun render() = if(tabs.isEmpty()) "" else """
-    <div class="tabs-container" id="${UUID.randomUUID()}">
-      ${renderTabButtons()}
-      ${
+<div class="tabs-container" id="${UUID.randomUUID()}">
+${renderTabButtons()}
+${
         tabs.toTypedArray().withIndex().joinToString("\n")
         { (idx, t) -> renderContentTab(t, idx) }
     }
-      </div>
-    """.trimIndent()
+</div>
+"""
 
      val container: StringBuilder by lazy { 
         log.debug("Initializing container with rendered content")
@@ -30,7 +30,7 @@ open class TabbedDisplay(
      }
 
     open fun renderTabButtons() = """
-    <div class="tabs">${
+<div class="tabs">${
         tabs.toTypedArray().withIndex().joinToString("\n") { (idx, pair) ->
             if (idx == selectedTab) {
                 """<button class="tab-button active" data-for-tab="$idx">${pair.first}</button>"""
@@ -39,15 +39,15 @@ open class TabbedDisplay(
             }
         }
     }</div>
-    """.trimIndent()
+"""
 
     open fun renderContentTab(t: Pair<String, StringBuilder>, idx: Int) = """
-    <div class="tab-content ${
+<div class="tab-content ${
         when {
             idx == selectedTab -> "active"
             else -> ""
         }
-    }" data-tab="$idx">${t.second}</div>""".trimIndent()
+    }" data-tab="$idx">${t.second}</div>"""
 
 
     operator fun get(i: String) = tabs.toMap()[i]

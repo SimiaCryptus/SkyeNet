@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.OpenAITextModel
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.initialPlan
 import com.simiacryptus.skyenet.apps.plan.PlanSettings

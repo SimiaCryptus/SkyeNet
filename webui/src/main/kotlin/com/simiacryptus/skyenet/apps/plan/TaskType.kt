@@ -1,30 +1,56 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver
+import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.AbstractTask.TaskState
+import com.simiacryptus.skyenet.apps.plan.CodeOptimizationTask.CodeOptimizationTaskData
+import com.simiacryptus.skyenet.apps.plan.CodeReviewTask.CodeReviewTaskData
+import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
+import com.simiacryptus.skyenet.apps.plan.DocumentationTask.DocumentationTaskData
+import com.simiacryptus.skyenet.apps.plan.FileModificationTask.FileModificationTaskData
+import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskData
+import com.simiacryptus.skyenet.apps.plan.InquiryTask.InquiryTaskData
+import com.simiacryptus.skyenet.apps.plan.PerformanceAnalysisTask.PerformanceAnalysisTaskData
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
+import com.simiacryptus.skyenet.apps.plan.RefactorTask.RefactorTaskData
+import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTaskData
+import com.simiacryptus.skyenet.apps.plan.SecurityAuditTask.SecurityAuditTaskData
+import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.valueOf
+import com.simiacryptus.skyenet.apps.plan.TestGenerationTask.TestGenerationTaskData
 import com.simiacryptus.util.DynamicEnum
 import com.simiacryptus.util.DynamicEnumDeserializer
 import com.simiacryptus.util.DynamicEnumSerializer
 
 @JsonDeserialize(using = TaskTypeDeserializer::class)
 @JsonSerialize(using = TaskTypeSerializer::class)
-class TaskType(name: String) : DynamicEnum<TaskType>(name) {
+class TaskType<out T : PlanTaskBase>(
+    name: String,
+    val taskDataClass: Class<out T>
+) : DynamicEnum<TaskType<*>>(name) {
     companion object {
-        private val taskConstructors = mutableMapOf<TaskType, (PlanSettings, PlanningTask.PlanTask) -> AbstractTask>()
 
-        val TaskPlanning = TaskType("TaskPlanning")
-        val Inquiry = TaskType("Inquiry")
-        val FileModification = TaskType("FileModification")
-        val Documentation = TaskType("Documentation")
-        val RunShellCommand = TaskType("RunShellCommand")
-        val CommandAutoFix = TaskType("CommandAutoFix")
-        val CodeReview = TaskType("CodeReview")
-        val TestGeneration = TaskType("TestGeneration")
-        val Optimization = TaskType("Optimization")
-        val SecurityAudit = TaskType("SecurityAudit")
-        val PerformanceAnalysis = TaskType("PerformanceAnalysis")
-        val RefactorTask = TaskType("RefactorTask")
-        val ForeachTask = TaskType("ForeachTask")
+        private val taskConstructors =
+            mutableMapOf<TaskType<*>, (PlanSettings, PlanTaskBase?) -> AbstractTask<out PlanTaskBase>>()
+
+        val TaskPlanning = TaskType("TaskPlanning", PlanningTaskData::class.java)
+        val Inquiry = TaskType("Inquiry", InquiryTaskData::class.java)
+        val FileModification = TaskType("FileModification", FileModificationTaskData::class.java)
+        val Documentation = TaskType("Documentation", DocumentationTaskData::class.java)
+        val CodeReview = TaskType("CodeReview", CodeReviewTaskData::class.java)
+        val TestGeneration = TaskType("TestGeneration", TestGenerationTaskData::class.java)
+        val Optimization = TaskType("Optimization", CodeOptimizationTaskData::class.java)
+        val SecurityAudit = TaskType("SecurityAudit", SecurityAuditTaskData::class.java)
+        val PerformanceAnalysis = TaskType("PerformanceAnalysis", PerformanceAnalysisTaskData::class.java)
+        val RefactorTask = TaskType("RefactorTask", RefactorTaskData::class.java)
+        val RunShellCommand = TaskType("RunShellCommand", RunShellCommandTaskData::class.java)
+        val CommandAutoFix = TaskType("CommandAutoFix", CommandAutoFixTaskData::class.java)
+        val ForeachTask = TaskType("ForeachTask", ForeachTaskData::class.java)
 
         init {
             registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
@@ -42,17 +68,31 @@ class TaskType(name: String) : DynamicEnum<TaskType>(name) {
             registerConstructor(TaskPlanning) { settings, task -> PlanningTask(settings, task) }
         }
 
-        private fun registerConstructor(
-            taskType: TaskType,
-            constructor: (PlanSettings, PlanningTask.PlanTask) -> AbstractTask
+        private fun <T : PlanTaskBase> registerConstructor(
+            taskType: TaskType<T>,
+            constructor: (PlanSettings, T?) -> AbstractTask<T>
         ) {
-            taskConstructors[taskType] = constructor
+            taskConstructors[taskType] = { settings : PlanSettings, task : PlanTaskBase? ->
+                constructor(settings, task as T?)
+            }
             register(taskType)
         }
 
         fun values() = values(TaskType::class.java)
-        fun getImpl(planSettings: PlanSettings, planTask: PlanningTask.PlanTask): AbstractTask {
-            val taskType = planTask.task_type ?: throw RuntimeException("Task type is null")
+        fun getImpl(
+            planSettings: PlanSettings,
+            planTask: PlanTaskBase?
+        ): AbstractTask<out PlanTaskBase> {
+            val taskType = planTask?.task_type?.let { valueOf(it) }
+                ?: throw RuntimeException("Task type not specified")
+            return getImpl(planSettings, taskType, planTask)
+        }
+
+        fun getImpl(
+            planSettings: PlanSettings,
+            taskType: TaskType<*>,
+            planTask: PlanTaskBase? = null
+        ): AbstractTask<out PlanTaskBase> {
             if (!planSettings.getTaskSettings(taskType).enabled) {
                 throw DisabledTaskException(taskType)
             }
@@ -63,12 +103,67 @@ class TaskType(name: String) : DynamicEnum<TaskType>(name) {
 
         fun getAvailableTaskTypes(planSettings: PlanSettings) = values().filter {
             planSettings.getTaskSettings(it).enabled
-        }.map { getImpl(planSettings, PlanningTask.PlanTask(task_type = it)) }
+        }
 
-        fun valueOf(name: String): TaskType = valueOf(TaskType::class.java, name)
-        private fun register(taskType: TaskType) = register(TaskType::class.java, taskType)
+        fun valueOf(name: String): TaskType<*> = valueOf(TaskType::class.java, name)
+        private fun register(taskType: TaskType<*>) = register(TaskType::class.java, taskType)
     }
 }
 
-class TaskTypeSerializer : DynamicEnumSerializer<TaskType>(TaskType::class.java)
-class TaskTypeDeserializer : DynamicEnumDeserializer<TaskType>(TaskType::class.java)
+@JsonTypeIdResolver(PlanTaskTypeIdResolver::class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, property = "task_type")
+//@JsonDeserialize(using = PlanTaskBaseDeserializer::class)
+abstract class PlanTaskBase(
+    @Description("An enumeration indicating the type of task to be executed. Must be a single value from the TaskType enum.")
+    val task_type: String? = null,
+    @Description("A detailed description of the specific task to be performed, including its role in the overall plan and its dependencies on other tasks.")
+    var task_description: String? = null,
+    @Description("A list of IDs of tasks that must be completed before this task can be executed. This defines upstream dependencies ensuring proper task order and information flow.")
+    var task_dependencies: List<String>? = null,
+    @Description("A list of file paths specifying the input files required by this task. These may be outputs from dependent tasks, facilitating data transfer between tasks.")
+    val input_files: List<String>? = null,
+    @Description("A list of file paths specifying the output files generated by this task. These may serve as inputs for subsequent tasks, enabling information sharing.")
+    val output_files: List<String>? = null,
+    @Description("The current execution state of the task. Important for coordinating task execution and managing dependencies.")
+    var state: TaskState? = null
+)
+
+class PlanTaskTypeIdResolver : TypeIdResolverBase() {
+    override fun idFromValue(value: Any) = when (value) {
+        is PlanTaskBase -> if (value.task_type != null) {
+            value.task_type
+        } else {
+            throw IllegalArgumentException("Unknown task type")
+        }
+
+        else -> throw IllegalArgumentException("Unexpected value type: ${value.javaClass}")
+    }
+
+    override fun idFromValueAndType(value: Any, suggestedType: Class<*>): String {
+        return idFromValue(value)
+    }
+
+    override fun typeFromId(context: DatabindContext, id: String): JavaType {
+        val taskType = TaskType.valueOf(id.replace(" ", ""))
+        val subType = context.constructType(taskType.taskDataClass)
+        return subType
+    }
+
+    override fun getMechanism(): JsonTypeInfo.Id {
+        return JsonTypeInfo.Id.CUSTOM
+    }
+}
+
+class TaskTypeSerializer : DynamicEnumSerializer<TaskType<*>>(TaskType::class.java)
+class TaskTypeDeserializer : DynamicEnumDeserializer<TaskType<*>>(TaskType::class.java)
+class PlanTaskBaseDeserializer : JsonDeserializer<PlanTaskBase>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): PlanTaskBase {
+        val node = ctxt.readTree(p)
+        val taskType = node.get("task_type")?.asText()
+        if (taskType == null) {
+            throw JsonMappingException(p, "Missing task_type")
+        }
+        val baseTaskType = valueOf(taskType)
+        return ctxt.readValue(node.traverse(p.codec), baseTaskType.taskDataClass)
+    }
+}

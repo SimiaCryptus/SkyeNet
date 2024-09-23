@@ -1,9 +1,8 @@
 package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.ApiModel.ChatMessage
-import com.simiacryptus.jopenai.GPT4Tokenizer
+import com.simiacryptus.jopenai.models.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel.ChatMessage
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.AudioModels
 import com.simiacryptus.jopenai.models.ChatModels
@@ -20,6 +19,12 @@ open class TextToSpeechActor(
     name = name,
     model = models,
 ) {
+    var openAI: OpenAIClient? = null
+    fun setOpenAI(openAI: OpenAIClient): TextToSpeechActor {
+        this.openAI = openAI
+        return this
+    }
+
     override fun chatMessages(questions: List<String>) = questions.map {
         ChatMessage(
             role = ApiModel.Role.user,
@@ -50,14 +55,11 @@ open class TextToSpeechActor(
     override fun respond(input: List<String>, api: API, vararg messages: ChatMessage) =
         SpeechResponseImpl(
             messages.joinToString("\n") { it.content?.joinToString("\n") { it.text ?: "" } ?: "" },
-            api = api
+            api = this.openAI ?: throw RuntimeException("OpenAI client not set")
         )
 
 
-    override fun withModel(model: ChatModels) = this
-}
-
-interface SpeechResponse {
-    val mp3data: ByteArray?
+    override fun withModel(model: ChatModels) = TextToSpeechActor(name, audioModel, voice, speed, model)
+        .also { it.openAI = this.openAI }
 }
 

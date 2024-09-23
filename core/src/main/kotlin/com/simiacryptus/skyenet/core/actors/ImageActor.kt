@@ -1,10 +1,9 @@
 package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.ApiModel
-import com.simiacryptus.jopenai.ApiModel.ChatMessage
-import com.simiacryptus.jopenai.ApiModel.ImageGenerationRequest
-import com.simiacryptus.jopenai.GPT4Tokenizer
+import com.simiacryptus.jopenai.models.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel.ChatMessage
+import com.simiacryptus.jopenai.models.ApiModel.ImageGenerationRequest
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.ImageModels
@@ -66,7 +65,7 @@ open class ImageActor(
     override fun respond(input: List<String>, api: API, vararg messages: ChatMessage): ImageResponse {
         var text = response(*messages, api = api).choices.first().message?.content
             ?: throw RuntimeException("No response")
-        while (imageModel.maxPrompt <= text.length) {
+        while (imageModel.maxPrompt <= text.length && null != openAI) {
             text = response(
                 *listOf(
                     messages.toList(),
@@ -79,7 +78,7 @@ open class ImageActor(
                 api = api
             ).choices.first().message?.content ?: throw RuntimeException("No response")
         }
-        return ImageResponseImpl(text, api = api)
+        return ImageResponseImpl(text, api = this.openAI!!)
     }
 
     override fun withModel(model: ChatModels): ImageActor = ImageActor(
@@ -92,9 +91,11 @@ open class ImageActor(
         height = height,
     )
 
+    var openAI: OpenAIClient? = null
+    fun setImageAPI(openAI: OpenAIClient): ImageActor {
+        this.openAI = openAI
+        return this
+    }
+
 }
 
-interface ImageResponse {
-    val text: String
-    val image: BufferedImage
-}

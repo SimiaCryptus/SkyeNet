@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width,initial-scale=1'>
+    <title>SimiaCryptus Skyenet Apps</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+    <link id="theme_style" href="/main.css" rel="stylesheet"/>
+    <script type="module" src="main.js"></script>
+    <script type="module" src="functions.js"></script>
+    <script type="module" src="tabs.js"></script>
+    <script type="module" src="theme.js"></script>
+    <script type="module" src="about.js"></script>
+    <script type="module" src="welcome.js"></script>
+    <style>
+        .app-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="modal-content"></div>
+    </div>
+</div>
+
+<div id="toolbar"> 
+    <div class="dropdown">
+        <a class="dropbtn">About</a>
+        <div class="dropdown-content">
+            <a id="privacy">Privacy Policy</a>
+            <a id="tos">Terms of Service</a>
+        </div>
+    </div>
+    <div class="dropdown">
+        <a class="dropbtn">Themes</a>
+        <div class="dropdown-content">
+            <a id="theme_normal">Day</a>
+            <a id="theme_night">Night</a>
+            <a id="theme_forest">Forest</a>
+            <a id="theme_pony">Bubblegum</a>
+            <a id="theme_alien">Alien</a>
+        </div>
+    </div>
+</div>
+
+<div id="namebar">
+    <div class="dropdown">
+        <a href="/login" id="login">Login</a>
+        <a id="username" style="visibility: hidden"></a>
+        <div class="dropdown-content">
+            <a id="user-settings" style="visibility: hidden">Settings</a>
+            <a id="user-usage" style="visibility: hidden">Usage</a>
+            <a id="logout" style="visibility: hidden">Logout</a>
+        </div>
+    </div>
+</div>
+
+<div id="welcome-markdown">
+    <!-- Welcome Markdown will be loaded here -->
+</div>
+
+<table class="applist" id='application-list'>
+    <!-- Application list will be loaded here -->
+</table>
+
+<div id="post-app-markdown">
+    <!-- Post Application Markdown will be loaded here -->
+</div>
+
+<footer id="footer">
+    <a href="https://github.com/SimiaCryptus/SkyeNet" target="_blank">Powered by SkyeNet</a>
+</footer>
+
+
+</body>
+</html>

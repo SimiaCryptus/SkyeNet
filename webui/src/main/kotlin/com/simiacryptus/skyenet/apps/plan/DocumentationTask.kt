@@ -1,19 +1,37 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
+import com.simiacryptus.skyenet.apps.plan.DocumentationTask.DocumentationTaskData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
 
 class DocumentationTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractTask(planSettings, planTask) {
+    planTask: DocumentationTaskData?
+) : AbstractTask<DocumentationTaskData>(planSettings, planTask) {
+    class DocumentationTaskData(
+        @Description("List of files or tasks to be documented")
+        val items_to_document: List<String>? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = TaskType.Documentation.name,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     override fun promptSegment(): String {
         return """
  Documentation - Generate documentation
@@ -30,7 +48,7 @@ class DocumentationTask(
  Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
  Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(planTask.task_type!!).model ?: planSettings.defaultModel,
+            model = planSettings.getTaskSettings(TaskType.Documentation).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }
@@ -39,7 +57,7 @@ class DocumentationTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API
@@ -49,12 +67,14 @@ class DocumentationTask(
             semaphore.release()
         }
         val process = { sb: StringBuilder ->
+            val itemsToDocument = planTask?.items_to_document ?: emptyList()
             val docResult = documentationGeneratorActor.answer(
                 listOf<String>(
                     userMessage,
                     JsonUtil.toJson(plan),
                     getPriorCode(planProcessingState),
                     getInputFileCode(),
+                    "Items to document: ${itemsToDocument.joinToString(", ")}"
                 ).filter { it.isNotBlank() }, api
             )
             planProcessingState.taskResult[taskId] = docResult

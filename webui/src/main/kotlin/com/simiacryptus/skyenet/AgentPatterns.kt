@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
-import java.util.UUID
+import java.util.*
 
 object AgentPatterns {
 
@@ -21,9 +21,9 @@ object AgentPatterns {
         displayMapInTabs(tasks.mapValues { it.value.placeholder }, ui = ui, split = false)
     } else {
         """
-    |<div class="tabs-container" id="${UUID.randomUUID()}">
-    |<div class="tabs">
-    |${
+<div class="tabs-container" id="${UUID.randomUUID()}">
+<div class="tabs">
+${
             map.keys.joinToString("\n") { key ->
                 """<button class="tab-button${
                     when {
@@ -31,25 +31,25 @@ object AgentPatterns {
                         else -> ""
                     }
                 }" data-for-tab="$key">$key</button>"""
-            }/*.indent("  ")*/
+            }
         }
-    |</div>
-    |${
+</div>
+${
             map.entries.withIndex().joinToString("\n") { (idx, t) ->
                 val (key, value) = t
                 """
-        |<div class="tab-content${
+<div class="tab-content${
                     when {
                         idx == 0 -> " active"
                         else -> ""
                     }
                 }" data-tab="$key">
-      |${value/*.indent("  ")*/}
-      |</div>
-      """.trimMargin()
-            }/*.indent("  ")*/
+${value/*.indent("  ")*/}
+</div>
+"""
+            }
         }
-    |</div>
-  """.trimMargin()
+</div>
+"""
     }
 }

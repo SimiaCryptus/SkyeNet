@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.webui.util
+package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import java.io.File

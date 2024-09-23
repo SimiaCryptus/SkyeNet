@@ -1,8 +1,7 @@
 package com.simiacryptus.skyenet.webui.chat
 
-import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Retryable
@@ -12,7 +11,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil
 
 open class ChatSocketManager(
     session: Session,

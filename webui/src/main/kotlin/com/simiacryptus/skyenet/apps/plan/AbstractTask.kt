@@ -2,8 +2,6 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanTask
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownInterface
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -13,15 +11,16 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.streams.asSequence
 
-abstract class AbstractTask(
+abstract class AbstractTask<T : PlanTaskBase>(
     val planSettings: PlanSettings,
-    val planTask: PlanTask
+    val planTask: T?
 ) {
     var state: TaskState? = TaskState.Pending
     protected val codeFiles = mutableMapOf<Path, String>()
 
     protected open val root: Path
-        get() = File(planSettings.workingDir).toPath()
+        get() = planSettings.workingDir?.let { File(it).toPath() }
+            ?: throw IllegalStateException("Working directory not set")
 
     enum class TaskState {
         Pending,
@@ -30,7 +29,7 @@ abstract class AbstractTask(
     }
 
     protected fun getPriorCode(planProcessingState: PlanProcessingState) =
-        planTask.task_dependencies?.joinToString("\n\n\n") { dependency ->
+        planTask?.task_dependencies?.joinToString("\n\n\n") { dependency ->
             """
         |# $dependency
         |
@@ -38,7 +37,8 @@ abstract class AbstractTask(
         """.trimMargin()
         } ?: ""
 
-    protected fun getInputFileCode(): String = ((planTask.input_files ?: listOf()) + (planTask.output_files ?: listOf()))
+    protected fun getInputFileCode(): String =
+        ((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf()))
         .flatMap { pattern: String ->
             val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
             Files.walk(root).asSequence()
@@ -90,7 +90,7 @@ abstract class AbstractTask(
         agent: PlanCoordinator,
         taskId: String,
         userMessage: String,
-        plan: TaskBreakdownInterface,
+        plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
         api: API

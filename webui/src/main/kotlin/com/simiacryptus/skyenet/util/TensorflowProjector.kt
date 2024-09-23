@@ -1,9 +1,11 @@
-package com.simiacryptus.skyenet.webui.util
+package com.simiacryptus.skyenet.util
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel.EmbeddingRequest
 import com.simiacryptus.jopenai.models.EmbeddingModels
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
@@ -21,7 +23,7 @@ class TensorflowProjector(
     private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {
         val vectors = words.map { word ->
             word to (api as OpenAIClient).createEmbedding(
-                com.simiacryptus.jopenai.ApiModel.EmbeddingRequest(
+                EmbeddingRequest(
                     model = EmbeddingModels.AdaEmbedding.modelName,
                     input = word,
                 )

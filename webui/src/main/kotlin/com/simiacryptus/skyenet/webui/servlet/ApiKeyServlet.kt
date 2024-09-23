@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.OpenAIModel
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.userSettingsManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot

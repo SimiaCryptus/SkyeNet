@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.core.platform.file
 
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.User

@@ -9,7 +9,7 @@ import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.readText
@@ -33,7 +33,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
         // Single diff block without the closing ``` due to LLM limitations... add it back and recurse
         return addApplyFileDiffLinks(
             root,
-            response + "\n```",
+            response + "\n```\n",
             handle,
             ui,
             api
@@ -96,20 +96,21 @@ private fun SocketManagerBase.renderNewFile(
             filepath.toFile().writeText(codeValue, Charsets.UTF_8)
             handle(mapOf(File(filename).toPath() to codeValue))
             return """
-                |```${codeLang}
-                |${codeValue}
-                |```
-                |
-                |<div class="cmd-button">Automatically Saved ${filepath}</div>
-                |""".trimMargin()
+```${codeLang}
+${codeValue}
+```
+
+<div class="cmd-button">Automatically Saved ${filepath}</div>
+
+"""
         } catch (e: Throwable) {
             return """
-                |```${codeLang}
-                |${codeValue}
-                |```
-                |
-                |<div class="cmd-button">Error Auto-Saving ${filename}: ${e.message}</div>
-                |""".trimMargin()
+```${codeLang}
+${codeValue}
+```
+
+<div class="cmd-button">Error Auto-Saving ${filename}: ${e.message}</div>
+"""
         }
     } else {
         val commandTask = ui.newTask(false)
@@ -127,12 +128,12 @@ private fun SocketManagerBase.renderNewFile(
             }
         })!!
         return """
-            |```${codeLang}
-            |${codeValue}
-            |```
-            |
-            |${commandTask.placeholder}
-            """.trimMargin()
+```${codeLang}
+${codeValue}
+```
+
+${commandTask.placeholder}
+"""
     }
 }
 
@@ -207,22 +208,22 @@ private fun SocketManagerBase.renderDiffBlock(
     val echoDiff = try {
         IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
     } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+        renderMarkdown("```\n${e.stackTraceToString()}\n```\n", ui = ui)
     }
 
     if (echoDiff.isNotBlank() && newCode.isValid && shouldAutoApply(filepath ?: root.resolve(filename))) {
         try {
             filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8)
             handle(mapOf(relativize to newCode.newCode))
-            return "```diff\n$diffVal\n```" + """<div class="cmd-button">Diff Automatically Applied to ${filepath}</div>"""
+            return "```diff\n$diffVal\n```\n" + """<div class="cmd-button">Diff Automatically Applied to ${filepath}</div>"""
         } catch (e: Throwable) {
             log.error("Error auto-applying diff", e)
-            return "```diff\n$diffVal\n```" + """<div class="cmd-button">Error Auto-Applying Diff to ${filepath}: ${e.message}</div>"""
+            return "```diff\n$diffVal\n```\n" + """<div class="cmd-button">Error Auto-Applying Diff to ${filepath}: ${e.message}</div>"""
         }
     }
 
     val diffTask = ui.newTask(root = false)
-    diffTask.complete(renderMarkdown("```diff\n$diffVal\n```", ui = ui))
+    diffTask.complete(renderMarkdown("```diff\n$diffVal\n```\n", ui = ui))
 
     // Create tasks for displaying code and patch information
     val prevCodeTask = ui.newTask(root = false)
@@ -266,13 +267,13 @@ private fun SocketManagerBase.renderDiffBlock(
 
     var originalCode = prevCode // For reverting changes
     // Create "Apply Diff" button
-    var apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
+    val apply1 = hrefLink("Apply Diff", classname = "href-link cmd-button") {
         try {
             originalCode = load(filepath)
             newCode = patch(originalCode, diffVal)
-            filepath.toFile()?.writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+            filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
             handle(mapOf(relativize to newCode.newCode))
-            hrefLink.set("""<div class="cmd-button">Diff Applied</div>""" + revert)
+            hrefLink.set("<div class=\"cmd-button\">Diff Applied</div>$revert")
             applydiffTask.complete()
         } catch (e: Throwable) {
             hrefLink.append("""<div class="cmd-button">Error: ${e.message}</div>""")
@@ -291,41 +292,41 @@ private fun SocketManagerBase.renderDiffBlock(
 
                     val patchFixer = SimpleActor(
                         prompt = """
-                        |You are a helpful AI that helps people with coding.
-                        |
-                        |Response should use one or more code patches in diff format within ```diff code blocks.
-                        |Each diff should be preceded by a header that identifies the file being modified.
-                        |The diff format should use + for line additions, - for line deletions.
-                        |The diff should include 2 lines of context before and after every change.
-                        |
-                        |Example:
-                        |
-                        |Here are the patches:
-                        |
-                        |### src/utils/exampleUtils.js
-                        |```diff
-                        | // Utility functions for example feature
-                        | const b = 2;
-                        | function exampleFunction() {
-                        |-   return b + 1;
-                        |+   return b + 2;
-                        | }
-                        |```
-                        |
-                        |### tests/exampleUtils.test.js
-                        |```diff
-                        | // Unit tests for exampleUtils
-                        | const assert = require('assert');
-                        | const { exampleFunction } = require('../src/utils/exampleUtils');
-                        | 
-                        | describe('exampleFunction', () => {
-                        |-   it('should return 3', () => {
-                        |+   it('should return 4', () => {
-                        |     assert.equal(exampleFunction(), 3);
-                        |   });
-                        | });
-                        |```
-                        """.trimMargin(),
+You are a helpful AI that helps people with coding.
+
+Response should use one or more code patches in diff format within ```diff code blocks.
+Each diff should be preceded by a header that identifies the file being modified.
+The diff format should use + for line additions, - for line deletions.
+The diff should include 2 lines of context before and after every change.
+
+Example:
+
+Here are the patches:
+
+### src/utils/exampleUtils.js
+```diff
+ // Utility functions for example feature
+ const b = 2;
+ function exampleFunction() {
+-   return b + 1;
++   return b + 2;
+ }
+```
+
+### tests/exampleUtils.test.js
+```diff
+ // Unit tests for exampleUtils
+ const assert = require('assert');
+ const { exampleFunction } = require('../src/utils/exampleUtils');
+ 
+ describe('exampleFunction', () => {
+-   it('should return 3', () => {
++   it('should return 4', () => {
+     assert.equal(exampleFunction(), 3);
+   });
+ });
+```
+""",
                         model = OpenAIModels.GPT4o,
                         temperature = 0.3
                     )
@@ -333,29 +334,29 @@ private fun SocketManagerBase.renderDiffBlock(
                     val echoDiff = try {
                         IterativePatchUtil.generatePatch(prevCode, newCode.newCode)
                     } catch (e: Throwable) {
-                        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+                        renderMarkdown("```\n${e.stackTraceToString()}\n```\n", ui = ui)
                     }
 
                     var answer = patchFixer.answer(
                         listOf(
                             """
-                        |Code:
-                        |```${filename.split('.').lastOrNull() ?: ""}
-                        |$prevCode
-                        |```
-                        |
-                        |Patch:
-                        |```diff
-                        |$diffVal
-                        |```
-                        |
-                        |Effective Patch:
-                        |```diff
-                        |  $echoDiff
-                        |```
-                        |
-                        |Please provide a fix for the diff above in the form of a diff patch.
-                        """.trimMargin()
+Code:
+```${filename.split('.').lastOrNull() ?: ""}
+$prevCode
+```
+
+Patch:
+```diff
+$diffVal
+```
+
+Effective Patch:
+```diff
+$echoDiff
+```
+
+Please provide a fix for the diff above in the form of a diff patch.
+"""
                         ), api as OpenAIClient
                     )
                     answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
@@ -401,23 +402,40 @@ private fun SocketManagerBase.renderDiffBlock(
         hrefLink = applydiffTask.complete(apply1 + "\n" + apply2)!!
     }
 
+    val lang = filename.split('.').lastOrNull() ?: ""
     newCodeTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode}\n```",
+            """# $filename
+
+```$lang
+${newCode}
+```
+""",
             ui = ui, tabs = false
         )
     )
     newCodeTask.complete("")
     prevCodeTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+            """# $filename
+
+```$lang
+${prevCode}
+```
+""",
             ui = ui, tabs = false
         )
     )
     prevCodeTask.complete("")
     patchTaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```diff\n  ${echoDiff}\n```",
+            """
+# $filename
+
+```diff
+${echoDiff}
+```
+""",
             ui = ui,
             tabs = false
         )
@@ -430,25 +448,49 @@ private fun SocketManagerBase.renderDiffBlock(
     val echoDiff2 = try {
         IterativePatchUtil.generatePatch(prevCode, newCode2)
     } catch (e: Throwable) {
-        renderMarkdown("```\n${e.stackTraceToString()}\n```", ui = ui)
+        renderMarkdown(
+            """
+
+```
+${e.stackTraceToString()}
+```
+""", ui = ui)
     }
     newCode2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${newCode2}\n```",
+            """
+# $filename
+
+```${filename.split('.').lastOrNull() ?: ""}
+${newCode2}
+```
+""",
             ui = ui, tabs = false
         )
     )
     newCode2Task.complete("")
     prevCode2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```${filename.split('.').lastOrNull() ?: ""}\n${prevCode}\n```",
+            """
+# $filename
+
+```${filename.split('.').lastOrNull() ?: ""}
+${prevCode}
+```
+""",
             ui = ui, tabs = false
         )
     )
     prevCode2Task.complete("")
     patch2TaskSB?.set(
         renderMarkdown(
-            "# $filename\n\n```diff\n  ${echoDiff2}\n```",
+            """
+# $filename
+
+```diff
+  ${echoDiff2}
+```
+""",
             ui = ui,
             tabs = false
         )
@@ -471,9 +513,7 @@ private fun SocketManagerBase.renderDiffBlock(
     val newValue = if (newCode.isValid) {
         mainTabs + "\n" + applydiffTask.placeholder
     } else {
-        mainTabs + """
-            <div class="warning">Warning: The patch is not valid. Please fix the patch before applying.</div>
-            """.trimIndent() + applydiffTask.placeholder
+        mainTabs + """<div class="warning">Warning: The patch is not valid. Please fix the patch before applying.</div>""" + applydiffTask.placeholder
     }
     return newValue
 }
@@ -506,7 +546,7 @@ private fun load(
     filepath: Path?
 ) = try {
     if (true != filepath?.toFile()?.exists()) {
-        log.warn("""File not found: $filepath""".trimMargin())
+        log.warn("File not found: $filepath")
         ""
     } else {
         filepath.readText(Charsets.UTF_8)

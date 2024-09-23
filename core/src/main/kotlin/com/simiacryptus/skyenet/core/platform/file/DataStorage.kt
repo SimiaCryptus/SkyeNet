@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.core.platform.file
 
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.StorageInterface
 import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.validateSessionId

@@ -7,11 +7,19 @@ import com.simiacryptus.skyenet.core.platform.User
 
 open class ActorSystem<T : Enum<*>>(
     val actors: Map<String, BaseActor<*, *>>,
+    dataStorage: StorageInterface,
+    user: User?,
+    session: Session
+) : PoolSystem(dataStorage, user, session) {
+
+    fun getActor(actor: T) = actors.get(actor.name)!!
+}
+
+open class PoolSystem(
     val dataStorage: StorageInterface,
     val user: User?,
     val session: Session
 ) {
     protected val pool by lazy { ApplicationServices.clientManager.getPool(session, user) }
 
-    fun getActor(actor: T) = actors.get(actor.name)!!
 }

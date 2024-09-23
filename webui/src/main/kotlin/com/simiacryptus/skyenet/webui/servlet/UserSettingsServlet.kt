@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.UserSettingsInterface.UserSettings
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie

@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.core.platform.file
 
 import com.simiacryptus.jopenai.models.*
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.UsageInterface
 import com.simiacryptus.skyenet.core.platform.UsageInterface.*
@@ -49,21 +49,21 @@ open class UsageManager(val root: File) : UsageInterface {
                                 Session(sessionId),
                                 User(email = user),
                                 modelEnum,
-                                com.simiacryptus.jopenai.ApiModel.Usage(prompt_tokens = value.toLong())
+                                ApiModel.Usage(prompt_tokens = value.toLong())
                             )
 
                             "output" -> incrementUsage(
                                 Session(sessionId),
                                 User(email = user),
                                 modelEnum,
-                                com.simiacryptus.jopenai.ApiModel.Usage(completion_tokens = value.toLong())
+                                ApiModel.Usage(completion_tokens = value.toLong())
                             )
 
                             "cost" -> incrementUsage(
                                 session = Session(sessionId = sessionId),
                                 user = User(email = user),
                                 model = modelEnum,
-                                tokens = com.simiacryptus.jopenai.ApiModel.Usage(cost = value.toDouble())
+                                tokens = ApiModel.Usage(cost = value.toDouble())
                             )
 
                             else -> throw RuntimeException("Unknown direction $direction")
@@ -135,7 +135,7 @@ open class UsageManager(val root: File) : UsageInterface {
         session: Session,
         apiKey: String?,
         model: OpenAIModel,
-        tokens: com.simiacryptus.jopenai.ApiModel.Usage
+        tokens: ApiModel.Usage
     ) {
         usagePerSession.computeIfAbsent(session) { UsageCounters() }
             .tokensPerModel.computeIfAbsent(UsageKey(session, apiKey, model)) { UsageValues() }
@@ -158,7 +158,7 @@ open class UsageManager(val root: File) : UsageInterface {
         }
     }
 
-    override fun getUserUsageSummary(apiKey: String): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> {
+    override fun getUserUsageSummary(apiKey: String): Map<OpenAIModel, ApiModel.Usage> {
         return sessionsByUser[apiKey]?.flatMap { sessionId ->
             val usage = usagePerSession[sessionId]
             usage?.tokensPerModel?.entries?.map { (model, counter) ->
@@ -166,7 +166,7 @@ open class UsageManager(val root: File) : UsageInterface {
             } ?: emptyList()
         }?.groupBy { it.first }?.mapValues {
             it.value.map { it.second }.reduce { a, b ->
-                com.simiacryptus.jopenai.ApiModel.Usage(
+                ApiModel.Usage(
                     prompt_tokens = a.prompt_tokens + b.prompt_tokens,
                     completion_tokens = a.completion_tokens + b.completion_tokens,
                     cost = (a.cost ?: 0.0) + (b.cost ?: 0.0)
@@ -175,12 +175,12 @@ open class UsageManager(val root: File) : UsageInterface {
         } ?: emptyMap()
     }
 
-    override fun getSessionUsageSummary(session: Session): Map<OpenAIModel, com.simiacryptus.jopenai.ApiModel.Usage> =
+    override fun getSessionUsageSummary(session: Session): Map<OpenAIModel, ApiModel.Usage> =
         usagePerSession[session]?.tokensPerModel?.entries?.map { (model, counter) ->
             model.model to counter.toUsage()
         }?.groupBy { it.first }?.mapValues {
             it.value.map { it.second }.reduce { a, b ->
-                com.simiacryptus.jopenai.ApiModel.Usage(
+                ApiModel.Usage(
                     prompt_tokens = a.prompt_tokens + b.prompt_tokens,
                     completion_tokens = a.completion_tokens + b.completion_tokens,
                     cost = (a.cost ?: 0.0) + (b.cost ?: 0.0)

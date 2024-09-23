@@ -1,4 +1,5 @@
 import {closeModal, findAncestor, getSessionId, showModal, toggleVerbose} from './functions.js';
+import {queueMessage} from "./chat.js";
 
 function isCtrlOrCmd(event) {
     return event.ctrlKey || (navigator.platform.toLowerCase().indexOf('mac') !== -1 && event.metaKey);
@@ -93,4 +94,8 @@ function handleFilesClick(event) {
     const sessionId = getSessionId();
     const url = "fileIndex/" + sessionId + "/";
     window.open(url, "_blank");
+}
+
+function handleMessageAction(messageId, action) {
+    queueMessage('!' + messageId + ',' + action);
 }

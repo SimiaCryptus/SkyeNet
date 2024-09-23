@@ -20,13 +20,13 @@ open class Retryable(
     }
 
     override fun renderTabButtons(): String = """
-    <div class="tabs">${
+<div class="tabs">${
         tabs.withIndex().joinToString("\n") { (index, _) ->
             val tabId = "$index"
             """<button class="tab-button" data-for-tab="$tabId">${index + 1}</button>"""
         }
     }
-    ${
+${
         ui.hrefLink("♻") {
             val idx = tabs.size
             val label = label(idx)
@@ -38,7 +38,7 @@ open class Retryable(
             set(label, newResult)
         }
     }
-    </div>
-  """.trimIndent()
+</div>
+"""
 
 }

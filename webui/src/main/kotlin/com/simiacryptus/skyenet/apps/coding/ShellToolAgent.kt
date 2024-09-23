@@ -1,13 +1,13 @@
 package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.indent
@@ -19,8 +19,8 @@ import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
-import com.simiacryptus.skyenet.webui.util.OpenAPI
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
+import com.simiacryptus.skyenet.util.OpenAPI
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

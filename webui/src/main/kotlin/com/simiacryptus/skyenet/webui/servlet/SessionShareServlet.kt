@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
@@ -13,7 +13,7 @@ import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.core.util.Selenium
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
-import com.simiacryptus.skyenet.webui.util.Selenium2S3
+import com.simiacryptus.skyenet.util.Selenium2S3
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

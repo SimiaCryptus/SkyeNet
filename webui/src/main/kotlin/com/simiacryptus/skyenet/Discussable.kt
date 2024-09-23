@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet
 
-import com.simiacryptus.jopenai.ApiModel.Role
+import com.simiacryptus.jopenai.models.ApiModel.Role
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil.renderMarkdown
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import java.util.concurrent.Callable
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -43,7 +43,7 @@ ${
             }
         } 
 </div>
-          """.trimMargin()
+"""
     }
     private val acceptGuard = AtomicBoolean(false)
 
@@ -84,11 +84,11 @@ ${
         feedbackSB.clear()
         feedbackSB.append(
             """
-          |<div style="display: flex; flex-direction: column;">
-          |${acceptLink(tabIndex, tabContent, design, feedbackSB, feedbackTask = this)}
-          |</div>
-          |${textInput(design, tabContent, history, task, feedbackSB, feedbackTask = this)}
-        """.trimMargin()
+<div style="display: flex; flex-direction: column;">
+${acceptLink(tabIndex, tabContent, design, feedbackSB, feedbackTask = this)}
+</div>
+${textInput(design, tabContent, history, task, feedbackSB, feedbackTask = this)}
+"""
         )
         complete()
     }
@@ -215,9 +215,9 @@ ${
             return atomicRef.get()
         } catch (e: Exception) {
             log.warn("""
-                |Error in Discussable
-                |${e.message}
-            """.trimIndent(), e)
+Error in Discussable
+${e.message}
+""", e)
             task.error(ui, e)
             return null as T
         }

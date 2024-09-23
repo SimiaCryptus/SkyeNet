@@ -2,7 +2,7 @@ package com.simiacryptus.diff
 
  import com.simiacryptus.skyenet.webui.application.ApplicationInterface
  import com.simiacryptus.skyenet.webui.session.SocketManagerBase
- import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+ import com.simiacryptus.skyenet.util.MarkdownUtil
  import java.util.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -37,13 +37,13 @@ import java.io.InputStreamReader
              }
         }
         """
-        ```shell
-        $shellCode
-        ```
-        <div id="execution-$executionId">
-            $executeButton
-            ${executionTask.placeholder}
-        </div>
-        """.trimIndent()
+```shell
+$shellCode
+```
+<div id="execution-$executionId">
+    $executeButton
+    ${executionTask.placeholder}
+</div>
+"""
     }
 }

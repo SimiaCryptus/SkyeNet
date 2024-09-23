@@ -1,14 +1,37 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.CodeOptimizationTask.CodeOptimizationTaskData
+
 import org.slf4j.LoggerFactory
 
 class CodeOptimizationTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractAnalysisTask(planSettings, planTask) {
+    planTask: CodeOptimizationTaskData?
+) : AbstractAnalysisTask<CodeOptimizationTaskData>(planSettings, planTask) {
+
+    class CodeOptimizationTaskData(
+        @Description("Files to be optimized")
+        val filesToOptimize: List<String>? = null,
+        @Description("Specific areas of focus for the optimization")
+        val optimizationFocus: List<String>? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = TaskType.Optimization.name,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     override val actorName = "CodeOptimization"
     override val actorPrompt = """
-        |Analyze the provided code and suggest optimizations to improve code quality. Focus exclusively on:
+ Analyze the provided code and suggest optimizations to improve code quality. Focus exclusively on:
         |1. Code structure and organization
         |2. Readability improvements
         |3. Maintainability enhancements
@@ -31,6 +54,7 @@ class CodeOptimizationTask(
             |  * Optionally provide specific areas of focus for the optimization (e.g., code structure, readability, design patterns)
             """.trimMargin()
     }
+
 
     override fun getAnalysisInstruction(): String {
         return "Optimize the following code for better readability and maintainability"

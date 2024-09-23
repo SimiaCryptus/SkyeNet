@@ -4,7 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.AnthropicModels
 import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.util.JsonUtil
+import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.general.parsers.DefaultParsingModel
 import com.simiacryptus.skyenet.apps.general.parsers.PDFReader
@@ -17,7 +17,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationSocketManager
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManager
-import com.simiacryptus.skyenet.webui.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.intellij.lang.annotations.Language
 import java.awt.image.BufferedImage
 import java.io.File

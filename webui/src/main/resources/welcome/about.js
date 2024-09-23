@@ -1,3 +1,5 @@
+import {showModal} from './functions.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const privacyLink = document.getElementById('privacy');
     const tosLink = document.getElementById('tos');

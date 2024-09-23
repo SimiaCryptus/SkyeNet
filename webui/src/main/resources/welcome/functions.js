@@ -15,14 +15,14 @@ async function fetchData(endpoint) {
 }
 
 
-function showModal(endpoint) {
+export function showModal(endpoint) {
     fetchData(endpoint).then(r => {
         const modal = document.getElementById('modal');
         if (modal) modal.style.display = 'block';
     });
 }
 
-function closeModal() {
+export function closeModal() {
     const modal = document.getElementById('modal');
     if (modal) modal.style.display = 'none';
 }

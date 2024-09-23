@@ -1,11 +1,34 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.SecurityAuditTask.SecurityAuditTaskData
 import org.slf4j.LoggerFactory
 
 class SecurityAuditTask(
     planSettings: PlanSettings,
-    planTask: PlanningTask.PlanTask
-) : AbstractAnalysisTask(planSettings, planTask) {
+    planTask: SecurityAuditTaskData?
+) : AbstractAnalysisTask<SecurityAuditTaskData>(planSettings, planTask) {
+
+
+    class SecurityAuditTaskData(
+        @Description("List of files to be audited")
+        val filesToAudit: List<String>? = null,
+        @Description("Specific areas of focus for the security audit")
+        val focusAreas: List<String>? = null,
+        task_description: String? = null,
+        task_dependencies: List<String>? = null,
+        input_files: List<String>? = null,
+        output_files: List<String>? = null,
+        state: TaskState? = null
+    ) : PlanTaskBase(
+        task_type = TaskType.SecurityAudit.name,
+        task_description = task_description,
+        task_dependencies = task_dependencies,
+        input_files = input_files,
+        output_files = output_files,
+        state = state
+    )
+
     override val actorName: String = "SecurityAudit"
     override val actorPrompt: String = """
 Perform a comprehensive security audit for the provided code files. Analyze the code for:
