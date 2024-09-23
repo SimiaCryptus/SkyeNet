@@ -206,7 +206,7 @@ class PlanCoordinator(
                         }
                     }
                 subTask.state = AbstractTask.TaskState.InProgress
-                //taskTabs.update()
+                taskTabs.update()
                 log.debug("Running task: ${System.identityHashCode(subTask)} ${subTask.task_description}")
                 val task1 = planProcessingState.uitaskMap.get(taskId) ?: ui.newTask(false).apply {
                     taskTabs[taskId] = placeholder
