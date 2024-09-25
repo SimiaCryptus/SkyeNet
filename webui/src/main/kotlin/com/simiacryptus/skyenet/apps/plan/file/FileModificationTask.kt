@@ -1,10 +1,11 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.apps.plan.FileModificationTask.FileModificationTaskData
+import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -15,7 +16,7 @@ import java.util.concurrent.Semaphore
 class FileModificationTask(
     planSettings: PlanSettings,
     planTask: FileModificationTaskData?
-) : AbstractTask<FileModificationTaskData>(planSettings, planTask) {
+) : AbstractFileTask<FileModificationTaskData>(planSettings, planTask) {
     class FileModificationTaskData(
         @Description("List of input files to be examined when designing the modifications")
         input_files: List<String>? = null,
@@ -26,7 +27,7 @@ class FileModificationTask(
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         state: TaskState? = null
-    ) : PlanTaskBase(
+    ) : FileTaskBase(
         task_type = TaskType.FileModification.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
@@ -55,7 +56,7 @@ class FileModificationTask(
                 
  Response format:
  For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
- For new files: Use ${TRIPLE_TILDE} code blocks with a header specifying the new file path.
+ For new files: Use $TRIPLE_TILDE code blocks with a header specifying the new file path.
  The diff format should use + for line additions, - for line deletions.
  Include 2 lines of context before and after every change in diffs.
  Separate code blocks with a single blank line.
@@ -72,7 +73,7 @@ class FileModificationTask(
   return 'old result';
   return 'new result';
                 | }
- ${TRIPLE_TILDE}
+ $TRIPLE_TILDE
                 
  ### src/utils/newFile.js
  ${TRIPLE_TILDE}js
@@ -80,7 +81,7 @@ class FileModificationTask(
  function newFunction() {
    return 'new functionality';
                 |}
- ${TRIPLE_TILDE}
+ $TRIPLE_TILDE
                 """.trimMargin(),
             model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,

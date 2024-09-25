@@ -1,6 +1,5 @@
-package com.simiacryptus.skyenet.apps.general.parsers
+package com.simiacryptus.skyenet.apps.parsers
 
-import com.simiacryptus.skyenet.apps.general.DocumentParserApp
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.rendering.PDFRenderer
 import org.apache.pdfbox.text.PDFTextStripper

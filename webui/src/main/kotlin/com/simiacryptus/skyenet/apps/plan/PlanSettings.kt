@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
-import com.simiacryptus.skyenet.apps.plan.FileModificationTask.FileModificationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownResult
@@ -149,7 +149,6 @@ ${taskType.name}:
                 "3" to PlanningTaskData(
                     task_description = "Task 3",
                     task_dependencies = listOf("2"),
-                    input_files = listOf("input3.txt"),
                 )
             ),
         )

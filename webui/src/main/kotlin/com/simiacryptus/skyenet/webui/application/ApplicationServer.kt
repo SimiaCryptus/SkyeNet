@@ -1,16 +1,19 @@
 package com.simiacryptus.skyenet.webui.application
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.util.JsonUtil
-import com.simiacryptus.skyenet.core.platform.*
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
 import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.StorageInterface
+import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.webui.session.SocketManager
+import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.eclipse.jetty.servlet.FilterHolder
@@ -29,20 +32,20 @@ abstract class ApplicationServer(
     open val description: String = ""
     open val singleInput = true
     open val stickyInput = false
-    open val appInfo: Map<String, Any> by lazy {
-        mapOf(
-            "applicationName" to applicationName,
-            "singleInput" to singleInput,
-            "stickyInput" to stickyInput,
-            "loadImages" to false,
-            "showMenubar" to showMenubar,
+    open fun appInfo(session: Session) = appInfoMap.getOrPut(session) {
+        AppInfoData(
+            applicationName = applicationName,
+            singleInput = singleInput,
+            stickyInput = stickyInput,
+            loadImages = false,
+            showMenubar = showMenubar
         )
-    }
+    }.toMap()
 
     final override val dataStorage: StorageInterface by lazy { dataStorageFactory(dataStorageRoot) }
 
-    protected open val appInfoServlet by lazy { ServletHolder("appInfo", AppInfoServlet {
-        session -> sessionAppInfoMap[session] ?: appInfo
+    protected open val appInfoServlet by lazy { ServletHolder("appInfo", AppInfoServlet { session ->
+        appInfo(Session(session!!))
     }) }
     protected open val userInfo by lazy { ServletHolder("userInfo", UserInfoServlet()) }
     protected open val usageServlet by lazy { ServletHolder("usage", UsageServlet()) }
@@ -180,8 +183,8 @@ abstract class ApplicationServer(
         fun HttpServletRequest.getCookie(name: String = AuthenticationInterface.AUTH_COOKIE) =
             cookies?.find { it.name == name }?.value
 
-        val sessionAppInfoMap = mutableMapOf<String, Map<String, Any>>()
 
+        val appInfoMap = mutableMapOf<Session, AppInfoData>()
     }
 
 }

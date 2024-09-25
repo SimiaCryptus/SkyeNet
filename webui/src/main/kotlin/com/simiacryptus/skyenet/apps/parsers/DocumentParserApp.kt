@@ -1,15 +1,10 @@
-package com.simiacryptus.skyenet.apps.general
+package com.simiacryptus.skyenet.apps.parsers
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.AnthropicModels
-import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.apps.general.parsers.DefaultParsingModel
-import com.simiacryptus.skyenet.apps.general.parsers.PDFReader
-import com.simiacryptus.skyenet.apps.general.parsers.ParsingModel
-import com.simiacryptus.skyenet.apps.general.parsers.TextReader
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface

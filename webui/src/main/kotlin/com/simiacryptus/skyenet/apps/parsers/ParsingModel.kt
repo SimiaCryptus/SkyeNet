@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.general.parsers
+package com.simiacryptus.skyenet.apps.parsers
 
 import com.simiacryptus.jopenai.API
 

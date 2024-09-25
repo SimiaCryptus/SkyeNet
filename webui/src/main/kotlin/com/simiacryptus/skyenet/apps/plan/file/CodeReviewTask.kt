@@ -1,7 +1,9 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.CodeReviewTask.CodeReviewTaskData
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.TaskType
+import com.simiacryptus.skyenet.apps.plan.file.CodeReviewTask.CodeReviewTaskData
 import org.slf4j.LoggerFactory
 
 class CodeReviewTask(
@@ -18,7 +20,7 @@ class CodeReviewTask(
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
-    ) : PlanTaskBase(
+    ) : FileTaskBase(
         task_type = TaskType.CodeReview.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
