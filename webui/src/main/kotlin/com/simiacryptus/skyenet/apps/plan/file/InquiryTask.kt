@@ -1,10 +1,11 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Discussable
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -16,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference
 class InquiryTask(
     planSettings: PlanSettings,
     planTask: InquiryTaskData?
-) : AbstractTask<InquiryTask.InquiryTaskData>(planSettings, planTask) {
+) : AbstractFileTask<InquiryTask.InquiryTaskData>(planSettings, planTask) {
     class InquiryTaskData(
         @Description("The specific questions or topics to be addressed in the inquiry")
         val inquiry_questions: List<String>? = null,
@@ -27,7 +28,7 @@ class InquiryTask(
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
-    ) : PlanTaskBase(
+    ) : FileTaskBase(
         task_type = TaskType.Inquiry.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
@@ -48,8 +49,8 @@ class InquiryTask(
                 
                 When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
                 Focus on generating insights and information that support the task types available in the system (${
-                    planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")
-                }).
+                planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")
+            }).
                 This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
                 """.trimMargin(),
             model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model

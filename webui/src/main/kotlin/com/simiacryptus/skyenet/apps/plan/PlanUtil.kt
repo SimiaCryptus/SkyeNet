@@ -126,7 +126,7 @@ object PlanUtil {
 
     fun filterPlan(retries: Int = 3, fn: () -> Map<String, PlanTaskBase>?): Map<String, PlanTaskBase>? {
         val obj = fn() ?: emptyMap()
-        var tasksByID = obj?.filter { (k, v) ->
+        val tasksByID = obj.filter { (k, v) ->
             when {
                 v.task_type == TaskType.TaskPlanning.name && v.task_dependencies.isNullOrEmpty() ->
                     if (retries <= 0) {
@@ -136,9 +136,10 @@ object PlanUtil {
                         log.info("TaskPlanning task $k has no dependencies")
                         return filterPlan(retries - 1, fn)
                     }
+
                 else -> true
             }
-        } ?: emptyMap()
+        }
         tasksByID.forEach {
             it.value.task_dependencies = it.value.task_dependencies?.filter { it in tasksByID.keys }
             it.value.state = TaskState.Pending
@@ -154,7 +155,7 @@ object PlanUtil {
                 return filterPlan(retries - 1, fn)
             }
         }
-        return if (tasksByID.size == obj?.size) {
+        return if (tasksByID.size == obj.size) {
             obj
         } else filterPlan {
             tasksByID

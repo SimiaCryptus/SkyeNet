@@ -1,9 +1,10 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.apps.plan.DocumentationTask.DocumentationTaskData
+import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTaskData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -14,7 +15,7 @@ import java.util.concurrent.Semaphore
 class DocumentationTask(
     planSettings: PlanSettings,
     planTask: DocumentationTaskData?
-) : AbstractTask<DocumentationTaskData>(planSettings, planTask) {
+) : AbstractFileTask<DocumentationTaskData>(planSettings, planTask) {
     class DocumentationTaskData(
         @Description("List of files or tasks to be documented")
         val items_to_document: List<String>? = null,
@@ -23,7 +24,7 @@ class DocumentationTask(
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
-    ) : PlanTaskBase(
+    ) : FileTaskBase(
         task_type = TaskType.Documentation.name,
         task_description = task_description,
         task_dependencies = task_dependencies,

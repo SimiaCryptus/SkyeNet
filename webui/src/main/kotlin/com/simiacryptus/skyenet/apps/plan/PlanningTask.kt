@@ -10,6 +10,7 @@ import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
+import com.simiacryptus.skyenet.apps.plan.file.AbstractFileTask
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -20,18 +21,15 @@ class PlanningTask(
     planSettings: PlanSettings,
     planTask: PlanningTaskData?
 ) : AbstractTask<PlanningTaskData>(planSettings, planTask) {
+
     class PlanningTaskData(
         task_description: String? = null,
         task_dependencies: List<String>? = null,
-        input_files: List<String>? = null,
-        output_files: List<String>? = null,
         state: TaskState? = TaskState.Pending,
     ) : PlanTaskBase(
         task_type = TaskType.TaskPlanning.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
-        input_files = input_files,
-        output_files = output_files,
         state = state
     )
 
@@ -39,7 +37,6 @@ class PlanningTask(
         @Description("A map where each task ID is associated with its corresponding PlanTask object. Crucial for defining task relationships and information flow.")
         val tasksByID: Map<String, PlanTaskBase>? = null,
     )
-
 
     override fun promptSegment(): String {
         return """
@@ -69,7 +66,6 @@ class PlanningTask(
             userMessage,
             JsonUtil.toJson(plan.entries.associate { it.key to it.value }),
             getPriorCode(planProcessingState),
-            getInputFileCode(),
             s
         ).filter { it.isNotBlank() }
         val subPlan = if (planSettings.allowBlocking && !planSettings.autoFix) {

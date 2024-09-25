@@ -20,15 +20,11 @@ class ForeachTask(
         val foreach_subplan: Map<String, PlanTaskBase>? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
-        input_files: List<String>? = null,
-        output_files: List<String>? = null,
         state: TaskState? = null,
     ) : PlanTaskBase(
         task_type = TaskType.ForeachTask.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
-        input_files = input_files,
-        output_files = output_files,
         state = state
     )
 

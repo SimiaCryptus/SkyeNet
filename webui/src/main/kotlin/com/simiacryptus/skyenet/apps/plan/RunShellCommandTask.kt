@@ -5,6 +5,7 @@ import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
 import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTaskData
+import com.simiacryptus.skyenet.apps.plan.file.AbstractFileTask
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -26,15 +27,11 @@ class RunShellCommandTask(
         val workingDir: String? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
-        input_files: List<String>? = null,
-        output_files: List<String>? = null,
         state: TaskState? = null
     ) : PlanTaskBase(
         task_type = TaskType.RunShellCommand.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
-        input_files = input_files,
-        output_files = output_files,
         state = state
     )
 
@@ -141,7 +138,6 @@ Note: This task is for running simple and safe commands. Avoid executing command
                         userMessage to ApiModel.Role.user,
                         JsonUtil.toJson(plan) to ApiModel.Role.assistant,
                         getPriorCode(planProcessingState) to ApiModel.Role.assistant,
-                        getInputFileCode() to ApiModel.Role.assistant,
                     )
                 )
             )

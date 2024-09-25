@@ -1,9 +1,10 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.PerformanceAnalysisTask.PerformanceAnalysisTaskData
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.TaskType
+import com.simiacryptus.skyenet.apps.plan.file.PerformanceAnalysisTask.PerformanceAnalysisTaskData
 import org.slf4j.LoggerFactory
-
 
 class PerformanceAnalysisTask(
     planSettings: PlanSettings,
@@ -19,7 +20,7 @@ class PerformanceAnalysisTask(
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null,
-    ) : PlanTaskBase(
+    ) : FileTaskBase(
         task_type = TaskType.PerformanceAnalysis.name,
         task_description = task_description,
         task_dependencies = task_dependencies,

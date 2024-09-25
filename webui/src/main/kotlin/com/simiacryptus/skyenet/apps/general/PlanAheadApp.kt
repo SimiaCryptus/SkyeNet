@@ -8,6 +8,7 @@ import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.initialPlan
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil
+import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
@@ -20,7 +21,6 @@ import java.io.File
 open class PlanAheadApp(
     applicationName: String = "Task Planning v1.1",
     path: String = "/taskDev",
-     val rootFile: File? = null,
     val planSettings: PlanSettings,
     val model: OpenAITextModel,
     val parsingModel: OpenAITextModel,
@@ -32,13 +32,13 @@ open class PlanAheadApp(
     applicationName = applicationName,
     path = path,
     showMenubar = showMenubar,
+    root = planSettings.workingDir?.let { File(it) } ?: dataStorageRoot,
 ) {
     override val singleInput: Boolean get() = true
-    override val root: File get() = rootFile ?: super.root
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> initSettings(session: Session): T = planSettings.let {
-        if (null == rootFile) it.copy(workingDir = root.absolutePath) else
+        if (null == root) it.copy(workingDir = root.absolutePath) else
         it
     } as T
 
@@ -55,7 +55,7 @@ open class PlanAheadApp(
                         session = session,
                         dataStorage = dataStorage,
                         ui = ui,
-                        root = dataStorage.getDataDir(user, session).toPath(),
+                        root = planSettings?.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
                         planSettings = planSettings!!
                     )
                     coordinator.executeTaskBreakdownWithPrompt(JsonUtil.toJson(initialPlan), api!!)
@@ -83,7 +83,7 @@ open class PlanAheadApp(
                 session = session,
                 dataStorage = dataStorage,
                 ui = ui,
-                root = dataStorage.getDataDir(user, session).toPath(),
+                root = planSettings?.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
                 planSettings = planSettings!!
             )
             val task = coordinator.ui.newTask()

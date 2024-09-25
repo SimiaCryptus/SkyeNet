@@ -1,7 +1,9 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.TestGenerationTask.TestGenerationTaskData
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.TaskType
+import com.simiacryptus.skyenet.apps.plan.file.TestGenerationTask.TestGenerationTaskData
 import org.slf4j.LoggerFactory
 
 class TestGenerationTask(
@@ -19,7 +21,7 @@ class TestGenerationTask(
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         state: TaskState? = null
-    ) : PlanTaskBase(
+    ) : FileTaskBase(
         task_type = TaskType.TestGeneration.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
@@ -43,7 +45,7 @@ class TestGenerationTask(
                 |Add comments explaining the purpose of each test case.
                 |
                 |Response format:
-                |- Use ${TRIPLE_TILDE} code blocks with a header specifying the new test file path.
+                |- Use ${com.simiacryptus.skyenet.apps.plan.TRIPLE_TILDE} code blocks with a header specifying the new test file path.
                 |- Specify the language for syntax highlighting after the opening triple backticks.
                 |- Separate code blocks with a single blank line.
                 |
@@ -52,7 +54,7 @@ class TestGenerationTask(
                 |Here are the generated unit tests:
                 |                
                 |### src/test/java/com/example/UtilsTest.java
-                |${TRIPLE_TILDE}java
+                |${com.simiacryptus.skyenet.apps.plan.TRIPLE_TILDE}java
                 |import org.junit.jupiter.api.Test;
                 |import static org.junit.jupiter.api.Assertions.*;
                 |                
@@ -72,7 +74,7 @@ class TestGenerationTask(
                 |        });
                 |    }
                 |}
- ${TRIPLE_TILDE}
+ ${com.simiacryptus.skyenet.apps.plan.TRIPLE_TILDE}
     """.trimMargin()
 
     override fun getAnalysisInstruction(): String = "Generate tests for the following code"

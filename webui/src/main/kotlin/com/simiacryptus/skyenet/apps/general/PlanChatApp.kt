@@ -4,7 +4,7 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.OpenAITextModel
 import com.simiacryptus.skyenet.apps.plan.*
-import com.simiacryptus.skyenet.apps.plan.InquiryTask.InquiryTaskData
+import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskData
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.User
 import com.simiacryptus.skyenet.util.MarkdownUtil
@@ -16,7 +16,6 @@ import java.util.*
 open class PlanChatApp(
     applicationName: String = "Task Planning Chat v1.0",
     path: String = "/taskChat",
-    rootFile: File? = null,
     planSettings: PlanSettings,
     model: OpenAITextModel,
     parsingModel: OpenAITextModel,
@@ -27,7 +26,6 @@ open class PlanChatApp(
 ) : PlanAheadApp(
     applicationName = applicationName,
     path = path,
-    rootFile = rootFile,
     planSettings = planSettings,
     model = model,
     parsingModel = parsingModel,
@@ -89,7 +87,7 @@ open class PlanChatApp(
                     session = session,
                     dataStorage = dataStorage,
                     ui = ui,
-                    root = dataStorage.getDataDir(user, session).toPath(),
+                    root = planSettings?.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
                     planSettings = planSettings
                 )
                 val mainTask = coordinator.ui.newTask()

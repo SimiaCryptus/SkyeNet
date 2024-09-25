@@ -1,19 +1,20 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.apps.general.CommandPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 
-abstract class AbstractAnalysisTask<T : PlanTaskBase>(
+abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskBase>(
     planSettings: PlanSettings,
     planTask: T?
-) : AbstractTask<T>(planSettings, planTask) {
+) : AbstractFileTask<T>(planSettings, planTask) {
 
     abstract val actorName: String
     abstract val actorPrompt: String
