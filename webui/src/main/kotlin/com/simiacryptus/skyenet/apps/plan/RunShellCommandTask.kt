@@ -5,7 +5,6 @@ import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.apps.coding.CodingAgent
 import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTaskData
-import com.simiacryptus.skyenet.apps.plan.file.AbstractFileTask
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -73,7 +72,8 @@ Note: This task is for running simple and safe commands. Avoid executing command
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     ) {
         val semaphore = Semaphore(0)
         object : CodingAgent<ProcessInterpreter>(
@@ -114,7 +114,7 @@ Note: This task is for running simple and safe commands. Avoid executing command
                 response: CodingActor.CodeResult
             ): String {
                 return ui.hrefLink("Accept", "href-link play-button") {
-                    planProcessingState.taskResult[taskId] = response.let {
+                    response.let {
                         """
                         |## Shell Command Output
                         |
@@ -127,7 +127,7 @@ Note: This task is for running simple and safe commands. Avoid executing command
                         |${TRIPLE_TILDE}
                         |
                         """.trimMargin()
-                    }
+                    }.apply { resultFn(this) }
                     semaphore.release()
                 }
             }

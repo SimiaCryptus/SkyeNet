@@ -249,7 +249,8 @@ class PlanCoordinator(
                         plan = plan,
                         planProcessingState = planProcessingState,
                         task = task1,
-                        api = api
+                        api = api,
+                        resultFn = { planProcessingState.taskResult[taskId] = it }
                     )
                 } catch (e: Throwable) {
                     log.warn("Error during task execution", e)

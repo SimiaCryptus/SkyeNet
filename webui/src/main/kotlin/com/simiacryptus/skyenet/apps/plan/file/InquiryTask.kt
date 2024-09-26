@@ -49,8 +49,7 @@ class InquiryTask(
                 
                 When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
                 Focus on generating insights and information that support the task types available in the system (${
-                planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")
-            }).
+                    planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")}).
                 This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
                 """.trimMargin(),
             model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
@@ -59,13 +58,11 @@ class InquiryTask(
         )
     }
 
-    override fun promptSegment(): String {
-        return """
- Inquiry - Answer questions by reading in files and providing a summary that can be discussed with and approved by the user
-   ** Specify the questions and the goal of the inquiry
-   ** List input files to be examined when answering the questions
-            """.trimMargin()
-    }
+    override fun promptSegment() = """
+    |Inquiry - Answer questions by reading in files and providing a summary that can be discussed with and approved by the user
+    |    ** Specify the questions and the goal of the inquiry
+    |    ** List input files to be examined when answering the questions
+    """.trimMargin()
 
     override fun run(
         agent: PlanCoordinator,
@@ -74,7 +71,8 @@ class InquiryTask(
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     ) {
         val toInput = { it: String ->
             listOf<String>(
@@ -127,7 +125,7 @@ class InquiryTask(
         ).apply {
             task.add(MarkdownUtil.renderMarkdown(this, ui = agent.ui))
         }
-        planProcessingState.taskResult[taskId] = inquiryResult
+        resultFn(inquiryResult)
     }
 
     companion object {

@@ -43,7 +43,8 @@ ForeachTask - Execute a task for each item in a list
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     ) {
         val items =
             planTask?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")

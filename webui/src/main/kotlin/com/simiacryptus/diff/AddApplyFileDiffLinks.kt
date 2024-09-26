@@ -156,11 +156,15 @@ fun resolve(root: Path, filename: String): String {
         filename
     }
 
-    if (!root.resolve(filename).toFile().exists()) {
-        root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }
-            ?.toString()?.apply {
-                filename = relativizeFrom(root)
-            }
+    try {
+        if (!root.resolve(filename).toFile().exists()) {
+            root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }
+                ?.toString()?.apply {
+                    filename = relativizeFrom(root)
+                }
+        }
+    } catch (e: Throwable) {
+        log.error("Error resolving filename", e)
     }
 
     return filename

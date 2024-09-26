@@ -10,7 +10,6 @@ import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
-import com.simiacryptus.skyenet.apps.plan.file.AbstractFileTask
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -59,7 +58,8 @@ class PlanningTask(
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     ) {
         val newTask = agent.ui.newTask(false).apply { add(placeholder) }
         fun toInput(s: String) = listOf(
