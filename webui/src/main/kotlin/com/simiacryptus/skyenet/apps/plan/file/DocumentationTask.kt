@@ -61,7 +61,8 @@ class DocumentationTask(
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     ) {
         val semaphore = Semaphore(0)
         val onComplete = {
@@ -78,7 +79,7 @@ class DocumentationTask(
                     "Items to document: ${itemsToDocument.joinToString(", ")}"
                 ).filter { it.isNotBlank() }, api
             )
-            planProcessingState.taskResult[taskId] = docResult
+            resultFn(docResult)
             if (agent.planSettings.autoFix) {
                 task.complete()
                 onComplete()

@@ -12,6 +12,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.skyenet.util.MarkdownUtil
+import java.util.*
 
 open class ChatSocketManager(
     session: Session,
@@ -43,6 +44,13 @@ open class ChatSocketManager(
     @Synchronized
     override fun onRun(userMessage: String, socket: ChatSocket) {
         val task = newTask()
+        val api = (api as ChatClient).getChildClient().apply {
+            val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
+            createFile.second?.apply {
+                logStreams += this.outputStream().buffered()
+                task.verbose("API log: <a href=\"file:///$this\">$this</a>")
+            }
+        }
         val responseContents = renderResponse(userMessage, task)
         task.echo(responseContents)
         messages += ApiModel.ChatMessage(ApiModel.Role.user, userMessage.toContentList())

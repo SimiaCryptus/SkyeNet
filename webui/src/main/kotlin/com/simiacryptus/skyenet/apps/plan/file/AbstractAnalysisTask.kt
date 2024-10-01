@@ -36,7 +36,8 @@ abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskBase>(
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     ) {
         val analysisResult = analysisActor.answer(
             listOf(
@@ -47,7 +48,7 @@ abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskBase>(
                 "${getAnalysisInstruction()}:\n${getInputFileCode()}",
             ).filter { it.isNotBlank() }, api = api
         )
-        planProcessingState.taskResult[taskId] = analysisResult
+        resultFn(analysisResult)
         applyChanges(agent, task, analysisResult, api)
     }
 

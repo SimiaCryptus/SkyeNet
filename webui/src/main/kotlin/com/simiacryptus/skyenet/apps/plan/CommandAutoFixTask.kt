@@ -51,7 +51,8 @@ CommandAutoFix - Run a command and automatically fix any issues that arise
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     ) {
         val semaphore = Semaphore(0)
         val onComplete = {
@@ -91,7 +92,7 @@ CommandAutoFix - Run a command and automatically fix any issues that arise
                 ui = agent.ui,
                 task = task
             )
-            planProcessingState.taskResult[taskId] = "Command Auto Fix completed"
+            resultFn("Command Auto Fix completed")
             task.add(if (outputResult.exitCode == 0) {
                 if (agent.planSettings.autoFix) {
                     onComplete()

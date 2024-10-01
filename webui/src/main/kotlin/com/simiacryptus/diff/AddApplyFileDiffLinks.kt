@@ -45,20 +45,30 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
     val findAll = codeblockPattern.findAll(response).toList()
     val codeblocks = findAll.filter { block ->
-        val header = headers.lastOrNull { it.first.last <= block.range.first }
-        if (header == null) {
-            return@filter false
+        try {
+            val header = headers.lastOrNull { it.first.last <= block.range.first }
+            if (header == null) {
+                return@filter false
+            }
+            val filename = resolve(root, header.second)
+            !root.resolve(filename).toFile().exists()
+        } catch (e: Throwable) {
+            log.info("Error processing code block", e)
+            false
         }
-        val filename = resolve(root, header.second)
-        !root.resolve(filename).toFile().exists()
     }.map { it.range to it }.toList()
     val patchBlocks = findAll.filter { block ->
-        val header = headers.lastOrNull { it.first.last <= block.range.first }
-        if (header == null) {
-            return@filter false
+        try {
+            val header = headers.lastOrNull { it.first.last <= block.range.first }
+            if (header == null) {
+                return@filter false
+            }
+            val filename = resolve(root, header.second)
+            root.resolve(filename).toFile().exists()
+        } catch (e: Throwable) {
+            log.info("Error processing code block", e)
+            false
         }
-        val filename = resolve(root, header.second)
-        root.resolve(filename).toFile().exists()
     }.map { it.range to it }.toList()
     // Process diff blocks and add patch links
     val withPatchLinks: String = patchBlocks.fold(response) { markdown, diffBlock ->
@@ -156,11 +166,15 @@ fun resolve(root: Path, filename: String): String {
         filename
     }
 
-    if (!root.resolve(filename).toFile().exists()) {
-        root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }
-            ?.toString()?.apply {
-                filename = relativizeFrom(root)
-            }
+    try {
+        if (!root.resolve(filename).toFile().exists()) {
+            root.toFile().listFilesRecursively().find { it.toString().replace("\\", "/").endsWith(filename.replace("\\", "/")) }
+                ?.toString()?.apply {
+                    filename = relativizeFrom(root)
+                }
+        }
+    } catch (e: Throwable) {
+        log.error("Error resolving filename", e)
     }
 
     return filename

@@ -103,7 +103,8 @@ class FileModificationTask(
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     ) {
         if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
             task.complete("No input files specified")
@@ -121,7 +122,7 @@ class FileModificationTask(
                     this.planTask?.task_description ?: "",
                 ).filter { it.isNotBlank() }, api
             )
-            planProcessingState.taskResult[taskId] = codeResult
+            resultFn(codeResult)
             if (agent.planSettings.autoFix) {
                 val diffLinks = agent.ui.socketManager!!.addApplyFileDiffLinks(
                     root = agent.root,

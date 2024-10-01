@@ -25,7 +25,7 @@ abstract class AbstractTask<T : PlanTaskBase>(
         Completed,
     }
 
-    protected fun getPriorCode(planProcessingState: PlanProcessingState) =
+    protected open fun getPriorCode(planProcessingState: PlanProcessingState) =
         planTask?.task_dependencies?.joinToString("\n\n\n") { dependency ->
             """
         |# $dependency
@@ -59,7 +59,8 @@ abstract class AbstractTask<T : PlanTaskBase>(
         plan: Map<String, PlanTaskBase>,
         planProcessingState: PlanProcessingState,
         task: SessionTask,
-        api: API
+        api: API,
+        resultFn: (String) -> Unit
     )
 
     companion object {
