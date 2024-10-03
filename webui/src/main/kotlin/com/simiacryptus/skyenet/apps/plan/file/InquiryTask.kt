@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan.file
 
+import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
@@ -11,31 +12,42 @@ import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.streams.asSequence
 
 class InquiryTask(
     planSettings: PlanSettings,
     planTask: InquiryTaskData?
-) : AbstractFileTask<InquiryTask.InquiryTaskData>(planSettings, planTask) {
+) : AbstractTask<InquiryTask.InquiryTaskData>(planSettings, planTask) {
     class InquiryTaskData(
         @Description("The specific questions or topics to be addressed in the inquiry")
         val inquiry_questions: List<String>? = null,
         @Description("The goal or purpose of the inquiry")
         val inquiry_goal: String? = null,
+        @Description("The specific files (or file patterns) to be used as input for the task")
+        val input_files: List<String>? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
-        input_files: List<String>? = null,
-        output_files: List<String>? = null,
-        state: TaskState? = null
-    ) : FileTaskBase(
+        state: TaskState? = null,
+    ) : PlanTaskBase(
         task_type = TaskType.Inquiry.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
-        input_files = input_files,
-        output_files = output_files,
         state = state
     )
+
+    override fun promptSegment() = if (planSettings.allowBlocking) """
+    |Inquiry - Answer questions by reading in files and providing a summary that can be discussed with and approved by the user
+    |    ** Specify the questions and the goal of the inquiry
+    |    ** List input files to be examined when answering the questions
+    """.trimMargin() else """
+    |Inquiry - Answer questions by reading in files and providing a report
+    |    ** Specify the questions and the goal of the inquiry
+    |    ** List input files to be examined when answering the questions
+    """.trimMargin()
 
     private val inquiryActor by lazy {
         SimpleActor(
@@ -49,20 +61,14 @@ class InquiryTask(
                 
                 When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
                 Focus on generating insights and information that support the task types available in the system (${
-                    planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")}).
+                    planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")
+                }).
                 This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
-                ?: planSettings.defaultModel,
+            model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
         )
     }
-
-    override fun promptSegment() = """
-    |Inquiry - Answer questions by reading in files and providing a summary that can be discussed with and approved by the user
-    |    ** Specify the questions and the goal of the inquiry
-    |    ** List input files to be examined when answering the questions
-    """.trimMargin()
 
     override fun run(
         agent: PlanCoordinator,
@@ -127,6 +133,38 @@ class InquiryTask(
         }
         resultFn(inquiryResult)
     }
+
+    private fun getInputFileCode(): String =
+        ((planTask?.input_files ?: listOf()))
+            .flatMap { pattern: String ->
+                val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
+                Files.walk(root).asSequence()
+                    .filter { path ->
+                        matcher.matches(root.relativize(path)) &&
+                                FileValidationUtils.isLLMIncludable(path.toFile())
+                    }
+                    .map { path ->
+                        root.relativize(path).toString()
+                    }
+                    .toList()
+            }
+            .distinct()
+            .sortedBy { it }
+            .joinToString("\n\n") { relativePath ->
+                val file = root.resolve(relativePath).toFile()
+                try {
+                    """
+                |# $relativePath
+                |
+                |${AbstractFileTask.TRIPLE_TILDE}
+                |${codeFiles[file.toPath()] ?: file.readText()}
+                |${AbstractFileTask.TRIPLE_TILDE}
+                """.trimMargin()
+                } catch (e: Throwable) {
+                    log.warn("Error reading file: $relativePath", e)
+                    ""
+                }
+            }
 
     companion object {
         private val log = LoggerFactory.getLogger(InquiryTask::class.java)

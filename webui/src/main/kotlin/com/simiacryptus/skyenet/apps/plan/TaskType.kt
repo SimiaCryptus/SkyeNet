@@ -39,6 +39,8 @@ class TaskType<out T : PlanTaskBase>(
 
         val TaskPlanning = TaskType("TaskPlanning", PlanningTaskData::class.java)
         val Inquiry = TaskType("Inquiry", InquiryTaskData::class.java)
+        val Search = TaskType("Search", SearchTask.SearchTaskData::class.java)
+        val EmbeddingSearch = TaskType("EmbeddingSearch", EmbeddingSearchTask.EmbeddingSearchTaskData::class.java)
         val FileModification = TaskType("FileModification", FileModificationTaskData::class.java)
         val Documentation = TaskType("Documentation", DocumentationTaskData::class.java)
         val CodeReview = TaskType("CodeReview", CodeReviewTaskData::class.java)
@@ -54,6 +56,8 @@ class TaskType<out T : PlanTaskBase>(
         init {
             registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
             registerConstructor(Inquiry) { settings, task -> InquiryTask(settings, task) }
+            registerConstructor(Search) { settings, task -> SearchTask(settings, task) }
+            registerConstructor(EmbeddingSearch) { settings, task -> EmbeddingSearchTask(settings, task) }
             registerConstructor(FileModification) { settings, task -> FileModificationTask(settings, task) }
             registerConstructor(Documentation) { settings, task -> DocumentationTask(settings, task) }
             registerConstructor(RunShellCommand) { settings, task -> RunShellCommandTask(settings, task) }

@@ -1,4 +1,5 @@
 package com.simiacryptus.skyenet.apps.plan.file
+import com.simiacryptus.diff.addApplyFileDiffLinks
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
@@ -37,6 +38,7 @@ class DocumentationTask(
         return """
  Documentation - Generate documentation
    ** List input files/tasks to be examined
+   ** List output files to be modified or created with documentation
             """.trimMargin()
     }
 
@@ -48,6 +50,14 @@ class DocumentationTask(
  Use a structured and consistent format that facilitates easy understanding and navigation. 
  Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
  Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
+ For existing files, provide documentation in the form of comments within the code.
+ For new files, create separate markdown files with the documentation.
+ Response format:
+ For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
+ For new files: Use $TRIPLE_TILDE markdown blocks with a header specifying the new file path.
+ The diff format should use + for line additions, - for line deletions.
+ Include 2 lines of context before and after every change in diffs.
+ Separate code blocks with a single blank line.
                 """.trimMargin(),
             model = planSettings.getTaskSettings(TaskType.Documentation).model ?: planSettings.defaultModel,
             temperature = planSettings.temperature,
@@ -64,6 +74,10 @@ class DocumentationTask(
         api: API,
         resultFn: (String) -> Unit
     ) {
+        if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
+            task.complete("No input or output files specified")
+            return
+        }
         val semaphore = Semaphore(0)
         val onComplete = {
             semaphore.release()
@@ -76,22 +90,44 @@ class DocumentationTask(
                     JsonUtil.toJson(plan),
                     getPriorCode(planProcessingState),
                     getInputFileCode(),
-                    "Items to document: ${itemsToDocument.joinToString(", ")}"
+                    "Items to document: ${itemsToDocument.joinToString(", ")}",
+                    "Output files: ${planTask?.output_files?.joinToString(", ") ?: ""}"
                 ).filter { it.isNotBlank() }, api
             )
             resultFn(docResult)
             if (agent.planSettings.autoFix) {
+                val diffLinks = agent.ui.socketManager!!.addApplyFileDiffLinks(
+                    root = agent.root,
+                    response = docResult,
+                    handle = { newCodeMap ->
+                        newCodeMap.forEach { (path, newCode) ->
+                            task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
+                        }
+                    },
+                    ui = agent.ui,
+                    api = api,
+                    shouldAutoApply = { agent.planSettings.autoFix }
+                )
                 task.complete()
                 onComplete()
-                MarkdownUtil.renderMarkdown("## Generated Documentation\n$docResult\nAuto-accepted", ui = agent.ui)
+                MarkdownUtil.renderMarkdown(diffLinks + "\n\n## Auto-applied documentation changes", ui = agent.ui)
             } else {
                 MarkdownUtil.renderMarkdown(
-                    "## Generated Documentation\n$docResult",
-                    ui = agent.ui
-                ) + acceptButtonFooter(agent.ui) {
-                    task.complete()
-                    onComplete()
-                }
+                    agent.ui.socketManager!!.addApplyFileDiffLinks(
+                        root = agent.root,
+                        response = docResult,
+                        handle = { newCodeMap ->
+                            newCodeMap.forEach { (path, newCode) ->
+                                task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
+                            }
+                        },
+                        ui = agent.ui,
+                        api = api
+                    ) + acceptButtonFooter(agent.ui) {
+                        task.complete()
+                        onComplete()
+                    }, ui = agent.ui
+                )
             }
         }
         Retryable(agent.ui, task = task, process = process)
