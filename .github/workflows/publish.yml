@@ -16,7 +16,7 @@ jobs:
       - name: Grant execute permissions for gradlew
         run: chmod +x ./gradlew
       - name: Set Gradle options
-        run: echo "GRADLE_OPTS='-Xmx2g'" >> $GITHUB_ENV
+        run: echo "GRADLE_OPTS='-Xmx4g'" >> $GITHUB_ENV
       - name: Publish to Maven Central
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
