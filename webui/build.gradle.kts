@@ -138,6 +138,9 @@ tasks {
         )
     }
 }
+tasks.withType<io.freefair.gradle.plugins.sass.SassCompile>().configureEach {
+    onlyIf { !project.hasProperty("skipSass") }
+}
 
 
 val javadocJar by tasks.registering(Jar::class) {
