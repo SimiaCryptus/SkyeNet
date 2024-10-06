@@ -13,5 +13,7 @@ jobs:
           distribution: 'temurin'
       - name: Grant execute permissions for gradlew
         run: chmod +x ./gradlew
+      - name: Set Gradle options
+        run: echo "GRADLE_OPTS='-Xmx4g'" >> $GITHUB_ENV
       - name: Build and test
-        run: ./gradlew build
+        run: ./gradlew build -PskipSass

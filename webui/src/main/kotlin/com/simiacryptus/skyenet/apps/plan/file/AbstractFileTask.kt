@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.diff.FileValidationUtils
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.AbstractTask
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanTaskBase
@@ -18,7 +19,9 @@ abstract class AbstractFileTask<T : FileTaskBase>(
         task_type: String,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
+        @Description("The specific files to be used as input for the task")
         val input_files: List<String>? = null,
+        @Description("The specific files to be generated as output for the task")
         val output_files: List<String>? = null,
         state: TaskState? = TaskState.Pending,
     ) : PlanTaskBase(
@@ -62,7 +65,7 @@ abstract class AbstractFileTask<T : FileTaskBase>(
 
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(AbstractFileTask::class.java)
-        private const val TRIPLE_TILDE = "```"
+        const val TRIPLE_TILDE = "```"
 
     }
 }
