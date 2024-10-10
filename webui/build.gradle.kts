@@ -36,7 +36,7 @@ val jackson_version = "2.17.2"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.6") {
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.7") {
         exclude(group = "org.slf4j")
     }
 

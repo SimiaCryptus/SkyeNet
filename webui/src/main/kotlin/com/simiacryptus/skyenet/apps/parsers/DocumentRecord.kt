@@ -1,10 +1,16 @@
 package com.simiacryptus.skyenet.apps.parsers
 
-import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.util.JsonUtil
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.io.Serializable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -13,7 +19,6 @@ data class DocumentRecord(
     val parentId: String?,
     val type: String,
     val text: String?,
-    val entities: String?,
     val tags: String?,
     val sourcePath: String,
     val depth: Int,
@@ -28,7 +33,6 @@ data class DocumentRecord(
         out.writeObject(parentId)
         out.writeUTF(type)
         out.writeObject(text)
-        out.writeObject(entities)
         out.writeObject(tags)
         out.writeUTF(sourcePath)
         out.writeInt(depth)
@@ -37,6 +41,7 @@ data class DocumentRecord(
         out.writeObject(properties)
         out.writeObject(relations)
     }
+
     @Throws(IOException::class, ClassNotFoundException::class)
     fun readObject(input: ObjectInputStream): DocumentRecord {
         val id = input.readUTF()
@@ -56,7 +61,6 @@ data class DocumentRecord(
             parentId,
             type,
             text,
-            entities,
             tags,
             sourcePath,
             depth,
@@ -66,20 +70,21 @@ data class DocumentRecord(
             relations
         )
     }
+
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(DocumentRecord::class.java)
 
-        fun saveAsBinary(
+        fun <T> saveAsBinary(
             openAIClient: OpenAIClient,
             outputPath: String,
             pool: ExecutorService,
-            vararg inputPaths: String
+            vararg inputPaths: String,
         ) {
             val records = mutableListOf<DocumentRecord>()
             inputPaths.forEach { inputPath ->
                 processDocument(
                     inputPath,
-                    JsonUtil.fromJson(File(inputPath).readText(), DefaultParsingModel.DocumentData::class.java),
+                    JsonUtil.fromJson(File(inputPath).readText(), Map::class.java) as T,
                     records,
                     openAIClient,
                     pool
@@ -88,21 +93,20 @@ data class DocumentRecord(
             writeBinary(outputPath, records)
         }
 
-        private fun processDocument(
+        private fun <T> processDocument(
             inputPath: String,
-            document: DefaultParsingModel.DocumentData,
+            document: T,
             records: MutableList<DocumentRecord>,
             openAIClient: OpenAIClient,
             pool: ExecutorService
         ) {
-            fun processContent(content: DefaultParsingModel.ContentData, parentId: String? = null, depth: Int = 0, path: String = "") {
+            fun processContent(content: Map<String, Any>, parentId: String? = null, depth: Int = 0, path: String = "") {
                 val record = DocumentRecord(
                     id = content.hashCode().toString(),
                     parentId = parentId,
-                    type = content.type,
-                    text = content.text,
-                    entities = content.entities?.joinToString(","),
-                    tags = content.tags?.joinToString(","),
+                    type = content["type"] as? String ?: "",
+                    text = content["text"] as? String,
+                    tags = (content["tags"] as? List<*>)?.joinToString(","),
                     sourcePath = inputPath,
                     depth = depth,
                     jsonPath = path,
@@ -111,28 +115,14 @@ data class DocumentRecord(
                     relations = null
                 )
                 records.add(record)
-                content.content?.forEachIndexed { index, childContent ->
+                (content["content"] as? List<Map<String, Any>>)?.forEachIndexed { index, childContent ->
                     processContent(childContent, content.hashCode().toString(), depth + 1, "$path.content[$index]")
                 }
             }
-            document.content?.forEachIndexed { index, content ->
-                processContent(content, null, 0, "content[$index]")
-            }
-            document.entities?.forEach { (entityId, entityData) ->
-                records.add(DocumentRecord(
-                    id = entityId,
-                    parentId = null,
-                    type = "entity",
-                    text = "Entity ${entityData.type}: ${entityData.aliases?.joinToString(", ")}",
-                    entities = null,
-                    tags = null,
-                    sourcePath = inputPath,
-                    depth = -1,  // Use -1 to indicate it's an entity, not part of the content hierarchy
-                    jsonPath = "entities.$entityId",
-                    vector = null,
-                    properties = entityData.properties?.entries?.joinToString(", ") { "${it.key}:${it.value}" },
-                    relations = entityData.relations?.entries?.joinToString(", ") { "${it.key}:${it.value}" }
-                ))
+            (document as? Map<String, Any>)?.get("content")?.let { contentList ->
+                (contentList as? List<Map<String, Any>>)?.forEachIndexed { index, content ->
+                    processContent(content, null, 0, "content[$index]")
+                }
             }
             addEmbeddings(records, pool, openAIClient)
         }
@@ -159,18 +149,19 @@ data class DocumentRecord(
                         TimeUnit.MILLISECONDS
                     )
                 } catch (e: Exception) {
-                    DefaultParsingModel.log.error("Error processing entity", e)
+                    log.error("Error processing entity", e)
                 }
             }
         }
 
         private fun writeBinary(outputPath: String, records: List<DocumentRecord>) {
-            DefaultParsingModel.log.info("Writing ${records.size} records to $outputPath")
+            log.info("Writing ${records.size} records to $outputPath")
             ObjectOutputStream(FileOutputStream(outputPath)).use { out ->
                 out.writeInt(records.size)
                 records.forEach { it.writeObject(out) }
             }
         }
+
         fun readBinary(inputPath: String): List<DocumentRecord> {
             val records = mutableListOf<DocumentRecord>()
             ObjectInputStream(FileInputStream(inputPath)).use { input ->
@@ -178,9 +169,19 @@ data class DocumentRecord(
                 repeat(size) {
                     records.add(
                         DocumentRecord(
-                            "", null, "", null, null, null,
-                            "", 0, "", DoubleArray(0), null, null
-                        ).readObject(input))
+                            id = "",
+                            parentId = null,
+                            type = "",
+                            text = null,
+                            tags = null,
+                            sourcePath = "",
+                            depth = 0,
+                            jsonPath = "",
+                            vector = DoubleArray(0),
+                            properties = null,
+                            relations = null
+                        ).readObject(input)
+                    )
                 }
             }
             return records

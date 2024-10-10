@@ -33,7 +33,7 @@ val hsqldb_version = "2.7.2"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.6")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.7")
     implementation(group = "org.hsqldb", name = "hsqldb", version = hsqldb_version)
 
     implementation("org.apache.commons:commons-text:1.11.0")

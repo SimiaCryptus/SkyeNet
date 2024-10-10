@@ -2,7 +2,6 @@ package com.simiacryptus.skyenet.apps.parsers
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.models.AnthropicModels
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.core.platform.Session
@@ -26,14 +25,11 @@ open class DocumentParserApp(
     applicationName: String = "Document Extractor",
     path: String = "/pdfExtractor",
     val api: API = ChatClient(),
-    val parsingModel: ParsingModel = DefaultParsingModel(AnthropicModels.Claude35Sonnet, 0.1),
+    val parsingModel: ParsingModel,
     val reader: (File) -> DocumentReader = {
         when {
             it.name.endsWith(".pdf", ignoreCase = true) -> PDFReader(it)
-            it.name.endsWith(".txt", ignoreCase = true) -> TextReader(it)
-            it.name.endsWith(".md", ignoreCase = true) -> TextReader(it)
-            it.name.endsWith(".html", ignoreCase = true) -> TextReader(it)
-            else -> throw IllegalArgumentException("Unsupported file type")
+            else -> TextReader(it)
         }
     },
     val fileInput: Path? = null,
@@ -262,9 +258,9 @@ open class DocumentParserApp(
         val fileInput: String? = "",
         val showImages: Boolean = true,
         val pagesPerBatch: Int = 1,
-        val saveImageFiles: Boolean = true,
-        val saveTextFiles: Boolean = true,
-        val saveFinalJson: Boolean = false
+        val saveImageFiles: Boolean = false,
+        val saveTextFiles: Boolean = false,
+        val saveFinalJson: Boolean = true
     )
 
     override val settingsClass: Class<*> get() = Settings::class.java
