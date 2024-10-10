@@ -18,8 +18,8 @@ class DocumentationTask(
     planTask: DocumentationTaskData?
 ) : AbstractFileTask<DocumentationTaskData>(planSettings, planTask) {
     class DocumentationTaskData(
-        @Description("List of files or tasks to be documented")
-        val items_to_document: List<String>? = null,
+        @Description("List topics to document")
+        val topics: List<String>? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         input_files: List<String>? = null,
@@ -37,7 +37,8 @@ class DocumentationTask(
     override fun promptSegment(): String {
         return """
  Documentation - Generate documentation
-   ** List input files/tasks to be examined
+   ** List input file names and tasks to be examined
+   ** List topics to document
    ** List output files to be modified or created with documentation
             """.trimMargin()
     }
@@ -83,7 +84,7 @@ class DocumentationTask(
             semaphore.release()
         }
         val process = { sb: StringBuilder ->
-            val itemsToDocument = planTask?.items_to_document ?: emptyList()
+            val itemsToDocument = planTask?.topics ?: emptyList()
             val docResult = documentationGeneratorActor.answer(
                 listOf<String>(
                     userMessage,

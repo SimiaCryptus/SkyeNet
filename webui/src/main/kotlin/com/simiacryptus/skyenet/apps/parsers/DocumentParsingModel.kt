@@ -6,7 +6,7 @@ import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 
-open class DefaultParsingModel(
+open class DocumentParsingModel(
     private val parsingModel: ChatModels,
     private val temperature: Double
 ) : ParsingModel {
@@ -14,7 +14,7 @@ open class DefaultParsingModel(
     override fun merge(
         runningDocument: ParsingModel.DocumentData,
         newData: ParsingModel.DocumentData
-    ) : ParsingModel.DocumentData {
+    ): ParsingModel.DocumentData {
         val runningDocument = runningDocument as DocumentData
         val newData = newData as DocumentData
         return DocumentData(
@@ -87,7 +87,9 @@ open class DefaultParsingModel(
         |6. Assign relevant tags to each content section to improve searchability and categorization.
         |7. Do not copy data from the accumulated document JSON to your response; it is provided for context only.
         """.trimMargin()
+
     open val exampleInstance = DocumentData()
+
     override fun getParser(api: API): (String) -> DocumentData {
         val parser = ParsedActor(
             resultClass = DocumentData::class.java,
@@ -104,10 +106,10 @@ open class DefaultParsingModel(
     override fun newDocument() = DocumentData()
 
     data class DocumentData(
-        @Description("Document/Page identifier") val id: String? = null,
+        @Description("Document/Page identifier") override val id: String? = null,
         @Description("Entities extracted") val entities: Map<String, EntityData>? = null,
-        @Description("Hierarchical structure and data") val content: List<ContentData>? = null,
-        @Description("Document metadata") val metadata: DocumentMetadata? = null
+        @Description("Hierarchical structure and data") override val content: List<ContentData>? = null,
+        @Description("Document metadata") override val metadata: DocumentMetadata? = null
     ) : ParsingModel.DocumentData
 
     data class EntityData(
@@ -118,20 +120,21 @@ open class DefaultParsingModel(
     )
 
     data class ContentData(
-        @Description("Content type, e.g. heading, paragraph, statement, list") val type: String = "",
-        @Description("Brief, self-contained text either copied, paraphrased, or summarized") val text: String? = null,
-        @Description("Sub-elements") val content: List<ContentData>? = null,
+        @Description("Content type, e.g. heading, paragraph, statement, list") override val type: String = "",
+        @Description("Brief, self-contained text either copied, paraphrased, or summarized") override val text: String? = null,
+        @Description("Sub-elements") override val content: List<ContentData>? = null,
         @Description("Related entities by ID") val entities: List<String>? = null,
-        @Description("Tags - related topics and non-entity indexing") val tags: List<String>? = null
-    )
+        @Description("Tags - related topics and non-entity indexing") override val tags: List<String>? = null
+    ) : ParsingModel.ContentData
+
     data class DocumentMetadata(
         @Description("Document title") val title: String? = null,
         @Description("Keywords or tags associated with the document") val keywords: List<String>? = null,
         @Description("Other metadata") val properties: Map<String, Any>? = null,
-    )
+    ) : ParsingModel.DocumentMetadata
 
     companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(DefaultParsingModel::class.java)
+        val log = org.slf4j.LoggerFactory.getLogger(DocumentParsingModel::class.java)
 
     }
 

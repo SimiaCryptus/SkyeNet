@@ -7,7 +7,19 @@ interface ParsingModel {
     fun getParser(api: API): (String) -> DocumentData
     fun newDocument(): DocumentData
 
-    interface DocumentData
+    interface DocumentMetadata
+    interface ContentData {
+        val type: String
+        val text: String?
+        val content: List<ContentData>?
+        val tags: List<String>?
+    }
+    interface DocumentData {
+        val id: String?
+        val content: List<ContentData>?
+        val metadata: DocumentMetadata?
+    }
+
     companion object {
         private val log = org.slf4j.LoggerFactory.getLogger(ParsingModel::class.java)
     }

@@ -19,9 +19,9 @@ abstract class AbstractFileTask<T : FileTaskBase>(
         task_type: String,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
-        @Description("The specific files to be used as input for the task")
+        @Description("The file names to be used as input for the task")
         val input_files: List<String>? = null,
-        @Description("The specific files to be generated as output for the task")
+        @Description("The file names to be generated as output for the task")
         val output_files: List<String>? = null,
         state: TaskState? = TaskState.Pending,
     ) : PlanTaskBase(
