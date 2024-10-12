@@ -97,7 +97,7 @@ object IterativePatchUtil {
         log.info("Starting patch application process")
         // Parse the source and patch texts into lists of line records
         val sourceLines = parseLines(source)
-        var patchLines = parsePatchLines(patch)
+        var patchLines = parsePatchLines(patch, sourceLines)
         log.debug("Parsed source lines: ${sourceLines.size}, initial patch lines: ${patchLines.size}")
         link(sourceLines, patchLines, LevenshteinDistance())
 
@@ -634,7 +634,7 @@ private fun generatePatchedText(
      * @param text The patch text to parse.
      * @return The list of line records with types set.
      */
-    private fun parsePatchLines(text: String): List<LineRecord> {
+    private fun parsePatchLines(text: String, sourceLines: List<LineRecord>): List<LineRecord> {
         log.debug("Starting to parse patch lines")
         val patchLines = setLinks(text.lines().mapIndexed { index, line ->
             LineRecord(
@@ -644,6 +644,7 @@ private fun generatePatchedText(
                         it.trimStart().startsWith("+++") -> null
                         it.trimStart().startsWith("---") -> null
                         it.trimStart().startsWith("@@") -> null
+                        sourceLines.find { patchLine -> normalizeLine(patchLine.line ?: "") == normalizeLine(it) } != null -> it
                         it.trimStart().startsWith("+") -> it.trimStart().substring(1)
                         it.trimStart().startsWith("-") -> it.trimStart().substring(1)
                         else -> it
