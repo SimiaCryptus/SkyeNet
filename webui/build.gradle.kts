@@ -12,8 +12,8 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "2.0.20"
     `maven-publish`
     id("signing")
-    id("io.freefair.sass-base") version "8.4"
-    id("io.freefair.sass-java") version "8.4"
+    id("io.freefair.sass-base") version "8.10.2"
+    id("io.freefair.sass-java") version "8.10.2"
 }
 
 repositories {
@@ -44,16 +44,15 @@ dependencies {
     implementation(project(":kotlin"))
 
     implementation("org.apache.pdfbox:pdfbox:2.0.27")
-    implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
+    compileOnly("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
     compileOnly("org.jsoup:jsoup:1.17.2")
 
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.zxing:javase:3.5.3")
 
     compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
-    runtimeOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
 
-    implementation("org.openapitools:openapi-generator:7.3.0") {
+    compileOnly("org.openapitools:openapi-generator:7.3.0") {
         exclude(group = "org.slf4j")
     }
     compileOnly("org.openapitools:openapi-generator-cli:7.3.0") {
@@ -69,7 +68,8 @@ dependencies {
     implementation(group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version = jetty_version)
     implementation(group = "org.eclipse.jetty", name = "jetty-webapp", version = jetty_version)
 
-    implementation(group = "com.vladsch.flexmark", name = "flexmark-all", version = "0.64.8")
+    implementation(group = "com.vladsch.flexmark", name = "flexmark", version = "0.64.8")
+    implementation(group = "com.vladsch.flexmark", name = "flexmark-ext-tables", version = "0.64.8")
 
     compileOnly(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.0-RC")
 
@@ -89,9 +89,9 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
-    implementation(group = "com.google.api-client", name = "google-api-client", version = "1.35.2" /*"1.35.2"*/)
-    implementation(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
-    implementation(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
+    compileOnly(group = "com.google.api-client", name = "google-api-client", version = "1.35.2" /*"1.35.2"*/)
+    compileOnly(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
+    compileOnly(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
     implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
     implementation(group = "commons-codec", name = "commons-codec", version = "1.16.0")
 
