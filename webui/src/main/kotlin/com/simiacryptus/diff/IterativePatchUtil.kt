@@ -651,8 +651,8 @@ private fun generatePatchedText(
                     }
                 },
                 type = when {
-                    line.startsWith("+") -> ADD
-                    line.startsWith("-") -> DELETE
+                    line.trimStart().startsWith("+") -> ADD
+                    line.trimStart().startsWith("-") -> DELETE
                     else -> CONTEXT
                 }
             )

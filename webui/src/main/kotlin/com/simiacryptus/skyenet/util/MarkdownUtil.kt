@@ -73,7 +73,7 @@ object MarkdownUtil {
         } else htmlContent
     }
 
-    var MMDC_CMD: List<String> = listOf("powershell", "mmdc")
+    var MMDC_CMD: List<String> = listOf("mmdc")
     private fun renderMermaidToSVG(mermaidCode: String): String {
         // mmdc -i input.mmd -o output.svg
         val tempInputFile = Files.createTempFile("mermaid", ".mmd").toFile()
