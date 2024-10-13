@@ -104,7 +104,6 @@ EmbeddingSearch - Search for similar embeddings in index files and provide top r
                 appendLine("- File: ${result.file}")
                 appendLine("- Distance: ${result.distance}")
                 appendLine("- Text: ${result.record.text}")
-                appendLine("- Type: ${result.record.type}")
                 appendLine("- Source Path: ${result.record.sourcePath}")
                 appendLine("- JSON Path: ${result.record.jsonPath}")
                 appendLine()
