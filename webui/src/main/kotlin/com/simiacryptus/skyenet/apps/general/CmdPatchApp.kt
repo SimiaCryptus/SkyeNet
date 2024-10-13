@@ -100,6 +100,8 @@ class CmdPatchApp(
         val command =
             listOf(settings.executable.absolutePath) + settings.arguments.split(" ").filter(String::isNotBlank)
         val processBuilder = ProcessBuilder(command).directory(settings.workingDirectory)
+        // Pass the current environment to the subprocess
+        processBuilder.environment().putAll(System.getenv())
         val buffer = StringBuilder()
         val taskOutput = task.add("")
         val process = processBuilder.start()

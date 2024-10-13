@@ -12,14 +12,15 @@ import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.Semaphore
+import java.util.concurrent.atomic.AtomicBoolean
 
 class CommandAutoFixTask(
     planSettings: PlanSettings,
     planTask: CommandAutoFixTaskData?
 ) : AbstractTask<CommandAutoFixTaskData>(planSettings, planTask) {
     class CommandAutoFixTaskData(
-        @Description("The command to be executed")
-        val command: List<String>? = null,
+        @Description("The commands to be executed")
+        val commands: List<List<String>>? = null,
         @Description("The working directory for the command execution")
         val workingDir: String? = null,
         task_description: String? = null,
@@ -35,10 +36,10 @@ class CommandAutoFixTask(
     override fun promptSegment(): String {
         return """
 CommandAutoFix - Run a command and automatically fix any issues that arise
-    ** Specify the command to be executed and any additional instructions
+    ** Specify the commands to be executed and any additional instructions
     ** Specify the working directory relative to the root directory
-    ** Provide the command and its arguments in the 'command' field
-    ** List input files/tasks to be examined when fixing issues
+    ** Provide the commands and their arguments in the 'commands' field
+    ** Each command should be a list of strings
     ** Available commands:
     ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}" }}
         """.trimMargin()
@@ -55,61 +56,72 @@ CommandAutoFix - Run a command and automatically fix any issues that arise
         resultFn: (String) -> Unit
     ) {
         val semaphore = Semaphore(0)
+        val hasError = AtomicBoolean(false)
         val onComplete = {
             semaphore.release()
         }
         Retryable(agent.ui, task = task) {
             val task = agent.ui.newTask(false).apply { it.append(placeholder) }
-            val alias = this.planTask?.command?.first()
-            val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
-            val cmds = commandAutoFixCommands
-                ?.map { File(it) }?.associateBy { it.name }
-                ?.filterKeys { it.startsWith(alias ?: "") }
-                ?: emptyMap()
-            val executable = cmds.entries.firstOrNull()?.value
-            if (executable == null) {
-                throw IllegalArgumentException("Command not found: $alias")
-            }
-            val workingDirectory = (this.planTask?.workingDir
-                ?.let { agent.root.toFile().resolve(it) } ?: agent.root.toFile())
-                .apply { mkdirs() }
-            val outputResult = CmdPatchApp(
-                root = agent.root,
-                session = agent.session,
-                settings = PatchApp.Settings(
-                    executable = executable,
-                    arguments = this.planTask?.command?.drop(1)?.joinToString(" ") ?: "",
-                    workingDirectory = workingDirectory,
-                    exitCodeOption = "nonzero",
-                    additionalInstructions = "",
-                    autoFix = agent.planSettings.autoFix
-                ),
-                api = api as ChatClient,
-                files = agent.files,
-                model = agent.planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
-                    ?: agent.planSettings.defaultModel,
-            ).run(
-                ui = agent.ui,
-                task = task
-            )
-            resultFn("Command Auto Fix completed")
-            task.add(if (outputResult.exitCode == 0) {
-                if (agent.planSettings.autoFix) {
-                    onComplete()
-                    MarkdownUtil.renderMarkdown("## Auto-applied Command Auto Fix\n", ui = agent.ui)
+            this.planTask?.commands?.forEachIndexed { index, command ->
+                val alias = command.firstOrNull()
+                val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
+                val cmds = commandAutoFixCommands
+                    ?.map { File(it) }?.associateBy { it.name }
+                    ?.filterKeys { it.startsWith(alias ?: "") }
+                    ?: emptyMap()
+                val executable = cmds.entries.firstOrNull()?.value
+                if (executable == null) {
+                    throw IllegalArgumentException("Command not found: $alias")
+                }
+                val workingDirectory = (this.planTask.workingDir
+                    ?.let { agent.root.toFile().resolve(it) } ?: agent.root.toFile())
+                    .apply { mkdirs() }
+                val outputResult = CmdPatchApp(
+                    root = agent.root,
+                    session = agent.session,
+                    settings = PatchApp.Settings(
+                        executable = executable,
+                        arguments = command.drop(1).joinToString(" "),
+                        workingDirectory = workingDirectory,
+                        exitCodeOption = "nonzero",
+                        additionalInstructions = "",
+                        autoFix = agent.planSettings.autoFix
+                    ),
+                    api = api as ChatClient,
+                    files = agent.files,
+                    model = agent.planSettings.getTaskSettings(TaskType.valueOf(planTask.task_type!!)).model
+                        ?: agent.planSettings.defaultModel,
+                ).run(
+                    ui = agent.ui,
+                    task = task
+                )
+                if (outputResult.exitCode != 0) {
+                    hasError.set(true)
+                }
+                task.add(MarkdownUtil.renderMarkdown("## Command Auto Fix Result for Command ${index + 1}\n", ui = agent.ui, tabs = false))
+                task.add(if (outputResult.exitCode == 0) {
+                    if (agent.planSettings.autoFix) {
+                        MarkdownUtil.renderMarkdown("Auto-applied Command Auto Fix\n", ui = agent.ui, tabs = false)
+                    } else {
+                        MarkdownUtil.renderMarkdown(
+                            "Command Auto Fix Result\n",
+                            ui = agent.ui, tabs = false
+                        )
+                    }
                 } else {
                     MarkdownUtil.renderMarkdown(
-                        "## Command Auto Fix Result\n",
-                        ui = agent.ui
-                    ) + acceptButtonFooter(
-                        agent.ui
-                    ) {
-                        onComplete()
-                    }
-                }
+                        "Command Auto Fix Failed\n",
+                        ui = agent.ui, tabs = false
+                    )
+                })
+            }
+            resultFn("All Command Auto Fix tasks completed")
+            task.add(if (!hasError.get()) {
+                onComplete()
+                MarkdownUtil.renderMarkdown("## All Command Auto Fix tasks completed successfully\n", ui = agent.ui, tabs = false)
             } else {
                 MarkdownUtil.renderMarkdown(
-                    "## Command Auto Fix Failed\n",
+                    "## Some Command Auto Fix tasks failed\n",
                     ui = agent.ui
                 ) + acceptButtonFooter(
                     agent.ui

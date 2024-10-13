@@ -15,59 +15,34 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
 data class DocumentRecord(
-    val id: String,
-    val parentId: String?,
-    val type: String,
     val text: String?,
-    val tags: String?,
+    val metadata: String?,
     val sourcePath: String,
-    val depth: Int,
     val jsonPath: String,
     var vector: DoubleArray?,
-    val properties: String?,
-    val relations: String?
 ) : Serializable {
     @Throws(IOException::class)
     fun writeObject(out: ObjectOutputStream) {
-        out.writeUTF(id)
-        out.writeObject(parentId)
-        out.writeUTF(type)
-        out.writeObject(text)
-        out.writeObject(tags)
+        out.writeUTF(text ?: "")
+        out.writeUTF(metadata ?: "")
         out.writeUTF(sourcePath)
-        out.writeInt(depth)
         out.writeUTF(jsonPath)
         out.writeObject(vector)
-        out.writeObject(properties)
-        out.writeObject(relations)
     }
 
     @Throws(IOException::class, ClassNotFoundException::class)
     fun readObject(input: ObjectInputStream): DocumentRecord {
-        val id = input.readUTF()
-        val parentId = input.readObject() as String?
-        val type = input.readUTF()
-        val text = input.readObject() as String?
-        val entities = input.readObject() as String?
-        val tags = input.readObject() as String?
+        val text = input.readUTF().let { if (it.isEmpty()) null else it }
+        val metadata = input.readUTF().let { if (it.isEmpty()) null else it }
         val sourcePath = input.readUTF()
-        val depth = input.readInt()
         val jsonPath = input.readUTF()
         val vector = input.readObject() as DoubleArray
-        val properties = input.readObject() as String?
-        val relations = input.readObject() as String?
         return DocumentRecord(
-            id,
-            parentId,
-            type,
             text,
-            tags,
+            metadata,
             sourcePath,
-            depth,
             jsonPath,
-            vector,
-            properties,
-            relations
+            vector
         )
     }
 
@@ -100,28 +75,22 @@ data class DocumentRecord(
             openAIClient: OpenAIClient,
             pool: ExecutorService
         ) {
-            fun processContent(content: Map<String, Any>, parentId: String? = null, depth: Int = 0, path: String = "") {
+            fun processContent(content: Map<String, Any>, path: String = "") {
                 val record = DocumentRecord(
-                    id = content.hashCode().toString(),
-                    parentId = parentId,
-                    type = content["type"] as? String ?: "",
                     text = content["text"] as? String,
-                    tags = (content["tags"] as? List<*>)?.joinToString(","),
+                    metadata = JsonUtil.toJson(content.filter { it.key != "text" && it.key != "content" }),
                     sourcePath = inputPath,
-                    depth = depth,
                     jsonPath = path,
-                    vector = null,
-                    properties = null,
-                    relations = null
+                    vector = null
                 )
                 records.add(record)
                 (content["content"] as? List<Map<String, Any>>)?.forEachIndexed { index, childContent ->
-                    processContent(childContent, content.hashCode().toString(), depth + 1, "$path.content[$index]")
+                    processContent(childContent, "$path.content[$index]")
                 }
             }
             (document as? Map<String, Any>)?.get("content")?.let { contentList ->
                 (contentList as? List<Map<String, Any>>)?.forEachIndexed { index, content ->
-                    processContent(content, null, 0, "content[$index]")
+                    processContent(content, "content[$index]")
                 }
             }
             addEmbeddings(records, pool, openAIClient)
@@ -169,17 +138,11 @@ data class DocumentRecord(
                 repeat(size) {
                     records.add(
                         DocumentRecord(
-                            id = "",
-                            parentId = null,
-                            type = "",
                             text = null,
-                            tags = null,
+                            metadata = null,
                             sourcePath = "",
-                            depth = 0,
                             jsonPath = "",
-                            vector = DoubleArray(0),
-                            properties = null,
-                            relations = null
+                            vector = DoubleArray(0)
                         ).readObject(input)
                     )
                 }
