@@ -18,11 +18,10 @@ class CommandAutoFixTask(
     planSettings: PlanSettings,
     planTask: CommandAutoFixTaskData?
 ) : AbstractTask<CommandAutoFixTaskData>(planSettings, planTask) {
+
     class CommandAutoFixTaskData(
-        @Description("The commands to be executed")
-        val commands: List<List<String>>? = null,
-        @Description("The working directory for the command execution")
-        val workingDir: String? = null,
+        @Description("The commands to be executed with their respective working directories")
+        val commands: List<CommandWithWorkingDir>? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         state: TaskState? = null
@@ -32,17 +31,23 @@ class CommandAutoFixTask(
         task_dependencies = task_dependencies,
         state = state
     )
+    data class CommandWithWorkingDir(
+        @Description("The command to be executed")
+        val command: List<String>,
+        @Description("The working directory for this specific command")
+        val workingDir: String? = null
+    )
 
     override fun promptSegment(): String {
         return """
 CommandAutoFix - Run a command and automatically fix any issues that arise
-    ** Specify the commands to be executed and any additional instructions
-    ** Specify the working directory relative to the root directory
-    ** Provide the commands and their arguments in the 'commands' field
-    ** Each command should be a list of strings
-    ** Available commands:
-    ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}" }}
-        """.trimMargin()
+** Specify the commands to be executed along with their working directories
+** Each command's working directory should be specified relative to the root directory
+** Provide the commands and their arguments in the 'commands' field
+** Each command should be a list of strings
+** Available commands:
+${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}" }}
+        """.trim()
     }
 
     override fun run(
@@ -62,8 +67,8 @@ CommandAutoFix - Run a command and automatically fix any issues that arise
         }
         Retryable(agent.ui, task = task) {
             val task = agent.ui.newTask(false).apply { it.append(placeholder) }
-            this.planTask?.commands?.forEachIndexed { index, command ->
-                val alias = command.firstOrNull()
+            this.planTask?.commands?.forEachIndexed { index, commandWithDir ->
+                val alias = commandWithDir.command.firstOrNull()
                 val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
                 val cmds = commandAutoFixCommands
                     ?.map { File(it) }?.associateBy { it.name }
@@ -73,7 +78,7 @@ CommandAutoFix - Run a command and automatically fix any issues that arise
                 if (executable == null) {
                     throw IllegalArgumentException("Command not found: $alias")
                 }
-                val workingDirectory = (this.planTask.workingDir
+                val workingDirectory = (commandWithDir.workingDir
                     ?.let { agent.root.toFile().resolve(it) } ?: agent.root.toFile())
                     .apply { mkdirs() }
                 val outputResult = CmdPatchApp(
@@ -81,7 +86,7 @@ CommandAutoFix - Run a command and automatically fix any issues that arise
                     session = agent.session,
                     settings = PatchApp.Settings(
                         executable = executable,
-                        arguments = command.drop(1).joinToString(" "),
+                        arguments = commandWithDir.command.drop(1).joinToString(" "),
                         workingDirectory = workingDirectory,
                         exitCodeOption = "nonzero",
                         additionalInstructions = "",

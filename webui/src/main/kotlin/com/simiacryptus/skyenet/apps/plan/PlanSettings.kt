@@ -137,8 +137,12 @@ ${taskType.name}:
                 "1" to CommandAutoFixTaskData(
                     task_description = "Task 1",
                     task_dependencies = listOf(),
-                    commands = listOf(listOf("npx", "create-react-app", ".", "--template", "typescript")),
-                    workingDir = "."
+                    commands = listOf(
+                        CommandAutoFixTask.CommandWithWorkingDir(
+                            command = listOf("echo", "Hello, World!"),
+                            workingDir = "."
+                        )
+                    )
                 ),
                 "2" to FileModificationTaskData(
                     task_description = "Task 2",
