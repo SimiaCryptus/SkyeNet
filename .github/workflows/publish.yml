@@ -24,4 +24,4 @@ jobs:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets._GITHUB_TOKEN }}
-        run: ./gradlew publish -PskipSass -x test --no-configuration-cache --no-daemon --no-build-cache --no-parallel
+        run: ./gradlew publish -x test --no-configuration-cache --no-daemon --no-build-cache --no-parallel
