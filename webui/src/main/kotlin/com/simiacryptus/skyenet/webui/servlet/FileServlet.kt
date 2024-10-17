@@ -4,7 +4,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.google.common.cache.RemovalListener
-import com.simiacryptus.skyenet.webui.application.ApplicationServer
+import org.eclipse.jetty.http.MimeTypes
 import jakarta.servlet.WriteListener
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -97,7 +97,7 @@ abstract class FileServlet : HttpServlet() {
 
     private fun writeSmall(channel: FileChannel, resp: HttpServletResponse, file: File, req: HttpServletRequest) {
         log.info("Writing small file: ${file.absolutePath}")
-        resp.contentType = ApplicationServer.getMimeType(file.name)
+        resp.contentType = getMimeType(file.name)
         resp.status = HttpServletResponse.SC_OK
         val async = req.startAsync()
         resp.outputStream.apply {
@@ -134,7 +134,7 @@ abstract class FileServlet : HttpServlet() {
     ) {
         log.info("Writing large file: ${file.absolutePath}")
         val mappedByteBuffer: MappedByteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
-        resp.contentType = ApplicationServer.getMimeType(file.name)
+        resp.contentType = getMimeType(file.name)
         resp.status = HttpServletResponse.SC_OK
         val async = req.startAsync()
         resp.outputStream.apply {
@@ -164,6 +164,14 @@ abstract class FileServlet : HttpServlet() {
             })
         }
     }
+    private fun getMimeType(fileName: String): String {
+        return when {
+            fileName.endsWith(".js") -> "application/javascript"
+            fileName.endsWith(".mjs") -> "application/javascript"
+            else -> MimeTypes.getDefaultMimeByExtension(fileName) ?: "application/octet-stream"
+        }
+    }
+
 
     open fun getZipLink(
         req: HttpServletRequest,
