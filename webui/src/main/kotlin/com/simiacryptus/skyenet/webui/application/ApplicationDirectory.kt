@@ -205,8 +205,10 @@ abstract class ApplicationDirectory(
         context.baseResource = baseResource
         log.debug("New WebAppContext created for path: $path")
         context.contextPath = path
+        context.resourceBase = resourceBase
         context.welcomeFiles = arrayOf("index.html")
         if (indexServlet != null) {
+            context.addServlet(ServletHolder("$path/index", indexServlet), "/")
             context.addServlet(ServletHolder("$path/index", indexServlet), "/index.html")
         }
         return context
