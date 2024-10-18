@@ -1,10 +1,11 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.hsql
 
 import com.google.common.util.concurrent.AtomicDouble
 import com.simiacryptus.jopenai.models.ApiModel
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.OpenAIModel
-import org.slf4j.Logger
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.model.UsageInterface
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.sql.Connection
@@ -16,17 +17,16 @@ import java.util.concurrent.atomic.AtomicLong
 class HSQLUsageManager(private val dbFile: File) : UsageInterface {
 
     private val connection: Connection by lazy {
-        logger.info("Initializing HSQLUsageManager with database file: ${dbFile.absolutePath}")
+        log.info("Initializing HSQLUsageManager with database file: ${dbFile.absolutePath}")
         Class.forName("org.hsqldb.jdbc.JDBCDriver")
-        val connection = DriverManager.getConnection("jdbc:hsqldb:file:${dbFile.absolutePath};shutdown=true", "SA", "")
-        logger.debug("Database connection established: $connection")
+        val connection = DriverManager.getConnection("jdbc:hsqldb:file:${dbFile.absolutePath}/usage;shutdown=true", "SA", "")
+        log.debug("Database connection established: $connection")
         createSchema(connection)
         connection
     }
-    private val logger: Logger = LoggerFactory.getLogger(HSQLUsageManager::class.java)
 
     private fun createSchema(connection: Connection) {
-        logger.info("Creating database schema if not exists")
+        log.info("Creating database schema if not exists")
         connection.createStatement().executeUpdate(
             """
          CREATE TABLE IF NOT EXISTS usage (
@@ -45,31 +45,31 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
 
 
     private fun updateSchema() {
-        logger.info("Updating database schema if needed")
+        log.info("Updating database schema if needed")
         // Add schema update logic here if needed
     }
 
     private fun deleteSchema() {
-        logger.info("Deleting database schema if exists")
+        log.info("Deleting database schema if exists")
         connection.createStatement().executeUpdate("DROP TABLE IF EXISTS usage")
-        logger.debug("Schema deleted")
+        log.debug("Schema deleted")
     }
 
     override fun incrementUsage(session: Session, apiKey: String?, model: OpenAIModel, tokens: ApiModel.Usage) {
         try {
-            logger.debug("Incrementing usage for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
+            log.debug("Incrementing usage for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
             val usageKey = UsageInterface.UsageKey(session, apiKey, model)
             val usageValues = UsageInterface.UsageValues() //getUsageValues(usageKey)
             usageValues.addAndGet(tokens)
             saveUsageValues(usageKey, usageValues)
-            logger.debug("Usage incremented for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
+            log.debug("Usage incremented for session: ${session.sessionId}, apiKey: $apiKey, model: ${model.modelName}")
         } catch (e: Exception) {
-            logger.error("Error incrementing usage", e)
+            log.error("Error incrementing usage", e)
         }
     }
 
     override fun getUserUsageSummary(apiKey: String): Map<OpenAIModel, ApiModel.Usage> {
-        logger.debug("Executing SQL query to get user usage summary for apiKey: $apiKey")
+        log.debug("Executing SQL query to get user usage summary for apiKey: $apiKey")
         val statement = connection.prepareStatement(
             """
             SELECT model, SUM(prompt_tokens), SUM(completion_tokens), SUM(cost)
@@ -84,7 +84,7 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     override fun getSessionUsageSummary(session: Session): Map<OpenAIModel, ApiModel.Usage> {
-        logger.info("Getting session usage summary for session: ${session.sessionId}")
+        log.info("Getting session usage summary for session: ${session.sessionId}")
         val statement = connection.prepareStatement(
             """
             SELECT model, SUM(prompt_tokens), SUM(completion_tokens), SUM(cost)
@@ -99,12 +99,12 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     override fun clear() {
-        logger.debug("Executing SQL statement to clear all usage data")
+        log.debug("Executing SQL statement to clear all usage data")
         connection.createStatement().executeUpdate("DELETE FROM usage")
     }
 
     private fun getUsageValues(usageKey: UsageInterface.UsageKey): UsageInterface.UsageValues {
-        logger.debug("Getting usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
+        log.debug("Getting usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
         val statement = connection.prepareStatement(
             """
          SELECT COALESCE(SUM(prompt_tokens), 0), COALESCE(SUM(completion_tokens), 0), COALESCE(SUM(cost), 0)
@@ -125,7 +125,7 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     private fun saveUsageValues(usageKey: UsageInterface.UsageKey, usageValues: UsageInterface.UsageValues) {
-        logger.debug("Saving usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
+        log.debug("Saving usage values for session: ${usageKey.session.sessionId}, apiKey: ${usageKey.apiKey}, model: ${usageKey.model.modelName}")
         val statement = connection.prepareStatement(
             """
          INSERT INTO usage (session_id, api_key, model, prompt_tokens, completion_tokens, cost, datetime)
@@ -139,13 +139,13 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
         statement.setLong(5, usageValues.outputTokens.get())
         statement.setDouble(6, usageValues.cost.get())
         statement.setTimestamp(7, Timestamp(System.currentTimeMillis()))
-        logger.debug("Executing statement: $statement")
-        logger.debug("With parameters: ${usageKey.session.sessionId}, ${usageKey.apiKey}, ${usageKey.model.modelName}, ${usageValues.inputTokens.get()}, ${usageValues.outputTokens.get()}, ${usageValues.cost.get()}")
+        log.debug("Executing statement: $statement")
+        log.debug("With parameters: ${usageKey.session.sessionId}, ${usageKey.apiKey}, ${usageKey.model.modelName}, ${usageValues.inputTokens.get()}, ${usageValues.outputTokens.get()}, ${usageValues.cost.get()}")
         statement.executeUpdate()
     }
 
     private fun generateUsageSummary(resultSet: ResultSet): Map<OpenAIModel, ApiModel.Usage> {
-        logger.debug("Generating usage summary from result set")
+        log.debug("Generating usage summary from result set")
         val summary = mutableMapOf<OpenAIModel, ApiModel.Usage>()
         while (resultSet.next()) {
             val string = resultSet.getString(1)
@@ -161,11 +161,11 @@ class HSQLUsageManager(private val dbFile: File) : UsageInterface {
     }
 
     private fun openAIModel(string: String): OpenAIModel? {
-        logger.debug("Retrieving OpenAI model for string: $string")
-        val model = ChatModels.values().filter {
+        log.debug("Retrieving OpenAI model for string: $string")
+        val model = ChatModel.values().filter {
             it.key == string || it.value.modelName == string || it.value.name == string
         }.toList().firstOrNull()?.second ?: return null
-        logger.debug("OpenAI model retrieved: $model")
+        log.debug("OpenAI model retrieved: $model")
         return model
     }
 

@@ -1,10 +1,10 @@
 package com.simiacryptus.skyenet.apps.meta
 
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 
 class HighLevelDesigner(
-    model: ChatModels,
+    model: ChatModel,
     temperature: Double
 ) : SimpleActor(
     model = model,

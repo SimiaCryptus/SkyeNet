@@ -15,9 +15,9 @@ import com.simiacryptus.skyenet.core.actors.ImageActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
-import com.simiacryptus.skyenet.core.platform.AuthorizationInterface
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
+import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.groovy.GroovyInterpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
 import com.simiacryptus.skyenet.scala.ScalaLocalInterpreter
@@ -99,19 +99,25 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                         workingDir = ".",
                         language = if (isWindows) "powershell" else "bash",
                     ).apply {
-                        setTaskSettings(TaskType.TaskPlanning, TaskSettings(
-                            enabled = true,
-                            model = OpenAIModels.GPT4o,))
-                        setTaskSettings(TaskType.RunShellCommand, TaskSettings(
-                            enabled = false,
-                            model = OpenAIModels.GPT4o,))
+                        setTaskSettings(
+                            TaskType.TaskPlanning, TaskSettings(
+                                enabled = true,
+                                model = OpenAIModels.GPT4o,
+                            )
+                        )
+                        setTaskSettings(
+                            TaskType.RunShellCommand, TaskSettings(
+                                enabled = false,
+                                model = OpenAIModels.GPT4o,
+                            )
+                        )
                     },
                     model = OpenAIModels.GPT4o,
                     parsingModel = OpenAIModels.GPT4oMini,
                 )
             ),
             ChildWebApp("/stressTest", StressTestApp()),
-            ChildWebApp("/pdfExtractor", DocumentParserApp(parsingModel= DocumentParsingModel(OpenAIModels.GPT4o, 0.1))),
+            ChildWebApp("/pdfExtractor", DocumentParserApp(parsingModel = DocumentParsingModel(OpenAIModels.GPT4o, 0.1))),
         )
     }
 

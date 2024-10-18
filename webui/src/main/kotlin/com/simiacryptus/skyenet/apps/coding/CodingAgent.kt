@@ -3,21 +3,21 @@ package com.simiacryptus.skyenet.apps.coding
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ApiModel
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.actors.ActorSystem
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.StorageInterface
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.model.StorageInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.interpreter.Interpreter
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -34,7 +34,7 @@ open class CodingAgent<T : Interpreter>(
     val symbols: Map<String, Any>,
     temperature: Double = 0.1,
     val details: String? = null,
-    val model: OpenAITextModel,
+    val model: TextModel,
     private val mainTask: SessionTask,
     val actorMap: Map<ActorTypes, CodingActor> = mapOf(
         ActorTypes.CodingActor to CodingActor(

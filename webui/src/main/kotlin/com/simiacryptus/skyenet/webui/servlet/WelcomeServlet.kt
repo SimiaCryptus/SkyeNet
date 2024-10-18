@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
-import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.webui.application.ApplicationDirectory
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.eclipse.jetty.http.MimeTypes
 import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
 import java.nio.file.NoSuchFileException
@@ -86,8 +87,11 @@ open class WelcomeServlet(private val parent: ApplicationDirectory) :
             }
 
             else -> try {
+                resp ?: throw IllegalStateException("Response is null")
+                resp.contentType = MimeTypes.getDefaultMimeByExtension(requestURI.split("/").last())
+                log.info("Serving resource: $requestURI as ${resp.contentType}")
                 val inputStream = parent.welcomeResources.addPath(requestURI)?.inputStream
-                inputStream?.copyTo(resp?.outputStream!!)
+                inputStream?.copyTo(resp.outputStream!!)
             } catch (e: NoSuchFileException) {
                 resp?.sendError(404)
             }

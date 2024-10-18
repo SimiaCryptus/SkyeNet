@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.apps.meta
 
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.apps.meta.FlowStepDesigner.Companion.fixups
 import com.simiacryptus.skyenet.core.actors.CodingActor
@@ -11,7 +11,7 @@ import kotlin.reflect.KClass
 class ParsedActorDesigner(
     interpreterClass: KClass<out Interpreter> = KotlinInterpreter::class,
     symbols: Map<String, Any> = mapOf(),
-    model: ChatModels = OpenAIModels.GPT4o,
+    model: ChatModel = OpenAIModels.GPT4o,
     temperature: Double = 0.3,
 ) : CodingActor(
     interpreterClass = interpreterClass,

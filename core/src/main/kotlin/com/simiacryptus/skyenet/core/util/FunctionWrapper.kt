@@ -2,7 +2,7 @@
 
 package com.simiacryptus.skyenet.core.util
 
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.jopenai.models.ImageModels
 import com.simiacryptus.jopenai.models.OpenAIModel
@@ -176,7 +176,7 @@ class JsonFunctionRecorder(baseDir: File) : FunctionInterceptor, Closeable {
 }
 
 
-fun getModel(modelName: String?): OpenAIModel? = ChatModels.values().values.find { it.modelName == modelName }
+fun getModel(modelName: String?): OpenAIModel? = ChatModel.values().values.find { it.modelName == modelName }
     ?: EmbeddingModels.values().values.find { it.modelName == modelName }
     ?: ImageModels.values().find { it.modelName == modelName }
 

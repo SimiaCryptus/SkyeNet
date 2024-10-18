@@ -1,8 +1,6 @@
 package com.simiacryptus.skyenet.util
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 
 // OpenAPI root document
 data class OpenAPI(

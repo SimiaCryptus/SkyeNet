@@ -2,14 +2,14 @@ package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.models.ApiModel
-import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.ChatModel
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 
 open class SimpleActor(
     prompt: String,
     name: String? = null,
-    model: OpenAITextModel,
+    model: TextModel,
     temperature: Double = 0.3,
 ) : BaseActor<List<String>, String>(
     prompt = prompt,
@@ -33,7 +33,7 @@ open class SimpleActor(
         )
     }
 
-    override fun withModel(model: ChatModels): SimpleActor = SimpleActor(
+    override fun withModel(model: ChatModel): SimpleActor = SimpleActor(
         prompt = prompt,
         name = name,
         model = model,

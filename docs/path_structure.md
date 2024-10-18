@@ -2,7 +2,8 @@ Based on the provided code, here's a document detailing the servlet path layout 
 
 # Servlet Path Layout
 
-The application uses a hierarchical structure for its servlet paths, with different functionalities mapped to specific URLs. Below is a breakdown of the main servlet paths and their purposes:
+The application uses a hierarchical structure for its servlet paths, with different functionalities mapped to specific URLs. Below is a breakdown of the main servlet paths and
+their purposes:
 
 ## Root Level Paths
 
@@ -46,9 +47,11 @@ Within each application-specific path, the following common servlets are typical
 ## Notes
 
 * The exact paths may vary depending on the specific implementation of each `ApplicationServer` instance.
-* Some paths (like `/userInfo` and `/usage`) appear both at the root level and within application-specific contexts. The application-specific versions may provide more tailored information.
+* Some paths (like `/userInfo` and `/usage`) appear both at the root level and within application-specific contexts. The application-specific versions may provide more tailored
+  information.
 * The application uses filters for Cross-Origin Resource Sharing (CORS) and authentication/authorization checks.
 * WebSocket support is configured for real-time communication.
 * The server is set up to handle both HTTP and HTTPS connections, with the latter being used when running in server mode.
 
-This layout provides a comprehensive structure for handling various aspects of the application, from user management and authentication to application-specific functionalities and session handling.
+This layout provides a comprehensive structure for handling various aspects of the application, from user management and authentication to application-specific functionalities and
+session handling.

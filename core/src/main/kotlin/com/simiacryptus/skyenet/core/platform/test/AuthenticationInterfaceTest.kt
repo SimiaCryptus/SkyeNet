@@ -1,5 +1,5 @@
-import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.util.*

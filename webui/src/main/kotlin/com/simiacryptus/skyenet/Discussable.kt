@@ -214,10 +214,12 @@ ${textInput(design, tabContent, history, task, feedbackSB, feedbackTask = this)}
             log.info("Returning result from Discussable")
             return atomicRef.get()
         } catch (e: Exception) {
-            log.warn("""
+            log.warn(
+                """
 Error in Discussable
 ${e.message}
-""", e)
+""", e
+            )
             task.error(ui, e)
             return null as T
         }

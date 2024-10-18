@@ -61,8 +61,8 @@ class InquiryTask(
                 
                 When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
                 Focus on generating insights and information that support the task types available in the system (${
-                    planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")
-                }).
+                planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")
+            }).
                 This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
                 """.trimMargin(),
             model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model ?: planSettings.defaultModel,

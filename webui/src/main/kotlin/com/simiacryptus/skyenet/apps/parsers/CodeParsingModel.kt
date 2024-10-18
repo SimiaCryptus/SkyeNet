@@ -2,11 +2,11 @@ package com.simiacryptus.skyenet.apps.parsers
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 open class CodeParsingModel(
-    private val parsingModel: ChatModels,
+    private val parsingModel: ChatModel,
     private val temperature: Double
 ) : ParsingModel {
 

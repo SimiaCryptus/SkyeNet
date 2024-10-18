@@ -1,210 +1,214 @@
-
 <!-- TOC -->
+
 * [Skyenet Core Actors Package Documentation](#skyenet-core-actors-package-documentation)
-  * [Package Overview](#package-overview)
-    * [Core Classes](#core-classes)
-    * [Supporting Classes and Interfaces](#supporting-classes-and-interfaces)
-    * [Documentation and Testing Base Classes](#documentation-and-testing-base-classes)
+    * [Package Overview](#package-overview)
+        * [Core Classes](#core-classes)
+        * [Supporting Classes and Interfaces](#supporting-classes-and-interfaces)
+        * [Documentation and Testing Base Classes](#documentation-and-testing-base-classes)
 * [BaseActor.kt](#baseactorkt)
-  * [User Documentation for BaseActor Class](#user-documentation-for-baseactor-class)
-    * [Overview](#overview)
-    * [Key Features](#key-features)
-    * [Constructor Parameters](#constructor-parameters)
-    * [Methods](#methods)
-      * [`respond(input: I, api: API, vararg messages: ApiModel.ChatMessage): R`](#respondinput-i-api-api-vararg-messages-apimodelchatmessage-r)
-      * [`response(vararg input: ApiModel.ChatMessage, model: OpenAIModel = this.model, api: API): List<ApiModel.ChatMessage>`](#responsevararg-input-apimodelchatmessage-model-openaimodel--thismodel-api-api-listapimodelchatmessage)
-      * [`answer(input: I, api: API): R`](#answerinput-i-api-api-r)
-      * [`chatMessages(questions: I): Array<ApiModel.ChatMessage>`](#chatmessagesquestions-i-arrayapimodelchatmessage)
-      * [`withModel(model: ChatModels): BaseActor<I,R>`](#withmodelmodel-chatmodels-baseactorir)
-    * [Usage Example](#usage-example)
-    * [Conclusion](#conclusion)
+    * [User Documentation for BaseActor Class](#user-documentation-for-baseactor-class)
+        * [Overview](#overview)
+        * [Key Features](#key-features)
+        * [Constructor Parameters](#constructor-parameters)
+        * [Methods](#methods)
+            * [`respond(input: I, api: API, vararg messages: ApiModel.ChatMessage): R`](#respondinput-i-api-api-vararg-messages-apimodelchatmessage-r)
+            * [
+              `response(vararg input: ApiModel.ChatMessage, model: OpenAIModel = this.model, api: API): List<ApiModel.ChatMessage>`](#responsevararg-input-apimodelchatmessage-model-openaimodel--thismodel-api-api-listapimodelchatmessage)
+            * [`answer(input: I, api: API): R`](#answerinput-i-api-api-r)
+            * [`chatMessages(questions: I): Array<ApiModel.ChatMessage>`](#chatmessagesquestions-i-arrayapimodelchatmessage)
+            * [`withModel(model: ChatModels): BaseActor<I,R>`](#withmodelmodel-chatmodels-baseactorir)
+        * [Usage Example](#usage-example)
+        * [Conclusion](#conclusion)
 * [CodingActor.kt](#codingactorkt)
-  * [CodingActor Documentation](#codingactor-documentation)
-    * [Overview](#overview-1)
-      * [Key Features](#key-features-1)
-    * [Usage](#usage)
-      * [Initialization](#initialization)
-      * [Processing Requests](#processing-requests)
-      * [Handling Results](#handling-results)
-    * [Advanced Features](#advanced-features)
-    * [Conclusion](#conclusion-1)
+    * [CodingActor Documentation](#codingactor-documentation)
+        * [Overview](#overview-1)
+            * [Key Features](#key-features-1)
+        * [Usage](#usage)
+            * [Initialization](#initialization)
+            * [Processing Requests](#processing-requests)
+            * [Handling Results](#handling-results)
+        * [Advanced Features](#advanced-features)
+        * [Conclusion](#conclusion-1)
 * [ImageActor.kt](#imageactorkt)
-  * [ImageActor Documentation](#imageactor-documentation)
-    * [Features](#features)
-    * [Usage](#usage-1)
-      * [Initialization](#initialization-1)
-      * [Generating Images](#generating-images)
-      * [Accessing the Generated Image](#accessing-the-generated-image)
-      * [Customizing the Actor](#customizing-the-actor)
-    * [Interfaces and Classes](#interfaces-and-classes)
-    * [Conclusion](#conclusion-2)
+    * [ImageActor Documentation](#imageactor-documentation)
+        * [Features](#features)
+        * [Usage](#usage-1)
+            * [Initialization](#initialization-1)
+            * [Generating Images](#generating-images)
+            * [Accessing the Generated Image](#accessing-the-generated-image)
+            * [Customizing the Actor](#customizing-the-actor)
+        * [Interfaces and Classes](#interfaces-and-classes)
+        * [Conclusion](#conclusion-2)
 * [ActorSystem.kt](#actorsystemkt)
-  * [ActorSystem Documentation](#actorsystem-documentation)
-    * [Overview](#overview-2)
-    * [Key Components](#key-components)
-    * [Features](#features-1)
-      * [Actor Retrieval](#actor-retrieval)
-      * [Interceptors](#interceptors)
-      * [Function Wrapping](#function-wrapping)
-    * [Usage](#usage-2)
-    * [Conclusion](#conclusion-3)
+    * [ActorSystem Documentation](#actorsystem-documentation)
+        * [Overview](#overview-2)
+        * [Key Components](#key-components)
+        * [Features](#features-1)
+            * [Actor Retrieval](#actor-retrieval)
+            * [Interceptors](#interceptors)
+            * [Function Wrapping](#function-wrapping)
+        * [Usage](#usage-2)
+        * [Conclusion](#conclusion-3)
 * [opt\Expectation.kt](#optexpectationkt)
-  * [Skyenet Core Expectation Module Documentation](#skyenet-core-expectation-module-documentation)
-    * [Overview](#overview-3)
-      * [VectorMatch Class](#vectormatch-class)
-        * [Parameters:](#parameters)
-        * [Methods:](#methods-1)
-      * [ContainsMatch Class](#containsmatch-class)
-        * [Parameters:](#parameters-1)
-        * [Methods:](#methods-2)
-    * [Usage](#usage-3)
-      * [Example](#example)
+    * [Skyenet Core Expectation Module Documentation](#skyenet-core-expectation-module-documentation)
+        * [Overview](#overview-3)
+            * [VectorMatch Class](#vectormatch-class)
+                * [Parameters:](#parameters)
+                * [Methods:](#methods-1)
+            * [ContainsMatch Class](#containsmatch-class)
+                * [Parameters:](#parameters-1)
+                * [Methods:](#methods-2)
+        * [Usage](#usage-3)
+            * [Example](#example)
 * [ParsedActor.kt](#parsedactorkt)
-  * [ParsedActor Class Documentation](#parsedactor-class-documentation)
-    * [Features](#features-2)
-    * [Constructor Parameters](#constructor-parameters-1)
-    * [Methods](#methods-3)
-      * [`chatMessages(questions: List<String>)`](#chatmessagesquestions-liststring)
-      * [`getParser(api: API)`](#getparserapi-api)
-      * [`respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage)`](#respondinput-liststring-api-api-vararg-messages-apimodelchatmessage)
-      * [`withModel(model: ChatModels)`](#withmodelmodel-chatmodels)
-    * [Inner Classes](#inner-classes)
-      * [`ParsedResponseImpl`](#parsedresponseimpl)
-    * [Usage Example](#usage-example-1)
+    * [ParsedActor Class Documentation](#parsedactor-class-documentation)
+        * [Features](#features-2)
+        * [Constructor Parameters](#constructor-parameters-1)
+        * [Methods](#methods-3)
+            * [`chatMessages(questions: List<String>)`](#chatmessagesquestions-liststring)
+            * [`getParser(api: API)`](#getparserapi-api)
+            * [`respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage)`](#respondinput-liststring-api-api-vararg-messages-apimodelchatmessage)
+            * [`withModel(model: ChatModels)`](#withmodelmodel-chatmodels)
+        * [Inner Classes](#inner-classes)
+            * [`ParsedResponseImpl`](#parsedresponseimpl)
+        * [Usage Example](#usage-example-1)
 * [ParsedResponse.kt](#parsedresponsekt)
-  * [User Documentation for ParsedResponse Class](#user-documentation-for-parsedresponse-class)
-    * [Overview](#overview-4)
-    * [Key Features](#key-features-2)
-    * [Properties](#properties)
-    * [Methods](#methods-4)
-    * [Usage](#usage-4)
-      * [Example](#example-1)
-    * [Conclusion](#conclusion-4)
+    * [User Documentation for ParsedResponse Class](#user-documentation-for-parsedresponse-class)
+        * [Overview](#overview-4)
+        * [Key Features](#key-features-2)
+        * [Properties](#properties)
+        * [Methods](#methods-4)
+        * [Usage](#usage-4)
+            * [Example](#example-1)
+        * [Conclusion](#conclusion-4)
 * [record\CodingActorInterceptor.kt](#recordcodingactorinterceptorkt)
-  * [CodingActorInterceptor Documentation](#codingactorinterceptor-documentation)
-    * [Features](#features-3)
-    * [Usage](#usage-5)
-      * [Initialization](#initialization-2)
-      * [Overridden Methods](#overridden-methods)
-      * [Example: Interception Logic](#example-interception-logic)
-    * [Integration](#integration)
-    * [Conclusion](#conclusion-5)
+    * [CodingActorInterceptor Documentation](#codingactorinterceptor-documentation)
+        * [Features](#features-3)
+        * [Usage](#usage-5)
+            * [Initialization](#initialization-2)
+            * [Overridden Methods](#overridden-methods)
+            * [Example: Interception Logic](#example-interception-logic)
+        * [Integration](#integration)
+        * [Conclusion](#conclusion-5)
 * [opt\ActorOptimization.kt](#optactoroptimizationkt)
-  * [ActorOptimization Class Documentation](#actoroptimization-class-documentation)
-    * [Features](#features-4)
-    * [Key Components](#key-components-1)
-      * [TestCase Class](#testcase-class)
-      * [GeneticApi Interface](#geneticapi-interface)
-      * [Main Methods](#main-methods)
-        * [runGeneticGenerations](#rungeneticgenerations)
-        * [regenerate](#regenerate)
-    * [Usage Example](#usage-example-2)
-    * [Customization](#customization)
-    * [Conclusion](#conclusion-6)
+    * [ActorOptimization Class Documentation](#actoroptimization-class-documentation)
+        * [Features](#features-4)
+        * [Key Components](#key-components-1)
+            * [TestCase Class](#testcase-class)
+            * [GeneticApi Interface](#geneticapi-interface)
+            * [Main Methods](#main-methods)
+                * [runGeneticGenerations](#rungeneticgenerations)
+                * [regenerate](#regenerate)
+        * [Usage Example](#usage-example-2)
+        * [Customization](#customization)
+        * [Conclusion](#conclusion-6)
 * [record\ImageActorInterceptor.kt](#recordimageactorinterceptorkt)
-  * [User Documentation for ImageActorInterceptor](#user-documentation-for-imageactorinterceptor)
-    * [Overview](#overview-5)
-    * [Key Features](#key-features-3)
-    * [Usage](#usage-6)
-      * [Initialization](#initialization-3)
-      * [Interception and Custom Processing](#interception-and-custom-processing)
-      * [Methods](#methods-5)
-        * [`response`](#response)
-        * [`render`](#render)
-    * [Conclusion](#conclusion-7)
+    * [User Documentation for ImageActorInterceptor](#user-documentation-for-imageactorinterceptor)
+        * [Overview](#overview-5)
+        * [Key Features](#key-features-3)
+        * [Usage](#usage-6)
+            * [Initialization](#initialization-3)
+            * [Interception and Custom Processing](#interception-and-custom-processing)
+            * [Methods](#methods-5)
+                * [`response`](#response)
+                * [`render`](#render)
+        * [Conclusion](#conclusion-7)
 * [record\ParsedActorInterceptor.kt](#recordparsedactorinterceptorkt)
-  * [ParsedActorInterceptor Documentation](#parsedactorinterceptor-documentation)
-    * [Features](#features-5)
-    * [Usage](#usage-7)
-      * [Initialization](#initialization-4)
-      * [Responding to Inputs](#responding-to-inputs)
-      * [Custom Response Processing](#custom-response-processing)
-    * [Key Methods](#key-methods)
-    * [Example](#example-2)
-    * [Conclusion](#conclusion-8)
+    * [ParsedActorInterceptor Documentation](#parsedactorinterceptor-documentation)
+        * [Features](#features-5)
+        * [Usage](#usage-7)
+            * [Initialization](#initialization-4)
+            * [Responding to Inputs](#responding-to-inputs)
+            * [Custom Response Processing](#custom-response-processing)
+        * [Key Methods](#key-methods)
+        * [Example](#example-2)
+        * [Conclusion](#conclusion-8)
 * [record\TextToSpeechActorInterceptor.kt](#recordtexttospeechactorinterceptorkt)
-  * [TextToSpeechActorInterceptor Documentation](#texttospeechactorinterceptor-documentation)
-    * [Features](#features-6)
-    * [Usage](#usage-8)
-      * [Initialization](#initialization-5)
-      * [Interception](#interception)
-        * [Response Interception](#response-interception)
-        * [Render Interception](#render-interception)
-    * [Customization](#customization-1)
-    * [Conclusion](#conclusion-9)
+    * [TextToSpeechActorInterceptor Documentation](#texttospeechactorinterceptor-documentation)
+        * [Features](#features-6)
+        * [Usage](#usage-8)
+            * [Initialization](#initialization-5)
+            * [Interception](#interception)
+                * [Response Interception](#response-interception)
+                * [Render Interception](#render-interception)
+        * [Customization](#customization-1)
+        * [Conclusion](#conclusion-9)
 * [record\SimpleActorInterceptor.kt](#recordsimpleactorinterceptorkt)
-  * [SimpleActorInterceptor Documentation](#simpleactorinterceptor-documentation)
-    * [Features](#features-7)
-    * [Usage](#usage-9)
-      * [Example](#example-3)
-    * [Parameters](#parameters-2)
-    * [Methods](#methods-6)
-    * [Conclusion](#conclusion-10)
+    * [SimpleActorInterceptor Documentation](#simpleactorinterceptor-documentation)
+        * [Features](#features-7)
+        * [Usage](#usage-9)
+            * [Example](#example-3)
+        * [Parameters](#parameters-2)
+        * [Methods](#methods-6)
+        * [Conclusion](#conclusion-10)
 * [test\ImageActorTestBase.kt](#testimageactortestbasekt)
-  * [User Documentation for ImageActorTestBase](#user-documentation-for-imageactortestbase)
-    * [Overview](#overview-6)
-    * [Key Features](#key-features-4)
-    * [Getting Started](#getting-started)
-    * [Example Usage](#example-usage)
-    * [Conclusion](#conclusion-11)
+    * [User Documentation for ImageActorTestBase](#user-documentation-for-imageactortestbase)
+        * [Overview](#overview-6)
+        * [Key Features](#key-features-4)
+        * [Getting Started](#getting-started)
+        * [Example Usage](#example-usage)
+        * [Conclusion](#conclusion-11)
 * [test\CodingActorTestBase.kt](#testcodingactortestbasekt)
-  * [CodingActorTestBase Documentation](#codingactortestbase-documentation)
-    * [Overview](#overview-7)
-    * [Key Components](#key-components-2)
-      * [Properties](#properties-1)
-      * [Methods](#methods-7)
-    * [Usage](#usage-10)
-      * [Example](#example-4)
-    * [Conclusion](#conclusion-12)
+    * [CodingActorTestBase Documentation](#codingactortestbase-documentation)
+        * [Overview](#overview-7)
+        * [Key Components](#key-components-2)
+            * [Properties](#properties-1)
+            * [Methods](#methods-7)
+        * [Usage](#usage-10)
+            * [Example](#example-4)
+        * [Conclusion](#conclusion-12)
 * [SimpleActor.kt](#simpleactorkt)
-  * [SimpleActor Class Documentation](#simpleactor-class-documentation)
-    * [Constructor Parameters](#constructor-parameters-2)
-    * [Methods](#methods-8)
-      * [respond](#respond)
-      * [chatMessages](#chatmessages)
-      * [withModel](#withmodel)
-    * [Usage Example](#usage-example-3)
+    * [SimpleActor Class Documentation](#simpleactor-class-documentation)
+        * [Constructor Parameters](#constructor-parameters-2)
+        * [Methods](#methods-8)
+            * [respond](#respond)
+            * [chatMessages](#chatmessages)
+            * [withModel](#withmodel)
+        * [Usage Example](#usage-example-3)
 * [test\ActorTestBase.kt](#testactortestbasekt)
-  * [ActorTestBase Documentation](#actortestbase-documentation)
-    * [Overview](#overview-8)
-    * [Key Components](#key-components-3)
-      * [Properties](#properties-2)
-      * [Methods](#methods-9)
-        * [`opt()`](#opt)
-        * [`testOptimize()`](#testoptimize)
-        * [`testRun()`](#testrun)
-        * [`answer()`](#answer)
-      * [Companion Object](#companion-object)
-    * [Usage](#usage-11)
+    * [ActorTestBase Documentation](#actortestbase-documentation)
+        * [Overview](#overview-8)
+        * [Key Components](#key-components-3)
+            * [Properties](#properties-2)
+            * [Methods](#methods-9)
+                * [`opt()`](#opt)
+                * [`testOptimize()`](#testoptimize)
+                * [`testRun()`](#testrun)
+                * [`answer()`](#answer)
+            * [Companion Object](#companion-object)
+        * [Usage](#usage-11)
 * [test\ParsedActorTestBase.kt](#testparsedactortestbasekt)
-  * [User Documentation for ParsedActorTestBase](#user-documentation-for-parsedactortestbase)
-    * [Overview](#overview-9)
-    * [Key Components](#key-components-4)
-      * [Constructor Parameters](#constructor-parameters-3)
-      * [Methods](#methods-10)
-        * [actorFactory](#actorfactory)
-        * [getPrompt](#getprompt)
-        * [resultMapper](#resultmapper)
-    * [Usage](#usage-12)
-      * [Example](#example-5)
-    * [Conclusion](#conclusion-13)
+    * [User Documentation for ParsedActorTestBase](#user-documentation-for-parsedactortestbase)
+        * [Overview](#overview-9)
+        * [Key Components](#key-components-4)
+            * [Constructor Parameters](#constructor-parameters-3)
+            * [Methods](#methods-10)
+                * [actorFactory](#actorfactory)
+                * [getPrompt](#getprompt)
+                * [resultMapper](#resultmapper)
+        * [Usage](#usage-12)
+            * [Example](#example-5)
+        * [Conclusion](#conclusion-13)
 * [TextToSpeechActor.kt](#texttospeechactorkt)
-  * [TextToSpeechActor Documentation](#texttospeechactor-documentation)
-    * [Features](#features-8)
-    * [Constructor Parameters](#constructor-parameters-4)
-    * [Methods](#methods-11)
-      * [`chatMessages(questions: List<String>)`](#chatmessagesquestions-liststring-1)
-      * [`render(text: String, api: API)`](#rendertext-string-api-api)
-      * [`respond(input: List<String>, api: API, vararg messages: ChatMessage)`](#respondinput-liststring-api-api-vararg-messages-chatmessage)
-      * [`withModel(model: AudioModels)`](#withmodelmodel-audiomodels)
-    * [Interfaces](#interfaces)
-      * [`SpeechResponse`](#speechresponse)
-    * [Usage Example](#usage-example-4)
+    * [TextToSpeechActor Documentation](#texttospeechactor-documentation)
+        * [Features](#features-8)
+        * [Constructor Parameters](#constructor-parameters-4)
+        * [Methods](#methods-11)
+            * [`chatMessages(questions: List<String>)`](#chatmessagesquestions-liststring-1)
+            * [`render(text: String, api: API)`](#rendertext-string-api-api)
+            * [`respond(input: List<String>, api: API, vararg messages: ChatMessage)`](#respondinput-liststring-api-api-vararg-messages-chatmessage)
+            * [`withModel(model: AudioModels)`](#withmodelmodel-audiomodels)
+        * [Interfaces](#interfaces)
+            * [`SpeechResponse`](#speechresponse)
+        * [Usage Example](#usage-example-4)
+
 <!-- TOC -->
 
 # Skyenet Core Actors Package Documentation
 
-The Skyenet Core Actors package is a comprehensive framework designed to facilitate interaction with OpenAI's GPT models and other functionalities such as text-to-speech and image generation. This package is structured to provide a robust foundation for building applications that leverage OpenAI's capabilities, including conversational agents, code generators, and visual content creators.
+The Skyenet Core Actors package is a comprehensive framework designed to facilitate interaction with OpenAI's GPT models and other functionalities such as text-to-speech and image
+generation. This package is structured to provide a robust foundation for building applications that leverage OpenAI's capabilities, including conversational agents, code
+generators, and visual content creators.
 
 ## Package Overview
 
@@ -223,33 +227,31 @@ The package is organized into several key components, each serving a specific pu
 
 - **`ActorSystem`**: Manages and interacts with various types of actors within a session, applying specific interceptors based on the actor type.
 - **`ParsedResponse`**: Represents responses parsed from various sources in a structured manner.
-- **Interceptors (`*Interceptor`)**: Specialized classes designed to intercept and potentially modify the behavior of actor instances (e.g., `CodingActorInterceptor`, `ImageActorInterceptor`).
+- **Interceptors (`*Interceptor`)**: Specialized classes designed to intercept and potentially modify the behavior of actor instances (e.g., `CodingActorInterceptor`,
+  `ImageActorInterceptor`).
 
 ### Documentation and Testing Base Classes
 
 - **`ActorTestBase`**: An abstract class designed to facilitate the testing of actors within the system.
 - **`ParsedActorTestBase`, `CodingActorTestBase`, `ImageActorTestBase`**: Extend `ActorTestBase` to provide testing functionalities tailored to specific actor types.
 
-
 # BaseActor.kt
-
 
 ## User Documentation for BaseActor Class
 
-The `BaseActor` class serves as an abstract foundation for creating actors that interact with OpenAI's GPT models via the `com.simiacryptus.jopenai` API. This class is designed to facilitate the development of applications that require conversational capabilities or complex decision-making processes based on the input provided to the model.
-
+The `BaseActor` class serves as an abstract foundation for creating actors that interact with OpenAI's GPT models via the `com.simiacryptus.jopenai` API. This class is designed to
+facilitate the development of applications that require conversational capabilities or complex decision-making processes based on the input provided to the model.
 
 ### Overview
 
-The `BaseActor` class abstracts the process of sending prompts to an OpenAI model and receiving responses. It is designed to be extended by more specific actor classes that define the logic for generating prompts based on input and processing the model's responses.
-
+The `BaseActor` class abstracts the process of sending prompts to an OpenAI model and receiving responses. It is designed to be extended by more specific actor classes that define
+the logic for generating prompts based on input and processing the model's responses.
 
 ### Key Features
 
 - **Customizable Prompts and Models:** Allows specifying the prompt and the model (e.g., GPT-3.5 Turbo) to use for generating responses.
 - **Temperature Control:** Enables setting the temperature parameter to control the randomness of the model's responses.
 - **Convenient Response Handling:** Simplifies the process of sending requests to the OpenAI API and handling responses.
-
 
 ### Constructor Parameters
 
@@ -258,34 +260,28 @@ The `BaseActor` class abstracts the process of sending prompts to an OpenAI mode
 - `model`: The OpenAI model to be used. Defaults to `OpenAIModels.GPT35Turbo`.
 - `temperature`: Controls the randomness of the model's responses. Lower values make responses more deterministic.
 
-
 ### Methods
-
 
 #### `respond(input: I, api: API, vararg messages: ApiModel.ChatMessage): R`
 
 An abstract method that must be implemented by subclasses. It defines how the actor should respond to a given input, using the specified API and any additional chat messages.
 
-
 #### `response(vararg input: ApiModel.ChatMessage, model: OpenAIModel = this.model, api: API): List<ApiModel.ChatMessage>`
 
 Sends a chat request to the OpenAI API using the provided messages and returns the response. This method can be overridden if necessary.
-
 
 #### `answer(input: I, api: API): R`
 
 Generates a response based on the input by internally calling `respond`. It automatically handles the conversion of input to chat messages.
 
-
 #### `chatMessages(questions: I): Array<ApiModel.ChatMessage>`
 
-An abstract method that subclasses must implement. It should convert the input into an array of `ApiModel.ChatMessage` instances, which are then used to generate the model's response.
-
+An abstract method that subclasses must implement. It should convert the input into an array of `ApiModel.ChatMessage` instances, which are then used to generate the model's
+response.
 
 #### `withModel(model: ChatModels): BaseActor<I,R>`
 
 An abstract method that should be implemented to return a new instance of the actor with the specified model.
-
 
 ### Usage Example
 
@@ -310,23 +306,23 @@ class SimpleActor(prompt: String) : BaseActor<String, String>(prompt) {
 
 This example demonstrates a basic actor that sends a single message to the model and returns the concatenated text of the responses.
 
-
 ### Conclusion
 
-The `BaseActor` class provides a flexible and powerful foundation for building applications that interact with OpenAI's models. By extending this class and implementing its abstract methods, developers can create customized actors tailored to their specific needs.
+The `BaseActor` class provides a flexible and powerful foundation for building applications that interact with OpenAI's models. By extending this class and implementing its
+abstract methods, developers can create customized actors tailored to their specific needs.
 
 # CodingActor.kt
 
-
 ## CodingActor Documentation
 
-The `CodingActor` class is a versatile component designed to facilitate the interaction between natural language instructions and code execution within a specified programming language context. It leverages the capabilities of OpenAI's GPT models to translate instructions into executable code, evaluate the code, and provide feedback or corrections as necessary. This document provides an overview of the `CodingActor` class, its functionalities, and how to utilize it effectively.
-
+The `CodingActor` class is a versatile component designed to facilitate the interaction between natural language instructions and code execution within a specified programming
+language context. It leverages the capabilities of OpenAI's GPT models to translate instructions into executable code, evaluate the code, and provide feedback or corrections as
+necessary. This document provides an overview of the `CodingActor` class, its functionalities, and how to utilize it effectively.
 
 ### Overview
 
-`CodingActor` extends the `BaseActor` class and specializes in processing coding requests (`CodeRequest`) and generating code results (`CodeResult`). It integrates with an interpreter to execute the generated code and handles the interaction with OpenAI's API for code generation and correction.
-
+`CodingActor` extends the `BaseActor` class and specializes in processing coding requests (`CodeRequest`) and generating code results (`CodeResult`). It integrates with an
+interpreter to execute the generated code and handles the interaction with OpenAI's API for code generation and correction.
 
 #### Key Features
 
@@ -336,9 +332,7 @@ The `CodingActor` class is a versatile component designed to facilitate the inte
 - **Customizable Code Formatting**: Supports customizable code formatting instructions.
 - **Extensible**: Allows for the specification of additional symbols and runtime context to be used during code generation and execution.
 
-
 ### Usage
-
 
 #### Initialization
 
@@ -366,10 +360,10 @@ val codingActor = CodingActor(
 )
 ```
 
-
 #### Processing Requests
 
-To process a coding request, create an instance of `CodeRequest` with the desired parameters, such as the list of messages (instructions and responses), code prefix, and whether to auto-evaluate the code. Then, call the `respond` method of your `CodingActor` instance with the request.
+To process a coding request, create an instance of `CodeRequest` with the desired parameters, such as the list of messages (instructions and responses), code prefix, and whether to
+auto-evaluate the code. Then, call the `respond` method of your `CodingActor` instance with the request.
 
 Example:
 
@@ -381,7 +375,6 @@ val request = CodingActor.CodeRequest(
 
 val result = codingActor.respond(request, apiInstance)
 ```
-
 
 #### Handling Results
 
@@ -395,25 +388,23 @@ println("Generated Code: ${result.code}")
 println("Execution Result: ${result.result.resultValue}")
 ```
 
-
 ### Advanced Features
 
 - **Custom Type Describers**: Implement custom `TypeDescriber` to control how symbols are described in the prompt.
 - **Error Correction**: Utilize the error correction mechanism to automatically attempt to fix errors in the generated code.
 - **Execution Result**: Access detailed execution results, including output and returned values.
 
-
 ### Conclusion
 
-The `CodingActor` class provides a powerful interface for integrating natural language coding instructions with executable code, leveraging the capabilities of OpenAI's models. By customizing the interpreter, symbols, and other parameters, developers can tailor the coding actor to fit a wide range of coding tasks and workflows.
+The `CodingActor` class provides a powerful interface for integrating natural language coding instructions with executable code, leveraging the capabilities of OpenAI's models. By
+customizing the interpreter, symbols, and other parameters, developers can tailor the coding actor to fit a wide range of coding tasks and workflows.
 
 # ImageActor.kt
 
-
 ## ImageActor Documentation
 
-The `ImageActor` class is a powerful tool designed to transform textual prompts into visually compelling images using OpenAI's image generation models. This class is part of the `com.simiacryptus.skyenet.core.actors` package and leverages the OpenAI API to fulfill image generation requests based on user input.
-
+The `ImageActor` class is a powerful tool designed to transform textual prompts into visually compelling images using OpenAI's image generation models. This class is part of the
+`com.simiacryptus.skyenet.core.actors` package and leverages the OpenAI API to fulfill image generation requests based on user input.
 
 ### Features
 
@@ -423,9 +414,7 @@ The `ImageActor` class is a powerful tool designed to transform textual prompts 
 - **Text-to-Image Transformation**: Converts user requests into image generation prompts and subsequently into images.
 - **Model Switching**: Provides methods to switch between different chat and image models while retaining other settings.
 
-
 ### Usage
-
 
 #### Initialization
 
@@ -443,7 +432,6 @@ val imageActor = ImageActor(
 )
 ```
 
-
 #### Generating Images
 
 To generate an image based on a list of textual prompts, use the `respond` method:
@@ -454,8 +442,8 @@ val inputPrompts: List<String> = listOf("A futuristic cityscape", "under a purpl
 val imageResponse: ImageResponse = imageActor.respond(inputPrompts, api)
 ```
 
-The `respond` method processes the input prompts, interacts with the OpenAI API to generate a textual description for the image, and then generates the image based on this description.
-
+The `respond` method processes the input prompts, interacts with the OpenAI API to generate a textual description for the image, and then generates the image based on this
+description.
 
 #### Accessing the Generated Image
 
@@ -465,7 +453,6 @@ The `ImageResponse` object returned by the `respond` method contains both the te
 val description: String = imageResponse.text
 val image: BufferedImage = imageResponse.image
 ```
-
 
 #### Customizing the Actor
 
@@ -485,29 +472,29 @@ val newImageModel: ImageModels = ImageModels.Craiyon
 val updatedActor = imageActor.withModel(newImageModel)
 ```
 
-
 ### Interfaces and Classes
 
 - **`ImageActor`**: The main class responsible for transforming text prompts into images.
 - **`ImageResponse`**: An interface representing the response from an image generation request, containing both the textual description and the generated image.
 
-
 ### Conclusion
 
-The `ImageActor` class offers a convenient and flexible way to integrate OpenAI's image generation capabilities into your applications. By customizing prompts, models, and image dimensions, you can tailor the image generation process to meet a wide range of creative needs.
+The `ImageActor` class offers a convenient and flexible way to integrate OpenAI's image generation capabilities into your applications. By customizing prompts, models, and image
+dimensions, you can tailor the image generation process to meet a wide range of creative needs.
 
 # ActorSystem.kt
 
-
 ## ActorSystem Documentation
 
-The `ActorSystem` class is a core component of the framework designed to manage and interact with various types of actors within a session. It provides a structured way to access and utilize actors, ensuring that the necessary interceptors and wrappers are applied for enhanced functionality and monitoring. This document outlines the key features and usage of the `ActorSystem` class.
-
+The `ActorSystem` class is a core component of the framework designed to manage and interact with various types of actors within a session. It provides a structured way to access
+and utilize actors, ensuring that the necessary interceptors and wrappers are applied for enhanced functionality and monitoring. This document outlines the key features and usage
+of the `ActorSystem` class.
 
 ### Overview
 
-An `ActorSystem` is initialized with a collection of actors, data storage interface, an optional user, and a session. It facilitates the retrieval and interaction with different types of actors, applying specific interceptors based on the actor type. This system is designed to work within the context of a session, providing a seamless way to manage actors' lifecycle and their interactions.
-
+An `ActorSystem` is initialized with a collection of actors, data storage interface, an optional user, and a session. It facilitates the retrieval and interaction with different
+types of actors, applying specific interceptors based on the actor type. This system is designed to work within the context of a session, providing a seamless way to manage actors'
+lifecycle and their interactions.
 
 ### Key Components
 
@@ -516,14 +503,12 @@ An `ActorSystem` is initialized with a collection of actors, data storage interf
 - **user**: An optional `User` instance representing the user interacting with the actors.
 - **session**: A `Session` instance representing the current session.
 
-
 ### Features
-
 
 #### Actor Retrieval
 
-- **getActor(actor: T)**: Retrieves an instance of `BaseActor` for the specified actor identifier. If the actor has not been initialized yet, it applies the appropriate interceptor based on the actor's type and caches the result for future retrievals.
-
+- **getActor(actor: T)**: Retrieves an instance of `BaseActor` for the specified actor identifier. If the actor has not been initialized yet, it applies the appropriate interceptor
+  based on the actor's type and caches the result for future retrievals.
 
 #### Interceptors
 
@@ -537,11 +522,10 @@ Depending on the actor type, one of the following interceptors is applied to enh
 
 These interceptors wrap the original actor to provide additional features such as logging, monitoring, or custom behavior modifications.
 
-
 #### Function Wrapping
 
-For each actor, a `FunctionWrapper` is associated to enable recording and monitoring of function calls. This is facilitated through a `JsonFunctionRecorder` which stores the function call data in a structured JSON format for later analysis or debugging.
-
+For each actor, a `FunctionWrapper` is associated to enable recording and monitoring of function calls. This is facilitated through a `JsonFunctionRecorder` which stores the
+function call data in a structured JSON format for later analysis or debugging.
 
 ### Usage
 
@@ -563,58 +547,60 @@ val actor = actorSystem.getActor(/* Actor identifier */)
 // Use the actor for its intended purpose
 ```
 
-
 ### Conclusion
 
-The `ActorSystem` class provides a robust and flexible way to manage actors within a session. By abstracting the complexities of actor initialization and management, it allows developers to focus on the core logic and interactions of their application.
+The `ActorSystem` class provides a robust and flexible way to manage actors within a session. By abstracting the complexities of actor initialization and management, it allows
+developers to focus on the core logic and interactions of their application.
 
 # opt\Expectation.kt
 
-
 ## Skyenet Core Expectation Module Documentation
 
-The Skyenet Core Expectation module is a part of the Skyenet framework designed to facilitate the evaluation of responses from an AI model, specifically using the OpenAI API. This module provides a flexible way to define expectations for responses and score them based on different criteria. It includes two primary classes: `VectorMatch` and `ContainsMatch`, each serving a unique purpose in evaluating responses.
-
+The Skyenet Core Expectation module is a part of the Skyenet framework designed to facilitate the evaluation of responses from an AI model, specifically using the OpenAI API. This
+module provides a flexible way to define expectations for responses and score them based on different criteria. It includes two primary classes: `VectorMatch` and `ContainsMatch`,
+each serving a unique purpose in evaluating responses.
 
 ### Overview
 
-The Expectation module is abstract and contains a companion object for logging purposes. It defines two abstract methods, `matches` and `score`, which must be implemented by subclasses to determine if a response meets a certain expectation and to assign a numerical score to the response, respectively.
-
+The Expectation module is abstract and contains a companion object for logging purposes. It defines two abstract methods, `matches` and `score`, which must be implemented by
+subclasses to determine if a response meets a certain expectation and to assign a numerical score to the response, respectively.
 
 #### VectorMatch Class
 
-The `VectorMatch` class is designed to compare the semantic similarity between a given example text and a response text using embeddings. It utilizes the OpenAI API to generate embeddings for both texts and calculates the distance between them based on a specified metric.
-
+The `VectorMatch` class is designed to compare the semantic similarity between a given example text and a response text using embeddings. It utilizes the OpenAI API to generate
+embeddings for both texts and calculates the distance between them based on a specified metric.
 
 ##### Parameters:
+
 - `example`: The example text to compare against.
 - `metric`: The distance metric to use for comparison. Defaults to `DistanceType.Cosine`.
 
-
 ##### Methods:
-- `matches(api: OpenAIClient, response: String)`: Always returns `true` as it is not used for matching but for scoring based on distance.
-- `score(api: OpenAIClient, response: String)`: Calculates and returns the negative distance between the embeddings of the example text and the response text, effectively scoring the response based on its semantic similarity to the example.
 
+- `matches(api: OpenAIClient, response: String)`: Always returns `true` as it is not used for matching but for scoring based on distance.
+- `score(api: OpenAIClient, response: String)`: Calculates and returns the negative distance between the embeddings of the example text and the response text, effectively scoring
+  the response based on its semantic similarity to the example.
 
 #### ContainsMatch Class
 
-The `ContainsMatch` class checks if a given pattern (regular expression) is contained within the response text. It is useful for scenarios where the presence of specific patterns or keywords is critical or of interest.
-
+The `ContainsMatch` class checks if a given pattern (regular expression) is contained within the response text. It is useful for scenarios where the presence of specific patterns
+or keywords is critical or of interest.
 
 ##### Parameters:
+
 - `pattern`: The regular expression pattern to search for within the response.
 - `critical`: A boolean indicating if the match is critical. If `false`, `matches` always returns `true`. Defaults to `true`.
 
-
 ##### Methods:
-- `matches(api: OpenAIClient, response: String)`: Returns `true` if the pattern is found in the response and `critical` is `true`, otherwise returns `true` or `false` based on the `critical` flag.
-- `score(api: OpenAIClient, response: String)`: Returns `1.0` if the pattern matches the response, otherwise returns `0.0`.
 
+- `matches(api: OpenAIClient, response: String)`: Returns `true` if the pattern is found in the response and `critical` is `true`, otherwise returns `true` or `false` based on the
+  `critical` flag.
+- `score(api: OpenAIClient, response: String)`: Returns `1.0` if the pattern matches the response, otherwise returns `0.0`.
 
 ### Usage
 
-To use the Expectation module, instantiate either `VectorMatch` or `ContainsMatch` with the appropriate parameters and call the `matches` and/or `score` methods with an instance of `OpenAIClient` and the response text to evaluate.
-
+To use the Expectation module, instantiate either `VectorMatch` or `ContainsMatch` with the appropriate parameters and call the `matches` and/or `score` methods with an instance of
+`OpenAIClient` and the response text to evaluate.
 
 #### Example
 
@@ -626,15 +612,16 @@ val score = expectation.score(apiClient, response)
 println("Score: $score")
 ```
 
-This module provides a powerful and flexible way to evaluate AI model responses, enabling developers to implement custom logic for scoring and matching responses based on semantic similarity or the presence of specific patterns.
+This module provides a powerful and flexible way to evaluate AI model responses, enabling developers to implement custom logic for scoring and matching responses based on semantic
+similarity or the presence of specific patterns.
 
 # ParsedActor.kt
 
-
 ## ParsedActor Class Documentation
 
-The `ParsedActor` class is a specialized actor designed to parse responses from chat models into specific data types. It extends the functionality of a base actor to not only interact with chat models but also to process the responses into a more structured format. This class is particularly useful when working with chat models to perform specific tasks that require structured output.
-
+The `ParsedActor` class is a specialized actor designed to parse responses from chat models into specific data types. It extends the functionality of a base actor to not only
+interact with chat models but also to process the responses into a more structured format. This class is particularly useful when working with chat models to perform specific tasks
+that require structured output.
 
 ### Features
 
@@ -642,7 +629,6 @@ The `ParsedActor` class is a specialized actor designed to parse responses from 
 - **Flexible Chat Model Interaction**: Supports interaction with different chat models, including specifying the model for parsing responses.
 - **Error Handling**: Implements retry logic for deserialization to handle potential parsing errors gracefully.
 - **Customizable Prompts**: Enables the use of custom prompts for initiating chat model conversations.
-
 
 ### Constructor Parameters
 
@@ -654,32 +640,29 @@ The `ParsedActor` class is a specialized actor designed to parse responses from 
 - `parsingModel`: The chat model to use specifically for parsing responses. Defaults to `OpenAIModels.GPT35Turbo`.
 - `deserializerRetries`: The number of retries for deserialization in case of parsing errors. Defaults to `2`.
 
-
 ### Methods
 
-
 #### `chatMessages(questions: List<String>)`
+
 Generates an array of chat messages to be sent to the chat model, including the initial system prompt and user questions.
 
-
 #### `getParser(api: API)`
+
 Creates and returns a parser function based on the specified parser class and chat model settings.
 
-
 #### `respond(input: List<String>, api: API, vararg messages: ApiModel.ChatMessage)`
+
 Processes the given input questions and returns a `ParsedResponse` containing the parsed data type.
 
-
 #### `withModel(model: ChatModels)`
-Creates a new instance of `ParsedActor` with the specified chat model, retaining other settings.
 
+Creates a new instance of `ParsedActor` with the specified chat model, retaining other settings.
 
 ### Inner Classes
 
-
 #### `ParsedResponseImpl`
-An implementation of `ParsedResponse` that holds the parsed object and the original text response from the chat model.
 
+An implementation of `ParsedResponse` that holds the parsed object and the original text response from the chat model.
 
 ### Usage Example
 
@@ -701,42 +684,43 @@ val parsedActor = ParsedActor(
 val response = parsedActor.respond(listOf("Question about X"), api)
 ```
 
-This documentation provides an overview of the `ParsedActor` class and its capabilities. For more detailed information on specific methods and parameters, refer to the source code documentation.
+This documentation provides an overview of the `ParsedActor` class and its capabilities. For more detailed information on specific methods and parameters, refer to the source code
+documentation.
 
 # ParsedResponse.kt
 
-
 ## User Documentation for ParsedResponse Class
-
 
 ### Overview
 
-The `ParsedResponse` class is an abstract class designed to handle and represent responses parsed from various sources in a structured manner. It is part of the `com.simiacryptus.skyenet.core.actors` package. This class is generic and can be used to represent any type of parsed data by specifying the type parameter `T` during implementation. The class is designed to encapsulate both the raw text of the response and its parsed object representation.
-
+The `ParsedResponse` class is an abstract class designed to handle and represent responses parsed from various sources in a structured manner. It is part of the
+`com.simiacryptus.skyenet.core.actors` package. This class is generic and can be used to represent any type of parsed data by specifying the type parameter `T` during
+implementation. The class is designed to encapsulate both the raw text of the response and its parsed object representation.
 
 ### Key Features
 
-- **Type-Safe Responses**: By specifying the type parameter `T`, users can ensure that the responses handled by instances of `ParsedResponse` are type-safe, making the code more robust and easier to maintain.
-- **Dual Representation**: The class stores both the raw text of the response (`text`) and its object representation (`obj`), allowing users to access the data in the format most convenient for their needs.
-- **Abstract Design**: Being an abstract class, `ParsedResponse` serves as a template for creating more specific response handlers tailored to particular data types or parsing requirements.
-
+- **Type-Safe Responses**: By specifying the type parameter `T`, users can ensure that the responses handled by instances of `ParsedResponse` are type-safe, making the code more
+  robust and easier to maintain.
+- **Dual Representation**: The class stores both the raw text of the response (`text`) and its object representation (`obj`), allowing users to access the data in the format most
+  convenient for their needs.
+- **Abstract Design**: Being an abstract class, `ParsedResponse` serves as a template for creating more specific response handlers tailored to particular data types or parsing
+  requirements.
 
 ### Properties
 
-- `clazz: Class<T>`: The class literal of the type parameter `T`. This property is used to specify the type of the parsed object and is essential for type safety and reflection-based operations.
+- `clazz: Class<T>`: The class literal of the type parameter `T`. This property is used to specify the type of the parsed object and is essential for type safety and
+  reflection-based operations.
 - `text: String`: An abstract property that should be overridden to return the raw text of the parsed response.
 - `obj: T`: An abstract property that should be overridden to return the object representation of the parsed response.
-
 
 ### Methods
 
 - `toString()`: Overrides the `toString` method to return the raw text of the response. This method provides a convenient way to access the raw response as a string.
 
-
 ### Usage
 
-To use the `ParsedResponse` class, you need to extend it with a concrete implementation that specifies the type of the parsed object and provides implementations for the abstract properties `text` and `obj`.
-
+To use the `ParsedResponse` class, you need to extend it with a concrete implementation that specifies the type of the parsed object and provides implementations for the abstract
+properties `text` and `obj`.
 
 #### Example
 
@@ -744,46 +728,46 @@ To use the `ParsedResponse` class, you need to extend it with a concrete impleme
 class JsonResponse(parsedText: String) : ParsedResponse<JSONObject>(JSONObject::class.java) {
     override val text: String = parsedText
     override val obj: JSONObject = JSONObject(parsedText)
-    
+
     // Additional functionality specific to JSON responses can be added here
 }
 ```
 
-In this example, `JsonResponse` is a concrete implementation of `ParsedResponse` for handling JSON responses. It specifies `JSONObject` as the type parameter `T` and provides implementations for the `text` and `obj` properties. This class can now be used to handle JSON responses in a type-safe and structured manner.
-
+In this example, `JsonResponse` is a concrete implementation of `ParsedResponse` for handling JSON responses. It specifies `JSONObject` as the type parameter `T` and provides
+implementations for the `text` and `obj` properties. This class can now be used to handle JSON responses in a type-safe and structured manner.
 
 ### Conclusion
 
-The `ParsedResponse` class provides a flexible and type-safe framework for handling parsed responses. By extending this class, developers can create customized response handlers that encapsulate both the raw and object representations of responses, tailored to specific data types or parsing requirements.
+The `ParsedResponse` class provides a flexible and type-safe framework for handling parsed responses. By extending this class, developers can create customized response handlers
+that encapsulate both the raw and object representations of responses, tailored to specific data types or parsing requirements.
 
 # record\CodingActorInterceptor.kt
 
-
 ## CodingActorInterceptor Documentation
 
-The `CodingActorInterceptor` class is a specialized implementation of the `CodingActor` interface, designed to intercept and potentially modify the behavior of another `CodingActor` instance. This class is part of the `com.simiacryptus.skyenet.core.actors.record` package and is intended for use in scenarios where additional processing or logging of the interactions with a `CodingActor` is required.
-
+The `CodingActorInterceptor` class is a specialized implementation of the `CodingActor` interface, designed to intercept and potentially modify the behavior of another`CodingActor`
+instance. This class is part of the `com.simiacryptus.skyenet.core.actors.record` package and is intended for use in scenarios where additional processing or logging of the
+interactions with a `CodingActor` is required.
 
 ### Features
 
 - **Function Interception**: Allows for the interception and modification of the responses generated by the wrapped `CodingActor` instance.
 - **Compatibility**: Seamlessly integrates with existing `CodingActor` instances without requiring changes to their implementation.
-- **Customizable Behavior**: Through the use of a `FunctionWrapper`, users can define custom behavior to be executed before or after the wrapped `CodingActor`'s methods are invoked.
-
+- **Customizable Behavior**: Through the use of a `FunctionWrapper`, users can define custom behavior to be executed before or after the wrapped `CodingActor`'s methods are
+  invoked.
 
 ### Usage
 
-
 #### Initialization
 
-To use the `CodingActorInterceptor`, you must first instantiate it with a reference to an existing `CodingActor` instance and a `FunctionWrapper` that defines the interception logic.
+To use the `CodingActorInterceptor`, you must first instantiate it with a reference to an existing `CodingActor` instance and a `FunctionWrapper` that defines the interception
+logic.
 
 ```kotlin
 val innerActor: CodingActor = // Initialize your CodingActor
 val functionInterceptor: FunctionWrapper = // Define your FunctionWrapper
 val interceptor = CodingActorInterceptor(innerActor, functionInterceptor)
 ```
-
 
 #### Overridden Methods
 
@@ -792,7 +776,6 @@ The `CodingActorInterceptor` overrides several methods from the `CodingActor` in
 - `response(...)`: Intercepts the generation of responses to chat messages.
 - `respond(...)`: Intercepts the generation of code responses to code requests.
 - `execute(...)`: Intercepts the execution of code.
-
 
 #### Example: Interception Logic
 
@@ -809,23 +792,23 @@ val functionInterceptor = FunctionWrapper { args, proceed ->
 
 This `FunctionWrapper` logs the arguments before the invocation of the wrapped method and the result after the invocation.
 
-
 ### Integration
 
-To integrate the `CodingActorInterceptor` into your system, replace direct references to the original `CodingActor` instance with references to the `CodingActorInterceptor` instance. This allows all interactions with the `CodingActor` to be intercepted according to the logic defined in your `FunctionWrapper`.
-
+To integrate the `CodingActorInterceptor` into your system, replace direct references to the original `CodingActor` instance with references to the `CodingActorInterceptor`
+instance. This allows all interactions with the `CodingActor` to be intercepted according to the logic defined in your `FunctionWrapper`.
 
 ### Conclusion
 
-The `CodingActorInterceptor` provides a powerful mechanism for augmenting the behavior of `CodingActor` instances, enabling scenarios such as logging, monitoring, and dynamic behavior modification. By leveraging the `FunctionWrapper`, developers can easily inject custom logic into the processing pipeline of a `CodingActor`, enhancing its capabilities and facilitating advanced use cases.
+The `CodingActorInterceptor` provides a powerful mechanism for augmenting the behavior of `CodingActor` instances, enabling scenarios such as logging, monitoring, and dynamic
+behavior modification. By leveraging the `FunctionWrapper`, developers can easily inject custom logic into the processing pipeline of a `CodingActor`, enhancing its capabilities
+and facilitating advanced use cases.
 
 # opt\ActorOptimization.kt
 
-
 ## ActorOptimization Class Documentation
 
-The `ActorOptimization` class is designed to facilitate the optimization of actor responses using genetic algorithms and OpenAI's GPT models. This class allows for the generation, mutation, and recombination of prompts to produce optimized responses based on defined test cases and expectations.
-
+The `ActorOptimization` class is designed to facilitate the optimization of actor responses using genetic algorithms and OpenAI's GPT models. This class allows for the generation,
+mutation, and recombination of prompts to produce optimized responses based on defined test cases and expectations.
 
 ### Features
 
@@ -834,9 +817,7 @@ The `ActorOptimization` class is designed to facilitate the optimization of acto
 - **Customizable Mutation and Recombination**: Allows for the customization of mutation rates and types, as well as recombination logic.
 - **Test Case Evaluation**: Supports the definition of test cases with expectations to guide the optimization process.
 
-
 ### Key Components
-
 
 #### TestCase Class
 
@@ -846,7 +827,6 @@ Represents a test case with user messages, expectations, and the number of retri
 - `expectations`: A list of expectations to evaluate the response.
 - `retries`: The number of retries allowed for the test case.
 
-
 #### GeneticApi Interface
 
 Defines the operations for mutating and recombining prompts.
@@ -854,15 +834,14 @@ Defines the operations for mutating and recombining prompts.
 - `mutate`: Mutates a given prompt based on a directive (e.g., Rephrase, Randomize).
 - `recombine`: Recombines two prompts to produce a new prompt.
 
-
 #### Main Methods
-
 
 ##### runGeneticGenerations
 
 Runs multiple generations of genetic optimization to improve prompts based on test cases.
 
 Parameters:
+
 - `prompts`: Initial list of prompts to optimize.
 - `testCases`: List of `TestCase` instances to evaluate prompts.
 - `actorFactory`: Factory function to create actors based on prompts.
@@ -872,20 +851,21 @@ Parameters:
 - `generations`: Number of generations to run.
 
 Returns:
-- A list of optimized prompts.
 
+- A list of optimized prompts.
 
 ##### regenerate
 
 Generates a new set of prompts based on progenitors through mutation or recombination.
 
 Parameters:
+
 - `progenetors`: List of parent prompts.
 - `desiredCount`: Desired number of prompts in the new generation.
 
 Returns:
-- A list of new prompts.
 
+- A list of new prompts.
 
 ### Usage Example
 
@@ -911,28 +891,27 @@ val optimizedPrompts = actorOptimization.runGeneticGenerations(
 println("Optimized Prompts: $optimizedPrompts")
 ```
 
-
 ### Customization
 
 You can customize the mutation rate and types by adjusting the `mutationRate` and `mutatonTypes` parameters during the instantiation of the `ActorOptimization` class.
 
-
 ### Conclusion
 
-The `ActorOptimization` class provides a powerful tool for optimizing conversational prompts using genetic algorithms and OpenAI's GPT models. By defining test cases and expectations, users can iteratively improve prompts to achieve desired responses.
+The `ActorOptimization` class provides a powerful tool for optimizing conversational prompts using genetic algorithms and OpenAI's GPT models. By defining test cases and
+expectations, users can iteratively improve prompts to achieve desired responses.
 
 # record\ImageActorInterceptor.kt
 
-
 ## User Documentation for ImageActorInterceptor
 
-The `ImageActorInterceptor` class is a specialized component designed to intercept and potentially modify the behavior of an `ImageActor` instance. This class is part of the `com.simiacryptus.skyenet.core.actors.record` package and is intended for advanced users who need to customize or extend the functionality of image generation or processing within a system that utilizes the Skyenet framework.
-
+The `ImageActorInterceptor` class is a specialized component designed to intercept and potentially modify the behavior of an `ImageActor` instance. This class is part of the
+`com.simiacryptus.skyenet.core.actors.record` package and is intended for advanced users who need to customize or extend the functionality of image generation or processing within
+a system that utilizes the Skyenet framework.
 
 ### Overview
 
-`ImageActorInterceptor` acts as a wrapper around an existing `ImageActor` instance, allowing users to intercept and modify the inputs and outputs of the `ImageActor`'s methods. This is particularly useful for debugging, logging, or applying custom transformations to the data processed by the `ImageActor`.
-
+`ImageActorInterceptor` acts as a wrapper around an existing `ImageActor` instance, allowing users to intercept and modify the inputs and outputs of the `ImageActor`'s methods.
+This is particularly useful for debugging, logging, or applying custom transformations to the data processed by the `ImageActor`.
 
 ### Key Features
 
@@ -940,13 +919,12 @@ The `ImageActorInterceptor` class is a specialized component designed to interce
 - **Custom Processing**: Enables custom processing of inputs and outputs without modifying the original `ImageActor` code.
 - **Compatibility**: Seamlessly integrates with existing `ImageActor` instances, preserving their properties and behaviors.
 
-
 ### Usage
-
 
 #### Initialization
 
-To use the `ImageActorInterceptor`, you must first have an instance of `ImageActor` that you wish to intercept. You then create an instance of `ImageActorInterceptor` by passing the `ImageActor` instance and a `FunctionWrapper` instance to its constructor.
+To use the `ImageActorInterceptor`, you must first have an instance of `ImageActor` that you wish to intercept. You then create an instance of `ImageActorInterceptor` by passing
+the `ImageActor` instance and a `FunctionWrapper` instance to its constructor.
 
 ```kotlin
 val originalImageActor = ImageActor(...)
@@ -954,10 +932,10 @@ val functionInterceptor = FunctionWrapper(...)
 val imageActorInterceptor = ImageActorInterceptor(originalImageActor, functionInterceptor)
 ```
 
-
 #### Interception and Custom Processing
 
-The `FunctionWrapper` provided during initialization is responsible for defining how the interception and potential modification of the `ImageActor`'s behavior occur. You must implement the `wrap` method of the `FunctionWrapper` to specify the custom processing logic.
+The `FunctionWrapper` provided during initialization is responsible for defining how the interception and potential modification of the `ImageActor`'s behavior occur. You must
+implement the `wrap` method of the `FunctionWrapper` to specify the custom processing logic.
 
 ```kotlin
 val functionInterceptor = object : FunctionWrapper {
@@ -968,9 +946,7 @@ val functionInterceptor = object : FunctionWrapper {
 }
 ```
 
-
 #### Methods
-
 
 ##### `response`
 
@@ -980,7 +956,6 @@ Intercepts the `response` method calls of the `ImageActor`, allowing for custom 
 imageActorInterceptor.response(inputMessages, model, api)
 ```
 
-
 ##### `render`
 
 Intercepts the `render` method calls of the `ImageActor`, enabling custom processing of text inputs for image rendering.
@@ -989,18 +964,18 @@ Intercepts the `render` method calls of the `ImageActor`, enabling custom proces
 val image = imageActorInterceptor.render(text, api)
 ```
 
-
 ### Conclusion
 
-The `ImageActorInterceptor` provides a powerful mechanism for customizing the behavior of `ImageActor` instances in the Skyenet framework. By leveraging function interception, developers can implement custom logic for processing inputs and outputs, enhancing the flexibility and capabilities of their image generation and processing systems.
+The `ImageActorInterceptor` provides a powerful mechanism for customizing the behavior of `ImageActor` instances in the Skyenet framework. By leveraging function interception,
+developers can implement custom logic for processing inputs and outputs, enhancing the flexibility and capabilities of their image generation and processing systems.
 
 # record\ParsedActorInterceptor.kt
 
-
 ## ParsedActorInterceptor Documentation
 
-The `ParsedActorInterceptor` class is designed to act as a middleware that intercepts and modifies the behavior of a `ParsedActor` in a flexible manner. It allows for the interception and manipulation of responses generated by the `ParsedActor` through a custom `FunctionWrapper`. This class is part of the `com.simiacryptus.skyenet.core.actors.record` package.
-
+The `ParsedActorInterceptor` class is designed to act as a middleware that intercepts and modifies the behavior of a `ParsedActor` in a flexible manner. It allows for the
+interception and manipulation of responses generated by the `ParsedActor` through a custom `FunctionWrapper`. This class is part of the`com.simiacryptus.skyenet.core.actors.record`
+package.
 
 ### Features
 
@@ -1009,13 +984,12 @@ The `ParsedActorInterceptor` class is designed to act as a middleware that inter
 - **Lazy Evaluation**: Employs lazy evaluation for response objects to optimize performance and resource utilization.
 - **Seamless Integration**: Designed to seamlessly integrate with existing `ParsedActor` instances without requiring significant modifications.
 
-
 ### Usage
-
 
 #### Initialization
 
-To initialize a `ParsedActorInterceptor`, you need to provide an instance of `ParsedActor` and a `FunctionWrapper`. The `FunctionWrapper` is responsible for defining how the responses are intercepted and processed.
+To initialize a `ParsedActorInterceptor`, you need to provide an instance of `ParsedActor` and a `FunctionWrapper`. The `FunctionWrapper` is responsible for defining how the
+responses are intercepted and processed.
 
 ```kotlin
 val parsedActorInterceptor = ParsedActorInterceptor(
@@ -1024,10 +998,10 @@ val parsedActorInterceptor = ParsedActorInterceptor(
 )
 ```
 
-
 #### Responding to Inputs
 
-The `ParsedActorInterceptor` overrides the `respond` method to intercept the response generation process. It utilizes the provided `FunctionWrapper` to modify or enhance the response based on custom logic.
+The `ParsedActorInterceptor` overrides the `respond` method to intercept the response generation process. It utilizes the provided `FunctionWrapper` to modify or enhance the
+response based on custom logic.
 
 ```kotlin
 val response = parsedActorInterceptor.respond(
@@ -1036,17 +1010,16 @@ val response = parsedActorInterceptor.respond(
 )
 ```
 
-
 #### Custom Response Processing
 
-The interceptor uses a lazy evaluation strategy for processing response objects. The actual parsing and processing of the response text into the desired object format are deferred until the `obj` property is accessed. This approach optimizes performance by avoiding unnecessary computations.
-
+The interceptor uses a lazy evaluation strategy for processing response objects. The actual parsing and processing of the response text into the desired object format are deferred
+until the `obj` property is accessed. This approach optimizes performance by avoiding unnecessary computations.
 
 ### Key Methods
 
 - **respond**: Intercepts the response generation process, allowing for custom processing of inputs and modification of the generated response.
-- **response**: A method designed to wrap the response generation process, enabling the interception and modification of responses for a given set of input messages and a specified model.
-
+- **response**: A method designed to wrap the response generation process, enabling the interception and modification of responses for a given set of input messages and a specified
+  model.
 
 ### Example
 
@@ -1074,18 +1047,18 @@ println(customResponse.text)
 println(customResponse.obj)
 ```
 
-
 ### Conclusion
 
-The `ParsedActorInterceptor` provides a powerful mechanism for intercepting and modifying the behavior of `ParsedActor` instances. By leveraging custom function wrappers, developers can implement sophisticated logic to enhance and tailor the responses generated by their actors, enabling more dynamic and context-aware applications.
+The `ParsedActorInterceptor` provides a powerful mechanism for intercepting and modifying the behavior of `ParsedActor` instances. By leveraging custom function wrappers,
+developers can implement sophisticated logic to enhance and tailor the responses generated by their actors, enabling more dynamic and context-aware applications.
 
 # record\TextToSpeechActorInterceptor.kt
 
-
 ## TextToSpeechActorInterceptor Documentation
 
-The `TextToSpeechActorInterceptor` class is a part of the `com.simiacryptus.skyenet.core.actors.record` package, designed to intercept and modify the behavior of a `TextToSpeechActor` instance. This class allows for additional processing or modification of inputs and outputs to the `TextToSpeechActor` through a provided `FunctionWrapper`. It is particularly useful for debugging, logging, or applying custom transformations to the text-to-speech process.
-
+The `TextToSpeechActorInterceptor` class is a part of the `com.simiacryptus.skyenet.core.actors.record` package, designed to intercept and modify the behavior of a
+`TextToSpeechActor` instance. This class allows for additional processing or modification of inputs and outputs to the `TextToSpeechActor` through a provided `FunctionWrapper`. It
+is particularly useful for debugging, logging, or applying custom transformations to the text-to-speech process.
 
 ### Features
 
@@ -1093,9 +1066,7 @@ The `TextToSpeechActorInterceptor` class is a part of the `com.simiacryptus.skye
 - **Function Wrapping**: Utilizes a `FunctionWrapper` to apply custom logic around the invocation of the `TextToSpeechActor`'s methods.
 - **Compatibility**: Seamlessly integrates with existing `TextToSpeechActor` instances without requiring modifications to their implementation.
 
-
 ### Usage
-
 
 #### Initialization
 
@@ -1107,46 +1078,47 @@ val functionInterceptor = FunctionWrapper(/* custom interception logic here */)
 val interceptor = TextToSpeechActorInterceptor(originalActor, functionInterceptor)
 ```
 
-
 #### Interception
 
-Once the interceptor is initialized, it can be used in place of the original `TextToSpeechActor`. Calls to `response` and `render` will be intercepted according to the logic defined in the `FunctionWrapper`.
-
+Once the interceptor is initialized, it can be used in place of the original `TextToSpeechActor`. Calls to `response` and `render` will be intercepted according to the logic
+defined in the `FunctionWrapper`.
 
 ##### Response Interception
 
-The `response` method allows for the interception of chat message processing. The custom logic can modify the input messages or the processing behavior before delegating to the original actor's `response` method.
+The `response` method allows for the interception of chat message processing. The custom logic can modify the input messages or the processing behavior before delegating to the
+original actor's `response` method.
 
 ```kotlin
 interceptor.response(inputMessages, model, api)
 ```
 
-
 ##### Render Interception
 
-The `render` method enables the interception of text rendering to audio. The interception logic can modify the input text or the rendering behavior before calling the original actor's `render` method.
+The `render` method enables the interception of text rendering to audio. The interception logic can modify the input text or the rendering behavior before calling the original
+actor's `render` method.
 
 ```kotlin
 val audioBytes = interceptor.render(text, api)
 ```
 
-
 ### Customization
 
-The behavior of the `TextToSpeechActorInterceptor` is largely determined by the `FunctionWrapper` provided during initialization. By implementing custom logic within this wrapper, users can achieve a wide range of effects, from simple logging to complex input/output transformations.
-
+The behavior of the `TextToSpeechActorInterceptor` is largely determined by the `FunctionWrapper` provided during initialization. By implementing custom logic within this wrapper,
+users can achieve a wide range of effects, from simple logging to complex input/output transformations.
 
 ### Conclusion
 
-The `TextToSpeechActorInterceptor` provides a powerful and flexible mechanism for augmenting the behavior of `TextToSpeechActor` instances. By leveraging function wrapping, it offers a seamless way to integrate custom logic into the text-to-speech process, making it an invaluable tool for developers looking to extend or customize the functionality of their text-to-speech applications.
+The `TextToSpeechActorInterceptor` provides a powerful and flexible mechanism for augmenting the behavior of `TextToSpeechActor` instances. By leveraging function wrapping, it
+offers a seamless way to integrate custom logic into the text-to-speech process, making it an invaluable tool for developers looking to extend or customize the functionality of
+their text-to-speech applications.
 
 # record\SimpleActorInterceptor.kt
 
-
 ## SimpleActorInterceptor Documentation
 
-The `SimpleActorInterceptor` class is a part of the `com.simiacryptus.skyenet.core.actors.record` package, designed to act as a wrapper around instances of `SimpleActor`. This class allows for the interception and potential modification of function calls, specifically the `response` function of the `SimpleActor` class. It is particularly useful for scenarios where additional processing or logging is required for the inputs and outputs of the `response` function.
-
+The `SimpleActorInterceptor` class is a part of the `com.simiacryptus.skyenet.core.actors.record` package, designed to act as a wrapper around instances of `SimpleActor`. This
+class allows for the interception and potential modification of function calls, specifically the `response` function of the `SimpleActor` class. It is particularly useful for
+scenarios where additional processing or logging is required for the inputs and outputs of the `response` function.
 
 ### Features
 
@@ -1154,11 +1126,10 @@ The `SimpleActorInterceptor` class is a part of the `com.simiacryptus.skyenet.co
 - **Custom Processing**: Through the use of a `FunctionWrapper`, custom logic can be applied to the inputs and outputs of the `response` function.
 - **Seamless Integration**: Inherits from `SimpleActor`, ensuring compatibility and ease of integration with existing systems that utilize `SimpleActor` instances.
 
-
 ### Usage
 
-To use the `SimpleActorInterceptor`, you must first have an instance of `SimpleActor` that you wish to wrap. You will also need to define or have a `FunctionWrapper` that specifies the custom logic to be applied during the interception.
-
+To use the `SimpleActorInterceptor`, you must first have an instance of `SimpleActor` that you wish to wrap. You will also need to define or have a `FunctionWrapper` that specifies
+the custom logic to be applied during the interception.
 
 #### Example
 
@@ -1181,13 +1152,13 @@ val simpleActor = SimpleActor(
 val functionInterceptor = FunctionWrapper { input, model, function ->
     // Custom pre-processing logic here
     println("Before calling response: $input")
-    
+
     // Call the original function
     val result = function(input, model)
-    
+
     // Custom post-processing logic here
     println("After calling response")
-    
+
     // Return the result
     result
 }
@@ -1199,51 +1170,50 @@ val interceptor = SimpleActorInterceptor(simpleActor, functionInterceptor)
 // The interceptor will apply your custom logic before and after calling the response function
 ```
 
-
 ### Parameters
 
 - `inner`: The `SimpleActor` instance that is being wrapped.
 - `functionInterceptor`: An instance of `FunctionWrapper` that defines the custom logic to be applied during the interception.
 
-
 ### Methods
 
-- `response(vararg input: com.simiacryptus.jopenai.ApiModel.ChatMessage, model: OpenAIModel, api: API)`: Overrides the `response` method of `SimpleActor` to apply the custom logic defined in `functionInterceptor` before and after the original `response` function is called.
-
+- `response(vararg input: com.simiacryptus.jopenai.ApiModel.ChatMessage, model: OpenAIModel, api: API)`: Overrides the `response` method of `SimpleActor` to apply the custom logic
+  defined in `functionInterceptor` before and after the original `response` function is called.
 
 ### Conclusion
 
-The `SimpleActorInterceptor` class provides a powerful way to add custom processing logic to the inputs and outputs of the `response` function of `SimpleActor` instances. By leveraging the `FunctionWrapper`, developers can easily implement custom pre-processing and post-processing logic to enhance the functionality of their `SimpleActor` instances.
+The `SimpleActorInterceptor` class provides a powerful way to add custom processing logic to the inputs and outputs of the `response` function of `SimpleActor` instances. By
+leveraging the `FunctionWrapper`, developers can easily implement custom pre-processing and post-processing logic to enhance the functionality of their `SimpleActor` instances.
 
 # test\ImageActorTestBase.kt
 
-
 ## User Documentation for ImageActorTestBase
-
 
 ### Overview
 
-The `ImageActorTestBase` class is part of the testing framework for the `ImageActor` component within the Skyenet project. This abstract class extends `ActorTestBase`, specifically tailored for testing actors that process a list of strings as input and produce an `ImageResponse`. It provides a foundational setup for creating and testing instances of `ImageActor` based on different prompts.
-
+The `ImageActorTestBase` class is part of the testing framework for the `ImageActor` component within the Skyenet project. This abstract class extends `ActorTestBase`, specifically
+tailored for testing actors that process a list of strings as input and produce an `ImageResponse`. It provides a foundational setup for creating and testing instances of
+`ImageActor` based on different prompts.
 
 ### Key Features
 
 - **Abstract Testing Framework**: Designed to facilitate the testing of `ImageActor` instances, ensuring they function as expected when given various prompts.
 - **Prompt-Based Actor Factory**: Implements a method to instantiate `ImageActor` objects using specific prompts, allowing for flexible testing scenarios.
 
-
 ### Getting Started
 
 To utilize `ImageActorTestBase` in your testing suite, follow these steps:
 
-1. **Extend `ImageActorTestBase`**: Since `ImageActorTestBase` is an abstract class, you'll need to create a concrete subclass that implements any abstract methods (if any exist beyond those implemented in `ActorTestBase`).
+1. **Extend `ImageActorTestBase`**: Since `ImageActorTestBase` is an abstract class, you'll need to create a concrete subclass that implements any abstract methods (if any exist
+   beyond those implemented in `ActorTestBase`).
 
-2. **Implement Required Methods**: Ensure all abstract methods inherited from `ActorTestBase` are implemented. In the case of `ImageActorTestBase`, the `actorFactory` method is already implemented, but you may need to provide implementations for other abstract methods depending on your specific testing needs.
+2. **Implement Required Methods**: Ensure all abstract methods inherited from `ActorTestBase` are implemented. In the case of `ImageActorTestBase`, the `actorFactory` method is
+   already implemented, but you may need to provide implementations for other abstract methods depending on your specific testing needs.
 
-3. **Define Test Cases**: Create test cases within your subclass that utilize the `actorFactory` method to generate `ImageActor` instances with various prompts. These instances can then be used to verify the actor's response to different inputs.
+3. **Define Test Cases**: Create test cases within your subclass that utilize the `actorFactory` method to generate `ImageActor` instances with various prompts. These instances can
+   then be used to verify the actor's response to different inputs.
 
 4. **Run Tests**: Execute your tests to validate the behavior of `ImageActor` instances. This can help identify any issues or unexpected behavior in the actor's implementation.
-
 
 ### Example Usage
 
@@ -1264,7 +1234,7 @@ class MyImageActorTests : ImageActorTestBase() {
         val prompt = "A sample prompt"
         val imageActor = actorFactory(prompt)
         val response = imageActor.process(listOf(prompt))
-        
+
         // Perform assertions on the response
         Assert.assertNotNull("The response should not be null", response)
         Assert.assertTrue("The response should be of type ImageResponse", response is ImageResponse)
@@ -1273,47 +1243,49 @@ class MyImageActorTests : ImageActorTestBase() {
 }
 ```
 
-In this example, `MyImageActorTests` extends `ImageActorTestBase` and defines a test case that checks whether `ImageActor` produces a non-null response of the correct type when given a sample prompt.
-
+In this example, `MyImageActorTests` extends `ImageActorTestBase` and defines a test case that checks whether `ImageActor` produces a non-null response of the correct type when
+given a sample prompt.
 
 ### Conclusion
 
-`ImageActorTestBase` provides a structured approach to testing `ImageActor` instances within the Skyenet project. By extending this class and implementing specific test cases, developers can ensure their image processing actors behave as expected across a variety of scenarios.
+`ImageActorTestBase` provides a structured approach to testing `ImageActor` instances within the Skyenet project. By extending this class and implementing specific test cases,
+developers can ensure their image processing actors behave as expected across a variety of scenarios.
 
 # test\CodingActorTestBase.kt
 
-
 ## CodingActorTestBase Documentation
 
-The `CodingActorTestBase` class is an abstract base class designed for testing coding actors in the Skyenet framework. It extends the functionality of `ActorTestBase` by specifically catering to actors that generate or interpret code, providing a streamlined way to create, test, and evaluate coding actors.
-
+The `CodingActorTestBase` class is an abstract base class designed for testing coding actors in the Skyenet framework. It extends the functionality of `ActorTestBase` by
+specifically catering to actors that generate or interpret code, providing a streamlined way to create, test, and evaluate coding actors.
 
 ### Overview
 
-Coding actors are specialized actors within the Skyenet framework that deal with generating or interpreting code based on given prompts. The `CodingActorTestBase` class facilitates the testing of these actors by setting up a common testing infrastructure that includes creating actors, sending prompts, and evaluating the generated code.
-
+Coding actors are specialized actors within the Skyenet framework that deal with generating or interpreting code based on given prompts. The `CodingActorTestBase` class facilitates
+the testing of these actors by setting up a common testing infrastructure that includes creating actors, sending prompts, and evaluating the generated code.
 
 ### Key Components
 
-
 #### Properties
 
-- `abstract val interpreterClass: KClass<out Interpreter>`: This abstract property must be implemented by subclasses to specify the class of the interpreter that the coding actor should use. The interpreter class must extend the `Interpreter` interface.
-
+- `abstract val interpreterClass: KClass<out Interpreter>`: This abstract property must be implemented by subclasses to specify the class of the interpreter that the coding actor
+  should use. The interpreter class must extend the `Interpreter` interface.
 
 #### Methods
 
-- `actorFactory(prompt: String): CodingActor`: This method overrides the `actorFactory` method from `ActorTestBase`. It is responsible for creating an instance of `CodingActor` with the specified interpreter class and details (prompt). This allows for the dynamic creation of coding actors based on the test requirements.
+- `actorFactory(prompt: String): CodingActor`: This method overrides the `actorFactory` method from `ActorTestBase`. It is responsible for creating an instance of `CodingActor`with
+  the specified interpreter class and details (prompt). This allows for the dynamic creation of coding actors based on the test requirements.
 
-- `getPrompt(actor: BaseActor<CodingActor.CodeRequest, CodeResult>): String`: This method overrides the `getPrompt` method from `ActorTestBase`. It retrieves the prompt (details) from the given coding actor. This prompt is what the actor uses to generate or interpret code.
+- `getPrompt(actor: BaseActor<CodingActor.CodeRequest, CodeResult>): String`: This method overrides the `getPrompt` method from `ActorTestBase`. It retrieves the prompt (details)
+  from the given coding actor. This prompt is what the actor uses to generate or interpret code.
 
-- `resultMapper(result: CodeResult): String`: This method overrides the `resultMapper` method from `ActorTestBase`. It maps the `CodeResult` (the output of the coding actor) to a string representation of the code. This is useful for evaluating the actor's output or for further processing.
-
+- `resultMapper(result: CodeResult): String`: This method overrides the `resultMapper` method from `ActorTestBase`. It maps the `CodeResult` (the output of the coding actor) to a
+  string representation of the code. This is useful for evaluating the actor's output or for further processing.
 
 ### Usage
 
-To use the `CodingActorTestBase`, you need to create a subclass that implements the `interpreterClass` property. This subclass will specify the interpreter that the coding actors should use during testing. Once the subclass is defined, you can create instances of your coding actors by providing prompts, and then use the provided methods to test and evaluate their code generation capabilities.
-
+To use the `CodingActorTestBase`, you need to create a subclass that implements the `interpreterClass` property. This subclass will specify the interpreter that the coding actors
+should use during testing. Once the subclass is defined, you can create instances of your coding actors by providing prompts, and then use the provided methods to test and evaluate
+their code generation capabilities.
 
 #### Example
 
@@ -1330,20 +1302,20 @@ class MyCodingActorTest : CodingActorTestBase() {
 }
 ```
 
-In this example, `MyCodingActorTest` extends `CodingActorTestBase` and specifies `MyInterpreter` as the interpreter class. It includes a test method that creates a coding actor with a given prompt, generates code based on that prompt, and then prints the generated code.
-
+In this example, `MyCodingActorTest` extends `CodingActorTestBase` and specifies `MyInterpreter` as the interpreter class. It includes a test method that creates a coding actor
+with a given prompt, generates code based on that prompt, and then prints the generated code.
 
 ### Conclusion
 
-The `CodingActorTestBase` class provides a foundational framework for testing coding actors within the Skyenet framework. By abstracting common tasks such as actor creation, prompt handling, and result mapping, it simplifies the process of developing and testing coding actors.
+The `CodingActorTestBase` class provides a foundational framework for testing coding actors within the Skyenet framework. By abstracting common tasks such as actor creation, prompt
+handling, and result mapping, it simplifies the process of developing and testing coding actors.
 
 # SimpleActor.kt
 
-
 ## SimpleActor Class Documentation
 
-The `SimpleActor` class is part of the `com.simiacryptus.skyenet.core.actors` package and extends the functionality of the `BaseActor` class. It is designed to facilitate easy interaction with OpenAI's GPT models through the `com.simiacryptus.jopenai` API. This class simplifies the process of sending prompts to the model and receiving responses.
-
+The `SimpleActor` class is part of the `com.simiacryptus.skyenet.core.actors` package and extends the functionality of the `BaseActor` class. It is designed to facilitate easy
+interaction with OpenAI's GPT models through the `com.simiacryptus.jopenai` API. This class simplifies the process of sending prompts to the model and receiving responses.
 
 ### Constructor Parameters
 
@@ -1352,9 +1324,7 @@ The `SimpleActor` class is part of the `com.simiacryptus.skyenet.core.actors` pa
 - `model`: Specifies the model to be used for generating responses. It defaults to `OpenAIModels.GPT35Turbo`.
 - `temperature`: A `Double` value that controls the randomness of the model's responses. Lower values make the model more deterministic. It defaults to `0.3`.
 
-
 ### Methods
-
 
 #### respond
 
@@ -1372,7 +1342,6 @@ Generates a response based on the provided input and messages.
 
 **Throws**: `RuntimeException` if no response is received from the model.
 
-
 #### chatMessages
 
 ```kotlin
@@ -1385,7 +1354,6 @@ Converts a list of questions into an array of `ApiModel.ChatMessage`, including 
 
 **Returns**: An array of `ApiModel.ChatMessage` ready to be sent to the model.
 
-
 #### withModel
 
 ```kotlin
@@ -1397,7 +1365,6 @@ Creates a new instance of `SimpleActor` with the specified model while retaining
 - `model`: The `ChatModels` instance specifying the new model to be used.
 
 **Returns**: A new instance of `SimpleActor` configured with the specified model.
-
 
 ### Usage Example
 
@@ -1419,19 +1386,17 @@ This example demonstrates how to create an instance of `SimpleActor`, initialize
 
 # test\ActorTestBase.kt
 
-
 ## ActorTestBase Documentation
 
-The `ActorTestBase` class is an abstract class designed to facilitate the testing of actors within a system. It provides a structured way to optimize and test actors through predefined test cases and optimization strategies. This class is part of the `com.simiacryptus.skyenet.core.actors.test` package.
-
+The `ActorTestBase` class is an abstract class designed to facilitate the testing of actors within a system. It provides a structured way to optimize and test actors through
+predefined test cases and optimization strategies. This class is part of the `com.simiacryptus.skyenet.core.actors.test` package.
 
 ### Overview
 
-The `ActorTestBase` class serves as a foundation for testing different types of actors. An actor, in this context, refers to a component that takes input, performs some processing, and produces output. The class is designed to be extended by concrete test classes that specify the behavior of the actors being tested.
-
+The `ActorTestBase` class serves as a foundation for testing different types of actors. An actor, in this context, refers to a component that takes input, performs some processing,
+and produces output. The class is designed to be extended by concrete test classes that specify the behavior of the actors being tested.
 
 ### Key Components
-
 
 #### Properties
 
@@ -1440,40 +1405,37 @@ The `ActorTestBase` class serves as a foundation for testing different types of 
 - `actor`: An abstract property representing the actor being tested.
 - `actorFactory`: An abstract function that takes a prompt string and returns a new instance of the actor.
 
-
 #### Methods
-
 
 ##### `opt()`
 
-This method runs the optimization process for the actor. It uses genetic algorithms to evolve the actor based on the provided test cases. The method parameters allow for customization of the optimization process, including specifying a different actor or test cases.
+This method runs the optimization process for the actor. It uses genetic algorithms to evolve the actor based on the provided test cases. The method parameters allow for
+customization of the optimization process, including specifying a different actor or test cases.
 
 Parameters:
+
 - `actor`: The actor to optimize. Defaults to the actor defined in the class.
 - `testCases`: The test cases to use for optimization. Defaults to the test cases defined in the class.
 - `actorFactory`: A factory function to create new actor instances. Defaults to the `actorFactory` method defined in the class.
 - `resultMapper`: A function to map the actor's output to a string. Defaults to the `resultMapper` method defined in the class.
 
-
 ##### `testOptimize()`
 
 A convenience method that calls the `opt()` method with default parameters. It starts the optimization process for the actor using the predefined test cases and actor factory.
 
-
 ##### `testRun()`
 
-This method iterates over the test cases and tests the actor's response to each case. It constructs the input messages for the actor, calls the `answer()` method to get the actor's response, and logs the result.
-
+This method iterates over the test cases and tests the actor's response to each case. It constructs the input messages for the actor, calls the `answer()` method to get the actor's
+response, and logs the result.
 
 ##### `answer()`
 
-Takes an array of `ApiModel.ChatMessage` objects as input and returns the actor's response. This method is responsible for converting the chat messages into the appropriate input format for the actor, calling the actor's `respond()` method, and returning the result.
-
+Takes an array of `ApiModel.ChatMessage` objects as input and returns the actor's response. This method is responsible for converting the chat messages into the appropriate input
+format for the actor, calling the actor's `respond()` method, and returning the result.
 
 #### Companion Object
 
 Contains a logger instance for logging information related to the test execution.
-
 
 ### Usage
 
@@ -1498,31 +1460,31 @@ class MyActorTest : ActorTestBase<MyInputType, MyResultType>() {
 }
 ```
 
-In this example, you would replace `MyInputType` and `MyResultType` with the actual types used by your actor. You would also implement the abstract methods to provide the necessary functionality for testing your actor.
+In this example, you would replace `MyInputType` and `MyResultType` with the actual types used by your actor. You would also implement the abstract methods to provide the necessary
+functionality for testing your actor.
 
 # test\ParsedActorTestBase.kt
 
-
 ## User Documentation for ParsedActorTestBase
 
-The `ParsedActorTestBase` class is an abstract class designed to facilitate the testing of actors that parse responses using a specified parser. This class is part of the `com.simiacryptus.skyenet.core.actors.test` package and extends the functionality provided by `ActorTestBase`. It is tailored for use with actors that take a list of strings as input and produce a `ParsedResponse` object containing a generic type `T`.
-
+The `ParsedActorTestBase` class is an abstract class designed to facilitate the testing of actors that parse responses using a specified parser. This class is part of the
+`com.simiacryptus.skyenet.core.actors.test` package and extends the functionality provided by `ActorTestBase`. It is tailored for use with actors that take a list of strings as
+input and produce a `ParsedResponse` object containing a generic type `T`.
 
 ### Overview
 
-The `ParsedActorTestBase` class is designed to streamline the process of testing parsed actors by providing a structured framework. It abstracts away common testing functionalities, allowing developers to focus on the specifics of their parsed actor implementations. The class requires specifying the type of parser to be used for parsing responses through the `parserClass` parameter.
-
+The `ParsedActorTestBase` class is designed to streamline the process of testing parsed actors by providing a structured framework. It abstracts away common testing
+functionalities, allowing developers to focus on the specifics of their parsed actor implementations. The class requires specifying the type of parser to be used for parsing
+responses through the `parserClass` parameter.
 
 ### Key Components
 
-
 #### Constructor Parameters
 
-- `parserClass`: This parameter expects a class that implements the `Function<String, T>` interface. It defines the parser that will be used to parse the responses from the actor. The parser class should take a string as input and return an instance of type `T`.
-
+- `parserClass`: This parameter expects a class that implements the `Function<String, T>` interface. It defines the parser that will be used to parse the responses from the actor.
+  The parser class should take a string as input and return an instance of type `T`.
 
 #### Methods
-
 
 ##### actorFactory
 
@@ -1532,21 +1494,19 @@ override fun actorFactory(prompt: String): ParsedActor
 
 - **Description**: Creates an instance of `ParsedActor` with the specified prompt and parser class. The parsing model is set to `OpenAIModels.GPT35Turbo` by default.
 - **Parameters**:
-  - `prompt`: A string representing the prompt to be used by the actor.
+    - `prompt`: A string representing the prompt to be used by the actor.
 - **Returns**: An instance of `ParsedActor` configured with the provided prompt and parser.
-
 
 ##### getPrompt
 
 ```kotlin
-override fun getPrompt(actor: BaseActor<List<String>,ParsedResponse<T>>): String
+override fun getPrompt(actor: BaseActor<List<String>, ParsedResponse<T>>): String
 ```
 
 - **Description**: Retrieves the prompt associated with the given actor.
 - **Parameters**:
-  - `actor`: The actor whose prompt is to be retrieved.
+    - `actor`: The actor whose prompt is to be retrieved.
 - **Returns**: The prompt string used by the specified actor.
-
 
 ##### resultMapper
 
@@ -1556,14 +1516,13 @@ override fun resultMapper(result: ParsedResponse<T>): String
 
 - **Description**: Maps the `ParsedResponse` object to a string representation. This method is used to extract the text content from the `ParsedResponse` object.
 - **Parameters**:
-  - `result`: The `ParsedResponse` object containing the parsed result.
+    - `result`: The `ParsedResponse` object containing the parsed result.
 - **Returns**: A string representation of the parsed result.
-
 
 ### Usage
 
-To use the `ParsedActorTestBase` class, you need to extend it in your test class and specify the type of the parser class as well as the generic type `T` that your parser returns. You will also need to implement any abstract methods if required.
-
+To use the `ParsedActorTestBase` class, you need to extend it in your test class and specify the type of the parser class as well as the generic type `T` that your parser returns.
+You will also need to implement any abstract methods if required.
 
 #### Example
 
@@ -1573,27 +1532,26 @@ class MyActorTest : ParsedActorTestBase<MyResponseType>(MyResponseParser::class.
 }
 ```
 
-In this example, `MyResponseType` is the type returned by the parser, and `MyResponseParser` is the class that implements the `Function<String, MyResponseType>` interface to parse the actor's responses.
-
+In this example, `MyResponseType` is the type returned by the parser, and `MyResponseParser` is the class that implements the `Function<String, MyResponseType>` interface to parse
+the actor's responses.
 
 ### Conclusion
 
-The `ParsedActorTestBase` class provides a structured and efficient way to test actors that require response parsing. By abstracting common functionalities and providing a clear framework, it simplifies the testing process and allows developers to focus on the specifics of their actor implementations.
+The `ParsedActorTestBase` class provides a structured and efficient way to test actors that require response parsing. By abstracting common functionalities and providing a clear
+framework, it simplifies the testing process and allows developers to focus on the specifics of their actor implementations.
 
 # TextToSpeechActor.kt
 
-
 ## TextToSpeechActor Documentation
 
-The `TextToSpeechActor` class is a part of the `com.simiacryptus.skyenet.core.actors` package, designed to convert text into speech using OpenAI's API. This class extends the `BaseActor` class, allowing it to process lists of strings and generate speech responses.
-
+The `TextToSpeechActor` class is a part of the `com.simiacryptus.skyenet.core.actors` package, designed to convert text into speech using OpenAI's API. This class extends the
+`BaseActor` class, allowing it to process lists of strings and generate speech responses.
 
 ### Features
 
 - **Customizable Voice and Speed**: Users can specify the voice and speed of the speech.
 - **Support for Different Audio Models**: The class supports various audio models provided by OpenAI.
 - **Lazy Loading of Speech Data**: The speech data is loaded lazily, meaning it's only processed when needed, optimizing resource usage.
-
 
 ### Constructor Parameters
 
@@ -1602,9 +1560,7 @@ The `TextToSpeechActor` class is a part of the `com.simiacryptus.skyenet.core.ac
 - `voice`: The voice to be used. Defaults to `"alloy"`.
 - `speed`: The speed of the speech. Defaults to `1.0`.
 
-
 ### Methods
-
 
 #### `chatMessages(questions: List<String>)`
 
@@ -1613,27 +1569,24 @@ Converts a list of questions into an array of `ChatMessage` objects, which are t
 - **Parameters**: `questions` - A list of strings representing the questions or text to be converted into speech.
 - **Returns**: An array of `ChatMessage` objects.
 
-
 #### `render(text: String, api: API)`
 
 Converts the given text into speech data using the specified OpenAI API client.
 
 - **Parameters**:
-  - `text`: The text to be converted into speech.
-  - `api`: The OpenAI API client to use for the conversion.
+    - `text`: The text to be converted into speech.
+    - `api`: The OpenAI API client to use for the conversion.
 - **Returns**: A byte array containing the speech data.
-
 
 #### `respond(input: List<String>, api: API, vararg messages: ChatMessage)`
 
 Processes the input text and generates a `SpeechResponse` containing the speech data.
 
 - **Parameters**:
-  - `input`: A list of strings to be processed.
-  - `api`: The OpenAI API client to use for processing.
-  - `messages`: Additional chat messages to consider in the processing.
+    - `input`: A list of strings to be processed.
+    - `api`: The OpenAI API client to use for processing.
+    - `messages`: Additional chat messages to consider in the processing.
 - **Returns**: A `SpeechResponseImpl` object containing the speech data.
-
 
 #### `withModel(model: AudioModels)`
 
@@ -1642,17 +1595,14 @@ Creates a new instance of `TextToSpeechActor` with the specified audio model.
 - **Parameters**: `model` - The audio model to use.
 - **Returns**: A new instance of `TextToSpeechActor`.
 
-
 ### Interfaces
-
 
 #### `SpeechResponse`
 
 An interface representing the response from the text-to-speech conversion.
 
 - **Properties**:
-  - `mp3data`: A byte array containing the MP3 data of the converted speech.
-
+    - `mp3data`: A byte array containing the MP3 data of the converted speech.
 
 ### Usage Example
 
@@ -1666,5 +1616,6 @@ val speechResponse = ttsActor.respond(questions, apiClient)
 val mp3Data = speechResponse.mp3data
 ```
 
-This example demonstrates how to create an instance of `TextToSpeechActor`, process a list of questions, and access the generated speech data. Remember to replace `"your_api_key_here"` with your actual OpenAI API key.
+This example demonstrates how to create an instance of `TextToSpeechActor`, process a list of questions, and access the generated speech data. Remember to replace
+`"your_api_key_here"` with your actual OpenAI API key.
 

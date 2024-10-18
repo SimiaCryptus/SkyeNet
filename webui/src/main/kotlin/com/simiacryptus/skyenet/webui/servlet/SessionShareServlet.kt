@@ -1,32 +1,31 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.util.JsonUtil
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.client.j2se.MatrixToImageWriter
+import com.google.zxing.qrcode.QRCodeWriter
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
-import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
-import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
-import com.simiacryptus.skyenet.core.platform.StorageInterface
-import com.simiacryptus.skyenet.core.platform.StorageInterface.Companion.long64
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.core.util.Selenium
+import com.simiacryptus.skyenet.util.Selenium2S3
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
-import com.simiacryptus.skyenet.util.Selenium2S3
+import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
+import java.io.ByteArrayOutputStream
 import java.net.URI
+import java.util.Base64
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.typeOf
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.qrcode.QRCodeWriter
-import com.google.zxing.client.j2se.MatrixToImageWriter
-import java.io.ByteArrayOutputStream
-import java.util.Base64
 
 class SessionShareServlet(
     private val server: ApplicationServer,
@@ -61,7 +60,7 @@ class SessionShareServlet(
         require(acceptHost(user, host)) { "Invalid url: $url" }
 
         val storageInterface = ApplicationServices.dataStorageFactory(dataStorageRoot)
-        val session = StorageInterface.parseSessionID(sessionID)
+        val session = Session.parseSessionID(sessionID)
         val pool = ApplicationServices.clientManager.getPool(session, user)
         val infoFile = storageInterface.getDataDir(user, session).resolve("info.json").apply { parentFile.mkdirs() }
         val json = if (infoFile.exists()) JsonUtil.fromJson<Map<String, Any>>(
@@ -70,7 +69,7 @@ class SessionShareServlet(
         ) else mapOf()
         val sessionSettings = (json as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
         val previousShare = sessionSettings["shareId"]
-        var shareURL = url(appName, previousShare ?: long64())
+        var shareURL = url(appName, previousShare ?: Session.long64())
         var qrCodeDataURL = generateQRCodeDataURL(shareURL)
         when {
             null != previousShare && validateUrl(shareURL) -> {
@@ -106,7 +105,7 @@ class SessionShareServlet(
             }
 
             else -> {
-                val shareId = long64()
+                val shareId = Session.long64()
                 currentlyProcessing.add(shareId)
                 pool.submit {
                     try {

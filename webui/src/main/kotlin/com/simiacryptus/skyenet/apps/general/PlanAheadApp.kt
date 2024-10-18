@@ -2,19 +2,19 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.models.OpenAITextModel
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.initialPlan
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil
-import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationSocketManager
 import com.simiacryptus.skyenet.webui.session.SocketManager
+import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -22,9 +22,9 @@ open class PlanAheadApp(
     applicationName: String = "Task Planning v1.1",
     path: String = "/taskDev",
     val planSettings: PlanSettings,
-    val model: OpenAITextModel,
-    val parsingModel: OpenAITextModel,
-    val domainName : String = "localhost",
+    val model: TextModel,
+    val parsingModel: TextModel,
+    val domainName: String = "localhost",
     showMenubar: Boolean = true,
     val initialPlan: PlanUtil.TaskBreakdownWithPrompt? = null,
     val api: API? = null,
@@ -39,7 +39,7 @@ open class PlanAheadApp(
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> initSettings(session: Session): T = planSettings.let {
         if (null == root) it.copy(workingDir = root.absolutePath) else
-        it
+            it
     } as T
 
     override fun newSession(user: User?, session: Session): SocketManager {

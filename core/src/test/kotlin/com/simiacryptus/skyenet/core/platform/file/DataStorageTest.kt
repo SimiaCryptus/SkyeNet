@@ -1,6 +1,5 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.file
 
-import com.simiacryptus.skyenet.core.platform.file.DataStorage
 import com.simiacryptus.skyenet.core.platform.test.StorageInterfaceTest
 import java.nio.file.Files
 

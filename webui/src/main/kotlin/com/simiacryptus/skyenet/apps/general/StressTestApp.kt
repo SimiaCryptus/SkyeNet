@@ -3,11 +3,11 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.User
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 import kotlin.random.Random
 
@@ -27,8 +27,8 @@ class StressTestApp(
         api: API
     ) {
         val task = ui.newTask()
-        task.add(MarkdownUtil.renderMarkdown("# UI Stress Test", ui=ui))
-        
+        task.add(MarkdownUtil.renderMarkdown("# UI Stress Test", ui = ui))
+
         // Create nested tabs
         createNestedTabs(task, ui, 3)
 
@@ -74,13 +74,13 @@ class StressTestApp(
                 B ---->|No| E[End]
             ```
         """.trimIndent()
-        
-        task.add(MarkdownUtil.renderMarkdown("## Complex Diagram\n$mermaidDiagram", ui=ui))
+
+        task.add(MarkdownUtil.renderMarkdown("## Complex Diagram\n$mermaidDiagram", ui = ui))
     }
 
     private fun createAndUpdatePlaceholders(task: SessionTask, ui: ApplicationInterface) {
         val placeholders = (1..5).map { ui.newTask(false) }
-        
+
         placeholders.forEach { placeholder ->
             task.add(placeholder.placeholder)
         }
@@ -88,7 +88,7 @@ class StressTestApp(
         repeat(10) { iteration ->
             placeholders.forEach { placeholder ->
                 val content = "Placeholder content: Iteration $iteration, Random: ${Random.nextInt(100)}"
-                placeholder.add(MarkdownUtil.renderMarkdown(content, ui=ui))
+                placeholder.add(MarkdownUtil.renderMarkdown(content, ui = ui))
                 //Thread.sleep(50)
             }
         }

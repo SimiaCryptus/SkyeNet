@@ -1,11 +1,10 @@
 package com.simiacryptus.skyenet.core.platform.file
 
+import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.model.User
+import com.simiacryptus.skyenet.core.platform.model.UserSettingsInterface
+import com.simiacryptus.skyenet.core.platform.model.UserSettingsInterface.UserSettings
 import com.simiacryptus.util.JsonUtil
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
-import com.simiacryptus.skyenet.core.platform.User
-import com.simiacryptus.skyenet.core.platform.UserSettingsInterface
-import com.simiacryptus.skyenet.core.platform.UserSettingsInterface.UserSettings
 import java.io.File
 
 open class UserSettingsManager : UserSettingsInterface {

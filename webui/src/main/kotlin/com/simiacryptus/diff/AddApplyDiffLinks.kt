@@ -2,10 +2,10 @@ package com.simiacryptus.diff
 
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
 import com.simiacryptus.skyenet.set
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
-import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 
 fun SocketManagerBase.addApplyDiffLinks(
     code: () -> String,

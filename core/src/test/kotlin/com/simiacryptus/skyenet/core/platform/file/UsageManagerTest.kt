@@ -1,6 +1,5 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.file
 
-import com.simiacryptus.skyenet.core.platform.file.UsageManager
 import com.simiacryptus.skyenet.core.platform.test.UsageTest
 import java.nio.file.Files
 

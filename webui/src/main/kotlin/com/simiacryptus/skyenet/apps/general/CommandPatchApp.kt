@@ -2,7 +2,7 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import java.io.File
@@ -13,7 +13,7 @@ class CommandPatchApp(
     session: Session,
     settings: Settings,
     api: ChatClient,
-    model: OpenAITextModel,
+    model: TextModel,
     private val files: Array<out File>?,
     val command: String,
 ) : PatchApp(root, session, settings, api, model) {

@@ -1,14 +1,13 @@
 package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.models.ApiModel.*
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistTSDescriber
-import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ApiModel.*
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.OpenAIModels
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.interpreter.Interpreter
@@ -16,7 +15,7 @@ import java.util.*
 import javax.script.ScriptException
 import kotlin.reflect.KClass
 
-private const val TT = "`"+"`"+"`"
+private const val TT = "`" + "`" + "`"
 typealias CodeInterceptor = (String) -> String
 
 
@@ -29,8 +28,8 @@ open class CodingActor(
     ),
     name: String? = interpreterClass.simpleName,
     val details: String? = null,
-    model: OpenAITextModel = OpenAIModels.GPT4o,
-    val fallbackModel: ChatModels = OpenAIModels.GPT4o,
+    model: TextModel = OpenAIModels.GPT4o,
+    val fallbackModel: ChatModel = OpenAIModels.GPT4o,
     temperature: Double = 0.1,
     val runtimeSymbols: Map<String, Any> = mapOf(),
     var codeInterceptor: CodeInterceptor = { it }
@@ -92,7 +91,7 @@ They are already defined for you.
 
 ${details ?: ""}
 """.trim()
-           } else """
+            } else """
 You are a coding assistant allowing users actions to be enacted using $language and the script context.
 Your role is to translate natural language instructions into code as well as interpret the results and converse with the user.
 Use $TT code blocks labeled with $language where appropriate. (i.e. ${TT}$language)
@@ -247,7 +246,7 @@ ${details ?: ""}
         override val code: String = givenCode ?: implementation.first
 
         private fun implement(
-            model: OpenAITextModel,
+            model: TextModel,
         ): Pair<String, String> {
             val request = ChatRequest(messages = ArrayList(this.messages.toList()))
             for (codingAttempt in 0..input.fixRetries) {
@@ -322,7 +321,7 @@ ${TT}
         previousCode: String,
         error: Throwable,
         vararg promptMessages: ChatMessage,
-        model: OpenAITextModel
+        model: TextModel
     ): String = chat(
         api = api,
         request = ChatRequest(
@@ -354,12 +353,12 @@ Correct the code and try again.
         model = model
     )
 
-    private fun chat(api: ChatClient, request: ChatRequest, model: OpenAITextModel) =
+    private fun chat(api: ChatClient, request: ChatRequest, model: TextModel) =
         api.chat(request.copy(model = model.modelName, temperature = temperature), model)
             .choices.first().message?.content.orEmpty().trim()
 
 
-    override fun withModel(model: ChatModels): CodingActor = CodingActor(
+    override fun withModel(model: ChatModel): CodingActor = CodingActor(
         interpreterClass = interpreterClass,
         symbols = symbols,
         describer = describer,
@@ -368,7 +367,7 @@ Correct the code and try again.
         model = model,
         fallbackModel = fallbackModel,
         temperature = temperature,
-         runtimeSymbols = runtimeSymbols,
+        runtimeSymbols = runtimeSymbols,
         codeInterceptor = codeInterceptor
     )
 

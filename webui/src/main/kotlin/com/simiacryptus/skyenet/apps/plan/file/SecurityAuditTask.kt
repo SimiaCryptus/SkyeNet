@@ -45,6 +45,7 @@ Provide a detailed audit report with specific examples and recommendations for e
 Format the response as a markdown document with appropriate headings and code snippets.
 Use diff format to show the proposed security fixes clearly.
     """.trimIndent()
+
     override fun getAnalysisInstruction(): String = "Perform a security audit on the following code"
 
     override fun promptSegment(): String {

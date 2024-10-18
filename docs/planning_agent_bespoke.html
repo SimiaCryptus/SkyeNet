@@ -1,106 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plan Feature User and Developer Guide</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bespoke.js/1.1.0/bespoke.min.css">
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .bespoke-parent { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
-        .bespoke-slide { background: #f0f0f0; padding: 2em; }
-        h1, h2, h3 { color: #333; }
-        pre { background: #e0e0e0; padding: 1em; overflow: auto; }
-    </style>
+  <meta charset="UTF-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Plan Feature User and Developer Guide</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bespoke.js/1.1.0/bespoke.min.css" rel="stylesheet">
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+      }
+
+      .bespoke-parent {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+      }
+
+      .bespoke-slide {
+          background: #f0f0f0;
+          padding: 2em;
+      }
+
+      h1, h2, h3 {
+          color: #333;
+      }
+
+      pre {
+          background: #e0e0e0;
+          padding: 1em;
+          overflow: auto;
+      }
+  </style>
 </head>
 <body>
 
 <article class="bespoke-parent">
-    <section data-bespoke-state="title">
-        <h1>Plan Feature User and Developer Guide</h1>
-    </section>
+  <section data-bespoke-state="title">
+    <h1>Plan Feature User and Developer Guide</h1>
+  </section>
 
-    <section>
-        <h2>Introduction</h2>
-        <p>The <strong>Plan</strong> feature is a sophisticated system designed to break down high-level user requests into manageable, actionable tasks. It leverages OpenAI's capabilities to automate task planning, execution, and management, ensuring efficient workflow and seamless integration with existing systems.</p>
-    </section>
+  <section>
+    <h2>Introduction</h2>
+    <p>The <strong>Plan</strong> feature is a sophisticated system designed to break down high-level user requests into manageable, actionable tasks. It leverages OpenAI's
+      capabilities to automate task planning, execution, and management, ensuring efficient workflow and seamless integration with existing systems.</p>
+  </section>
 
-    <section>
-        <h2>Features Overview</h2>
-        <ul>
-            <li>Dynamic Task Breakdown</li>
-            <li>Task Execution</li>
-            <li>Dependency Management</li>
-            <li>Asynchronous Processing</li>
-            <li>Customizable Settings</li>
-            <li>Extensible Architecture</li>
-        </ul>
-    </section>
+  <section>
+    <h2>Features Overview</h2>
+    <ul>
+      <li>Dynamic Task Breakdown</li>
+      <li>Task Execution</li>
+      <li>Dependency Management</li>
+      <li>Asynchronous Processing</li>
+      <li>Customizable Settings</li>
+      <li>Extensible Architecture</li>
+    </ul>
+  </section>
 
-    <section>
-        <h2>User Guide</h2>
-        <h3>Accessing the Plan Feature</h3>
-        <p>Navigate to the application interface where task planning and management functionalities are exposed.</p>
-    </section>
+  <section>
+    <h2>User Guide</h2>
+    <h3>Accessing the Plan Feature</h3>
+    <p>Navigate to the application interface where task planning and management functionalities are exposed.</p>
+  </section>
 
-    <section>
-        <h3>Creating and Managing Plans</h3>
-        <ol>
-            <li>Initiate a New Plan</li>
-            <li>Task Breakdown</li>
-            <li>Review Generated Tasks</li>
-            <li>Execute the Plan</li>
-        </ol>
-    </section>
+  <section>
+    <h3>Creating and Managing Plans</h3>
+    <ol>
+      <li>Initiate a New Plan</li>
+      <li>Task Breakdown</li>
+      <li>Review Generated Tasks</li>
+      <li>Execute the Plan</li>
+    </ol>
+  </section>
 
-    <section>
-        <h3>Understanding Task Dependencies</h3>
-        <ul>
-            <li>Visual Representation using Mermaid</li>
-            <li>Interpreting the Graph</li>
-        </ul>
-    </section>
+  <section>
+    <h3>Understanding Task Dependencies</h3>
+    <ul>
+      <li>Visual Representation using Mermaid</li>
+      <li>Interpreting the Graph</li>
+    </ul>
+  </section>
 
-    <section>
-        <h3>Viewing Execution Logs</h3>
-        <ul>
-            <li>Accessing Logs through UI</li>
-            <li>Log Files stored in .logs directory</li>
-        </ul>
-    </section>
+  <section>
+    <h3>Viewing Execution Logs</h3>
+    <ul>
+      <li>Accessing Logs through UI</li>
+      <li>Log Files stored in .logs directory</li>
+    </ul>
+  </section>
 
-    <section>
-        <h2>Developer Guide</h2>
-        <h3>Architecture Overview</h3>
-        <ul>
-            <li>TaskType</li>
-            <li>PlanSettings</li>
-            <li>PlanCoordinator</li>
-            <li>PlanUtil</li>
-            <li>PlanningTask</li>
-            <li>AbstractTask</li>
-        </ul>
-    </section>
+  <section>
+    <h2>Developer Guide</h2>
+    <h3>Architecture Overview</h3>
+    <ul>
+      <li>TaskType</li>
+      <li>PlanSettings</li>
+      <li>PlanCoordinator</li>
+      <li>PlanUtil</li>
+      <li>PlanningTask</li>
+      <li>AbstractTask</li>
+    </ul>
+  </section>
 
-    <section>
-        <h3>Task Types</h3>
-        <ol>
-            <li>CommandAutoFixTask</li>
-            <li>InquiryTask</li>
-            <li>FileModificationTask</li>
-            <li>RunShellCommandTask</li>
-            <li>RefactorTask</li>
-            <li>SecurityAuditTask</li>
-            <li>CodeOptimizationTask</li>
-            <li>CodeReviewTask</li>
-            <li>DocumentationTask</li>
-            <li>TestGenerationTask</li>
-        </ol>
-    </section>
+  <section>
+    <h3>Task Types</h3>
+    <ol>
+      <li>CommandAutoFixTask</li>
+      <li>InquiryTask</li>
+      <li>FileModificationTask</li>
+      <li>RunShellCommandTask</li>
+      <li>RefactorTask</li>
+      <li>SecurityAuditTask</li>
+      <li>CodeOptimizationTask</li>
+      <li>CodeReviewTask</li>
+      <li>DocumentationTask</li>
+      <li>TestGenerationTask</li>
+    </ol>
+  </section>
 
-    <section>
-        <h3>Adding New Task Types</h3>
-        <pre><code>
+  <section>
+    <h3>Adding New Task Types</h3>
+    <pre><code>
 val NewTaskType = TaskType("NewTaskType")
 
 class NewTaskTypeTask(settings: PlanSettings, task: PlanningTask.PlanTask) : AbstractTask(settings, task) {
@@ -121,85 +143,85 @@ class NewTaskTypeTask(settings: PlanSettings, task: PlanningTask.PlanTask) : Abs
     }
 }
         </code></pre>
-    </section>
+  </section>
 
-    <section>
-        <h3>Configuring Plan Settings</h3>
-        <ul>
-            <li>Default and Parsing Models</li>
-            <li>Command Environment</li>
-            <li>Temperature and Budget</li>
-            <li>Task-Specific Settings</li>
-            <li>Auto-Fix and Blocking Behavior</li>
-        </ul>
-    </section>
+  <section>
+    <h3>Configuring Plan Settings</h3>
+    <ul>
+      <li>Default and Parsing Models</li>
+      <li>Command Environment</li>
+      <li>Temperature and Budget</li>
+      <li>Task-Specific Settings</li>
+      <li>Auto-Fix and Blocking Behavior</li>
+    </ul>
+  </section>
 
-    <section>
-        <h3>Extending PlanCoordinator</h3>
-        <ul>
-            <li>Initialization</li>
-            <li>Task Execution</li>
-            <li>Logging and Error Handling</li>
-        </ul>
-    </section>
+  <section>
+    <h3>Extending PlanCoordinator</h3>
+    <ul>
+      <li>Initialization</li>
+      <li>Task Execution</li>
+      <li>Logging and Error Handling</li>
+    </ul>
+  </section>
 
-    <section>
-        <h3>Utilizing PlanUtil</h3>
-        <ul>
-            <li>Diagram Generation</li>
-            <li>Rendering Plans</li>
-            <li>Plan Filtering</li>
-        </ul>
-    </section>
+  <section>
+    <h3>Utilizing PlanUtil</h3>
+    <ul>
+      <li>Diagram Generation</li>
+      <li>Rendering Plans</li>
+      <li>Plan Filtering</li>
+    </ul>
+  </section>
 
-    <section>
-        <h3>Handling Asynchronous Task Execution</h3>
-        <ul>
-            <li>Concurrency Management</li>
-            <li>Task Dependencies</li>
-            <li>Error Propagation</li>
-        </ul>
-    </section>
+  <section>
+    <h3>Handling Asynchronous Task Execution</h3>
+    <ul>
+      <li>Concurrency Management</li>
+      <li>Task Dependencies</li>
+      <li>Error Propagation</li>
+    </ul>
+  </section>
 
-    <section>
-        <h3>Customizing Task Execution</h3>
-        <ol>
-            <li>Overriding the `run` Method</li>
-            <li>Integrating with External Systems</li>
-            <li>Enhancing the Execution Flow</li>
-        </ol>
-    </section>
+  <section>
+    <h3>Customizing Task Execution</h3>
+    <ol>
+      <li>Overriding the `run` Method</li>
+      <li>Integrating with External Systems</li>
+      <li>Enhancing the Execution Flow</li>
+    </ol>
+  </section>
 
-    <section>
-        <h2>Best Practices</h2>
-        <ul>
-            <li>Modular Design</li>
-            <li>Robust Error Handling</li>
-            <li>Efficient Dependency Management</li>
-            <li>Logging and Monitoring</li>
-            <li>Security Considerations</li>
-        </ul>
-    </section>
+  <section>
+    <h2>Best Practices</h2>
+    <ul>
+      <li>Modular Design</li>
+      <li>Robust Error Handling</li>
+      <li>Efficient Dependency Management</li>
+      <li>Logging and Monitoring</li>
+      <li>Security Considerations</li>
+    </ul>
+  </section>
 
-    <section>
-        <h2>Troubleshooting</h2>
-        <ol>
-            <li>Circular Dependency Detected</li>
-            <li>Unknown Task Type Error</li>
-            <li>API Errors</li>
-            <li>File Reading Errors</li>
-            <li>Task Execution Failures</li>
-        </ol>
-    </section>
+  <section>
+    <h2>Troubleshooting</h2>
+    <ol>
+      <li>Circular Dependency Detected</li>
+      <li>Unknown Task Type Error</li>
+      <li>API Errors</li>
+      <li>File Reading Errors</li>
+      <li>Task Execution Failures</li>
+    </ol>
+  </section>
 
-    <section>
-        <h2>Frequently Asked Questions (FAQs)</h2>
-        <p>Q1: How do I enable or disable specific task types?</p>
-        <p>Q2: Can I add custom commands for shell tasks?</p>
-        <p>Q3: How are task dependencies managed?</p>
-        <p>Q4: Is it possible to log API interactions for auditing purposes?</p>
-        <p>Q5: How can I visualize the task execution flow?</p>
-    </section>
+  <section>
+    <h2>Frequently Asked Questions (FAQs)</h2>
+    <p>Q1: How do I enable or disable specific task types?</p>
+    <p>Q2: Can I add custom commands for shell tasks?</p>
+    <p>Q3: How are task dependencies managed?</p>
+    <p>Q4: Is it possible to log API interactions for auditing purposes?</p>
+    <p>Q5: How can I visualize the task execution flow?</p>
+  </section>
 </article>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bespoke.js/1.1.0/bespoke.min.js"></script>

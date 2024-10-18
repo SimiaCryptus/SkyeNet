@@ -1,11 +1,11 @@
 package com.simiacryptus.skyenet.core.actors
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ApiModel.ChatMessage
-import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.AudioModels
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 
 open class TextToSpeechActor(
@@ -13,7 +13,7 @@ open class TextToSpeechActor(
     val audioModel: AudioModels = AudioModels.TTS_HD,
     val voice: String = "alloy",
     val speed: Double = 1.0,
-    val models: ChatModels,
+    val models: ChatModel,
 ) : BaseActor<List<String>, SpeechResponse>(
     prompt = "",
     name = name,
@@ -59,7 +59,7 @@ open class TextToSpeechActor(
         )
 
 
-    override fun withModel(model: ChatModels) = TextToSpeechActor(name, audioModel, voice, speed, model)
+    override fun withModel(model: ChatModel) = TextToSpeechActor(name, audioModel, voice, speed, model)
         .also { it.openAI = this.openAI }
 }
 

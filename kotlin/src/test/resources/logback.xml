@@ -6,9 +6,9 @@
         </encoder>
     </appender>
 
-    <logger name="com.simiacryptus" level="debug" />
+    <logger name="com.simiacryptus" level="debug"/>
 
     <root level="info">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

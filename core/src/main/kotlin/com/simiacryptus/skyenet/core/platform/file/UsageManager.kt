@@ -1,11 +1,11 @@
 package com.simiacryptus.skyenet.core.platform.file
 
 import com.simiacryptus.jopenai.models.*
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.UsageInterface
-import com.simiacryptus.skyenet.core.platform.UsageInterface.*
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.UsageInterface
+import com.simiacryptus.skyenet.core.platform.model.UsageInterface.*
+import com.simiacryptus.skyenet.core.platform.model.User
+import com.simiacryptus.util.JsonUtil
 import java.io.File
 import java.io.FileWriter
 import java.util.concurrent.ConcurrentHashMap
@@ -38,7 +38,7 @@ open class UsageManager(val root: File) : UsageInterface {
                     val (sessionId, user, model, value, direction) = line.split(",")
                     try {
                         val modelEnum = listOf(
-                            ChatModels.values(),
+                            ChatModel.values(),
                             CompletionModels.values(),
                             EditModels.values(),
                             EmbeddingModels.values()

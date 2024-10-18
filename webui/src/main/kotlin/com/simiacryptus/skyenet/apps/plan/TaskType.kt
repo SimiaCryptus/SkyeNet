@@ -8,18 +8,18 @@ import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.AbstractTask.TaskState
-import com.simiacryptus.skyenet.apps.plan.file.CodeOptimizationTask.CodeOptimizationTaskData
-import com.simiacryptus.skyenet.apps.plan.file.CodeReviewTask.CodeReviewTaskData
 import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
-import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTaskData
-import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskData
-import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskData
-import com.simiacryptus.skyenet.apps.plan.file.PerformanceAnalysisTask.PerformanceAnalysisTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
-import com.simiacryptus.skyenet.apps.plan.file.RefactorTask.RefactorTaskData
 import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTaskData
 import com.simiacryptus.skyenet.apps.plan.file.*
+import com.simiacryptus.skyenet.apps.plan.file.CodeOptimizationTask.CodeOptimizationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.CodeReviewTask.CodeReviewTaskData
+import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskData
+import com.simiacryptus.skyenet.apps.plan.file.PerformanceAnalysisTask.PerformanceAnalysisTaskData
+import com.simiacryptus.skyenet.apps.plan.file.RefactorTask.RefactorTaskData
 import com.simiacryptus.skyenet.apps.plan.file.SecurityAuditTask.SecurityAuditTaskData
 import com.simiacryptus.skyenet.apps.plan.file.TestGenerationTask.TestGenerationTaskData
 import com.simiacryptus.util.DynamicEnum
@@ -75,7 +75,7 @@ class TaskType<out T : PlanTaskBase>(
             taskType: TaskType<T>,
             constructor: (PlanSettings, T?) -> AbstractTask<T>
         ) {
-            taskConstructors[taskType] = { settings : PlanSettings, task : PlanTaskBase? ->
+            taskConstructors[taskType] = { settings: PlanSettings, task: PlanTaskBase? ->
                 constructor(settings, task as T?)
             }
             register(taskType)

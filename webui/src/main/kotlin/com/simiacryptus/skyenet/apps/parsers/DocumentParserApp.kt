@@ -2,16 +2,16 @@ package com.simiacryptus.skyenet.apps.parsers
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.User
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationSocketManager
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManager
-import com.simiacryptus.skyenet.util.MarkdownUtil
+import com.simiacryptus.util.JsonUtil
 import org.intellij.lang.annotations.Language
 import java.awt.image.BufferedImage
 import java.io.File
@@ -156,7 +156,7 @@ open class DocumentParserApp(
                         @Language("Markdown") val jsonResult = parsingModel.getParser(api).let {
                             it(promptList.toList().joinToString("\n\n"))
                         }
-                        if(settings.saveTextFiles) {
+                        if (settings.saveTextFiles) {
                             val jsonFile = outputDir.resolve("pages_${batchStart + 1}_to_${batchEnd}_content.json")
                             jsonFile.writeText(JsonUtil.toJson(jsonResult))
                         }

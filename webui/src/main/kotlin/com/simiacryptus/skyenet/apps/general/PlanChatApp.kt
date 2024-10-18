@@ -2,11 +2,11 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskData
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import org.slf4j.LoggerFactory
@@ -17,8 +17,8 @@ open class PlanChatApp(
     applicationName: String = "Task Planning Chat v1.0",
     path: String = "/taskChat",
     planSettings: PlanSettings,
-    model: OpenAITextModel,
-    parsingModel: OpenAITextModel,
+    model: TextModel,
+    parsingModel: TextModel,
     domainName: String = "localhost",
     showMenubar: Boolean = true,
     initialPlan: PlanUtil.TaskBreakdownWithPrompt? = null,
@@ -111,11 +111,11 @@ open class PlanChatApp(
                 )
                 val modifiedPlan = addRespondToChatTask(plan.plan)
                 val planProcessingState = coordinator.executePlan(
-                        plan = modifiedPlan,
-                        task = sessionTask,
-                        userMessage = userMessage,
-                        api = api
-                    )
+                    plan = modifiedPlan,
+                    task = sessionTask,
+                    userMessage = userMessage,
+                    api = api
+                )
                 val response = planProcessingState.taskResult["respond_to_chat"] as? String
                 if (response != null) {
                     mainTask.add(MarkdownUtil.renderMarkdown(response, ui = ui))

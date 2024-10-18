@@ -1,24 +1,24 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
-import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownResult
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
+import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 data class TaskSettings(
     var enabled: Boolean = false,
-    var model: OpenAITextModel? = null
+    var model: TextModel? = null
 )
 
 open class PlanSettings(
-    var defaultModel: OpenAITextModel,
-    var parsingModel: OpenAITextModel,
+    var defaultModel: TextModel,
+    var parsingModel: TextModel,
     val command: List<String> = listOf(if (isWindows) "powershell" else "bash"),
     var temperature: Double = 0.2,
     val budget: Double = 2.0,
@@ -46,8 +46,8 @@ open class PlanSettings(
     }
 
     fun copy(
-        model: OpenAITextModel = this.defaultModel,
-        parsingModel: OpenAITextModel = this.parsingModel,
+        model: TextModel = this.defaultModel,
+        parsingModel: TextModel = this.parsingModel,
         command: List<String> = this.command,
         temperature: Double = this.temperature,
         budget: Double = this.budget,
@@ -98,11 +98,14 @@ open class PlanSettings(
         val parserPrompt = """
 Task Subtype Schema:
 
-${getAvailableTaskTypes(this).joinToString("\n\n") { taskType -> """
+${
+            getAvailableTaskTypes(this).joinToString("\n\n") { taskType ->
+                """
 ${taskType.name}:
   ${describer.describe(taskType.taskDataClass).replace("\n", "\n  ")}
 """.trim()
-                }}
+            }
+        }
                 """.trimIndent()
         return ParsedActor(
             name = "TaskBreakdown",

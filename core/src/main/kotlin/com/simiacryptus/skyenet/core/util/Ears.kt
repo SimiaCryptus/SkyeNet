@@ -5,7 +5,6 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.audio.AudioRecorder
 import com.simiacryptus.jopenai.audio.LookbackLoudnessWindowBuffer
 import com.simiacryptus.jopenai.audio.TranscriptionProcessor
-import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.proxy.ChatProxy
 import org.slf4j.LoggerFactory

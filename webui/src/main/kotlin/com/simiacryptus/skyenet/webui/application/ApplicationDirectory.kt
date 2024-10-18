@@ -5,7 +5,7 @@ import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.isLocked
+import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.isLocked
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.util.Selenium2S3
@@ -80,7 +80,7 @@ abstract class ApplicationDirectory(
             log.info("Starting application with args: ${args.joinToString(", ")}")
             setupPlatform()
             init(args.contains("--server"))
-            if(ClientUtil.keyTxt.isEmpty()) ClientUtil.keyTxt = run {
+            if (ClientUtil.keyTxt.isEmpty()) ClientUtil.keyTxt = run {
                 try {
                     val encryptedData = javaClass.classLoader.getResourceAsStream("openai.key.json.kms")?.readAllBytes()
                         ?: throw RuntimeException("Unable to load resource: ${"openai.key.json.kms"}")
@@ -117,7 +117,7 @@ abstract class ApplicationDirectory(
     open fun webAppContexts() = listOfNotNull(
         newWebAppContext("/logout", logoutServlet),
         newWebAppContext("/proxy", proxyHttpServlet),
-    //                    toolServlet?.let { newWebAppContext("/tools", it) },
+        //                    toolServlet?.let { newWebAppContext("/tools", it) },
         newWebAppContext("/userInfo", userInfoServlet).let {
             authenticatedWebsite()?.configure(it, true) ?: it
         },
@@ -205,8 +205,11 @@ abstract class ApplicationDirectory(
         context.baseResource = baseResource
         log.debug("New WebAppContext created for path: $path")
         context.contextPath = path
+//        context.resourceBase = resourceBase
         context.welcomeFiles = arrayOf("index.html")
         if (indexServlet != null) {
+            context.addServlet(ServletHolder("$path/index", indexServlet), "/")
+//            context.addServlet(ServletHolder("$path/index", indexServlet), "/*")
             context.addServlet(ServletHolder("$path/index", indexServlet), "/index.html")
         }
         return context
