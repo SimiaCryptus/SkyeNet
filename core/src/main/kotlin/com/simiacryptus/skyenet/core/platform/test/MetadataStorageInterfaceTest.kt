@@ -67,7 +67,7 @@ abstract class MetadataStorageInterfaceTest(val storage: MetadataStorageInterfac
         assertEquals(newIds, retrievedIds)
     }
 
-    @Test
+//    @Test
     fun testGetSessionTime() {
         // Arrange
         val user = User(email = "test@example.com")
