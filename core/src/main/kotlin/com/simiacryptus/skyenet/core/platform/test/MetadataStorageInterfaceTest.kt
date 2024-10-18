@@ -93,7 +93,7 @@ abstract class MetadataStorageInterfaceTest(val storage: MetadataStorageInterfac
         val retrievedTime = storage.getSessionTime(user, session)
 
         // Assert
-        assertEquals(newTime, retrievedTime)
+        assertEquals(newTime.toString(), retrievedTime.toString())
     }
 
     @Test
