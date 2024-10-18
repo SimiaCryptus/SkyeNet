@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.core.platform.file
 
-import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 
 open class AuthenticationManager : AuthenticationInterface {
 

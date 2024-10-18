@@ -1,11 +1,10 @@
 package com.simiacryptus.skyenet.core.platform.test
 
 import com.simiacryptus.jopenai.models.ApiModel
-import com.simiacryptus.jopenai.models.ChatModels
 import com.simiacryptus.jopenai.models.OpenAIModels
-import com.simiacryptus.skyenet.core.platform.StorageInterface
-import com.simiacryptus.skyenet.core.platform.UsageInterface
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.model.UsageInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,7 +25,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
     @Test
     fun `incrementUsage should increment usage for session`() {
         val model = OpenAIModels.GPT4oMini
-        val session = StorageInterface.newGlobalID()
+        val session = Session.newGlobalID()
         val usage = ApiModel.Usage(
             prompt_tokens = 10,
             completion_tokens = 20,
@@ -42,7 +41,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
     @Test
     fun `getUserUsageSummary should return correct usage summary`() {
         val model = OpenAIModels.GPT4oMini
-        val session = StorageInterface.newGlobalID()
+        val session = Session.newGlobalID()
         val usage = ApiModel.Usage(
             prompt_tokens = 15,
             completion_tokens = 25,
@@ -56,7 +55,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
     @Test
     fun `clear should reset all usage data`() {
         val model = OpenAIModels.GPT4oMini
-        val session = StorageInterface.newGlobalID()
+        val session = Session.newGlobalID()
         val usage = ApiModel.Usage(
             prompt_tokens = 20,
             completion_tokens = 30,
@@ -74,7 +73,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
     fun `incrementUsage should handle multiple models correctly`() {
         val model1 = OpenAIModels.GPT4oMini
         val model2 = OpenAIModels.GPT4Turbo
-        val session = StorageInterface.newGlobalID()
+        val session = Session.newGlobalID()
         val usage1 = ApiModel.Usage(
             prompt_tokens = 10,
             completion_tokens = 20,
@@ -98,7 +97,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
     @Test
     fun `incrementUsage should accumulate usage for the same model`() {
         val model = OpenAIModels.GPT4oMini
-        val session = StorageInterface.newGlobalID()
+        val session = Session.newGlobalID()
         val usage1 = ApiModel.Usage(
             prompt_tokens = 10,
             completion_tokens = 20,
@@ -124,7 +123,7 @@ abstract class UsageTest(private val impl: UsageInterface) {
 
     @Test
     fun `getSessionUsageSummary should return empty map for unknown session`() {
-        val session = StorageInterface.newGlobalID()
+        val session = Session.newGlobalID()
         val usageSummary = impl.getSessionUsageSummary(session)
         Assertions.assertTrue(usageSummary.isEmpty())
     }

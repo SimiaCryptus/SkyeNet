@@ -1,10 +1,10 @@
 package com.simiacryptus.skyenet.webui.chat
 
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
-import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
+import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.StorageInterface
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.StorageInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.webui.servlet.NewSessionServlet
 import com.simiacryptus.skyenet.webui.session.SocketManager
 import org.eclipse.jetty.servlet.DefaultServlet

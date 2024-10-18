@@ -1,6 +1,5 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.file
 
 import AuthorizationInterfaceTest
-import com.simiacryptus.skyenet.core.platform.file.AuthorizationManager
 
 class AuthorizationManagerTest : AuthorizationInterfaceTest(AuthorizationManager())

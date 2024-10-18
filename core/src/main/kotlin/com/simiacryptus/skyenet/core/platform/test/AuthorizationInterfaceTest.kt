@@ -1,7 +1,6 @@
-import com.simiacryptus.skyenet.core.platform.AuthorizationInterface
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 open class AuthorizationInterfaceTest(

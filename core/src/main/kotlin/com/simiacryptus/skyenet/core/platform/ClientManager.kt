@@ -9,15 +9,16 @@ import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.userSettingsManager
-import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.dataStorageRoot
-import com.simiacryptus.skyenet.core.platform.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.dataStorageRoot
+import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface.OperationType
+import com.simiacryptus.skyenet.core.platform.model.StorageInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 import org.slf4j.LoggerFactory
 import java.util.concurrent.*
 
 open class ClientManager {
 
     private data class SessionKey(val session: Session, val user: User?)
-
 
     private val chatCache = mutableMapOf<SessionKey, ChatClient>()
     fun getChatClient(
@@ -126,13 +127,6 @@ open class ClientManager {
         )
         if (!canUseGlobalKey) throw RuntimeException("No API key")
         return (if (ClientUtil.keyMap.isNotEmpty()) {
-            /*MonitoredClient(
-                key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
-                logfile = sessionDir.resolve("openai.log"),
-                session = session,
-                user = user,
-                workPool = getPool(session, user),
-            )*/
             ChatClient(
                 key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
                 workPool = getPool(session, user),
@@ -156,15 +150,6 @@ open class ClientManager {
             val userSettings = userSettingsManager.getUserSettings(user)
             val userApi =
                 if (userSettings.apiKeys.isNotEmpty()) {
-                    /*
-                    MonitoredClient(
-                        key = userSettings.apiKeys,
-                        apiBase = userSettings.apiBase,
-                        logfile = sessionDir.resolve("openai.log"),
-                        session = session,
-                        user = user,
-                        workPool = getPool(session, user),
-                    )*/
                     OpenAIClient(
                         key = userSettings.apiKeys,
                         apiBase = userSettings.apiBase,
@@ -182,13 +167,6 @@ open class ClientManager {
         )
         if (!canUseGlobalKey) throw RuntimeException("No API key")
         return (if (ClientUtil.keyMap.isNotEmpty()) {
-            /*MonitoredClient(
-                key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
-                logfile = sessionDir.resolve("openai.log"),
-                session = session,
-                user = user,
-                workPool = getPool(session, user),
-            )*/
             OpenAIClient(
                 key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
                 workPool = getPool(session, user),

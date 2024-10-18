@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.core.platform.file
 import com.simiacryptus.jopenai.models.*
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.Session
-import com.simiacryptus.skyenet.core.platform.UsageInterface
-import com.simiacryptus.skyenet.core.platform.UsageInterface.*
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.UsageInterface
+import com.simiacryptus.skyenet.core.platform.model.UsageInterface.*
+import com.simiacryptus.skyenet.core.platform.model.User
 import java.io.File
 import java.io.FileWriter
 import java.util.concurrent.ConcurrentHashMap

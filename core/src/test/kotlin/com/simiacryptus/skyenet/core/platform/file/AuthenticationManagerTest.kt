@@ -1,6 +1,5 @@
-package com.simiacryptus.skyenet.core.platform
+package com.simiacryptus.skyenet.core.platform.file
 
 import AuthenticationInterfaceTest
-import com.simiacryptus.skyenet.core.platform.file.AuthenticationManager
 
 class AuthenticationManagerTest : AuthenticationInterfaceTest(AuthenticationManager())

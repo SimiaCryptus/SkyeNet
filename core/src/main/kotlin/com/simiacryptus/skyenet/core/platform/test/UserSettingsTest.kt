@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.core.platform.test
 
 import com.simiacryptus.jopenai.models.APIProvider
-import com.simiacryptus.skyenet.core.platform.User
-import com.simiacryptus.skyenet.core.platform.UserSettingsInterface
+import com.simiacryptus.skyenet.core.platform.model.User
+import com.simiacryptus.skyenet.core.platform.model.UserSettingsInterface
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.util.*

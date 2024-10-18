@@ -5,7 +5,7 @@ import com.simiacryptus.jopenai.util.ClientUtil
 import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.ApplicationServicesConfig.isLocked
+import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.isLocked
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
 import com.simiacryptus.skyenet.util.Selenium2S3
@@ -205,10 +205,11 @@ abstract class ApplicationDirectory(
         context.baseResource = baseResource
         log.debug("New WebAppContext created for path: $path")
         context.contextPath = path
-        context.resourceBase = resourceBase
+//        context.resourceBase = resourceBase
         context.welcomeFiles = arrayOf("index.html")
         if (indexServlet != null) {
             context.addServlet(ServletHolder("$path/index", indexServlet), "/")
+//            context.addServlet(ServletHolder("$path/index", indexServlet), "/*")
             context.addServlet(ServletHolder("$path/index", indexServlet), "/index.html")
         }
         return context

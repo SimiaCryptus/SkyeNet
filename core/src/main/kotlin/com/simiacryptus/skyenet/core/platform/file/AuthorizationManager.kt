@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.core.platform.file
 
-import com.simiacryptus.skyenet.core.platform.AuthorizationInterface
-import com.simiacryptus.skyenet.core.platform.User
+import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface
+import com.simiacryptus.skyenet.core.platform.model.User
 import java.util.*
 
 open class AuthorizationManager : AuthorizationInterface {
