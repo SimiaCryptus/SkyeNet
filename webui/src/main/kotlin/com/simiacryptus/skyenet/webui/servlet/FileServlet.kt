@@ -4,11 +4,11 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.google.common.cache.RemovalListener
-import org.eclipse.jetty.http.MimeTypes
 import jakarta.servlet.WriteListener
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.eclipse.jetty.http.MimeTypes
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.ByteBuffer
@@ -19,8 +19,8 @@ import java.nio.file.StandardOpenOption
 abstract class FileServlet : HttpServlet() {
 
     abstract fun getDir(
-            req: HttpServletRequest,
-        ) : File
+        req: HttpServletRequest,
+    ): File
 
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
         log.info("Received GET request for path: ${req.pathInfo ?: req.servletPath}")
@@ -164,6 +164,7 @@ abstract class FileServlet : HttpServlet() {
             })
         }
     }
+
     private fun getMimeType(fileName: String): String {
         return when {
             fileName.endsWith(".js") -> "application/javascript"
@@ -176,7 +177,7 @@ abstract class FileServlet : HttpServlet() {
     open fun getZipLink(
         req: HttpServletRequest,
         filePath: String
-    ) : String = ""
+    ): String = ""
 
     private fun directoryHTML(zipLink: String, folders: String, files: String) = """
                                 |<html>
@@ -240,7 +241,7 @@ abstract class FileServlet : HttpServlet() {
                                 |</head>
                                 |<body>
                                 |<h1 class="archive-title">Archive</h1>
-                                |${if(zipLink.isNullOrBlank()) "" else """<a href="$zipLink" class="zip-link">ZIP</a>"""}
+                                |${if (zipLink.isNullOrBlank()) "" else """<a href="$zipLink" class="zip-link">ZIP</a>"""}
                                 |<h1 class="folders-title">Folders</h1>
                                 |<div class="folders-container">
                                 |$folders

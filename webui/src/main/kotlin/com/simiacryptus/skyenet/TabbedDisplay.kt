@@ -14,7 +14,7 @@ open class TabbedDisplay(
     }
 
     val size: Int get() = tabs.size
-    open fun render() = if(tabs.isEmpty()) "" else """
+    open fun render() = if (tabs.isEmpty()) "" else """
 <div class="tabs-container" id="${UUID.randomUUID()}">
 ${renderTabButtons()}
 ${
@@ -24,10 +24,10 @@ ${
 </div>
 """
 
-     val container: StringBuilder by lazy { 
+    val container: StringBuilder by lazy {
         log.debug("Initializing container with rendered content")
-         task.add(render())!! 
-     }
+        task.add(render())!!
+    }
 
     open fun renderTabButtons() = """
 <div class="tabs">${

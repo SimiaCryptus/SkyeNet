@@ -7,9 +7,9 @@ import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.set
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
-import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.readText
@@ -468,7 +468,8 @@ ${echoDiff}
 ```
 ${e.stackTraceToString()}
 ```
-""", ui = ui)
+""", ui = ui
+        )
     }
     newCode2TaskSB?.set(
         renderMarkdown(

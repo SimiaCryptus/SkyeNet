@@ -57,6 +57,7 @@ interface StorageInterface {
     fun listSessions(dir: File, path: String): List<String>
     fun userRoot(user: User?): File
     fun deleteSession(user: User?, session: Session)
+
     @Deprecated("Use metadataStorage instead")
     fun getMessageIds(
         user: User?,
@@ -82,7 +83,6 @@ interface StorageInterface {
 
         @Deprecated("Use Session.newUserID() instead", ReplaceWith("Session.newUserID()"))
         inline fun newUserID(): Session = Session.newUserID()
-
 
 
         @Deprecated("Use Session.parseSessionID(sessionID) instead", ReplaceWith("Session.parseSessionID(sessionID)"))

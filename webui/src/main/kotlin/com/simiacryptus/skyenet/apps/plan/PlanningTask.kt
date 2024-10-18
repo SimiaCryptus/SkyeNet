@@ -68,6 +68,7 @@ class PlanningTask(
             getPriorCode(planProcessingState),
             s
         ).filter { it.isNotBlank() }
+
         val subPlan = if (planSettings.allowBlocking && !planSettings.autoFix) {
             createSubPlanDiscussable(newTask, userMessage, ::toInput, api, agent.ui).call().obj
         } else {

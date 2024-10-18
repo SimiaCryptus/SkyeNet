@@ -33,7 +33,7 @@ val hsqldb_version = "2.7.2"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.9")
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.10")
     implementation(group = "org.hsqldb", name = "hsqldb", version = hsqldb_version)
 
     implementation("org.apache.commons:commons-text:1.11.0")
@@ -101,7 +101,6 @@ tasks {
         )
     }
 }
-
 
 
 val javadocJar by tasks.registering(Jar::class) {

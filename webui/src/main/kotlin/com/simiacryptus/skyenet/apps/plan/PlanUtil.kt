@@ -14,7 +14,7 @@ object PlanUtil {
         ui: ApplicationInterface,
         taskMap: Map<String, PlanTaskBase>
     ) = MarkdownUtil.renderMarkdown(
-            """
+        """
             |## Sub-Plan Task Dependency Graph
             |${TRIPLE_TILDE}mermaid
             |${buildMermaidGraph(taskMap)}
@@ -54,9 +54,11 @@ object PlanUtil {
         val taskMap = tasks.toMutableMap()
         while (taskMap.isNotEmpty()) {
             val nextTasks =
-                taskMap.filter { (_, task) -> task.task_dependencies?.filter { entry ->
-                    entry in tasks.keys
-                }?.all { taskIds.contains(it) } ?: true }
+                taskMap.filter { (_, task) ->
+                    task.task_dependencies?.filter { entry ->
+                        entry in tasks.keys
+                    }?.all { taskIds.contains(it) } ?: true
+                }
             if (nextTasks.isEmpty()) {
                 throw RuntimeException("Circular dependency detected in task breakdown")
             }

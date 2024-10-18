@@ -1,5 +1,3 @@
-
-
 # main\kotlin\com\simiacryptus\skyenet\apps\coding\CodingApp.kt
 
 ## CodingApp Class Documentation

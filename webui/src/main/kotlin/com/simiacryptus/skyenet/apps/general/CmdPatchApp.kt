@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.models.OpenAITextModel
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -18,7 +18,7 @@ class CmdPatchApp(
     settings: Settings,
     api: ChatClient,
     val files: Array<out File>?,
-    model: OpenAITextModel
+    model: TextModel
 ) : PatchApp(root.toFile(), session, settings, api, model) {
     companion object {
         private val log = LoggerFactory.getLogger(CmdPatchApp::class.java)

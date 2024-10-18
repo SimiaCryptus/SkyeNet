@@ -102,19 +102,6 @@ body {
   border-radius: $border-radius;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, color 0.3s ease;
-   font-weight: $font-weight-bold;
-
-   &:hover {
-     background-color: darken($button-bg-color, 10%);
-     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    color: lighten($button-text-color, 10%);
-   }
-
-   &:active {
-     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, color 0.3s ease;
   font-weight: $font-weight-bold;
 
   &:hover {
@@ -127,18 +114,32 @@ body {
   &:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, color 0.3s ease;
+    font-weight: $font-weight-bold;
 
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    box-shadow: none;
-   }
+    &:hover {
+      background-color: darken($button-bg-color, 10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      color: lighten($button-text-color, 10%);
+    }
 
-  &:focus {
-    outline: 2px solid $link-color;
-    outline-offset: 2px;
-  }
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    &:focus {
+      outline: 2px solid $link-color;
+      outline-offset: 2px;
+    }
+
     box-shadow: none;
   }
 
@@ -157,6 +158,7 @@ body {
   border-radius: $border-radius;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease, background-color 0.3s ease;
+
   &:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
@@ -186,12 +188,12 @@ pre {
   text-decoration: none;
   color: $link-color;
   @include link-hover-transition;
-  
+
   &:focus {
     outline: 2px solid $link-color;
     outline-offset: 2px;
   }
-  
+
   &:focus {
     outline: 2px solid $link-color;
     outline-offset: 2px;
@@ -583,6 +585,7 @@ pre.response-message {
   }
 
   margin-bottom: 5px;
+
   &:focus {
     outline: 2px solid $link-color;
     outline-offset: 2px;

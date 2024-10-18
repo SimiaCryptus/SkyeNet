@@ -1,6 +1,6 @@
 package com.simiacryptus.skyenet.apps.meta
 
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import org.slf4j.LoggerFactory
@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
 class FlowStepDesigner(
     interpreterClass: KClass<out Interpreter>,
     symbols: Map<String, Any>,
-    model: ChatModels,
+    model: ChatModel,
     temperature: Double
 ) : CodingActor(
     interpreterClass = interpreterClass,

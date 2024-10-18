@@ -99,19 +99,25 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                         workingDir = ".",
                         language = if (isWindows) "powershell" else "bash",
                     ).apply {
-                        setTaskSettings(TaskType.TaskPlanning, TaskSettings(
-                            enabled = true,
-                            model = OpenAIModels.GPT4o,))
-                        setTaskSettings(TaskType.RunShellCommand, TaskSettings(
-                            enabled = false,
-                            model = OpenAIModels.GPT4o,))
+                        setTaskSettings(
+                            TaskType.TaskPlanning, TaskSettings(
+                                enabled = true,
+                                model = OpenAIModels.GPT4o,
+                            )
+                        )
+                        setTaskSettings(
+                            TaskType.RunShellCommand, TaskSettings(
+                                enabled = false,
+                                model = OpenAIModels.GPT4o,
+                            )
+                        )
                     },
                     model = OpenAIModels.GPT4o,
                     parsingModel = OpenAIModels.GPT4oMini,
                 )
             ),
             ChildWebApp("/stressTest", StressTestApp()),
-            ChildWebApp("/pdfExtractor", DocumentParserApp(parsingModel= DocumentParsingModel(OpenAIModels.GPT4o, 0.1))),
+            ChildWebApp("/pdfExtractor", DocumentParserApp(parsingModel = DocumentParsingModel(OpenAIModels.GPT4o, 0.1))),
         )
     }
 

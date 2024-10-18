@@ -28,8 +28,8 @@ data class PatchLine(
 }
 
 object DiffUtil {
-     // ... (previous code remains unchanged)
- 
+    // ... (previous code remains unchanged)
+
     private val log = LoggerFactory.getLogger(DiffUtil::class.java)
 
     /**
@@ -65,7 +65,7 @@ object DiffUtil {
 
                 if (originalIndex != null && modifiedIndex != null) {
                     log.debug("Both indices found. Choosing shorter path.")
-                     if (originalIndex - i < modifiedIndex - j) {
+                    if (originalIndex - i < modifiedIndex - j) {
                         while (i < originalIndex) {
                             patchLines.add(PatchLine(Deleted, originalLines[i].lineNumber, original[i]))
                             i++
@@ -129,9 +129,10 @@ object DiffUtil {
         log.debug("Starting diff formatting. Total lines: ${patchLines.size}, Context lines: $contextLines")
 
         patchLines.forEachIndexed { index, lineDiff ->
-            if (lineDiff.type != Unchanged || 
+            if (lineDiff.type != Unchanged ||
                 (index > 0 && patchLines[index - 1].type != Unchanged) ||
-                (index < patchLines.size - 1 && patchLines[index + 1].type != Unchanged)) {
+                (index < patchLines.size - 1 && patchLines[index + 1].type != Unchanged)
+            ) {
 
                 // Print context lines before the change
                 val contextStart = maxOf(lastPrintedLine + 1, index - contextLines)

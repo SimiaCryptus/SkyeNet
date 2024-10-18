@@ -51,7 +51,7 @@ ForeachTask - Execute a task for each item in a list
         val subTasks = planTask.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")
         val subPlanTask = agent.ui.newTask(false)
         task.add(subPlanTask.placeholder)
-        
+
         items.forEachIndexed { index, item ->
             val itemSubTasks = subTasks.mapValues { (_, subTaskPlan) ->
                 subTaskPlan.task_description = "${subTaskPlan.task_description} - Item $index: $item"

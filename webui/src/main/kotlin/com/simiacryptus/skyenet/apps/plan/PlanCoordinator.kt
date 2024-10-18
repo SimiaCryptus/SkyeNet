@@ -67,14 +67,16 @@ class PlanCoordinator(
             }
             task.add(
                 MarkdownUtil.renderMarkdown(
-                """
+                    """
                 |## Executing TaskBreakdownWithPrompt
                 |Prompt: ${taskBreakdownWithPrompt.prompt}
                 |Plan Text:
                 |```
                 |${taskBreakdownWithPrompt.planText}
                 |```
-                """.trimMargin(), ui = ui))
+                """.trimMargin(), ui = ui
+                )
+            )
             executePlan(plan ?: emptyMap(), task, taskBreakdownWithPrompt.prompt, api)
         } catch (e: Exception) {
             task.error(ui, e)

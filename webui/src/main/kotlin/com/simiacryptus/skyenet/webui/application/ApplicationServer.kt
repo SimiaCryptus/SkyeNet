@@ -4,10 +4,10 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.dataStorageFactory
+import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface.OperationType
-import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.webui.chat.ChatServer
@@ -44,9 +44,11 @@ abstract class ApplicationServer(
 
     final override val dataStorage: StorageInterface by lazy { dataStorageFactory(dataStorageRoot) }
 
-    protected open val appInfoServlet by lazy { ServletHolder("appInfo", AppInfoServlet { session ->
-        appInfo(Session(session!!))
-    }) }
+    protected open val appInfoServlet by lazy {
+        ServletHolder("appInfo", AppInfoServlet { session ->
+            appInfo(Session(session!!))
+        })
+    }
     protected open val userInfo by lazy { ServletHolder("userInfo", UserInfoServlet()) }
     protected open val usageServlet by lazy { ServletHolder("usage", UsageServlet()) }
     protected open val fileZip by lazy { ServletHolder("fileZip", ZipServlet(dataStorage)) }
@@ -58,12 +60,14 @@ abstract class ApplicationServer(
     protected open val cancelSessionServlet by lazy { ServletHolder("cancel", CancelThreadsServlet(this)) }
 
     override fun newSession(user: User?, session: Session): SocketManager {
-        dataStorage.setJson(user, session, "info.json", mapOf(
-            "session" to session.toString(),
-            "application" to applicationName,
-            "path" to path,
-            "startTime" to System.currentTimeMillis(),
-        ))
+        dataStorage.setJson(
+            user, session, "info.json", mapOf(
+                "session" to session.toString(),
+                "application" to applicationName,
+                "path" to path,
+                "startTime" to System.currentTimeMillis(),
+            )
+        )
         return object : ApplicationSocketManager(
             session = session,
             owner = user,
@@ -104,13 +108,13 @@ abstract class ApplicationServer(
         @Suppress("UNCHECKED_CAST") clazz: Class<T> = settingsClass as Class<T>
     ): T? {
         val settingsFile = getSettingsFile(session, userId)
-        var settings: T? = if(settingsFile.exists()) JsonUtil.fromJson(settingsFile.readText(), clazz) else null
+        var settings: T? = if (settingsFile.exists()) JsonUtil.fromJson(settingsFile.readText(), clazz) else null
         if (null == settings) {
             val initSettings = initSettings<T>(session)
             if (null != initSettings) {
                 settingsFile.writeText(JsonUtil.toJson(initSettings))
             }
-            if(settingsFile.exists()) {
+            if (settingsFile.exists()) {
                 settings = JsonUtil.fromJson(settingsFile.readText(), clazz)
             }
         }

@@ -31,6 +31,7 @@ class CommandAutoFixTask(
         task_dependencies = task_dependencies,
         state = state
     )
+
     data class CommandWithWorkingDir(
         @Description("The command to be executed")
         val command: List<String>,
@@ -104,21 +105,23 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
                     hasError.set(true)
                 }
                 task.add(MarkdownUtil.renderMarkdown("## Command Auto Fix Result for Command ${index + 1}\n", ui = agent.ui, tabs = false))
-                task.add(if (outputResult.exitCode == 0) {
-                    if (agent.planSettings.autoFix) {
-                        MarkdownUtil.renderMarkdown("Auto-applied Command Auto Fix\n", ui = agent.ui, tabs = false)
+                task.add(
+                    if (outputResult.exitCode == 0) {
+                        if (agent.planSettings.autoFix) {
+                            MarkdownUtil.renderMarkdown("Auto-applied Command Auto Fix\n", ui = agent.ui, tabs = false)
+                        } else {
+                            MarkdownUtil.renderMarkdown(
+                                "Command Auto Fix Result\n",
+                                ui = agent.ui, tabs = false
+                            )
+                        }
                     } else {
                         MarkdownUtil.renderMarkdown(
-                            "Command Auto Fix Result\n",
+                            "Command Auto Fix Failed\n",
                             ui = agent.ui, tabs = false
                         )
                     }
-                } else {
-                    MarkdownUtil.renderMarkdown(
-                        "Command Auto Fix Failed\n",
-                        ui = agent.ui, tabs = false
-                    )
-                })
+                )
             }
             resultFn("All Command Auto Fix tasks completed")
             task.add(if (!hasError.get()) {

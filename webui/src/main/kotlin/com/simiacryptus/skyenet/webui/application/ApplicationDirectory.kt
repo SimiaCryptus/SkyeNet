@@ -80,7 +80,7 @@ abstract class ApplicationDirectory(
             log.info("Starting application with args: ${args.joinToString(", ")}")
             setupPlatform()
             init(args.contains("--server"))
-            if(ClientUtil.keyTxt.isEmpty()) ClientUtil.keyTxt = run {
+            if (ClientUtil.keyTxt.isEmpty()) ClientUtil.keyTxt = run {
                 try {
                     val encryptedData = javaClass.classLoader.getResourceAsStream("openai.key.json.kms")?.readAllBytes()
                         ?: throw RuntimeException("Unable to load resource: ${"openai.key.json.kms"}")
@@ -117,7 +117,7 @@ abstract class ApplicationDirectory(
     open fun webAppContexts() = listOfNotNull(
         newWebAppContext("/logout", logoutServlet),
         newWebAppContext("/proxy", proxyHttpServlet),
-    //                    toolServlet?.let { newWebAppContext("/tools", it) },
+        //                    toolServlet?.let { newWebAppContext("/tools", it) },
         newWebAppContext("/userInfo", userInfoServlet).let {
             authenticatedWebsite()?.configure(it, true) ?: it
         },

@@ -49,7 +49,7 @@ Displays a final message in the task output and hides the spinner, indicating th
 message is provided, only the spinner will be hidden without any additional text.
 
 ### Placeholder Mechanism
- 
+
 Each `SessionTask` instance generates a unique placeholder in the UI, represented by an HTML `div` element with an `id`
 attribute set to the task's `operationID`. This placeholder serves as a dynamic container where task-related updates and
 outputs are rendered in real-time. This mechanism is crucial for maintaining a responsive and interactive user interface

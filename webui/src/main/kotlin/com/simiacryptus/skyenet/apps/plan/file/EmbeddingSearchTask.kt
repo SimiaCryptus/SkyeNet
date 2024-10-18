@@ -62,12 +62,14 @@ EmbeddingSearch - Search for similar embeddings in index files and provide top r
     }
 
     private fun performEmbeddingSearch(api: OpenAIClient): List<EmbeddingSearchResult> {
-        val queryEmbedding = api.createEmbedding(ApiModel.EmbeddingRequest(
-            input = planTask?.search_query ?: "",
-            model = (planSettings.getTaskSettings(TaskType.EmbeddingSearch).model
-                ?: planSettings.defaultModel).modelName
+        val queryEmbedding = api.createEmbedding(
+            ApiModel.EmbeddingRequest(
+                input = planTask?.search_query ?: "",
+                model = (planSettings.getTaskSettings(TaskType.EmbeddingSearch).model
+                    ?: planSettings.defaultModel).modelName
 
-        )).data[0].embedding
+            )
+        ).data[0].embedding
         val distanceType = planTask?.distance_type ?: DistanceType.Cosine
 
         return (planTask?.input_files ?: listOf())

@@ -1,10 +1,10 @@
 package com.simiacryptus.skyenet.webui.servlet
 
 import com.simiacryptus.jopenai.models.APIProvider
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.model.UserSettingsInterface.UserSettings
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
+import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -59,7 +59,8 @@ class UserSettingsServlet : HttpServlet() {
             } catch (e: Exception) {
                 resp.status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
                 // HTML error page
-                resp.writer.write("""
+                resp.writer.write(
+                    """
                     |<html>
                     |<head>
                     |    <title>Error</title>
@@ -70,7 +71,8 @@ class UserSettingsServlet : HttpServlet() {
                     |<pre>${e.message}</pre>
                     |</body>
                     |</html>
-                """.trimIndent())
+                """.trimIndent()
+                )
                 resp
             }
         }

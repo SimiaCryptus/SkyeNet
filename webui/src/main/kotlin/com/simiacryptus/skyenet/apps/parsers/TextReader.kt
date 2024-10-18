@@ -7,7 +7,7 @@ import kotlin.math.abs
 class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader {
     private val pages: List<String> = splitIntoPages(textFile.readLines().joinToString("\n"))
 
-     override fun getPageCount(): Int = pages.size
+    override fun getPageCount(): Int = pages.size
 
     override fun getText(startPage: Int, endPage: Int): String {
         return pages.subList(startPage, endPage.coerceAtMost(pages.size)).joinToString("\n")
@@ -20,6 +20,7 @@ class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader 
     override fun close() {
         // No resources to close for text files
     }
+
     private fun splitIntoPages(text: String, maxChars: Int = 16000): List<String> {
         if (text.length <= maxChars) return listOf(text)
         val lines = text.split("\n")

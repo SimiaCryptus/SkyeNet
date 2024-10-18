@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet.core.platform.test
 
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
+import com.simiacryptus.util.JsonUtil
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -92,7 +92,7 @@ abstract class StorageInterfaceTest(val storage: StorageInterface) {
         val user = User(email = "test@example.com")
 
         // Act
-        val sessions = storage.listSessions(user, "",)
+        val sessions = storage.listSessions(user, "")
 
         // Assert
         Assertions.assertNotNull(sessions)

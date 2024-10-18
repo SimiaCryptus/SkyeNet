@@ -287,7 +287,6 @@ blocks and appends links that allow users to save the code to files.
 3. **Save File**: Adds a link to save the code block to a file. If the file is saved successfully, updates the link text
    to "Saved <filename>".
 
-
 ## Patch Verification Process
 
 The patch verification process ensures that the applied diff is correct and consistent. It involves the following steps:

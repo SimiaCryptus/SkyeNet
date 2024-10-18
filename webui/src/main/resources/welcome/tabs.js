@@ -1,7 +1,7 @@
 function updateTabs() {
     document.querySelectorAll('.tab-button').forEach(button => {
         // console.log(`Adding click event listener to tab button: ${button.getAttribute('data-for-tab')}`);
-         button.addEventListener('click', (event) => {
+        button.addEventListener('click', (event) => {
             // console.log(`Tab button clicked: ${button.getAttribute('data-for-tab')}`);
             event.stopPropagation();
             const forTab = button.getAttribute('data-for-tab');

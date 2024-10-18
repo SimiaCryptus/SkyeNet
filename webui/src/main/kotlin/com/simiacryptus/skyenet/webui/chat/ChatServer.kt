@@ -1,8 +1,8 @@
 package com.simiacryptus.skyenet.webui.chat
 
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
-import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.webui.servlet.NewSessionServlet

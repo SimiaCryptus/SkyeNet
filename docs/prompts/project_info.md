@@ -6,7 +6,8 @@
    Skyenet LLM Agent Platform
 
 2. **Project Description:**
-   The Skyenet LLM Agent Platform is designed to facilitate the integration and utilization of large language models (LLMs) in various applications. It provides a framework for managing LLM interactions, handling user inputs, and displaying dynamic content.
+   The Skyenet LLM Agent Platform is designed to facilitate the integration and utilization of large language models (LLMs) in various applications. It provides a framework for
+   managing LLM interactions, handling user inputs, and displaying dynamic content.
 
 3. **Project Objectives:**
     * To create a robust and flexible platform that supports real-time LLM interactions.
@@ -30,7 +31,8 @@
           providing a real-time, interactive UI framework.
 
 2. **Scope:**
-   The project includes the development of an LLM agent platform that supports real-time interactions using large language models, dynamic content updates, and integration with various backend processes.
+   The project includes the development of an LLM agent platform that supports real-time interactions using large language models, dynamic content updates, and integration with
+   various backend processes.
 
 3. **Deliverables:**
     * An LLM-based agent platform.
@@ -88,7 +90,9 @@
 
 1. **System Architecture:**
     * Overview of the system architecture:
-      The Skyenet LLM Agent Platform is designed with a modular architecture to support real-time, interactive applications leveraging large language models. The core components include the LLM manager, session management, and dynamic content rendering. The system leverages LLMs for real-time interaction between the client and server, ensuring low latency and high
+      The Skyenet LLM Agent Platform is designed with a modular architecture to support real-time, interactive applications leveraging large language models. The core components
+      include the LLM manager, session management, and dynamic content rendering. The system leverages LLMs for real-time interaction between the client and server, ensuring low
+      latency and high
       responsiveness. The architecture is divided into several layers: the presentation layer (UI components), the
       application layer (session and task management), and the data layer (storage and retrieval of user data and
       settings).
@@ -100,17 +104,17 @@
     * What design patterns are used?
       The Skyenet LLM Agent Platform employs several design patterns to ensure a robust and maintainable codebase:
 
- **Observer Pattern**: Used in the LLM manager to handle real-time updates and notifications.
- **Factory Pattern**: Utilized for creating instances of various components like session tasks and UI elements.
- **Singleton Pattern**: Ensures a single instance of core managers like `ApplicationServices`
-    - **Observer Pattern**: Used in the WebSocket manager to handle real-time updates and notifications.
-    - **Factory Pattern**: Utilized for creating instances of various components like session tasks and UI elements.
-    - **Singleton Pattern**: Ensures a single instance of core managers like `ApplicationServices`
-      and `SocketManagerBase`.
- **Strategy Pattern**: Allows for flexible implementation of different retry mechanisms in the `Retryable` class.
- **Decorator Pattern**: Used to extend the functionality of UI components dynamically.
-    - **Strategy Pattern**: Allows for flexible implementation of different retry mechanisms in the `Retryable` class.
-    - **Decorator Pattern**: Used to extend the functionality of UI components dynamically.
+**Observer Pattern**: Used in the LLM manager to handle real-time updates and notifications.
+**Factory Pattern**: Utilized for creating instances of various components like session tasks and UI elements.
+**Singleton Pattern**: Ensures a single instance of core managers like `ApplicationServices`
+- **Observer Pattern**: Used in the WebSocket manager to handle real-time updates and notifications.
+- **Factory Pattern**: Utilized for creating instances of various components like session tasks and UI elements.
+- **Singleton Pattern**: Ensures a single instance of core managers like `ApplicationServices`
+and `SocketManagerBase`.
+**Strategy Pattern**: Allows for flexible implementation of different retry mechanisms in the `Retryable` class.
+**Decorator Pattern**: Used to extend the functionality of UI components dynamically.
+- **Strategy Pattern**: Allows for flexible implementation of different retry mechanisms in the `Retryable` class.
+- **Decorator Pattern**: Used to extend the functionality of UI components dynamically.
 
     * Why were they chosen?
       These design patterns were chosen to promote code reusability, flexibility, and separation of concerns. The
@@ -126,20 +130,23 @@
     - **Backend**: Kotlin for server-side logic, leveraging Ktor for building asynchronous servers and managing LLM interactions.
     - **LLMs**: Used for real-time interaction between the client and server.
     - **Database**: HSQLDB for usage tracking, data storage, and managing LLM interactions.
- **Cloud Services**: AWS S3 for file storage, AWS KMS for encryption.
- **CI/CD**: GitHub Actions for continuous integration and deployment, Docker for containerization.
+      **Cloud Services**: AWS S3 for file storage, AWS KMS for encryption.
+      **CI/CD**: GitHub Actions for continuous integration and deployment, Docker for containerization.
     - **Cloud Services**: AWS S3 for file storage, AWS KMS for encryption.
     - **CI/CD**: GitHub Actions for continuous integration and deployment, Docker for containerization.
 
     * Reasons for choosing these technologies:
-      The chosen technologies and frameworks provide a balance of performance, scalability, and developer productivity. Kotlin is used for both frontend and backend development to ensure consistency and leverage its modern language features. Ktor is selected for its lightweight and asynchronous capabilities, making it suitable for real-time LLM interactions. LLMs are essential for maintaining low-latency communication. HSQLDB is chosen for its
+      The chosen technologies and frameworks provide a balance of performance, scalability, and developer productivity. Kotlin is used for both frontend and backend development to
+      ensure consistency and leverage its modern language features. Ktor is selected for its lightweight and asynchronous capabilities, making it suitable for real-time LLM
+      interactions. LLMs are essential for maintaining low-latency communication. HSQLDB is chosen for its
       simplicity and ease of integration. AWS services are utilized for their reliability, security, and scalability.
       GitHub Actions and Docker streamline the CI/CD process, ensuring efficient and reliable deployments.
 
 ## Components and Modules
 
 1. **Component Overview:**
-    * **LLMManagerBase**: Manages LLM interactions, message queuing, and broadcasting. It handles the core LLM functionality, ensuring reliable communication between the client and server.
+    * **LLMManagerBase**: Manages LLM interactions, message queuing, and broadcasting. It handles the core LLM functionality, ensuring reliable communication between the client and
+      server.
     * **ApplicationInterface**: Provides methods to create interactive HTML elements and manage tasks. It acts as a
       bridge between the task management logic and the LLM communication layer.
     * **SessionTask**: Represents a task that can display progress and messages. It allows for dynamic updates to the UI

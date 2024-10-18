@@ -1,11 +1,11 @@
 package com.simiacryptus.skyenet.apps.meta
 
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 class DetailDesigner(
-    model: ChatModels,
+    model: ChatModel,
     temperature: Double
 ) : ParsedActor<AgentFlowDesign>(
     resultClass = AgentFlowDesign::class.java,

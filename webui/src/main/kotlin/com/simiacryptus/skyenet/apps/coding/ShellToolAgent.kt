@@ -1,12 +1,11 @@
 package com.simiacryptus.skyenet.apps.coding
 
 import com.simiacryptus.jopenai.API
-import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.describe.TypeDescriber
-import com.simiacryptus.jopenai.models.ChatModels
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.models.ApiModel
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.sortCode
@@ -18,10 +17,11 @@ import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
-import com.simiacryptus.skyenet.webui.application.ApplicationInterface
-import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.util.OpenAPI
+import com.simiacryptus.skyenet.webui.application.ApplicationInterface
+import com.simiacryptus.skyenet.webui.session.SessionTask
+import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -51,7 +51,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     symbols: Map<String, Any>,
     temperature: Double = 0.1,
     details: String? = null,
-    model: ChatModels,
+    model: ChatModel,
     actorMap: Map<ActorTypes, CodingActor> = mapOf(
         ActorTypes.CodingActor to CodingActor(
             interpreter,
@@ -236,16 +236,16 @@ abstract class ShellToolAgent<T : Interpreter>(
                                 AuthorizationInterface.OperationType.Admin
                             )
                         ) {
-/*
-                            ToolServlet.addTool(
-                                ToolServlet.Tool(
-                                    path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
-                                    openApiDescription = openAPI,
-                                    interpreterString = getInterpreterString(),
-                                    servletCode = servletImpl
-                                )
-                            )
-*/
+                            /*
+                                                        ToolServlet.addTool(
+                                                            ToolServlet.Tool(
+                                                                path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
+                                                                openApiDescription = openAPI,
+                                                                interpreterString = getInterpreterString(),
+                                                                servletCode = servletImpl
+                                                            )
+                                                        )
+                            */
                         }
                         buildTestPage(openAPI, servletImpl, task)
                     }

@@ -1,22 +1,22 @@
 package com.simiacryptus.skyenet.webui.chat
 
-import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ApiModel
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.StorageInterface
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
-import com.simiacryptus.skyenet.util.MarkdownUtil
 import java.util.*
 
 open class ChatSocketManager(
     session: Session,
-    val model: ChatModels,
+    val model: ChatModel,
     val userInterfacePrompt: String,
     open val initialAssistantPrompt: String = "",
     open val systemPrompt: String,

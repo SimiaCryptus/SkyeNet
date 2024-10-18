@@ -69,7 +69,7 @@ class FileValidationUtils {
             return count % 2 == 0
         }
 
-        fun filteredWalk(file: File, fn: (File) -> Boolean) : List<File> {
+        fun filteredWalk(file: File, fn: (File) -> Boolean): List<File> {
             val result = mutableListOf<File>()
             if (fn(file)) {
                 if (file.isDirectory) {
@@ -83,7 +83,7 @@ class FileValidationUtils {
             return result
         }
 
-        fun isLLMIncludable(file: File) : Boolean {
+        fun isLLMIncludable(file: File): Boolean {
             return when {
                 !file.exists() -> false
                 file.isDirectory -> false
@@ -101,6 +101,7 @@ class FileValidationUtils {
                     "ico",
                     "stl"
                 ) -> false
+
                 else -> true
             }
         }
@@ -113,6 +114,7 @@ class FileValidationUtils {
                     it.length() > 1e6 -> arrayOf()
                     it.extension.lowercase(Locale.getDefault()) in
                             setOf("jar", "zip", "class", "png", "jpg", "jpeg", "gif", "ico") -> arrayOf()
+
                     it.isDirectory -> expandFileList(*it.listFiles() ?: arrayOf())
                     else -> arrayOf(it)
                 }).toList()

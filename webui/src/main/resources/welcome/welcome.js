@@ -1,11 +1,11 @@
 import {showModal} from "./functions.js";
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     fetchUserInfo();
     fetchAppList();
     fetchMarkdownContent();
-    
-    document.querySelector(".close").onclick = function() {
+
+    document.querySelector(".close").onclick = function () {
         document.getElementById("modal").style.display = "none";
     }
 });
@@ -36,7 +36,7 @@ function fetchAppList() {
                 const row = document.createElement('tr');
 
                 const nameCell = document.createElement('td');
-                if(app.thumbnail) {
+                if (app.thumbnail) {
                     const img = document.createElement('img');
                     img.src = app.thumbnail;
                     img.alt = app.applicationName;
@@ -56,7 +56,7 @@ function fetchAppList() {
                 sessionsCell.appendChild(sessionsLink);
                 row.appendChild(sessionsCell);
 
-                if(app.canWritePublic) {
+                if (app.canWritePublic) {
                     const publicCell = document.createElement('td');
                     const publicLink = document.createElement('a');
                     publicLink.className = 'new-session-link';
@@ -68,7 +68,7 @@ function fetchAppList() {
                     row.appendChild(document.createElement('td'));
                 }
 
-                if(app.canWrite) {
+                if (app.canWrite) {
                     const privateCell = document.createElement('td');
                     const privateLink = document.createElement('a');
                     privateLink.className = 'new-session-link';
@@ -85,16 +85,19 @@ function fetchAppList() {
         })
         .catch(error => console.error('Error fetching app list:', error));
 }
+
 function generateGlobalSessionId() {
     const date = new Date();
     const yyyyMMdd = date.toISOString().slice(0, 10).replace(/-/g, "");
     return `G-${yyyyMMdd}-${generateRandomId()}`;
 }
+
 function generateUserSessionId() {
     const date = new Date();
     const yyyyMMdd = date.toISOString().slice(0, 10).replace(/-/g, "");
     return `U-${yyyyMMdd}-${generateRandomId()}`;
 }
+
 function generateRandomId() {
     return Math.random().toString(36).substr(2, 4);
 }

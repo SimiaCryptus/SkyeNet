@@ -2,14 +2,13 @@ package com.simiacryptus.skyenet.apps.meta
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ApiModel.Role
-import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.proxy.ValidatedObject
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.meta.MetaAgentActors.Companion.notIn
@@ -28,10 +27,11 @@ import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.interpreter.Interpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
+import com.simiacryptus.util.JsonUtil
 import org.eclipse.jetty.webapp.WebAppClassLoader
 import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
@@ -68,7 +68,7 @@ open class MetaAgentApp(
         }</div>"
 
     data class Settings(
-        val model: ChatModels = OpenAIModels.GPT4o,
+        val model: ChatModel = OpenAIModels.GPT4o,
         val validateCode: Boolean = true,
         val temperature: Double = 0.2,
         val budget: Double = 2.0,
@@ -138,7 +138,7 @@ open class MetaAgentAgent(
     dataStorage: StorageInterface,
     val ui: ApplicationInterface,
     val api: API,
-    model: ChatModels = OpenAIModels.GPT4oMini,
+    model: ChatModel = OpenAIModels.GPT4oMini,
     var autoEvaluate: Boolean = true,
     temperature: Double = 0.3,
 ) : PoolSystem(
@@ -620,7 +620,7 @@ open class MetaAgentAgent(
 
 class MetaAgentActors(
     val symbols: Map<String, Any> = mapOf(),
-    val model: ChatModels = OpenAIModels.GPT4o,
+    val model: ChatModel = OpenAIModels.GPT4o,
     val temperature: Double = 0.3,
 ) {
 

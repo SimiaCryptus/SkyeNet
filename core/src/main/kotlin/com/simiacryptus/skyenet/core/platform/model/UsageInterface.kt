@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.core.platform.model
 import com.google.common.util.concurrent.AtomicDouble
 import com.simiacryptus.jopenai.models.APIProvider
 import com.simiacryptus.jopenai.models.ApiModel
-import com.simiacryptus.jopenai.models.ChatModels
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.OpenAIModel
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
@@ -15,7 +15,7 @@ interface UsageInterface {
             null -> null
             else -> {
                 val userSettings = ApplicationServices.userSettingsManager.getUserSettings(user)
-                userSettings.apiKeys[if (model is ChatModels) {
+                userSettings.apiKeys[if (model is ChatModel) {
                     model.provider
                 } else {
                     APIProvider.Companion.OpenAI

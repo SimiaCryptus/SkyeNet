@@ -4,20 +4,20 @@ import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.models.OpenAITextModel
-import com.simiacryptus.util.JsonUtil
+import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.User
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationSocketManager
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.skyenet.webui.session.SocketManager
-import com.simiacryptus.skyenet.util.MarkdownUtil
+import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
@@ -27,7 +27,7 @@ abstract class PatchApp(
     val session: Session,
     val settings: Settings,
     val api: ChatClient,
-    val model: OpenAITextModel,
+    val model: TextModel,
     val promptPrefix: String = """The following command was run and produced an error:"""
 ) : ApplicationServer(
     applicationName = "Magic Code Fixer",
@@ -47,7 +47,7 @@ abstract class PatchApp(
     abstract fun searchFiles(searchStrings: List<String>): Set<Path>
     override val singleInput = true
     override val stickyInput = false
-    override fun newSession(user: User?, session: Session ): SocketManager {
+    override fun newSession(user: User?, session: Session): SocketManager {
         val socketManager = super.newSession(user, session)
         val ui = (socketManager as ApplicationSocketManager).applicationInterface
         val task = ui.newTask()

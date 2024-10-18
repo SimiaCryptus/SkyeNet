@@ -156,7 +156,7 @@ object IterativePatchUtil {
                         while (nextNewLine.matchingLine == null || nextNewLine.type == ADD) {
                             nextNewLine = nextNewLine.nextLine ?: break
                         }
-                        if(nextNewLine.matchingLine == null || nextNewLine.type == ADD) break
+                        if (nextNewLine.matchingLine == null || nextNewLine.type == ADD) break
                         // Get the corresponding line in the source code
                         val sourceLine = newLine.matchingLine!!
                         log.debug("Processing patch line ${newLine.index} with matching source line ${sourceLine.index}")
@@ -172,7 +172,7 @@ object IterativePatchUtil {
                             }
                             nextSourceLine = nextSourceLine.nextLine ?: break
                         }
-                        if(nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) break
+                        if (nextSourceLine.matchingLine == null || nextSourceLine.type == DELETE) break
                         // If the next matching lines in source and new don't correspond,
                         // it means there's a moved block of code
                         while (nextNewLine.matchingLine != nextSourceLine) {
@@ -194,9 +194,9 @@ object IterativePatchUtil {
                         // Safeguard to prevent infinite loop
                         if (++iterationCount > maxIterations) {
                             log.error("Exceeded maximum iterations in markMovedLines")
-                                newLine = nextNewLine
+                            newLine = nextNewLine
                             // Move to the next line to process in the outer loop
-                                 // newLine = nextNewLine
+                            // newLine = nextNewLine
                         }
                     }
                 } else {
@@ -256,8 +256,8 @@ object IterativePatchUtil {
             when {
                 line.type != CONTEXT -> {
                     // Start of a change, add buffered context
-                    if(contextSize*2 < contextBuffer.size) {
-                        if(truncatedDiff.isNotEmpty()) {
+                    if (contextSize * 2 < contextBuffer.size) {
+                        if (truncatedDiff.isNotEmpty()) {
                             truncatedDiff.addAll(contextBuffer.take(contextSize))
                             truncatedDiff.add(LineRecord(-1, "...", type = CONTEXT))
                         }
@@ -274,10 +274,10 @@ object IterativePatchUtil {
                 }
             }
         }
-        if(truncatedDiff.isEmpty()) {
+        if (truncatedDiff.isEmpty()) {
             return truncatedDiff
         }
-        if(contextSize < contextBuffer.size) {
+        if (contextSize < contextBuffer.size) {
             truncatedDiff.addAll(contextBuffer.take(contextSize))
         } else {
             truncatedDiff.addAll(contextBuffer)
@@ -295,6 +295,7 @@ object IterativePatchUtil {
     private fun normalizeLine(line: String): String {
         return line.replace(whitespaceRegex, "")
     }
+
     private val whitespaceRegex = "\\s".toRegex()
 
     private fun link(
@@ -339,57 +340,57 @@ object IterativePatchUtil {
         }
     }
 
-private fun generatePatchedText(
-         sourceLines: List<LineRecord>,
-         patchLines: List<LineRecord>,
-     ): List<String> {
-         log.debug("Starting to generate patched text")
-         val patchedText: MutableList<String> = mutableListOf()
-         val usedPatchLines = mutableSetOf<LineRecord>()
-         var sourceIndex = -1
-         var lastMatchedPatchIndex = -1
-         while (sourceIndex < sourceLines.size - 1) {
-             val codeLine = sourceLines[++sourceIndex]
-             when {
-                 codeLine.matchingLine?.type == DELETE -> {
-                     val patchLine = codeLine.matchingLine!!
-                     log.debug("Deleting line: {}", codeLine)
-                     // Delete the line -- do not add to patched text
-                     usedPatchLines.add(patchLine)
-                     checkAfterForInserts(patchLine, usedPatchLines, patchedText)
-                     lastMatchedPatchIndex = patchLine.index
-                 }
+    private fun generatePatchedText(
+        sourceLines: List<LineRecord>,
+        patchLines: List<LineRecord>,
+    ): List<String> {
+        log.debug("Starting to generate patched text")
+        val patchedText: MutableList<String> = mutableListOf()
+        val usedPatchLines = mutableSetOf<LineRecord>()
+        var sourceIndex = -1
+        var lastMatchedPatchIndex = -1
+        while (sourceIndex < sourceLines.size - 1) {
+            val codeLine = sourceLines[++sourceIndex]
+            when {
+                codeLine.matchingLine?.type == DELETE -> {
+                    val patchLine = codeLine.matchingLine!!
+                    log.debug("Deleting line: {}", codeLine)
+                    // Delete the line -- do not add to patched text
+                    usedPatchLines.add(patchLine)
+                    checkAfterForInserts(patchLine, usedPatchLines, patchedText)
+                    lastMatchedPatchIndex = patchLine.index
+                }
 
-                 codeLine.matchingLine != null -> {
-                     val patchLine: LineRecord = codeLine.matchingLine!!
-                     log.debug("Patching line: {} <-> {}", codeLine, patchLine)
-                     checkBeforeForInserts(patchLine, usedPatchLines, patchedText)
-                     usedPatchLines.add(patchLine)
+                codeLine.matchingLine != null -> {
+                    val patchLine: LineRecord = codeLine.matchingLine!!
+                    log.debug("Patching line: {} <-> {}", codeLine, patchLine)
+                    checkBeforeForInserts(patchLine, usedPatchLines, patchedText)
+                    usedPatchLines.add(patchLine)
                     // Use the source line if it matches the patch line (ignoring whitespace)
                     if (normalizeLine(codeLine.line ?: "") == normalizeLine(patchLine.line ?: "")) {
                         patchedText.add(codeLine.line ?: "")
                     } else {
                         patchedText.add(patchLine.line ?: "")
                     }
-                     checkAfterForInserts(patchLine, usedPatchLines, patchedText)
-                     lastMatchedPatchIndex = patchLine.index
-                 }
+                    checkAfterForInserts(patchLine, usedPatchLines, patchedText)
+                    lastMatchedPatchIndex = patchLine.index
+                }
 
-                 else -> {
-                     log.debug("Added unmatched source line: {}", codeLine)
-                     patchedText.add(codeLine.line ?: "")
-                 }
+                else -> {
+                    log.debug("Added unmatched source line: {}", codeLine)
+                    patchedText.add(codeLine.line ?: "")
+                }
 
-             }
-         }
-         if (lastMatchedPatchIndex == -1) patchLines.filter { it.type == ADD && !usedPatchLines.contains(it) }
-             .forEach { line ->
-                 log.debug("Added patch line: {}", line)
-                 patchedText.add(line.line ?: "")
-             }
-         log.debug("Generated patched text with ${patchedText.size} lines")
-         return patchedText
-     }
+            }
+        }
+        if (lastMatchedPatchIndex == -1) patchLines.filter { it.type == ADD && !usedPatchLines.contains(it) }
+            .forEach { line ->
+                log.debug("Added patch line: {}", line)
+                patchedText.add(line.line ?: "")
+            }
+        log.debug("Generated patched text with ${patchedText.size} lines")
+        return patchedText
+    }
 
     private fun checkBeforeForInserts(
         patchLine: LineRecord,
@@ -421,8 +422,9 @@ private fun generatePatchedText(
         while (null != nextPatchLine) {
             while (nextPatchLine != null && (
                         normalizeLine(nextPatchLine.line ?: "").isEmpty() ||
-                        (nextPatchLine.matchingLine == null && nextPatchLine.type == CONTEXT)
-                    )) {
+                                (nextPatchLine.matchingLine == null && nextPatchLine.type == CONTEXT)
+                        )
+            ) {
                 nextPatchLine = nextPatchLine.nextLine
             }
             if (nextPatchLine == null) break

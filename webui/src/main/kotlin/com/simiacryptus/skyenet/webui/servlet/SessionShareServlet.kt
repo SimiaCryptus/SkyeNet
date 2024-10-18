@@ -1,31 +1,31 @@
 package com.simiacryptus.skyenet.webui.servlet
 
-import com.simiacryptus.util.JsonUtil
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.client.j2se.MatrixToImageWriter
+import com.google.zxing.qrcode.QRCodeWriter
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authenticationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.authorizationManager
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.cloud
+import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.core.util.Selenium
+import com.simiacryptus.skyenet.util.Selenium2S3
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
-import com.simiacryptus.skyenet.util.Selenium2S3
+import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
+import java.io.ByteArrayOutputStream
 import java.net.URI
+import java.util.Base64
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.typeOf
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.qrcode.QRCodeWriter
-import com.google.zxing.client.j2se.MatrixToImageWriter
-import com.simiacryptus.skyenet.core.platform.Session
-import java.io.ByteArrayOutputStream
-import java.util.Base64
 
 class SessionShareServlet(
     private val server: ApplicationServer,

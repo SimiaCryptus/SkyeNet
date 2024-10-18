@@ -1,153 +1,154 @@
 + <!doctype html>
- <html>
- 	<head>
- 		<meta charset="utf-8">
- 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 
- 		<title>Plan Feature User and Developer Guide</title>
+  <title>Plan Feature User and Developer Guide</title>
 
- 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reset.min.css">
- 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
- 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/black.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reset.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/black.min.css" rel="stylesheet">
 
- 		<!-- Theme used for syntax highlighted code -->
- 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/highlight/monokai.min.css">
- 	</head>
- 	<body>
- 		<div class="reveal">
- 			<div class="slides">
- 				<section>
- 					<h1>Plan Feature User and Developer Guide</h1>
- 				</section>
+  <!-- Theme used for syntax highlighted code -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/highlight/monokai.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+    <section>
+      <h1>Plan Feature User and Developer Guide</h1>
+    </section>
 
- 				<section>
- 					<h2>Introduction</h2>
- 					<p>The <strong>Plan</strong> feature is a sophisticated system designed to break down high-level user requests into manageable, actionable tasks. It leverages OpenAI's capabilities to automate task planning, execution, and management, ensuring efficient workflow and seamless integration with existing systems.</p>
- 				</section>
+    <section>
+      <h2>Introduction</h2>
+      <p>The <strong>Plan</strong> feature is a sophisticated system designed to break down high-level user requests into manageable, actionable tasks. It leverages OpenAI's
+        capabilities to automate task planning, execution, and management, ensuring efficient workflow and seamless integration with existing systems.</p>
+    </section>
 
- 				<section>
- 					<h2>Features Overview</h2>
- 					<ul>
- 						<li>Dynamic Task Breakdown</li>
- 						<li>Task Execution</li>
- 						<li>Dependency Management</li>
- 						<li>Asynchronous Processing</li>
- 						<li>Customizable Settings</li>
- 						<li>Extensible Architecture</li>
- 					</ul>
- 				</section>
+    <section>
+      <h2>Features Overview</h2>
+      <ul>
+        <li>Dynamic Task Breakdown</li>
+        <li>Task Execution</li>
+        <li>Dependency Management</li>
+        <li>Asynchronous Processing</li>
+        <li>Customizable Settings</li>
+        <li>Extensible Architecture</li>
+      </ul>
+    </section>
 
- 				<section>
- 					<h2>User Guide</h2>
- 					<section>
- 						<h3>Accessing the Plan Feature</h3>
- 						<p>Navigate to the application interface where task planning and management functionalities are exposed.</p>
- 					</section>
- 					<section>
- 						<h3>Creating and Managing Plans</h3>
- 						<ol>
- 							<li>Initiate a New Plan</li>
- 							<li>Task Breakdown</li>
- 							<li>Review Generated Tasks</li>
- 							<li>Execute the Plan</li>
- 						</ol>
- 					</section>
- 					<section>
- 						<h3>Understanding Task Dependencies</h3>
- 						<p>The Plan feature utilizes Mermaid to render task dependency graphs.</p>
- 					</section>
- 					<section>
- 						<h3>Viewing Execution Logs</h3>
- 						<p>Execution logs are automatically generated and can be accessed through the UI.</p>
- 					</section>
- 				</section>
+    <section>
+      <h2>User Guide</h2>
+      <section>
+        <h3>Accessing the Plan Feature</h3>
+        <p>Navigate to the application interface where task planning and management functionalities are exposed.</p>
+      </section>
+      <section>
+        <h3>Creating and Managing Plans</h3>
+        <ol>
+          <li>Initiate a New Plan</li>
+          <li>Task Breakdown</li>
+          <li>Review Generated Tasks</li>
+          <li>Execute the Plan</li>
+        </ol>
+      </section>
+      <section>
+        <h3>Understanding Task Dependencies</h3>
+        <p>The Plan feature utilizes Mermaid to render task dependency graphs.</p>
+      </section>
+      <section>
+        <h3>Viewing Execution Logs</h3>
+        <p>Execution logs are automatically generated and can be accessed through the UI.</p>
+      </section>
+    </section>
 
- 				<section>
- 					<h2>Developer Guide</h2>
- 					<section>
- 						<h3>Architecture Overview</h3>
- 						<ul>
- 							<li>TaskType</li>
- 							<li>PlanSettings</li>
- 							<li>PlanCoordinator</li>
- 							<li>PlanUtil</li>
- 							<li>PlanningTask</li>
- 							<li>AbstractTask</li>
- 						</ul>
- 					</section>
- 					<section>
- 						<h3>Task Types</h3>
- 						<ol>
- 							<li>CommandAutoFixTask</li>
- 							<li>InquiryTask</li>
- 							<li>FileModificationTask</li>
- 							<li>RunShellCommandTask</li>
- 							<li>RefactorTask</li>
- 							<li>SecurityAuditTask</li>
- 							<li>CodeOptimizationTask</li>
- 							<li>CodeReviewTask</li>
- 							<li>DocumentationTask</li>
- 							<li>TestGenerationTask</li>
- 						</ol>
- 					</section>
- 					<section>
- 						<h3>Adding New Task Types</h3>
- 						<ol>
- 							<li>Define the Task Type</li>
- 							<li>Create the Task Class</li>
- 							<li>Register the Task Type</li>
- 							<li>Update PlanSettings</li>
- 						</ol>
- 					</section>
- 				</section>
+    <section>
+      <h2>Developer Guide</h2>
+      <section>
+        <h3>Architecture Overview</h3>
+        <ul>
+          <li>TaskType</li>
+          <li>PlanSettings</li>
+          <li>PlanCoordinator</li>
+          <li>PlanUtil</li>
+          <li>PlanningTask</li>
+          <li>AbstractTask</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Task Types</h3>
+        <ol>
+          <li>CommandAutoFixTask</li>
+          <li>InquiryTask</li>
+          <li>FileModificationTask</li>
+          <li>RunShellCommandTask</li>
+          <li>RefactorTask</li>
+          <li>SecurityAuditTask</li>
+          <li>CodeOptimizationTask</li>
+          <li>CodeReviewTask</li>
+          <li>DocumentationTask</li>
+          <li>TestGenerationTask</li>
+        </ol>
+      </section>
+      <section>
+        <h3>Adding New Task Types</h3>
+        <ol>
+          <li>Define the Task Type</li>
+          <li>Create the Task Class</li>
+          <li>Register the Task Type</li>
+          <li>Update PlanSettings</li>
+        </ol>
+      </section>
+    </section>
 
- 				<section>
- 					<h2>Best Practices</h2>
- 					<ul>
- 						<li>Modular Design</li>
- 						<li>Robust Error Handling</li>
- 						<li>Efficient Dependency Management</li>
- 						<li>Logging and Monitoring</li>
- 						<li>Security Considerations</li>
- 					</ul>
- 				</section>
+    <section>
+      <h2>Best Practices</h2>
+      <ul>
+        <li>Modular Design</li>
+        <li>Robust Error Handling</li>
+        <li>Efficient Dependency Management</li>
+        <li>Logging and Monitoring</li>
+        <li>Security Considerations</li>
+      </ul>
+    </section>
 
- 				<section>
- 					<h2>Troubleshooting</h2>
- 					<ol>
- 						<li>Circular Dependency Detected</li>
- 						<li>Unknown Task Type Error</li>
- 						<li>API Errors</li>
- 						<li>File Reading Errors</li>
- 						<li>Task Execution Failures</li>
- 					</ol>
- 				</section>
+    <section>
+      <h2>Troubleshooting</h2>
+      <ol>
+        <li>Circular Dependency Detected</li>
+        <li>Unknown Task Type Error</li>
+        <li>API Errors</li>
+        <li>File Reading Errors</li>
+        <li>Task Execution Failures</li>
+      </ol>
+    </section>
 
- 				<section>
- 					<h2>Frequently Asked Questions (FAQs)</h2>
- 					<p>Q1: How do I enable or disable specific task types?</p>
- 					<p>Q2: Can I add custom commands for shell tasks?</p>
- 					<p>Q3: How are task dependencies managed?</p>
- 					<p>Q4: Is it possible to log API interactions for auditing purposes?</p>
- 					<p>Q5: How can I visualize the task execution flow?</p>
- 				</section>
- 			</div>
- 		</div>
+    <section>
+      <h2>Frequently Asked Questions (FAQs)</h2>
+      <p>Q1: How do I enable or disable specific task types?</p>
+      <p>Q2: Can I add custom commands for shell tasks?</p>
+      <p>Q3: How are task dependencies managed?</p>
+      <p>Q4: Is it possible to log API interactions for auditing purposes?</p>
+      <p>Q5: How can I visualize the task execution flow?</p>
+    </section>
+  </div>
+</div>
 
- 		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.js"></script>
- 		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/notes/notes.min.js"></script>
- 		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/markdown/markdown.min.js"></script>
- 		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/highlight/highlight.min.js"></script>
- 		<script>
- 			// More info about initialization & config:
- 			// - https://revealjs.com/initialization/
- 			// - https://revealjs.com/config/
- 			Reveal.initialize({
- 				hash: true,
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/notes/notes.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/highlight/highlight.min.js"></script>
+<script>
+    // More info about initialization & config:
+    // - https://revealjs.com/initialization/
+    // - https://revealjs.com/config/
+    Reveal.initialize({
+        hash: true,
 
- 				// Learn about plugins: https://revealjs.com/plugins/
- 				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
- 			});
- 		</script>
- 	</body>
- </html>
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+    });
+</script>
+</body>
+</html>

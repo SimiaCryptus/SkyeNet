@@ -14,6 +14,7 @@ interface ParsingModel {
         val content: List<ContentData>?
         val tags: List<String>?
     }
+
     interface DocumentData {
         val id: String?
         val content: List<ContentData>?
