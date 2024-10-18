@@ -15,8 +15,8 @@ import com.simiacryptus.skyenet.core.actors.ImageActor
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
-import com.simiacryptus.skyenet.core.platform.AuthenticationInterface
-import com.simiacryptus.skyenet.core.platform.AuthorizationInterface
+import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
+import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.groovy.GroovyInterpreter
 import com.simiacryptus.skyenet.kotlin.KotlinInterpreter
