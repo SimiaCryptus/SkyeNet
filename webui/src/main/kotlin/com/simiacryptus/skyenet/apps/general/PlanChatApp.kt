@@ -21,7 +21,7 @@ open class PlanChatApp(
     parsingModel: TextModel,
     domainName: String = "localhost",
     showMenubar: Boolean = true,
-    initialPlan: PlanUtil.TaskBreakdownWithPrompt? = null,
+    initialPlan: TaskBreakdownWithPrompt? = null,
     api: API? = null,
 ) : PlanAheadApp(
     applicationName = applicationName,

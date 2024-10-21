@@ -77,7 +77,7 @@ class PlanningTask(
                 api = api
             )
             render(
-                withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                withPrompt = TaskBreakdownWithPrompt(
                     plan = filterPlan { design.obj.tasksByID } ?: emptyMap(),
                     planText = design.text,
                     prompt = userMessage
@@ -102,7 +102,7 @@ class PlanningTask(
         initialResponse = { it: String -> planSettings.planningActor().answer(toInput(it), api = api) },
         outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
             render(
-                withPrompt = PlanUtil.TaskBreakdownWithPrompt(
+                withPrompt = TaskBreakdownWithPrompt(
                     plan = filterPlan { design.obj.tasksByID } ?: emptyMap(),
                     planText = design.text,
                     prompt = userMessage

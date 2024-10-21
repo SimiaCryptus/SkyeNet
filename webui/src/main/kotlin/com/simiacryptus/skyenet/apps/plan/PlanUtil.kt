@@ -8,6 +8,7 @@ import com.simiacryptus.util.JsonUtil
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+
 object PlanUtil {
 
     fun diagram(
@@ -21,12 +22,6 @@ object PlanUtil {
             |$TRIPLE_TILDE
             """.trimMargin(),
         ui = ui
-    )
-
-    data class TaskBreakdownWithPrompt(
-        val prompt: String,
-        val plan: Map<String, PlanTaskBase>,
-        val planText: String
     )
 
     fun render(

@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.parsers
+package com.simiacryptus.skyenet.apps.parse
 
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.rendering.PDFRenderer

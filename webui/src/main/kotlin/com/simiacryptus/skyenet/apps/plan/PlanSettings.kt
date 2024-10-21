@@ -1,6 +1,9 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
+import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
@@ -10,6 +13,7 @@ import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTyp
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
+
 
 data class TaskSettings(
     var enabled: Boolean = false,
@@ -119,6 +123,38 @@ ${taskType.name}:
             parserPrompt = parserPrompt
         )
     }
+
+    fun chooseSingleTask(input: List<String>, api: API, describer: TypeDescriber = describer()) = ParsedActor(
+        name = "SingleTaskChooser",
+        resultClass = PlanTaskBase::class.java,
+        exampleInstance = FileModificationTaskData(
+            task_description = "Modify the file 'example.txt' to include the given input."
+        ),
+        prompt = """
+Given the following input, choose a single task to execute. Do not create a full plan, just select the most appropriate task type for the given input.
+Available task types:
+
+${
+            getAvailableTaskTypes(this).joinToString("\n") { taskType ->
+                "* ${getImpl(this, taskType).promptSegment()}"
+            }
+        }
+
+Choose the most suitable task type and provide a brief description of how it should be executed.
+        """.trimIndent(),
+        model = defaultModel,
+        parsingModel = parsingModel,
+        temperature = temperature,
+        describer = describer,
+        parserPrompt = """
+Task Subtype Schema:
+
+${getAvailableTaskTypes(this).joinToString("\n\n") { taskType -> """
+${taskType.name}:
+  ${describer.describe(taskType.taskDataClass).replace("\n", "\n  ")}
+""".trim() } }
+                """.trimIndent()
+    ).answer(input, api)
 
     open fun describer() = object : AbbrevWhitelistYamlDescriber(
         "com.simiacryptus", "com.github.simiacryptus"

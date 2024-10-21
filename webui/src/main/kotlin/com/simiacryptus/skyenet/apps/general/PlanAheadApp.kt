@@ -6,7 +6,7 @@ import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.initialPlan
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
-import com.simiacryptus.skyenet.apps.plan.PlanUtil
+import com.simiacryptus.skyenet.apps.plan.TaskBreakdownWithPrompt
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.dataStorageRoot
 import com.simiacryptus.skyenet.core.platform.model.User
@@ -26,7 +26,7 @@ open class PlanAheadApp(
     val parsingModel: TextModel,
     val domainName: String = "localhost",
     showMenubar: Boolean = true,
-    val initialPlan: PlanUtil.TaskBreakdownWithPrompt? = null,
+    val initialPlan: TaskBreakdownWithPrompt? = null,
     val api: API? = null,
 ) : ApplicationServer(
     applicationName = applicationName,

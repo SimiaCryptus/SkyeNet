@@ -2,10 +2,10 @@ package com.simiacryptus.skyenet.webui
 
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
-import com.simiacryptus.skyenet.apps.parsers.DocumentParserApp
+import com.simiacryptus.skyenet.apps.parse.DocumentParserApp
 import com.simiacryptus.skyenet.apps.general.PlanAheadApp
 import com.simiacryptus.skyenet.apps.general.StressTestApp
-import com.simiacryptus.skyenet.apps.parsers.DocumentParsingModel
+import com.simiacryptus.skyenet.apps.parse.DocumentParsingModel
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
 import com.simiacryptus.skyenet.apps.plan.TaskSettings
