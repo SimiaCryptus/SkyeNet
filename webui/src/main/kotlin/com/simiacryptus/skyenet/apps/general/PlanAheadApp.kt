@@ -34,7 +34,7 @@ open class PlanAheadApp(
     showMenubar = showMenubar,
     root = planSettings.workingDir?.let { File(it) } ?: dataStorageRoot,
 ) {
-    override val singleInput: Boolean get() = true
+    override val singleInput = true
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> initSettings(session: Session): T = planSettings.let {
@@ -58,7 +58,7 @@ open class PlanAheadApp(
                         root = planSettings?.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
                         planSettings = planSettings!!
                     )
-                    coordinator.executeTaskBreakdownWithPrompt(JsonUtil.toJson(initialPlan), api!!)
+                    coordinator.executeTaskBreakdownWithPrompt(JsonUtil.toJson(initialPlan), api!!, ui.newTask())
                 } catch (e: Throwable) {
                     ui.newTask().error(ui, e)
                     log.warn("Error", e)
@@ -86,7 +86,7 @@ open class PlanAheadApp(
                 root = planSettings?.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
                 planSettings = planSettings!!
             )
-            val task = coordinator.ui.newTask()
+            val task = ui.newTask()
             val plan = initialPlan(
                 codeFiles = coordinator.codeFiles,
                 files = coordinator.files,

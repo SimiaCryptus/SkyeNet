@@ -1,9 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
-import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.describe.TypeDescriber
 import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows

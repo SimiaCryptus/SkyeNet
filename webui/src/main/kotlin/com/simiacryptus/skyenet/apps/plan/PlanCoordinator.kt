@@ -53,8 +53,7 @@ class PlanCoordinator(
                 }
             }
 
-    fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API) {
-        val task = ui.newTask()
+    fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API, task: SessionTask) {
         try {
             lateinit var taskBreakdownWithPrompt: TaskBreakdownWithPrompt
             val plan = filterPlan {

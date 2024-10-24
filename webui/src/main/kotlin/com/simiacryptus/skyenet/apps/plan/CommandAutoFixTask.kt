@@ -61,9 +61,7 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
     ) {
         val semaphore = Semaphore(0)
         val hasError = AtomicBoolean(false)
-        val onComplete = {
-            semaphore.release()
-        }
+        val onComplete = { semaphore.release() }
         Retryable(agent.ui, task = task) {
             val task = agent.ui.newTask(false).apply { it.append(placeholder) }
             this.planTask?.commands?.forEachIndexed { index, commandWithDir ->

@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
 
 open class AutoPlanChatApp(
@@ -30,6 +31,8 @@ open class AutoPlanChatApp(
     domainName: String = "localhost",
     showMenubar: Boolean = true,
     api: API? = null,
+    val maxTaskHistoryChars: Int = 20000,
+    val maxTasksPerIteration: Int = 3
 ) : PlanChatApp(
     applicationName = applicationName,
     path = path,
@@ -40,6 +43,8 @@ open class AutoPlanChatApp(
     showMenubar = showMenubar,
     api = api,
 ) {
+    override val stickyInput = true
+    override val singleInput = false
     companion object {
         private val log = LoggerFactory.getLogger(AutoPlanChatApp::class.java)
     }
@@ -84,9 +89,11 @@ open class AutoPlanChatApp(
         val result: Any? = null
     )
 
-    val executionRecords = mutableListOf<ExecutionRecord>()
-    private lateinit var tabbedDisplay: TabbedDisplay
+    data class Tasks(
+        val tasks: MutableList<PlanTaskBase>? = null
+    )
 
+    val executionRecords = mutableListOf<ExecutionRecord>()
     override fun userMessage(session: Session, user: User?, userMessage: String, ui: ApplicationInterface, api: API) {
         try {
             log.info("Received user message: $userMessage")
@@ -95,9 +102,8 @@ open class AutoPlanChatApp(
                 startAutoPlanChat(session, user, userMessage, ui, api)
             } else {
                 log.info("Injecting user message into ongoing chat")
-                val userMessageTask = ui.newTask(false)
+                val userMessageTask = ui.newTask()
                 userMessageTask.echo(renderMarkdown("User: $userMessage", ui = ui))
-                tabbedDisplay["User Input"] = userMessageTask.placeholder
                 currentUserMessage.set(userMessage)
             }
         } catch (e: Exception) {
@@ -107,9 +113,7 @@ open class AutoPlanChatApp(
     }
 
     private fun startAutoPlanChat(session: Session, user: User?, userMessage: String, ui: ApplicationInterface, api: API) {
-        val task = ui.newTask(false)
-        tabbedDisplay = TabbedDisplay(task)
-
+        val task = ui.newTask(true)
         val api = (api as ChatClient).getChildClient().apply {
             val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
             createFile.second?.apply {
@@ -117,10 +121,16 @@ open class AutoPlanChatApp(
                 task.verbose("API log: <a href=\"file:///$this\">$this</a>")
             }
         }
-        ui.socketManager!!.pool.execute {
+
+        val tabbedDisplay = TabbedDisplay(task)
+        val executor = ui.socketManager!!.pool
+        executor.execute {
             try {
+                tabbedDisplay.update()
+                task.complete()
+
                 val initialPromptTask = ui.newTask(false)
-                initialPromptTask.add(renderMarkdown("Starting Auto Plan Chat for prompt: $userMessage", ui = ui))
+                initialPromptTask.add(renderMarkdown("Starting Auto Plan Chat for prompt: $userMessage"))
                 tabbedDisplay["Initial Prompt"] = initialPromptTask.placeholder
                 val planSettings = getSettings(session, user, PlanSettings::class.java) ?: planSettings.copy(allowBlocking = false)
                 api.budget = planSettings.budget
@@ -200,22 +210,35 @@ open class AutoPlanChatApp(
                 val initialStatus = initActor.answer(initialPrompt(userMessage), this.api!!).obj
                 initialStatus.initialPrompt = userMessage
                 thinkingStatus.set(initialStatus)
-                val thinkingStatusTask = ui.newTask(false)
-                thinkingStatusTask.add(renderMarkdown("Initial Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}", ui = ui))
-                tabbedDisplay["Thinking Status"] = thinkingStatusTask.placeholder
+                initialPromptTask.complete(renderMarkdown("Initial Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"))
 
-                while (true) {
-                    tabbedDisplay = TabbedDisplay(task)
+                var iteration = 0
+                while (iteration++ < 100) {
+                    task.complete()
+                    val task = ui.newTask(false).apply { tabbedDisplay["Iteration $iteration"] = placeholder }
+                    val api = api.getChildClient().apply {
+                        val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
+                        createFile.second?.apply {
+                            logStreams += this.outputStream().buffered()
+                            task.verbose("API log: <a href=\"file:///$this\">$this</a>")
+                        }
+                    }
+                    val tabbedDisplay = TabbedDisplay(task)
+                    tabbedDisplay.update()
                     val nextTask = try {
                         val describer1 = planSettings.describer()
-                        val chooserResult = ParsedActor<PlanTaskBase>(
+                        val chooserResult = ParsedActor<Tasks>(
                             name = "SingleTaskChooser",
-                            resultClass = PlanTaskBase::class.java,
-                            exampleInstance = FileModificationTaskData(
-                                task_description = "Modify the file 'example.txt' to include the given input."
+                            resultClass = Tasks::class.java,
+                            exampleInstance = Tasks(
+                                listOf(
+                                    FileModificationTaskData(
+                                        task_description = "Modify the file 'example.txt' to include the given input."
+                                    )
+                                ).toMutableList()
                             ),
                             prompt = """
-                    Given the following input, choose a single task to execute. Do not create a full plan, just select the most appropriate task type for the given input.
+                    Given the following input, choose up to $maxTasksPerIteration tasks to execute. Do not create a full plan, just select the most appropriate task types for the given input.
                     Available task types:
                     
                     ${
@@ -224,7 +247,7 @@ open class AutoPlanChatApp(
                                 }
                             }
                     
-                    Choose the most suitable task type and provide a details of how it should be executed.
+                    Choose the most suitable task types and provide details of how they should be executed.
                             """.trimIndent(),
                             model = coordinator.planSettings.defaultModel,
                             parsingModel = coordinator.planSettings.parsingModel,
@@ -250,95 +273,130 @@ open class AutoPlanChatApp(
                                                         Please choose the next single task to execute based on the current status.
                                                         If there are no tasks to execute, return {}.
                                                     """.trimIndent()
-                                    ) + executionRecords.map { record ->
-                                "Task ${executionRecords.indexOf(record) + 1} Result: ${record.result}"
-                            }, api
+                                    )
+                                    + formatEvalRecords(), api
                         ).obj
-                        (if (chooserResult.task_type == null) {
-                            null
-                        } else {
-                            TaskType.Companion.getImpl(coordinator.planSettings, chooserResult)
-                        })?.planTask
+                        chooserResult.tasks?.take(maxTasksPerIteration)?.mapNotNull { task ->
+                            (if (task.task_type == null) {
+                                null
+                            } else {
+                                TaskType.Companion.getImpl(coordinator.planSettings, task)
+                            })?.planTask
+                        }
                     } catch (e: Exception) {
                         log.error("Error choosing next task", e)
-                        tabbedDisplay["Errors"]?.append(renderMarkdown("Error choosing next task: ${e.message}", ui = ui))
+                        tabbedDisplay["Errors"]?.append(renderMarkdown("Error choosing next task: ${e.message}"))
                         break
                     }
-                    if (nextTask == null) {
-                        task.add(renderMarkdown("No more tasks to execute. Finishing Auto Plan Chat.", ui = ui))
+                    if (nextTask?.isEmpty() != false) {
+                        task.add(renderMarkdown("No more tasks to execute. Finishing Auto Plan Chat."))
                         break
                     }
-                    val currentTaskId = "task_${(thinkingStatus.get()!!.executionContext?.completedTasks?.size ?: 0) + 1}"
-                    val currentTask = nextTask
-                    val taskExecutionTask = ui.newTask(false)
-                    taskExecutionTask.add(
-                        renderMarkdown(
-                            "Executing task: `$currentTaskId` - ${currentTask.task_description}\n```json\n${
-                                JsonUtil.toJson(currentTask)
-                            }\n```", ui = ui
-                        )
-                    )
-                    tabbedDisplay["Task Execution"] = taskExecutionTask.placeholder
 
-                    val taskResult = try {
-                        val taskImpl = TaskType.Companion.getImpl(coordinator.planSettings, currentTask)
-                        val result = StringBuilder()
-                        taskImpl.run(
-                            agent = coordinator,
-                            taskId = currentTaskId,
-                            messages = listOf(
-                                userMessage,
-                                "Current thinking status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"
-                            ) + executionRecords.map { record ->
-                                "Task ${executionRecords.indexOf(record) + 1} Result: ${record.result}"
-                            },
-                            task = task,
-                            api = api,
-                            resultFn = { result.append(it) }
+                    val taskResults = mutableListOf<Pair<PlanTaskBase, Future<String>>>()
+                    for ((index, currentTask) in nextTask.withIndex()) {
+                        val currentTaskId = "task_${(thinkingStatus.get()!!.executionContext?.completedTasks?.size ?: 0) + index + 1}"
+                        val taskExecutionTask = ui.newTask(false)
+                        taskExecutionTask.add(
+                            renderMarkdown(
+                                "Executing task: `$currentTaskId` - ${currentTask.task_description}\n```json\n${
+                                    JsonUtil.toJson(currentTask)
+                                }\n```"
+                            )
                         )
-                        result.toString()
-                    } catch (e: Exception) {
-                        log.error("Error executing task", e)
-                        "Error executing task: ${e.message}"
+                        tabbedDisplay["Task Execution $currentTaskId"] = taskExecutionTask.placeholder
+                        val future = executor.submit<String> {
+                            try {
+                                val api = api.getChildClient().apply {
+                                    val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
+                                    createFile.second?.apply {
+                                        logStreams += this.outputStream().buffered()
+                                        task.verbose("API log: <a href=\"file:///$this\">$this</a>")
+                                    }
+                                }
+                                val taskImpl = TaskType.Companion.getImpl(coordinator.planSettings, currentTask)
+                                val result = StringBuilder()
+                                taskImpl.run(
+                                    agent = coordinator,
+                                    taskId = currentTaskId,
+                                    messages = listOf(
+                                        userMessage,
+                                        "Current thinking status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"
+                                    ) + formatEvalRecords(),
+                                    task = taskExecutionTask,
+                                    api = api,
+                                    resultFn = { result.append(it) }
+                                )
+                                result.toString()
+                            } catch (e: Exception) {
+                                taskExecutionTask.error(ui, e)
+                                log.error("Error executing task", e)
+                                "Error executing task: ${e.message}"
+                            }
+                        }
+                        taskResults.add(Pair(currentTask, future))
                     }
-                    executionRecords.add(
+                    val completedTasks = taskResults.map { (task, future) ->
+                        val result = future.get()
                         ExecutionRecord(
                             time = Date(),
-                            task = currentTask,
-                            result = taskResult
+                            task = task,
+                            result = result
                         )
-                    )
-                    taskExecutionTask.add(renderMarkdown("Task Result:\n$taskResult", ui = ui))
-                    thinkingStatusTask.add(renderMarkdown("Updated Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}", ui = ui))
+                    }
+                    executionRecords.addAll(completedTasks)
+
+                    val thinkingStatusTask = ui.newTask(false).apply { tabbedDisplay["Thinking Status"] = placeholder }
+                    //thinkingStatusTask.add(renderMarkdown("Updating Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"))
                     this.thinkingStatus.set(updateActor.answer(
                         initialPrompt("Current thinking status: ${formatThinkingStatus(this.thinkingStatus.get()!!)}") +
-                                listOf(
-                                    "Last completed task: ${currentTask.task_description}",
-                                    "Task result: $taskResult"
-                                ) + (currentUserMessage.get()?.let<String, List<String>> { listOf("User message: $it") } ?: listOf<String>()),
+                                completedTasks.flatMap { record ->
+                                    listOf(
+                                        "Completed task: ${record.task?.task_description}",
+                                        "Task result: ${record.result}"
+                                    )
+                                } + (currentUserMessage.get()?.let<String, List<String>> { listOf("User message: $it") } ?: listOf<String>()),
                         api
                     ).obj.apply<ThinkingStatus> {
                         this@AutoPlanChatApp.currentUserMessage.set(null)
                         knowledge?.facts?.apply {
-                            this += "Task ${(executionContext?.completedTasks?.size ?: 0) + 1} Result: " + taskResult
+                            this.addAll(completedTasks.mapIndexed { index, (task, result) ->
+                                "Task ${(executionContext?.completedTasks?.size ?: 0) + index + 1} Result: $result"
+                            })
                         }
                     })
+                    thinkingStatusTask.complete(renderMarkdown("Updated Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"))
                 }
             } catch (e: Exception) {
+                task.error(ui, e)
                 log.error("Error in startAutoPlanChat", e)
-                tabbedDisplay["Errors"]?.append(renderMarkdown("An error occurred during the Auto Plan Chat: \n\n${e.message}", ui = ui))
             } finally {
-                val summaryTask = ui.newTask(false)
+                val summaryTask = ui.newTask(false).apply { tabbedDisplay["Summary"] = placeholder }
                 summaryTask.add(
                     renderMarkdown(
                         "Auto Plan Chat completed. Final thinking status:\n${thinkingStatus.get()?.let {
                                 formatThinkingStatus(it)
                             } ?: "null"
-                        }", ui = ui))
-                tabbedDisplay["Summary"] = summaryTask.placeholder
+                        }"))
+                task.complete()
             }
         }
 
+    }
+
+    private fun formatEvalRecords(maxTotalLength: Int = maxTaskHistoryChars): List<String> {
+        var currentLength = 0
+        val formattedRecords = mutableListOf<String>()
+        for (record in executionRecords.reversed()) {
+            val formattedRecord = "Task ${executionRecords.indexOf(record) + 1} Result: ${record.result}"
+            if (currentLength + formattedRecord.length > maxTotalLength) {
+                formattedRecords.add("... (earlier records truncated)")
+                break
+            }
+            formattedRecords.add(0, formattedRecord)
+            currentLength += formattedRecord.length
+        }
+        return formattedRecords
     }
 
     private fun formatThinkingStatus(thinkingStatus: ThinkingStatus) = """
@@ -348,5 +406,6 @@ ${JsonUtil.toJson(thinkingStatus)}
 """
 
 
-    protected open fun initialPrompt(userMessage: String): List<String> = listOf(userMessage)
+    protected open fun initialPrompt(userMessage: String): List<String> = listOf(userMessage) + contextData()
+    protected open fun contextData(): List<String> = emptyList()
 }

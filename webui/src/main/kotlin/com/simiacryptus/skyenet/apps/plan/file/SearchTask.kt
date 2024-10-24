@@ -70,7 +70,7 @@ Search - Search for patterns in files and provide results with context
                 Files.walk(root).asSequence()
                     .filter { path ->
                         matcher.matches(root.relativize(path)) &&
-                                FileValidationUtils.isLLMIncludable(path.toFile())
+                                FileValidationUtils.isLLMIncludableFile(path.toFile())
                     }
                     .flatMap { path ->
                         val relativePath = root.relativize(path).toString()
