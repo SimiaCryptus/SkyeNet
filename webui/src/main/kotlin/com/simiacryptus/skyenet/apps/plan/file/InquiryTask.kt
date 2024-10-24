@@ -4,6 +4,7 @@ import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel.Role
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.*
@@ -73,18 +74,14 @@ class InquiryTask(
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
     ) {
+
         val toInput = { it: String ->
-            listOf<String>(
-                userMessage,
-                JsonUtil.toJson(plan),
-                getPriorCode(planProcessingState),
+            messages + listOf<String>(
                 getInputFileCode(),
                 it,
             ).filter { it.isNotBlank() }
@@ -105,11 +102,11 @@ class InquiryTask(
                 MarkdownUtil.renderMarkdown(design, ui = agent.ui)
             },
             ui = agent.ui,
-            reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+            reviseResponse = { usermessages: List<Pair<String, Role>> ->
                 val inStr = "Expand ${this.planTask?.task_description ?: ""}\nQuestions: ${
                     planTask?.inquiry_questions?.joinToString("\n")
                 }\nGoal: ${planTask?.inquiry_goal}\n${JsonUtil.toJson(data = this)}"
-                val messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                val messages = usermessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
                     .toTypedArray<ApiModel.ChatMessage>()
                 inquiryActor.respond(
                     messages = messages,

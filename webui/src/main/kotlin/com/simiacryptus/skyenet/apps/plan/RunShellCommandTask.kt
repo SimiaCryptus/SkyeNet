@@ -8,7 +8,6 @@ import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTas
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.Semaphore
@@ -68,9 +67,7 @@ Note: This task is for running simple and safe commands. Avoid executing command
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
@@ -134,11 +131,7 @@ Note: This task is for running simple and safe commands. Avoid executing command
         }.apply<CodingAgent<ProcessInterpreter>> {
             start(
                 codeRequest(
-                    listOf(
-                        userMessage to ApiModel.Role.user,
-                        JsonUtil.toJson(plan) to ApiModel.Role.assistant,
-                        getPriorCode(planProcessingState) to ApiModel.Role.assistant,
-                    )
+                    messages.map { it to ApiModel.Role.user }
                 )
             )
         }

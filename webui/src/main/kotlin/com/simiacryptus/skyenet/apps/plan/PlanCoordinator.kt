@@ -240,12 +240,16 @@ class PlanCoordinator(
                             task1.verbose("API log: <a href=\"file:///$this\">$this</a>")
                         }
                     }
-                    getImpl(planSettings, subTask).run(
+                    val impl = getImpl(planSettings, subTask)
+                    val messages = listOf(
+                        userMessage,
+                        JsonUtil.toJson(plan),
+                        impl.getPriorCode(planProcessingState)
+                    )
+                    impl.run(
                         agent = this,
                         taskId = taskId,
-                        userMessage = userMessage,
-                        plan = plan,
-                        planProcessingState = planProcessingState,
+                        messages = messages,
                         task = task1,
                         api = api,
                         resultFn = { planProcessingState.taskResult[taskId] = it }

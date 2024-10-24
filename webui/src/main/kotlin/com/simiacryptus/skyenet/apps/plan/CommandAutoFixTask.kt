@@ -54,9 +54,7 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit

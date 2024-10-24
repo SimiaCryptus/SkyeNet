@@ -7,7 +7,6 @@ import com.simiacryptus.skyenet.apps.general.PatchApp
 import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -32,18 +31,13 @@ abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskBase>(
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
     ) {
         val analysisResult = analysisActor.answer(
-            listOf(
-                userMessage,
-                JsonUtil.toJson(plan),
-                getPriorCode(planProcessingState),
+            messages + listOf(
                 getInputFileCode(),
                 "${getAnalysisInstruction()}:\n${getInputFileCode()}",
             ).filter { it.isNotBlank() }, api = api

@@ -39,13 +39,12 @@ ForeachTask - Execute a task for each item in a list
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
     ) {
+        val userMessage = messages.joinToString("\n")
         val items =
             planTask?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
         val subTasks = planTask.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")

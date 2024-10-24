@@ -124,38 +124,6 @@ ${taskType.name}:
         )
     }
 
-    fun chooseSingleTask(input: List<String>, api: API, describer: TypeDescriber = describer()) = ParsedActor(
-        name = "SingleTaskChooser",
-        resultClass = PlanTaskBase::class.java,
-        exampleInstance = FileModificationTaskData(
-            task_description = "Modify the file 'example.txt' to include the given input."
-        ),
-        prompt = """
-Given the following input, choose a single task to execute. Do not create a full plan, just select the most appropriate task type for the given input.
-Available task types:
-
-${
-            getAvailableTaskTypes(this).joinToString("\n") { taskType ->
-                "* ${getImpl(this, taskType).promptSegment()}"
-            }
-        }
-
-Choose the most suitable task type and provide a brief description of how it should be executed.
-        """.trimIndent(),
-        model = defaultModel,
-        parsingModel = parsingModel,
-        temperature = temperature,
-        describer = describer,
-        parserPrompt = """
-Task Subtype Schema:
-
-${getAvailableTaskTypes(this).joinToString("\n\n") { taskType -> """
-${taskType.name}:
-  ${describer.describe(taskType.taskDataClass).replace("\n", "\n  ")}
-""".trim() } }
-                """.trimIndent()
-    ).answer(input, api)
-
     open fun describer() = object : AbbrevWhitelistYamlDescriber(
         "com.simiacryptus", "com.github.simiacryptus"
     ) {

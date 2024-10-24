@@ -9,7 +9,6 @@ import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModifica
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
 
@@ -99,9 +98,7 @@ class FileModificationTask(
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
@@ -114,13 +111,10 @@ class FileModificationTask(
         val onComplete = { semaphore.release() }
         val process = { sb: StringBuilder ->
             val codeResult = fileModificationActor.answer(
-                listOf(
-                    userMessage,
-                    JsonUtil.toJson(plan),
-                    getPriorCode(planProcessingState),
+                (messages + listOf(
                     getInputFileCode(),
                     this.planTask?.task_description ?: "",
-                ).filter { it.isNotBlank() }, api
+                )).filter { it.isNotBlank() }, api
             )
             resultFn(codeResult)
             if (agent.planSettings.autoFix) {

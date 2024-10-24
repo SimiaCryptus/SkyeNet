@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
+import com.simiacryptus.jopenai.models.ApiModel.Role
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
@@ -54,20 +55,14 @@ class PlanningTask(
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
     ) {
+        val userMessage = messages.joinToString("\n")
         val newTask = agent.ui.newTask(false).apply { add(placeholder) }
-        fun toInput(s: String) = listOf(
-            userMessage,
-            JsonUtil.toJson(plan.entries.associate { it.key to it.value }),
-            getPriorCode(planProcessingState),
-            s
-        ).filter { it.isNotBlank() }
+        fun toInput(s: String) = (messages + listOf(s)).filter { it.isNotBlank() }
 
         val subPlan = if (planSettings.allowBlocking && !planSettings.autoFix) {
             createSubPlanDiscussable(newTask, userMessage, ::toInput, api, agent.ui).call().obj
@@ -111,9 +106,9 @@ class PlanningTask(
             )
         },
         ui = ui,
-        reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
+        reviseResponse = { usermessages: List<Pair<String, Role>> ->
             planSettings.planningActor().respond(
-                messages = userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+                messages = usermessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
                     .toTypedArray<ApiModel.ChatMessage>(),
                 input = toInput("Expand ${planTask?.task_description ?: ""}\n${JsonUtil.toJson(this)}"),
                 api = api
