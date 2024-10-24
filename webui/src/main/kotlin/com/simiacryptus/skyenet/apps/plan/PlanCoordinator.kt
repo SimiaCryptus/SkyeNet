@@ -4,15 +4,11 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.models.ApiModel
-import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.getAllDependencies
-import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
-import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.StorageInterface
@@ -57,12 +53,11 @@ class PlanCoordinator(
                 }
             }
 
-    fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API) {
-        val task = ui.newTask()
+    fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API, task: SessionTask) {
         try {
-            lateinit var taskBreakdownWithPrompt: PlanUtil.TaskBreakdownWithPrompt
+            lateinit var taskBreakdownWithPrompt: TaskBreakdownWithPrompt
             val plan = filterPlan {
-                taskBreakdownWithPrompt = JsonUtil.fromJson(jsonInput, PlanUtil.TaskBreakdownWithPrompt::class.java)
+                taskBreakdownWithPrompt = JsonUtil.fromJson(jsonInput, TaskBreakdownWithPrompt::class.java)
                 taskBreakdownWithPrompt.plan
             }
             task.add(
@@ -244,12 +239,16 @@ class PlanCoordinator(
                             task1.verbose("API log: <a href=\"file:///$this\">$this</a>")
                         }
                     }
-                    getImpl(planSettings, subTask).run(
+                    val impl = getImpl(planSettings, subTask)
+                    val messages = listOf(
+                        userMessage,
+                        JsonUtil.toJson(plan),
+                        impl.getPriorCode(planProcessingState)
+                    )
+                    impl.run(
                         agent = this,
                         taskId = taskId,
-                        userMessage = userMessage,
-                        plan = plan,
-                        planProcessingState = planProcessingState,
+                        messages = messages,
                         task = task1,
                         api = api,
                         resultFn = { planProcessingState.taskResult[taskId] = it }
@@ -278,118 +277,8 @@ class PlanCoordinator(
         }
     }
 
-    companion object {
+    companion object : Planner() {
         private val log = LoggerFactory.getLogger(PlanCoordinator::class.java)
-
-        fun initialPlan(
-            codeFiles: Map<Path, String>,
-            files: Array<File>,
-            root: Path,
-            task: SessionTask,
-            userMessage: String,
-            ui: ApplicationInterface,
-            planSettings: PlanSettings,
-            api: API
-        ): PlanUtil.TaskBreakdownWithPrompt {
-            val api = (api as ChatClient).getChildClient().apply {
-                val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
-                createFile.second?.apply {
-                    logStreams += this.outputStream().buffered()
-                    task.verbose("API log: <a href=\"file:///$this\">$this</a>")
-                }
-            }
-            val toInput = inputFn(codeFiles, files, root)
-            return if (planSettings.allowBlocking)
-                Discussable(
-                    task = task,
-                    heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
-                    userMessage = { userMessage },
-                    initialResponse = {
-                        newPlan(
-                            api,
-                            planSettings,
-                            toInput(userMessage)
-                        )
-                    },
-                    outputFn = {
-                        try {
-                            render(
-                                withPrompt = PlanUtil.TaskBreakdownWithPrompt(
-                                    prompt = userMessage,
-                                    plan = it.obj,
-                                    planText = it.text
-                                ),
-                                ui = ui
-                            )
-                        } catch (e: Throwable) {
-                            log.warn("Error rendering task breakdown", e)
-                            task.error(ui, e)
-                            e.message ?: e.javaClass.simpleName
-                        }
-                    },
-                    ui = ui,
-                    reviseResponse = { userMessages: List<Pair<String, ApiModel.Role>> ->
-                        newPlan(
-                            api,
-                            planSettings,
-                            userMessages.map { it.first })
-                    },
-                ).call().let {
-                    PlanUtil.TaskBreakdownWithPrompt(
-                        prompt = userMessage,
-                        plan = filterPlan { it.obj } ?: emptyMap(),
-                        planText = it.text
-                    )
-                }
-            else newPlan(
-                api,
-                planSettings,
-                toInput(userMessage)
-            ).let {
-                PlanUtil.TaskBreakdownWithPrompt(
-                    prompt = userMessage,
-                    plan = filterPlan { it.obj } ?: emptyMap(),
-                    planText = it.text
-                )
-            }
-        }
-
-        private fun newPlan(
-            api: API,
-            planSettings: PlanSettings,
-            inStrings: List<String>
-        ): ParsedResponse<Map<String, PlanTaskBase>> {
-            val planningActor = planSettings.planningActor()
-            return planningActor.respond(
-                messages = planningActor.chatMessages(inStrings),
-                input = inStrings,
-                api = api
-            ).map(Map::class.java) { it.tasksByID ?: emptyMap<String, PlanTaskBase>() } as ParsedResponse<Map<String, PlanTaskBase>>
-        }
-
-
-        private fun inputFn(
-            codeFiles: Map<Path, String>,
-            files: Array<File>,
-            root: Path
-        ) = { str: String ->
-            listOf(
-                if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
-                                        |Files:
-                                        |${codeFiles.keys.joinToString("\n") { "* $it" }}  
-                                         """.trimMargin() else {
-                    files.joinToString("\n\n") {
-                        val path = root.relativize(it.toPath())
-                        """
-                        |## $path
-                        |
-                        |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-                        """.trimMargin()
-                    }
-                },
-                str
-            )
-        }
     }
 }
 

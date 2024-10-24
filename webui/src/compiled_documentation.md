@@ -2,7 +2,7 @@
 
 ## CodingApp Class Documentation
 
-The `CodingApp` class is a part of the `com.simiacryptus.skyenet.apps.coding` package and extends the functionality of
+The `CodingApp` class is a part of the `com.simiacryptus.skyenet.apps.code` package and extends the functionality of
 the `ApplicationServer` from the `com.simiacryptus.skyenet.webui.application` package. This class is designed to
 integrate a coding environment into a web application, leveraging an interpreter for code execution. It facilitates user
 interaction with the coding environment through messages and executes code using a specified interpreter.
@@ -168,7 +168,7 @@ their requirements, and the system generates the necessary code and resources, s
 
 #### CodingAgent Class Documentation
 
-The `CodingAgent` class is a part of the `com.simiacryptus.skyenet.apps.coding` package, designed to facilitate the
+The `CodingAgent` class is a part of the `com.simiacryptus.skyenet.apps.code` package, designed to facilitate the
 interaction between users and code generation services, leveraging models from the OpenAI API. It extends the
 functionality of `ActorSystem` and integrates with various components of the application, including storage interfaces,
 session management, and user interfaces.
@@ -254,7 +254,7 @@ automate various aspects of coding and software development through AI-driven to
 ### Package
 
 ```kotlin
-package com.simiacryptus.skyenet.apps.coding
+package com.simiacryptus.skyenet.apps.code
 ```
 
 ### Imports

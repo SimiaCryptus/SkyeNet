@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.diff.addApplyFileDiffLinks
-
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
@@ -10,7 +9,6 @@ import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTa
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
 
@@ -69,9 +67,7 @@ class DocumentationTask(
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
@@ -87,10 +83,7 @@ class DocumentationTask(
         val process = { sb: StringBuilder ->
             val itemsToDocument = planTask?.topics ?: emptyList()
             val docResult = documentationGeneratorActor.answer(
-                listOf<String>(
-                    userMessage,
-                    JsonUtil.toJson(plan),
-                    getPriorCode(planProcessingState),
+                messages + listOf<String>(
                     getInputFileCode(),
                     "Items to document: ${itemsToDocument.joinToString(", ")}",
                     "Output files: ${planTask?.output_files?.joinToString(", ") ?: ""}"

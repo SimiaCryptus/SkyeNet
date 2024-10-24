@@ -226,7 +226,7 @@ abstract class PatchApp(
             // Search for files using the provided search strings
             val searchResults = error.searchStrings?.flatMap { searchString ->
                 FileValidationUtils.filteredWalk(settings.workingDirectory!!) { !FileValidationUtils.isGitignore(it.toPath()) }
-                    .filter { FileValidationUtils.isLLMIncludable(it) }
+                    .filter { FileValidationUtils.isLLMIncludableFile(it) }
                     .filter { it.readText().contains(searchString, ignoreCase = true) }
                     .map { it.toPath() }
                     .toList()

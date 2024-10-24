@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.parsers
+package com.simiacryptus.skyenet.apps.parse
 
 import java.awt.image.BufferedImage
 import java.io.File

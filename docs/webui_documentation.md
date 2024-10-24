@@ -899,7 +899,7 @@ versatile foundation for developing custom tooling solutions within web applicat
 
 ## CodingAgent Class Documentation
 
-The `CodingAgent` class is a part of the `com.simiacryptus.skyenet.apps.coding` package, designed to facilitate code
+The `CodingAgent` class is a part of the `com.simiacryptus.skyenet.apps.code` package, designed to facilitate code
 generation and execution within a specific application context. It leverages the OpenAI API for generating code snippets
 based on user input and provides mechanisms for executing and providing feedback on the generated code. This class is
 built to be integrated within a larger system that supports user interactions, code storage, and execution environments.

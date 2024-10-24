@@ -21,7 +21,7 @@ open class PlanChatApp(
     parsingModel: TextModel,
     domainName: String = "localhost",
     showMenubar: Boolean = true,
-    initialPlan: PlanUtil.TaskBreakdownWithPrompt? = null,
+    initialPlan: TaskBreakdownWithPrompt? = null,
     api: API? = null,
 ) : PlanAheadApp(
     applicationName = applicationName,
@@ -90,7 +90,7 @@ open class PlanChatApp(
                     root = planSettings?.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
                     planSettings = planSettings
                 )
-                val mainTask = coordinator.ui.newTask()
+                val mainTask = ui.newTask()
                 val sessionTask = ui.newTask(false).apply { mainTask.verbose(placeholder) }
                 val api = (api as ChatClient).getChildClient().apply {
                     val createFile = sessionTask.createFile(".logs/api-${UUID.randomUUID()}.log")

@@ -38,7 +38,7 @@ abstract class AbstractFileTask<T : FileTaskBase>(
                 Files.walk(root).asSequence()
                     .filter { path ->
                         matcher.matches(root.relativize(path)) &&
-                                FileValidationUtils.isLLMIncludable(path.toFile())
+                                FileValidationUtils.isLLMIncludableFile(path.toFile())
                     }
                     .map { path ->
                         root.relativize(path).toString()

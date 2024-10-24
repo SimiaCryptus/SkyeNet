@@ -154,7 +154,7 @@ class CmdPatchApp(
     override fun searchFiles(searchStrings: List<String>): Set<Path> {
         return searchStrings.flatMap { searchString ->
             FileValidationUtils.filteredWalk(settings.workingDirectory!!) { !FileValidationUtils.isGitignore(it.toPath()) }
-                .filter { FileValidationUtils.isLLMIncludable(it) }
+                .filter { FileValidationUtils.isLLMIncludableFile(it) }
                 .filter { it.readText().contains(searchString, ignoreCase = true) }
                 .map { it.toPath() }
                 .toList()

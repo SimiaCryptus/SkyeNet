@@ -5,7 +5,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.opt.DistanceType
-import com.simiacryptus.skyenet.apps.parsers.DocumentRecord
+import com.simiacryptus.skyenet.apps.parse.DocumentRecord
 import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -48,9 +48,7 @@ EmbeddingSearch - Search for similar embeddings in index files and provide top r
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit

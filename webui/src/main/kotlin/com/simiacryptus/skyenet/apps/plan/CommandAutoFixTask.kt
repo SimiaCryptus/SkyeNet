@@ -54,18 +54,14 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
     override fun run(
         agent: PlanCoordinator,
         taskId: String,
-        userMessage: String,
-        plan: Map<String, PlanTaskBase>,
-        planProcessingState: PlanProcessingState,
+        messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
     ) {
         val semaphore = Semaphore(0)
         val hasError = AtomicBoolean(false)
-        val onComplete = {
-            semaphore.release()
-        }
+        val onComplete = { semaphore.release() }
         Retryable(agent.ui, task = task) {
             val task = agent.ui.newTask(false).apply { it.append(placeholder) }
             this.planTask?.commands?.forEachIndexed { index, commandWithDir ->

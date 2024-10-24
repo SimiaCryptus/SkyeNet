@@ -11,6 +11,7 @@ import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
+
 data class TaskSettings(
     var enabled: Boolean = false,
     var model: TextModel? = null
