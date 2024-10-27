@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
@@ -14,12 +15,12 @@ import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 data class TaskSettings(
     var enabled: Boolean = false,
-    var model: TextModel? = null
+    var model: ChatModel? = null
 )
 
 open class PlanSettings(
-    var defaultModel: TextModel,
-    var parsingModel: TextModel,
+    var defaultModel: ChatModel,
+    var parsingModel: ChatModel,
     val command: List<String> = listOf(if (isWindows) "powershell" else "bash"),
     var temperature: Double = 0.2,
     val budget: Double = 2.0,
@@ -47,8 +48,8 @@ open class PlanSettings(
     }
 
     fun copy(
-        model: TextModel = this.defaultModel,
-        parsingModel: TextModel = this.parsingModel,
+        model: ChatModel = this.defaultModel,
+        parsingModel: ChatModel = this.parsingModel,
         command: List<String> = this.command,
         temperature: Double = this.temperature,
         budget: Double = this.budget,

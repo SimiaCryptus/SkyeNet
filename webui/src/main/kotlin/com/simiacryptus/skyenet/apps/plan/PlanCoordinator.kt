@@ -265,16 +265,21 @@ class PlanCoordinator(
             }
         }
         val start = System.currentTimeMillis()
-        planProcessingState.taskFutures.forEach { (id, future) ->
-            try {
-                future.get(
-                    (TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)).coerceAtLeast(0),
-                    TimeUnit.MILLISECONDS
-                ) ?: log.warn("Dependency not found: $id")
-            } catch (e: Throwable) {
-                log.warn("Error", e)
-            }
-        }
+        var tasksCompleted = 0
+        do {
+            tasksCompleted = planProcessingState.taskFutures.toList().toTypedArray().map { (id, future) ->
+                try {
+                    future.get(
+                        (TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)).coerceAtLeast(0),
+                        TimeUnit.MILLISECONDS
+                    ) ?: log.warn("Dependency not found: $id")
+                } catch (e: Throwable) {
+                    log.warn("Error", e)
+                }
+                1
+            }.sum()
+            Thread.sleep(1000)
+        } while(tasksCompleted < planProcessingState.taskFutures.size)
     }
 
     companion object : Planner() {

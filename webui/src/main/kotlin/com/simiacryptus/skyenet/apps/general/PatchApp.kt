@@ -4,7 +4,7 @@ import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.models.TextModel
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.actors.ParsedActor
@@ -27,7 +27,7 @@ abstract class PatchApp(
     val session: Session,
     val settings: Settings,
     val api: ChatClient,
-    val model: TextModel,
+    val model: ChatModel,
     val promptPrefix: String = """The following command was run and produced an error:"""
 ) : ApplicationServer(
     applicationName = "Magic Code Fixer",
@@ -349,7 +349,8 @@ abstract class PatchApp(
                 } else {
                     false
                 }
-            }
+            },
+            model = model,
         )
         content.clear()
         content.append("<div>${MarkdownUtil.renderMarkdown(markdown!!)}</div>")

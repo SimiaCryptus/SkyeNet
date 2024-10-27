@@ -375,7 +375,8 @@ class WebDevAgent(
                             }
                         },
                         ui = ui,
-                        api = api
+                        api = api,
+                        model = model,
                     )
                 )
             },

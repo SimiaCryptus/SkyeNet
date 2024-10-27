@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator.Companion.initialPlan
@@ -22,8 +23,8 @@ open class PlanAheadApp(
     applicationName: String = "Task Planning v1.1",
     path: String = "/taskDev",
     val planSettings: PlanSettings,
-    val model: TextModel,
-    val parsingModel: TextModel,
+    val model: ChatModel,
+    val parsingModel: ChatModel,
     val domainName: String = "localhost",
     showMenubar: Boolean = true,
     val initialPlan: TaskBreakdownWithPrompt? = null,

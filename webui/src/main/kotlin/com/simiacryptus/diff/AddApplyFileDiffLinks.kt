@@ -3,13 +3,16 @@ package com.simiacryptus.diff
 import com.simiacryptus.diff.FileValidationUtils.Companion.isGitignore
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.AgentPatterns.displayMapInTabs
+import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SocketManagerBase
+import com.simiacryptus.util.JsonUtil
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.readText
@@ -26,6 +29,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
     ui: ApplicationInterface,
     api: API,
     shouldAutoApply: (Path) -> Boolean = { false },
+    model: ChatModel? = null,
 ): String {
     // Check if there's an unclosed code block and close it if necessary
     val initiator = "(?s)```\\w*\n".toRegex()
@@ -36,10 +40,10 @@ fun SocketManagerBase.addApplyFileDiffLinks(
             response + "\n```\n",
             handle,
             ui,
-            api
+            api,
+            model = model,
         )
     }
-    // Define regex patterns for headers and code blocks
     val headerPattern = """(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
     val codeblockPattern = """(?s)(?<![^\n])```([^\n]*)(\n.*?\n)```""".toRegex() // capture filename
     val headers = headerPattern.findAll(response).map { it.range to it.groupValues[1] }.toList()
@@ -70,24 +74,86 @@ fun SocketManagerBase.addApplyFileDiffLinks(
             false
         }
     }.map { it.range to it }.toList()
+
+    // Get
+    val changes = patchBlocks.mapIndexed { index, it ->
+        PatchOrCode(
+            id = "patch_" + index.toString(),
+            type = "patch",
+            data = it.second.groupValues[2]
+        )
+    } + codeblocks.mapIndexed { index, it ->
+        PatchOrCode(
+            id = "code_" + index.toString(),
+            type = "code",
+            data = it.second.groupValues[2]
+        )
+    }
+    val corrections = if(model == null) null else {
+        ParsedActor<CorrectedPatchAndCodeList>(
+            resultClass = CorrectedPatchAndCodeList::class.java,
+            exampleInstance = CorrectedPatchAndCodeList(listOf(
+                CorrectedPatchOrCode("patch_0", "src/utils/exampleUtils.js"),
+                CorrectedPatchOrCode("code_0", "src/utils/exampleUtils.js"),
+                CorrectedPatchOrCode("patch_1", "tests/exampleUtils.test.js"),
+                CorrectedPatchOrCode("code_1", "tests/exampleUtils.test.js"),
+            )),
+            prompt = """
+                Review and correct the file path assignments for the following patches and code blocks.
+            """.trimIndent(),
+            model = model,
+            temperature = 0.0,
+            parsingModel = model,
+        ).getParser(api).apply(listOf(
+            response,
+            JsonUtil.toJson(
+                PatchAndCodeList(
+                    changes = changes
+                )
+            )
+        ).joinToString("\n\n")).changes?.associateBy { it.id }?.mapValues { it.value.filename } ?: emptyMap()
+    }
+
     // Process diff blocks and add patch links
-    val withPatchLinks: String = patchBlocks.fold(response) { markdown, diffBlock ->
+    val withPatchLinks: String = patchBlocks.foldIndexed(response) { index, markdown, diffBlock ->
         val value = diffBlock.second.groupValues[2].trim()
-        val header = headers.lastOrNull { it.first.last < diffBlock.first.first }
-        val filename = resolve(root, header?.second ?: "Unknown")
+        var header = headers.lastOrNull { it.first.last < diffBlock.first.first }?.second ?: "Unknown"
+        header = corrections?.get("patch_$index") ?: header
+        val filename = resolve(root, header)
         val newValue = renderDiffBlock(root, filename, value, handle, ui, api, shouldAutoApply)
         markdown.replace(diffBlock.second.value, newValue)
     }
     // Process code blocks and add save links
-    val withSaveLinks = codeblocks.fold(withPatchLinks) { markdown, codeBlock ->
+    val withSaveLinks = codeblocks.foldIndexed(withPatchLinks) { index, markdown, codeBlock ->
         val lang = codeBlock.second.groupValues[1]
         val value = codeBlock.second.groupValues[2].trim()
-        val header = headers.lastOrNull { it.first.last < codeBlock.first.first }?.second
+        var header = headers.lastOrNull { it.first.last < codeBlock.first.first }?.second
+        header = corrections?.get("code_$index") ?: header
         val newMarkdown = renderNewFile(header, root, ui, shouldAutoApply, value, handle, lang)
         markdown.replace(codeBlock.second.value, newMarkdown)
     }
     return withSaveLinks
 }
+
+data class PatchAndCodeList(
+    val changes: List<PatchOrCode>,
+)
+
+data class PatchOrCode(
+    val id: String? = null,
+    val type: String? = null,
+    val filename: String? = null,
+    val data: String? = null,
+)
+
+data class CorrectedPatchAndCodeList(
+    val changes: List<CorrectedPatchOrCode>? = null,
+)
+
+data class CorrectedPatchOrCode(
+    val id: String? = null,
+    val filename: String? = null,
+)
 
 private fun SocketManagerBase.renderNewFile(
     header: String?,
@@ -206,6 +272,7 @@ private fun SocketManagerBase.renderDiffBlock(
     ui: ApplicationInterface,
     api: API?,
     shouldAutoApply: (Path) -> Boolean,
+    model: ChatModel? = null,
 ): String {
 
     val filepath = root.resolve(filename)
@@ -373,7 +440,7 @@ Please provide a fix for the diff above in the form of a diff patch.
 """
                         ), api as OpenAIClient
                     )
-                    answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api) ?: answer
+                    answer = ui.socketManager?.addApplyFileDiffLinks(root, answer, handle, ui, api, model=model) ?: answer
                     header?.clear()
                     fixTask.complete(renderMarkdown(answer))
                 } catch (e: Throwable) {

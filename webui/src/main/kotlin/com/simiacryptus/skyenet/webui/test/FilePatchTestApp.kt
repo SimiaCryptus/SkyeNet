@@ -34,7 +34,6 @@ open class FilePatchTestApp(
         val sourceFile = Files.createTempFile("source", ".txt").toFile()
         sourceFile.writeText(source)
         sourceFile.deleteOnExit()
-        //Desktop.getDesktop().open(sourceFile)
 
         val patch = """
             |# ${sourceFile.name}
@@ -44,7 +43,12 @@ open class FilePatchTestApp(
             |+Goodbye, World!
             |```
         """.trimMargin()
-        val newPatch = socketManager.addApplyFileDiffLinks(sourceFile.toPath().parent, patch, {}, ui, api)
+        val newPatch = socketManager.addApplyFileDiffLinks(
+            root = sourceFile.toPath().parent,
+            response = patch,
+            ui = ui,
+            api = api
+        )
         task.complete(renderMarkdown(newPatch, ui = ui))
 
         return socketManager
