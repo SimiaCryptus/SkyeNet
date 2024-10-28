@@ -45,7 +45,6 @@ Search - Search for patterns in files and provide results with context
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,

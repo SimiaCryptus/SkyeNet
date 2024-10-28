@@ -47,7 +47,6 @@ EmbeddingSearch - Search for similar embeddings in index files and provide top r
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,

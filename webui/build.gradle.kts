@@ -45,7 +45,7 @@ dependencies {
 
     implementation("org.apache.pdfbox:pdfbox:2.0.27")
     compileOnly("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
-    compileOnly("org.jsoup:jsoup:1.17.2")
+    implementation("org.jsoup:jsoup:1.18.1")
 
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.zxing:javase:3.5.3")
@@ -89,6 +89,8 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = jackson_version)
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
+
+//    implementation(group = "com.google.apis", name = "google-api-services-customsearch", version = "v1-rev20230702-2.0.0")
     compileOnly(group = "com.google.api-client", name = "google-api-client", version = "1.35.2" /*"1.35.2"*/)
     compileOnly(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
     compileOnly(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")

@@ -78,7 +78,10 @@ open class PlanChatApp(
                     command = planSettings.command,
                     temperature = planSettings.temperature,
                     workingDir = planSettings.workingDir,
-                    env = planSettings.env
+                    env = planSettings.env,
+                    githubToken = planSettings.githubToken,
+                    googleApiKey = planSettings.googleApiKey,
+                    googleSearchEngineId = planSettings.googleSearchEngineId,
                 )).copy(
                     allowBlocking = false,
                 )

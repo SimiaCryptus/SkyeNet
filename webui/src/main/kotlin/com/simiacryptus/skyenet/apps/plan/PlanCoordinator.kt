@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
 import java.util.*
+import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -232,7 +233,7 @@ class PlanCoordinator(
                           """.trimMargin(), ui = ui
                         )
                     )
-                    val api = (api as ChatClient).getChildClient().apply {
+                    val api = api.getChildClient().apply {
                         val createFile = task1.createFile(".logs/api-${UUID.randomUUID()}.log")
                         createFile.second?.apply {
                             logStreams += this.outputStream().buffered()
@@ -247,7 +248,6 @@ class PlanCoordinator(
                     )
                     impl.run(
                         agent = this,
-                        taskId = taskId,
                         messages = messages,
                         task = task1,
                         api = api,
@@ -264,22 +264,14 @@ class PlanCoordinator(
                 }
             }
         }
+        await(planProcessingState.taskFutures)
+    }
+
+    fun await(futures: MutableMap<String, Future<*>>) {
         val start = System.currentTimeMillis()
-        var tasksCompleted = 0
-        do {
-            tasksCompleted = planProcessingState.taskFutures.toList().toTypedArray().map { (id, future) ->
-                try {
-                    future.get(
-                        (TimeUnit.MINUTES.toMillis(1) - (System.currentTimeMillis() - start)).coerceAtLeast(0),
-                        TimeUnit.MILLISECONDS
-                    ) ?: log.warn("Dependency not found: $id")
-                } catch (e: Throwable) {
-                    log.warn("Error", e)
-                }
-                1
-            }.sum()
+        while (futures.values.count { it.isDone } < futures.size && (System.currentTimeMillis() - start) < TimeUnit.MINUTES.toMillis(2)) {
             Thread.sleep(1000)
-        } while(tasksCompleted < planProcessingState.taskFutures.size)
+        }
     }
 
     companion object : Planner() {

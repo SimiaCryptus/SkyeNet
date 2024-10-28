@@ -20,7 +20,7 @@ class FileModificationTask(
         input_files: List<String>? = null,
         output_files: List<String>? = null,
         @Description("Specific modifications to be made to the files")
-        val modifications: Map<String, String>? = null,
+        val modifications: Any? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         state: TaskState? = null
@@ -95,14 +95,14 @@ class FileModificationTask(
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
     ) {
         if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
-            task.complete("No input files specified")
+            task.complete("CONFIGURATION ERROR: No input files specified")
+            resultFn("CONFIGURATION ERROR: No input files specified")
             return
         }
         val semaphore = Semaphore(0)

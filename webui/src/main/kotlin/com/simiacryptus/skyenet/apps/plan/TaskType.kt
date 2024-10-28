@@ -17,6 +17,7 @@ import com.simiacryptus.skyenet.apps.plan.file.CodeOptimizationTask.CodeOptimiza
 import com.simiacryptus.skyenet.apps.plan.file.CodeReviewTask.CodeReviewTaskData
 import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTaskData
 import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.GoogleSearchTask.GoogleSearchTaskData
 import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskData
 import com.simiacryptus.skyenet.apps.plan.file.PerformanceAnalysisTask.PerformanceAnalysisTaskData
 import com.simiacryptus.skyenet.apps.plan.file.RefactorTask.RefactorTaskData
@@ -52,6 +53,9 @@ class TaskType<out T : PlanTaskBase>(
         val RunShellCommand = TaskType("RunShellCommand", RunShellCommandTaskData::class.java)
         val CommandAutoFix = TaskType("CommandAutoFix", CommandAutoFixTaskData::class.java)
         val ForeachTask = TaskType("ForeachTask", ForeachTaskData::class.java)
+        val GitHubSearch = TaskType("GitHubSearch", GitHubSearchTask.GitHubSearchTaskData::class.java)
+        val GoogleSearch = TaskType("GoogleSearch", GoogleSearchTaskData::class.java)
+        val WebFetchAndTransform = TaskType("WebFetchAndTransform", WebFetchAndTransformTask.WebFetchAndTransformTaskData::class.java)
 
         init {
             registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
@@ -69,6 +73,9 @@ class TaskType<out T : PlanTaskBase>(
             registerConstructor(RefactorTask) { settings, task -> RefactorTask(settings, task) }
             registerConstructor(ForeachTask) { settings, task -> ForeachTask(settings, task) }
             registerConstructor(TaskPlanning) { settings, task -> PlanningTask(settings, task) }
+            registerConstructor(GitHubSearch) { settings, task -> GitHubSearchTask(settings, task) }
+            registerConstructor(GoogleSearch) { settings, task -> GoogleSearchTask(settings, task) }
+            registerConstructor(WebFetchAndTransform) { settings, task -> WebFetchAndTransformTask(settings, task) }
         }
 
         private fun <T : PlanTaskBase> registerConstructor(

@@ -15,6 +15,7 @@ import com.simiacryptus.skyenet.webui.session.SocketManagerBase
 import com.simiacryptus.util.JsonUtil
 import java.io.File
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.readText
 
 
@@ -89,7 +90,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
             data = it.second.groupValues[2]
         )
     }
-    val corrections = if(model == null) null else {
+    val corrections = if(model == null) null else try {
         ParsedActor<CorrectedPatchAndCodeList>(
             resultClass = CorrectedPatchAndCodeList::class.java,
             exampleInstance = CorrectedPatchAndCodeList(listOf(
@@ -112,6 +113,9 @@ fun SocketManagerBase.addApplyFileDiffLinks(
                 )
             )
         ).joinToString("\n\n")).changes?.associateBy { it.id }?.mapValues { it.value.filename } ?: emptyMap()
+    } catch (e: Throwable) {
+        log.error("Error consulting AI for corrections", e)
+        null
     }
 
     // Process diff blocks and add patch links
@@ -292,16 +296,42 @@ private fun SocketManagerBase.renderDiffBlock(
         renderMarkdown("```\n${e.stackTraceToString()}\n```\n", ui = ui)
     }
 
+    // Function to create a revert button
+    fun createRevertButton(filepath: Path, originalCode: String, handle: (Map<Path, String>) -> Unit): String {
+        val relativize = try {
+            root.relativize(filepath)
+        } catch (e: Throwable) {
+            filepath
+        }
+        val revertTask = ui.newTask(false)
+        lateinit var revertButton: StringBuilder
+        revertButton = revertTask.complete(hrefLink("Revert", classname = "href-link cmd-button") {
+            try {
+                filepath.toFile().writeText(originalCode, Charsets.UTF_8)
+                handle(mapOf(relativize to originalCode))
+                revertButton.set("""<div class="cmd-button">Reverted</div>""")
+                revertTask.complete()
+            } catch (e: Throwable) {
+                revertButton.append("""<div class="cmd-button">Error: ${e.message}</div>""")
+                revertTask.error(null, e)
+            }
+        })!!
+        return revertTask.placeholder
+    }
+
     if (echoDiff.isNotBlank() && newCode.isValid && shouldAutoApply(filepath ?: root.resolve(filename))) {
         try {
             filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8)
+            val originalCode = AtomicReference(prevCode)
             handle(mapOf(relativize to newCode.newCode))
-            return "```diff\n$diffVal\n```\n" + """<div class="cmd-button">Diff Automatically Applied to ${filepath}</div>"""
+            val revertButton = createRevertButton(filepath, originalCode.get(), handle)
+            return "```diff\n$diffVal\n```\n" + """<div class="cmd-button">Diff Automatically Applied to ${filepath}</div>""" + revertButton
         } catch (e: Throwable) {
             log.error("Error auto-applying diff", e)
             return "```diff\n$diffVal\n```\n" + """<div class="cmd-button">Error Auto-Applying Diff to ${filepath}: ${e.message}</div>"""
         }
     }
+
 
     val diffTask = ui.newTask(root = false)
     diffTask.complete(renderMarkdown("```diff\n$diffVal\n```\n", ui = ui))

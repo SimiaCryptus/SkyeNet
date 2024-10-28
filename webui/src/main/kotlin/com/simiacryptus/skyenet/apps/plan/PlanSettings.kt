@@ -38,6 +38,9 @@ open class PlanSettings(
     val env: Map<String, String>? = mapOf(),
     val workingDir: String? = ".",
     val language: String? = if (isWindows) "powershell" else "bash",
+    var githubToken: String? = null,
+    var googleApiKey: String? = null,
+    var googleSearchEngineId: String? = null,
 ) {
 
     fun getTaskSettings(taskType: TaskType<*>): TaskSettings =
@@ -73,6 +76,9 @@ open class PlanSettings(
         env = env,
         workingDir = workingDir,
         language = language,
+        githubToken = this.githubToken,
+        googleApiKey = this.googleApiKey,
+        googleSearchEngineId = this.googleSearchEngineId,
     )
 
     fun planningActor(): ParsedActor<TaskBreakdownResult> {

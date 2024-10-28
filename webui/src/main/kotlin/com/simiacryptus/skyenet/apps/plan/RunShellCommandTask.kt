@@ -66,7 +66,6 @@ Note: This task is for running simple and safe commands. Avoid executing command
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,
@@ -140,7 +139,6 @@ Note: This task is for running simple and safe commands. Avoid executing command
         } catch (e: Throwable) {
             log.warn("Error", e)
         }
-        log.debug("Completed shell command: $taskId")
     }
 
     companion object {

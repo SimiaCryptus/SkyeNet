@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
@@ -50,7 +49,7 @@ open class AutoPlanChatApp(
     override val stickyInput = true
     override val singleInput = false
     companion object {
-        private val log = LoggerFactory.getLogger(AutoPlanChatApp::class.java)
+        private val log = org.slf4j.LoggerFactory.getLogger(AutoPlanChatApp::class.java)
     }
 
     data class ThinkingStatus(
@@ -85,7 +84,7 @@ open class AutoPlanChatApp(
     data class ExecutionRecord(
         val time: Date? = Date(),
         val task: PlanTaskBase? = null,
-        val result: Any? = null
+        val result: String? = null
     )
 
     data class Tasks(
@@ -143,13 +142,14 @@ open class AutoPlanChatApp(
         var continueLoop = true
         executor.execute {
             try {
-                ui.newTask(false).let {
-                    tabbedDisplay["Controls"] = it.placeholder
+                ui.newTask(false).let { task ->
+                    tabbedDisplay["Controls"] = task.placeholder
                     lateinit var stopLink: StringBuilder
-                    stopLink = it.add(ui.hrefLink("Stop") {
+                    stopLink = task.add(ui.hrefLink("Stop") {
                         continueLoop = false
                         executor.shutdown()
                         stopLink.set("Stopped")
+                        task.complete()
                     })!!
                 }
                 tabbedDisplay.update()
@@ -208,7 +208,7 @@ open class AutoPlanChatApp(
 
                     val taskResults = mutableListOf<Pair<PlanTaskBase, Future<String>>>()
                     for ((index, currentTask) in nextTask.withIndex()) {
-                        val currentTaskId = "task_${(thinkingStatus.get()!!.executionContext?.completedTasks?.size ?: 0) + index + 1}"
+                        val currentTaskId = "task_${index + 1}"
                         val taskExecutionTask = ui.newTask(false)
                         taskExecutionTask.add(
                             renderMarkdown(
@@ -245,7 +245,8 @@ open class AutoPlanChatApp(
                     )
                     thinkingStatusTask.complete(renderMarkdown("Updated Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"))
                 }
-            } catch (e: Exception) {
+                task.complete("Auto Plan Chat completed.")
+            } catch (e: Throwable) {
                 task.error(ui, e)
                 log.error("Error in startAutoPlanChat", e)
             } finally {
@@ -283,7 +284,6 @@ open class AutoPlanChatApp(
         val result = StringBuilder()
         taskImpl.run(
             agent = coordinator,
-            taskId = currentTaskId,
             messages = listOf(
                 userMessage,
                 "Current thinking status:\n${formatThinkingStatus(thinkingStatus!!)}"
@@ -303,7 +303,7 @@ open class AutoPlanChatApp(
         thinkingStatus: ThinkingStatus?
     ): List<PlanTaskBase>? {
         val describer1 = planSettings.describer()
-        return ParsedActor(
+        val tasks = ParsedActor(
             name = "SingleTaskChooser",
             resultClass = Tasks::class.java,
             exampleInstance = Tasks(
@@ -351,12 +351,21 @@ open class AutoPlanChatApp(
                                                         """.trimIndent()
                     )
                     + formatEvalRecords(), api
-        ).obj.tasks?.take(maxTasksPerIteration)?.mapNotNull { task ->
-            (if (task.task_type == null) {
+        ).obj.tasks?.map { task ->
+            task to (if (task.task_type == null) {
                 null
             } else {
                 TaskType.Companion.getImpl(coordinator.planSettings, task)
             })?.planTask
+        }
+        if (tasks.isNullOrEmpty()) {
+            log.info("No tasks selected from: ${tasks?.map { it.first }}")
+            return null
+        } else if (tasks.mapNotNull { it.second }.isEmpty()) {
+            log.warn("No tasks selected from: ${tasks.map { it.first }}")
+            return null
+        } else {
+            return tasks.mapNotNull { it.second }.take(maxTasksPerIteration)
         }
     }
 
@@ -458,7 +467,26 @@ open class AutoPlanChatApp(
         var currentLength = 0
         val formattedRecords = mutableListOf<String>()
         for (record in executionRecords.reversed()) {
-            val formattedRecord = "Task ${executionRecords.indexOf(record) + 1} Result: ${record.result}"
+            val formattedRecord = """
+# Task ${executionRecords.indexOf(record) + 1}
+
+## Task:
+```json
+${JsonUtil.toJson(record.task!!)}
+```
+
+## Result: 
+${record.result?.let {
+    // Add 2 levels of header level to each header
+    it.split("\n").joinToString("\n") { line ->
+        if (line.startsWith("#")) {
+            "##$line"
+        } else {
+            line
+        }
+    }
+}}
+"""
             if (currentLength + formattedRecord.length > maxTotalLength) {
                 formattedRecords.add("... (earlier records truncated)")
                 break

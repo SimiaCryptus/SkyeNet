@@ -54,7 +54,6 @@ abstract class AbstractTask<T : PlanTaskBase>(
 
     abstract fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String> = listOf(),
         task: SessionTask,
         api: API,

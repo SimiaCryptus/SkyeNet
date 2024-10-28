@@ -67,7 +67,6 @@ class DocumentationTask(
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,

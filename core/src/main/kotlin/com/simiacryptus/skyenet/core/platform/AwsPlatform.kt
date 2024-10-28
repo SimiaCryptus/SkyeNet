@@ -18,13 +18,17 @@ open class AwsPlatform(
     override val shareBase: String = System.getProperty("share_base", "https://share.simiacrypt.us"),
     private val region: Region? = Region.US_EAST_1
 ) : CloudPlatformInterface {
+    private val log = LoggerFactory.getLogger(AwsPlatform::class.java)
+
     protected open val kmsClient: KmsClient by lazy {
+        log.debug("Initializing KMS client for region: {}", Region.US_EAST_1)
         KmsClient.builder().region(Region.US_EAST_1)
             //.credentialsProvider(ProfileCredentialsProvider.create("data"))
             .build()
     }
 
     protected open val s3Client: S3Client by lazy {
+        log.debug("Initializing S3 client for region: {}", region)
         S3Client.builder()
             .region(region)
             .build()
@@ -35,6 +39,7 @@ open class AwsPlatform(
         contentType: String,
         bytes: ByteArray
     ): String {
+        log.info("Uploading {} bytes to S3 path: {}", bytes.size, path)
         s3Client.putObject(
             PutObjectRequest.builder()
                 .bucket(bucket).key(path.replace("/{2,}".toRegex(), "/").removePrefix("/"))
@@ -42,6 +47,7 @@ open class AwsPlatform(
                 .build(),
             RequestBody.fromBytes(bytes)
         )
+        log.debug("Upload completed successfully")
         return "$shareBase/$path"
     }
 
@@ -50,6 +56,7 @@ open class AwsPlatform(
         contentType: String,
         request: String
     ): String {
+        log.info("Uploading string content to S3 path: {}", path)
         s3Client.putObject(
             PutObjectRequest.builder()
                 .bucket(bucket).key(path.replace("/{2,}".toRegex(), "/").removePrefix("/"))
@@ -57,12 +64,14 @@ open class AwsPlatform(
                 .build(),
             RequestBody.fromString(request)
         )
+        log.debug("Upload completed successfully")
         return "$shareBase/$path"
     }
 
 
-    override fun encrypt(fileBytes: ByteArray, keyId: String): String? =
-        Base64.getEncoder().encodeToString(
+    override fun encrypt(fileBytes: ByteArray, keyId: String): String? {
+        log.info("Encrypting {} bytes using KMS key: {}", fileBytes.size, keyId)
+        val encryptedData = Base64.getEncoder().encodeToString(
             kmsClient.encrypt(
                 EncryptRequest.builder()
                     .keyId(keyId)
@@ -70,18 +79,27 @@ open class AwsPlatform(
                     .build()
             ).ciphertextBlob().asByteArray()
         )
+        log.debug("Encryption completed successfully")
+        return encryptedData
+    }
 
-    override fun decrypt(encryptedData: ByteArray): String = String(
-        kmsClient.decrypt(
-            DecryptRequest.builder()
-                .ciphertextBlob(SdkBytes.fromByteArray(Base64.getDecoder().decode(encryptedData)))
-                .build()
-        ).plaintext().asByteArray(), StandardCharsets.UTF_8
-    )
+    override fun decrypt(encryptedData: ByteArray): String {
+        log.info("Decrypting {} bytes of data", encryptedData.size)
+        val decryptedData = String(
+            kmsClient.decrypt(
+                DecryptRequest.builder()
+                    .ciphertextBlob(SdkBytes.fromByteArray(Base64.getDecoder().decode(encryptedData)))
+                    .build()
+            ).plaintext().asByteArray(), StandardCharsets.UTF_8
+        )
+        log.debug("Decryption completed successfully")
+        return decryptedData
+    }
 
     companion object {
         val log = LoggerFactory.getLogger(AwsPlatform::class.java)
         fun get() = try {
+            log.info("Initializing AwsPlatform")
             AwsPlatform()
         } catch (e: Throwable) {
             log.warn("Error initializing AWS platform", e)

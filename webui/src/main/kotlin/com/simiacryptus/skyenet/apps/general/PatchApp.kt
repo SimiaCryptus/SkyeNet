@@ -21,6 +21,7 @@ import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
+import java.util.UUID
 
 abstract class PatchApp(
     override val root: File,
@@ -177,8 +178,23 @@ abstract class PatchApp(
         changed: MutableSet<Path>,
         api: ChatClient,
     ) {
+        val api = api.getChildClient().apply {
+            val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
+            createFile.second?.apply {
+                logStreams += this.outputStream().buffered()
+                task.verbose("API log: <a href=\"file:///$this\">$this</a>")
+            }
+        }
         val plan = ParsedActor(
             resultClass = ParsedErrors::class.java,
+            exampleInstance = ParsedErrors(listOf(
+                ParsedError(
+                    message = "Error message",
+                    relatedFiles = listOf("src/main/java/com/example/Example.java"),
+                    fixFiles = listOf("src/main/java/com/example/Example.java"),
+                    searchStrings = listOf("def exampleFunction", "TODO")
+                )
+            )),
             prompt = """
                 |You are a helpful AI that helps people with coding.
                 |
