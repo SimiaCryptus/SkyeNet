@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskData
@@ -17,8 +18,8 @@ open class PlanChatApp(
     applicationName: String = "Task Planning Chat v1.0",
     path: String = "/taskChat",
     planSettings: PlanSettings,
-    model: TextModel,
-    parsingModel: TextModel,
+    model: ChatModel,
+    parsingModel: ChatModel,
     domainName: String = "localhost",
     showMenubar: Boolean = true,
     initialPlan: TaskBreakdownWithPrompt? = null,
@@ -77,7 +78,10 @@ open class PlanChatApp(
                     command = planSettings.command,
                     temperature = planSettings.temperature,
                     workingDir = planSettings.workingDir,
-                    env = planSettings.env
+                    env = planSettings.env,
+                    githubToken = planSettings.githubToken,
+                    googleApiKey = planSettings.googleApiKey,
+                    googleSearchEngineId = planSettings.googleSearchEngineId,
                 )).copy(
                     allowBlocking = false,
                 )

@@ -4,7 +4,7 @@ import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.models.TextModel
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.AgentPatterns
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.core.actors.ParsedActor
@@ -21,13 +21,14 @@ import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
+import java.util.UUID
 
 abstract class PatchApp(
     override val root: File,
     val session: Session,
     val settings: Settings,
     val api: ChatClient,
-    val model: TextModel,
+    val model: ChatModel,
     val promptPrefix: String = """The following command was run and produced an error:"""
 ) : ApplicationServer(
     applicationName = "Magic Code Fixer",
@@ -177,8 +178,23 @@ abstract class PatchApp(
         changed: MutableSet<Path>,
         api: ChatClient,
     ) {
+        val api = api.getChildClient().apply {
+            val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
+            createFile.second?.apply {
+                logStreams += this.outputStream().buffered()
+                task.verbose("API log: <a href=\"file:///$this\">$this</a>")
+            }
+        }
         val plan = ParsedActor(
             resultClass = ParsedErrors::class.java,
+            exampleInstance = ParsedErrors(listOf(
+                ParsedError(
+                    message = "Error message",
+                    relatedFiles = listOf("src/main/java/com/example/Example.java"),
+                    fixFiles = listOf("src/main/java/com/example/Example.java"),
+                    searchStrings = listOf("def exampleFunction", "TODO")
+                )
+            )),
             prompt = """
                 |You are a helpful AI that helps people with coding.
                 |
@@ -349,7 +365,8 @@ abstract class PatchApp(
                 } else {
                     false
                 }
-            }
+            },
+            model = model,
         )
         content.clear()
         content.append("<div>${MarkdownUtil.renderMarkdown(markdown!!)}</div>")

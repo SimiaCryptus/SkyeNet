@@ -7,7 +7,7 @@ import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
-import com.simiacryptus.skyenet.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
@@ -17,12 +17,10 @@ class FileModificationTask(
     planTask: FileModificationTaskData?
 ) : AbstractFileTask<FileModificationTaskData>(planSettings, planTask) {
     class FileModificationTaskData(
-        @Description("List of input files to be examined when designing the modifications")
         input_files: List<String>? = null,
-        @Description("List of output files to be modified or created")
         output_files: List<String>? = null,
         @Description("Specific modifications to be made to the files")
-        val modifications: Map<String, String>? = null,
+        val modifications: Any? = null,
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         state: TaskState? = null
@@ -97,14 +95,14 @@ class FileModificationTask(
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,
         resultFn: (String) -> Unit
     ) {
         if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
-            task.complete("No input files specified")
+            task.complete("CONFIGURATION ERROR: No input files specified")
+            resultFn("CONFIGURATION ERROR: No input files specified")
             return
         }
         val semaphore = Semaphore(0)
@@ -128,13 +126,14 @@ class FileModificationTask(
                     },
                     ui = agent.ui,
                     api = api,
-                    shouldAutoApply = { agent.planSettings.autoFix }
+                    shouldAutoApply = { agent.planSettings.autoFix },
+                    model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
                 )
                 task.complete()
                 onComplete()
-                MarkdownUtil.renderMarkdown(diffLinks + "\n\n## Auto-applied changes", ui = agent.ui)
+                renderMarkdown(diffLinks + "\n\n## Auto-applied changes", ui = agent.ui)
             } else {
-                MarkdownUtil.renderMarkdown(
+                renderMarkdown(
                     agent.ui.socketManager!!.addApplyFileDiffLinks(
                         root = agent.root,
                         response = codeResult,
@@ -144,7 +143,8 @@ class FileModificationTask(
                             }
                         },
                         ui = agent.ui,
-                        api = api
+                        api = api,
+                        model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
                     ) + acceptButtonFooter(agent.ui) {
                         task.complete()
                         onComplete()

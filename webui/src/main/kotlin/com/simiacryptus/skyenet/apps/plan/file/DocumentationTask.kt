@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.apps.plan.file
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.jopenai.models.chatModel
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTaskData
@@ -66,7 +67,6 @@ class DocumentationTask(
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,
@@ -101,7 +101,8 @@ class DocumentationTask(
                     },
                     ui = agent.ui,
                     api = api,
-                    shouldAutoApply = { agent.planSettings.autoFix }
+                    shouldAutoApply = { agent.planSettings.autoFix },
+                    model = planSettings.getTaskSettings(TaskType.Documentation).model ?: planSettings.defaultModel,
                 )
                 task.complete()
                 onComplete()
@@ -117,7 +118,8 @@ class DocumentationTask(
                             }
                         },
                         ui = agent.ui,
-                        api = api
+                        api = api,
+                        model = planSettings.getTaskSettings(TaskType.Documentation).model ?: planSettings.defaultModel,
                     ) + acceptButtonFooter(agent.ui) {
                         task.complete()
                         onComplete()

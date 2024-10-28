@@ -11,19 +11,19 @@ import java.sql.Timestamp
 import java.util.*
 
 class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
-    private val log = LoggerFactory.getLogger(HSQLMetadataStorage::class.java)
+    private val log = LoggerFactory.getLogger(javaClass)
 
     private val connection: Connection by lazy {
         log.info("Initializing HSQLMetadataStorage with database file: ${dbFile.absolutePath}")
         Class.forName("org.hsqldb.jdbc.JDBCDriver")
         val connection = DriverManager.getConnection("jdbc:hsqldb:file:${dbFile.absolutePath}/metadata;shutdown=true", "SA", "")
-        log.debug("Database connection established: $connection")
+        log.info("Database connection established successfully")
         createSchema(connection)
         connection
     }
 
     private fun createSchema(connection: Connection) {
-        log.info("Creating database schema if not exists")
+        log.debug("Attempting to create database schema if not exists")
         connection.createStatement().executeUpdate(
             """
             CREATE TABLE IF NOT EXISTS metadata (
@@ -36,6 +36,7 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
             )
             """
         )
+        log.info("Database schema creation completed")
     }
 
     override fun getSessionName(user: User?, session: Session): String {
@@ -47,9 +48,10 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
         statement.setString(2, user?.email ?: "")
         val resultSet = statement.executeQuery()
         return if (resultSet.next()) {
-            resultSet.getString("value")
+            val name = resultSet.getString("value")
+            log.debug("Retrieved session name: $name for session: ${session.sessionId}")
+            name
         } else {
-            log.debug("Session ${session.sessionId} has no name")
             session.sessionId
         }
     }
@@ -70,6 +72,7 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
         statement.setString(4, name)
         statement.setTimestamp(5, Timestamp(System.currentTimeMillis()))
         statement.executeUpdate()
+        log.info("Session name set successfully for session: ${session.sessionId}")
     }
 
     override fun getMessageIds(user: User?, session: Session): List<String> {
@@ -81,8 +84,11 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
         statement.setString(2, user?.email ?: "")
         val resultSet = statement.executeQuery()
         return if (resultSet.next()) {
-            resultSet.getString("value").split(",")
+            val ids = resultSet.getString("value").split(",")
+            log.debug("Retrieved ${ids.size} message IDs for session: ${session.sessionId}")
+            ids
         } else {
+            log.debug("No message IDs found for session: ${session.sessionId}")
             emptyList()
         }
     }
@@ -103,6 +109,7 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
         statement.setString(4, ids.joinToString(","))
         statement.setTimestamp(5, Timestamp(System.currentTimeMillis()))
         statement.executeUpdate()
+        log.info("Set ${ids.size} message IDs for session: ${session.sessionId}")
     }
 
     override fun getSessionTime(user: User?, session: Session): Date? {
@@ -114,14 +121,16 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
         statement.setString(2, user?.email ?: "")
         val resultSet = statement.executeQuery()
         return if (resultSet.next()) {
+            val time = resultSet.getString("value")
             try {
-                Date(resultSet.getString("value").toLong())
+                Date(time.toLong()).also {
+                    log.debug("Retrieved session time: $it for session: ${session.sessionId}")
+                }
             } catch (e: NumberFormatException) {
-                log.warn("Invalid session time value, falling back to timestamp")
+                log.warn("Invalid session time value: $time, falling back to timestamp for session: ${session.sessionId}")
                 resultSet.getTimestamp("timestamp")
             }
         } else {
-            log.debug("No session time found, returning current time")
             Date()
         }
     }
@@ -142,6 +151,7 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
         statement.setString(4, time.time.toString())
         statement.setTimestamp(5, Timestamp(time.time))
         statement.executeUpdate()
+        log.info("Session time set to $time for session: ${session.sessionId}")
     }
 
     override fun listSessions(path: String): List<String> {
@@ -155,7 +165,7 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
         while (resultSet.next()) {
             sessions.add(resultSet.getString("session_id"))
         }
-        log.debug("Found ${sessions.size} sessions for path: $path")
+        log.info("Found ${sessions.size} sessions for path: $path")
         return sessions
     }
 
@@ -167,9 +177,8 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
         statement.setString(1, session.sessionId)
         statement.setString(2, user?.email ?: "")
         statement.executeUpdate()
+        log.info("Deleted session: ${session.sessionId} for user: ${user?.email ?: "anonymous"}")
     }
 
-    companion object {
-        private val log = LoggerFactory.getLogger(HSQLMetadataStorage::class.java)
-    }
+
 }

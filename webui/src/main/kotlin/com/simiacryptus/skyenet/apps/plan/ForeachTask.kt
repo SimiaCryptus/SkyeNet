@@ -38,7 +38,6 @@ ForeachTask - Execute a task for each item in a list
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,

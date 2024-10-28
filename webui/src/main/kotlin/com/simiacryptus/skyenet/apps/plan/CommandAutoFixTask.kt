@@ -35,7 +35,7 @@ class CommandAutoFixTask(
     data class CommandWithWorkingDir(
         @Description("The command to be executed")
         val command: List<String>,
-        @Description("The working directory for this specific command")
+        @Description("The relative path of the working directory")
         val workingDir: String? = null
     )
 
@@ -53,7 +53,6 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
 
     override fun run(
         agent: PlanCoordinator,
-        taskId: String,
         messages: List<String>,
         task: SessionTask,
         api: API,
@@ -140,7 +139,6 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
         } catch (e: Throwable) {
             log.warn("Error", e)
         }
-        log.debug("Completed command auto fix: $taskId")
     }
 
     companion object {
