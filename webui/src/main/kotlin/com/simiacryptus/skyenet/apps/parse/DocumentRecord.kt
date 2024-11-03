@@ -1,8 +1,6 @@
 package com.simiacryptus.skyenet.apps.parse
 
 import com.simiacryptus.jopenai.OpenAIClient
-import com.simiacryptus.jopenai.models.ApiModel
-import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.util.JsonUtil
 import java.io.File
 import java.io.FileInputStream
@@ -52,17 +50,22 @@ data class DocumentRecord(
 
         fun <T> saveAsBinary(
             openAIClient: OpenAIClient,
-            outputPath: String,
             pool: ExecutorService,
             progressState: ProgressState? = null,
             vararg inputPaths: String,
         ) {
-            val records = mutableListOf<DocumentRecord>()
-            val futureList: MutableList<Future<*>> = mutableListOf()
             inputPaths.forEach { inputPath ->
-                val fileData = JsonUtil.fromJson(File(inputPath).readText(), Map::class.java) as T as? Map<String, Any>
-                records += DocumentParsingModel.getRows(inputPath, progressState, futureList, pool, openAIClient, fileData)
+                val futureList = mutableListOf<Future<*>>()
+                val infile = File(inputPath)
+                val fileData = JsonUtil.fromJson<T>(infile.readText(), Map::class.java) as T as? Map<String, Any>
+                val records = DocumentParsingModel.getRows(inputPath, progressState, futureList, pool, openAIClient, fileData)
+                val outputPath = infile.parentFile.resolve(infile.name.split("\\.".toRegex(), 2).first() + ".index.data").absolutePath
+                awaitAll(futureList.toTypedArray())
+                writeBinary(outputPath, records)
             }
+        }
+
+        fun awaitAll(futureList: Array<Future<*>>) {
             val start = System.currentTimeMillis()
             for (future in futureList) {
                 try {
@@ -74,7 +77,6 @@ data class DocumentRecord(
                     log.error("Error processing entity", e)
                 }
             }
-            writeBinary(outputPath, records)
         }
 
 
