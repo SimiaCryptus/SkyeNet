@@ -1,8 +1,6 @@
-package com.simiacryptus.skyenet.apps.plan.file
+package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -13,6 +11,8 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.util.JsonUtil
 
 class GoogleSearchTask(
@@ -44,25 +44,22 @@ GoogleSearch - Search Google for web results
     agent: PlanCoordinator,
     messages: List<String>,
     task: SessionTask,
-    api: API,
-    resultFn: (String) -> Unit
+    api: ChatClient,
+    resultFn: (String) -> Unit,
+    api2: OpenAIClient,
+    planSettings: PlanSettings
   ) {
-    val searchResults = performGoogleSearch()
+    val searchResults = performGoogleSearch(planSettings)
     val formattedResults = formatSearchResults(searchResults)
     task.add(MarkdownUtil.renderMarkdown(formattedResults, ui = agent.ui))
     resultFn(formattedResults)
   }
 
-  private fun performGoogleSearch(): String {
+  private fun performGoogleSearch(planSettings: PlanSettings): String {
     val client = HttpClient.newBuilder().build()
     val encodedQuery = URLEncoder.encode(planTask?.search_query, "UTF-8")
     val uriBuilder = "https://www.googleapis.com/customsearch/v1?key=${planSettings.googleApiKey}&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${planTask?.num_results}"
-    
-    val request = HttpRequest.newBuilder()
-      .uri(URI.create(uriBuilder))
-      .GET()
-      .build()
-
+    val request = HttpRequest.newBuilder().uri(URI.create(uriBuilder)).GET().build()
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
     if (response.statusCode() != 200) {
       throw RuntimeException("Google API request failed with status ${response.statusCode()}: ${response.body()}")

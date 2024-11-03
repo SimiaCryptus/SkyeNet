@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.apps.general.CommandPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
 import com.simiacryptus.skyenet.apps.plan.*
@@ -29,11 +30,13 @@ abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskBase>(
     }
 
     override fun run(
-        agent: PlanCoordinator,
-        messages: List<String>,
-        task: SessionTask,
-        api: API,
-        resultFn: (String) -> Unit
+      agent: PlanCoordinator,
+      messages: List<String>,
+      task: SessionTask,
+      api: ChatClient,
+      resultFn: (String) -> Unit,
+      api2: OpenAIClient,
+      planSettings: PlanSettings
     ) {
         val analysisResult = analysisActor.answer(
             messages + listOf(

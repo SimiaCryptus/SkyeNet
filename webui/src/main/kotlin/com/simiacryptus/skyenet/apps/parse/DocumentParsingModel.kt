@@ -1,9 +1,15 @@
 package com.simiacryptus.skyenet.apps.parse
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ChatModel
+import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.skyenet.core.actors.ParsedActor
+import com.simiacryptus.util.JsonUtil
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 
 
 open class DocumentParsingModel(
@@ -19,17 +25,7 @@ open class DocumentParsingModel(
         val newData = newData as DocumentData
         return DocumentData(
             id = newData.id ?: runningDocument.id,
-            content = mergeContent(runningDocument.content, newData.content).takeIf { it.isNotEmpty() },
-            entities = mergeEntities(runningDocument.entities, newData.entities).takeIf { it.isNotEmpty() },
-            metadata = mergeMetadata(runningDocument.metadata, newData.metadata)
-        )
-    }
-
-    protected open fun mergeMetadata(existing: DocumentMetadata?, new: DocumentMetadata?): DocumentMetadata {
-        return DocumentMetadata(
-            title = new?.title ?: existing?.title,
-            keywords = ((existing?.keywords ?: emptyList()) + (new?.keywords ?: emptyList())).distinct(),
-            properties = ((existing?.properties ?: emptyMap()) + (new?.properties ?: emptyMap())).takeIf { it.isNotEmpty() }
+            content_list = mergeContent(runningDocument.content_list, newData.content_list).takeIf { it.isNotEmpty() },
         )
     }
 
@@ -50,42 +46,16 @@ open class DocumentParsingModel(
     }
 
     protected open fun mergeContentData(existing: ContentData, new: ContentData) = existing.copy(
-        content = mergeContent(existing.content, new.content).takeIf { it.isNotEmpty() },
-        entities = ((existing.entities ?: emptyList()) + (new.entities ?: emptyList())).distinct()
-            .takeIf { it.isNotEmpty() },
+        content_list = mergeContent(existing.content_list, new.content_list).takeIf { it.isNotEmpty() },
         tags = ((existing.tags ?: emptyList()) + (new.tags ?: emptyList())).distinct().takeIf { it.isNotEmpty() }
     )
 
-    protected open fun mergeEntities(
-        existingEntities: Map<String, EntityData>?,
-        newEntities: Map<String, EntityData>?
-    ) = ((existingEntities?.keys ?: emptySet()) + (newEntities?.keys ?: emptySet())).associateWith { key ->
-        val existing = existingEntities?.get(key)
-        val new = newEntities?.get(key)
-        when {
-            existing == null -> new!!
-            new == null -> existing
-            else -> mergeEntityData(existing, new)
-        }
-    }
-
-    protected open fun mergeEntityData(existing: EntityData, new: EntityData) = existing.copy(
-        aliases = ((existing.aliases ?: emptyList()) + (new.aliases ?: emptyList())).distinct()
-            .takeIf { it.isNotEmpty() },
-        properties = ((existing.properties ?: emptyMap()) + (new.properties ?: emptyMap())).takeIf { it.isNotEmpty() },
-        relations = ((existing.relations ?: emptyMap()) + (new.relations ?: emptyMap())).takeIf { it.isNotEmpty() },
-        type = new.type ?: existing.type
-    )
-
     open val promptSuffix = """
-        |Parse the text into a hierarchical structure that describes the content of the page:
+        |Parse the text into a hierarchical structure:
         |1. Separate the content into sections, paragraphs, statements, etc.
-        |2. The final level of the hierarchy should contain singular, short, standalone sentences.
-        |3. Capture any entities, relationships, and properties that can be extracted from the text of the current page(s).
-        |4. For each entity, include mentions with their exact text and location (start and end indices) in the document.
-        |5. Extract document metadata such as title, author, creation date, and keywords if available.
-        |6. Assign relevant tags to each content section to improve searchability and categorization.
-        |7. Do not copy data from the accumulated document JSON to your response; it is provided for context only.
+        |2. All source content should be included in the output, with paraphrasing, corrections, and context as needed
+        |3. Each content leaf node text should be simple and self-contained
+        |4. Assign relevant tags to each node to improve searchability and categorization.
         """.trimMargin()
 
     open val exampleInstance = DocumentData()
@@ -107,34 +77,59 @@ open class DocumentParsingModel(
 
     data class DocumentData(
         @Description("Document/Page identifier") override val id: String? = null,
-        @Description("Entities extracted") val entities: Map<String, EntityData>? = null,
-        @Description("Hierarchical structure and data") override val content: List<ContentData>? = null,
-        @Description("Document metadata") override val metadata: DocumentMetadata? = null
+        @Description("Hierarchical structure and data") override val content_list: List<ContentData>? = null,
     ) : ParsingModel.DocumentData
-
-    data class EntityData(
-        @Description("Aliases for the entity") val aliases: List<String>? = null,
-        @Description("Entity attributes extracted from the page") val properties: Map<String, Any>? = null,
-        @Description("Entity relationships extracted from the page") val relations: Map<String, String>? = null,
-        @Description("Entity type (e.g., person, organization, location)") val type: String? = null
-    )
 
     data class ContentData(
         @Description("Content type, e.g. heading, paragraph, statement, list") override val type: String = "",
         @Description("Brief, self-contained text either copied, paraphrased, or summarized") override val text: String? = null,
-        @Description("Sub-elements") override val content: List<ContentData>? = null,
-        @Description("Related entities by ID") val entities: List<String>? = null,
+        @Description("Sub-elements") override val content_list: List<ContentData>? = null,
         @Description("Tags - related topics and non-entity indexing") override val tags: List<String>? = null
     ) : ParsingModel.ContentData
 
-    data class DocumentMetadata(
-        @Description("Document title") val title: String? = null,
-        @Description("Keywords or tags associated with the document") val keywords: List<String>? = null,
-        @Description("Other metadata") val properties: Map<String, Any>? = null,
-    ) : ParsingModel.DocumentMetadata
-
     companion object {
         val log = org.slf4j.LoggerFactory.getLogger(DocumentParsingModel::class.java)
+
+        fun getRows(
+            inputPath: String,
+            progressState: ProgressState?,
+            futureList: MutableList<Future<*>>,
+            pool: ExecutorService,
+            openAIClient: OpenAIClient,
+            fileData: Map<String, Any>?
+        ): MutableList<DocumentRecord> {
+            val records: MutableList<DocumentRecord> = mutableListOf()
+            fun processContent(content: Map<String, Any>, path: String = "") {
+                val record = DocumentRecord(
+                    text = content["text"] as? String,
+                    metadata = JsonUtil.toJson(content.filter<String, Any> { it.key != "text" && it.key != "content" && it.key != "type" }),
+                    sourcePath = inputPath,
+                    jsonPath = path,
+                    vector = null
+                )
+                records.add(record)
+                if (record.text != null) {
+                    progressState?.add(0.0, 1.0)
+                    futureList.add(pool.submit {
+                        record.vector = openAIClient.createEmbedding(
+                            ApiModel.EmbeddingRequest(
+                                EmbeddingModels.Large.modelName, record.text
+                            )
+                        ).data[0].embedding ?: DoubleArray(0)
+                        progressState?.add(1.0, 0.0)
+                    })
+                }
+                (content["content_list"] as? List<Map<String, Any>>)?.forEachIndexed<Map<String, Any>> { index, childContent ->
+                    processContent(childContent, "$path.content_list[$index]")
+                }
+            }
+            fileData?.get("content_list")?.let { contentList ->
+                (contentList as? List<Map<String, Any>>)?.forEachIndexed<Map<String, Any>> { index, content ->
+                    processContent(content, "content_list[$index]")
+                }
+            }
+            return records
+        }
 
     }
 

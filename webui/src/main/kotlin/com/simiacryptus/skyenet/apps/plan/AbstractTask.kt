@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -56,8 +57,10 @@ abstract class AbstractTask<T : PlanTaskBase>(
         agent: PlanCoordinator,
         messages: List<String> = listOf(),
         task: SessionTask,
-        api: API,
-        resultFn: (String) -> Unit
+        api: ChatClient,
+        resultFn: (String) -> Unit,
+        api2: OpenAIClient,
+        planSettings: PlanSettings,
     )
 
     companion object {

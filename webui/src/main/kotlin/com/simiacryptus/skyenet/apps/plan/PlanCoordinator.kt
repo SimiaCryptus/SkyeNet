@@ -4,6 +4,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.buildMermaidGraph
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
@@ -54,7 +55,12 @@ class PlanCoordinator(
                 }
             }
 
-    fun executeTaskBreakdownWithPrompt(jsonInput: String, api: API, task: SessionTask) {
+    fun executeTaskBreakdownWithPrompt(
+        jsonInput: String,
+        api: API,
+        api2: OpenAIClient,
+        task: SessionTask
+    ) {
         try {
             lateinit var taskBreakdownWithPrompt: TaskBreakdownWithPrompt
             val plan = filterPlan {
@@ -73,7 +79,7 @@ class PlanCoordinator(
                 """.trimMargin(), ui = ui
                 )
             )
-            executePlan(plan ?: emptyMap(), task, taskBreakdownWithPrompt.prompt, api)
+            executePlan(plan ?: emptyMap(), task, taskBreakdownWithPrompt.prompt, api, api2)
         } catch (e: Exception) {
             task.error(ui, e)
         }
@@ -83,7 +89,8 @@ class PlanCoordinator(
         plan: Map<String, PlanTaskBase>,
         task: SessionTask,
         userMessage: String,
-        api: API
+        api: API,
+        api2: OpenAIClient,
     ): PlanProcessingState {
         val api = (api as ChatClient).getChildClient().apply {
             val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
@@ -110,7 +117,8 @@ class PlanCoordinator(
                 pool = pool,
                 userMessage = userMessage,
                 plan = plan,
-                api = api
+                api = api,
+                api2 = api2,
             )
         } catch (e: Throwable) {
             log.warn("Error during incremental code generation process", e)
@@ -135,7 +143,8 @@ class PlanCoordinator(
         pool: ThreadPoolExecutor,
         userMessage: String,
         plan: Map<String, PlanTaskBase>,
-        api: API
+        api: API,
+        api2: OpenAIClient,
     ) {
         val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
         val api = (api as ChatClient).getChildClient().apply {
@@ -251,7 +260,9 @@ class PlanCoordinator(
                         messages = messages,
                         task = task1,
                         api = api,
-                        resultFn = { planProcessingState.taskResult[taskId] = it }
+                        api2 = api2,
+                        resultFn = { planProcessingState.taskResult[taskId] = it },
+                        planSettings = planSettings
                     )
                 } catch (e: Throwable) {
                     log.warn("Error during task execution", e)
@@ -273,6 +284,22 @@ class PlanCoordinator(
             Thread.sleep(1000)
         }
     }
+
+    fun copy(
+        user: User? = this.user,
+        session: Session = this.session,
+        dataStorage: StorageInterface = this.dataStorage,
+        ui: ApplicationInterface = this.ui,
+        planSettings: PlanSettings = this.planSettings,
+        root: Path = this.root
+    ) = PlanCoordinator(
+        user = user,
+        session = session,
+        dataStorage = dataStorage,
+        ui = ui,
+        planSettings = planSettings,
+        root = root
+    )
 
     companion object : Planner() {
         private val log = LoggerFactory.getLogger(PlanCoordinator::class.java)

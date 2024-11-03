@@ -45,7 +45,7 @@ open class ClientManager {
         ThreadPoolExecutor(
             0, Integer.MAX_VALUE,
             500, TimeUnit.MILLISECONDS,
-            SynchronousQueue(),
+            ArrayBlockingQueue(1),
             RecordingThreadFactory(session, user)
         )
 

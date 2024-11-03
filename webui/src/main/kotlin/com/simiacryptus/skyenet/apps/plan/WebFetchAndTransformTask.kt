@@ -1,8 +1,9 @@
-package com.simiacryptus.skyenet.apps.plan.file
+package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -42,11 +43,13 @@ open class WebFetchAndTransformTask(
     agent: PlanCoordinator,
     messages: List<String>,
     task: SessionTask,
-    api: API,
-    resultFn: (String) -> Unit
+    api: ChatClient,
+    resultFn: (String) -> Unit,
+    api2: OpenAIClient,
+    planSettings: PlanSettings
   ) {
     val fetchedContent = fetchAndStripHtml(planTask?.url ?: "")
-    val transformedContent = transformContent(fetchedContent, planTask?.transformationGoal ?: "", api)
+    val transformedContent = transformContent(fetchedContent, planTask?.transformationGoal ?: "", api, planSettings)
     task.add(MarkdownUtil.renderMarkdown(transformedContent, ui = agent.ui))
     resultFn(transformedContent)
   }
@@ -112,7 +115,7 @@ open class WebFetchAndTransformTask(
     }
   }
 
-  private fun transformContent(content: String, transformationGoal: String, api: API): String {
+  private fun transformContent(content: String, transformationGoal: String, api: API, planSettings: PlanSettings): String {
     val prompt = """
             Transform the following web content according to this goal: $transformationGoal
             

@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
@@ -37,11 +38,13 @@ ForeachTask - Execute a task for each item in a list
     }
 
     override fun run(
-        agent: PlanCoordinator,
-        messages: List<String>,
-        task: SessionTask,
-        api: API,
-        resultFn: (String) -> Unit
+      agent: PlanCoordinator,
+      messages: List<String>,
+      task: SessionTask,
+      api: ChatClient,
+      resultFn: (String) -> Unit,
+      api2: OpenAIClient,
+      planSettings: PlanSettings
     ) {
         val userMessage = messages.joinToString("\n")
         val items =
@@ -66,7 +69,8 @@ ForeachTask - Execute a task for each item in a list
                 pool = agent.pool,
                 userMessage = "$userMessage\nProcessing item $index: $item",
                 plan = itemSubTasks,
-                api = api
+                api = api,
+                api2 = api2,
             )
         }
         subPlanTask.complete("Completed ForeachTask for ${items.size} items")

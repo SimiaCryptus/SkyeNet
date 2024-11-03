@@ -2,7 +2,6 @@ package com.simiacryptus.skyenet.apps.parse
 
 import java.awt.image.BufferedImage
 import java.io.File
-import kotlin.math.abs
 
 class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader {
     private val pages: List<String> = splitIntoPages(textFile.readLines().joinToString("\n"))
@@ -24,17 +23,17 @@ class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader 
     private fun splitIntoPages(text: String, maxChars: Int = 16000): List<String> {
         if (text.length <= maxChars) return listOf(text)
         val lines = text.split("\n")
-        var bestSplitIndex = lines.size / 2
-        var bestFitness = Double.MAX_VALUE
-        for (i in lines.indices) {
+        if (lines.size <= 1) return listOf(text)
+        val splitFitnesses = lines.indices.map { i ->
             val leftSize = lines.subList(0, i).joinToString("\n").length
             val rightSize = lines.subList(i, lines.size).joinToString("\n").length
-            val fitness = abs(leftSize - rightSize) + (if (lines[i].isEmpty()) 0 else 1000)
-            if (fitness < bestFitness) {
-                bestFitness = fitness.toDouble()
-                bestSplitIndex = i
-            }
-        }
+            if (leftSize <= 0) return@map i to Double.MAX_VALUE
+            if (rightSize <= 0) return@map i to Double.MAX_VALUE
+            val fitness = -((leftSize.toDouble() / text.length) * Math.log1p(rightSize.toDouble() / text.length) +
+                (rightSize.toDouble() / text.length) * Math.log1p(leftSize.toDouble() / text.length))
+            i to fitness.toDouble()
+        }.toTypedArray()
+        var bestSplitIndex = splitFitnesses.minByOrNull { it.second }?.first ?: lines.size / 2
         val leftText = lines.subList(0, bestSplitIndex).joinToString("\n")
         val rightText = lines.subList(bestSplitIndex, lines.size).joinToString("\n")
         return splitIntoPages(leftText, maxChars) + splitIntoPages(rightText, maxChars)

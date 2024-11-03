@@ -12,6 +12,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 data class DocumentRecord(
@@ -36,7 +37,7 @@ data class DocumentRecord(
         val metadata = input.readUTF().let { if (it.isEmpty()) null else it }
         val sourcePath = input.readUTF()
         val jsonPath = input.readUTF()
-        val vector = input.readObject() as DoubleArray
+        val vector = input.readObject() as DoubleArray?
         return DocumentRecord(
             text,
             metadata,
@@ -53,63 +54,15 @@ data class DocumentRecord(
             openAIClient: OpenAIClient,
             outputPath: String,
             pool: ExecutorService,
+            progressState: ProgressState? = null,
             vararg inputPaths: String,
         ) {
             val records = mutableListOf<DocumentRecord>()
+            val futureList: MutableList<Future<*>> = mutableListOf()
             inputPaths.forEach { inputPath ->
-                processDocument(
-                    inputPath,
-                    JsonUtil.fromJson(File(inputPath).readText(), Map::class.java) as T,
-                    records,
-                    openAIClient,
-                    pool
-                )
+                val fileData = JsonUtil.fromJson(File(inputPath).readText(), Map::class.java) as T as? Map<String, Any>
+                records += DocumentParsingModel.getRows(inputPath, progressState, futureList, pool, openAIClient, fileData)
             }
-            writeBinary(outputPath, records)
-        }
-
-        private fun <T> processDocument(
-            inputPath: String,
-            document: T,
-            records: MutableList<DocumentRecord>,
-            openAIClient: OpenAIClient,
-            pool: ExecutorService
-        ) {
-            fun processContent(content: Map<String, Any>, path: String = "") {
-                val record = DocumentRecord(
-                    text = content["text"] as? String,
-                    metadata = JsonUtil.toJson(content.filter { it.key != "text" && it.key != "content" }),
-                    sourcePath = inputPath,
-                    jsonPath = path,
-                    vector = null
-                )
-                records.add(record)
-                (content["content"] as? List<Map<String, Any>>)?.forEachIndexed { index, childContent ->
-                    processContent(childContent, "$path.content[$index]")
-                }
-            }
-            (document as? Map<String, Any>)?.get("content")?.let { contentList ->
-                (contentList as? List<Map<String, Any>>)?.forEachIndexed { index, content ->
-                    processContent(content, "content[$index]")
-                }
-            }
-            addEmbeddings(records, pool, openAIClient)
-        }
-
-        private fun addEmbeddings(
-            records: MutableList<DocumentRecord>,
-            pool: ExecutorService,
-            openAIClient: OpenAIClient
-        ) {
-            val futureList = records.map {
-                pool.submit {
-                    it.vector = openAIClient.createEmbedding(
-                        ApiModel.EmbeddingRequest(
-                            EmbeddingModels.Large.modelName, it.text
-                        )
-                    ).data.get(0).embedding ?: DoubleArray(0)
-                }
-            }.toTypedArray()
             val start = System.currentTimeMillis()
             for (future in futureList) {
                 try {
@@ -121,7 +74,9 @@ data class DocumentRecord(
                     log.error("Error processing entity", e)
                 }
             }
+            writeBinary(outputPath, records)
         }
+
 
         private fun writeBinary(outputPath: String, records: List<DocumentRecord>) {
             log.info("Writing ${records.size} records to $outputPath")
@@ -151,3 +106,4 @@ data class DocumentRecord(
         }
     }
 }
+

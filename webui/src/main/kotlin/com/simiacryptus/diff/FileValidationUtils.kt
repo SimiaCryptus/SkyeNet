@@ -92,6 +92,7 @@ class FileValidationUtils {
                 !file.exists() -> false
                 file.isDirectory -> false
                 file.name.startsWith(".") -> false
+                file.name.endsWith(".data") -> true
                 file.length() > (256 * 1024) -> false
                 isGitignore(file.toPath()) -> false
                 file.extension.lowercase(Locale.getDefault()) in setOf(
@@ -114,6 +115,7 @@ class FileValidationUtils {
             return data.flatMap {
                 (when {
                     it.name.startsWith(".") -> arrayOf()
+                    it.name.endsWith(".data") -> arrayOf(it)
                     isGitignore(it.toPath()) -> arrayOf()
                     it.length() > 1e6 -> arrayOf()
                     it.extension.lowercase(Locale.getDefault()) in
