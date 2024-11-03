@@ -29,10 +29,12 @@ class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader 
             val rightSize = lines.subList(i, lines.size).joinToString("\n").length
             if (leftSize <= 0) return@map i to Double.MAX_VALUE
             if (rightSize <= 0) return@map i to Double.MAX_VALUE
-            val fitness = -((leftSize.toDouble() / text.length) * Math.log1p(rightSize.toDouble() / text.length) +
+            var fitness = -((leftSize.toDouble() / text.length) * Math.log1p(rightSize.toDouble() / text.length) +
                 (rightSize.toDouble() / text.length) * Math.log1p(leftSize.toDouble() / text.length))
+            if (lines[i].isEmpty()) fitness *= 2
             i to fitness.toDouble()
-        }.toTypedArray()
+        }.toTypedArray().toMutableList()
+
         var bestSplitIndex = splitFitnesses.minByOrNull { it.second }?.first ?: lines.size / 2
         val leftText = lines.subList(0, bestSplitIndex).joinToString("\n")
         val rightText = lines.subList(bestSplitIndex, lines.size).joinToString("\n")

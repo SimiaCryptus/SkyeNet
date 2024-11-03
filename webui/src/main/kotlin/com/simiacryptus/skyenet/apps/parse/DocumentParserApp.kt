@@ -234,7 +234,7 @@ open class DocumentParserApp(
                             )
                         )
                         if (settings.saveFinalJson) {
-                            val finalJsonFile = root.resolve(file.name.reversed().split(delimiters = arrayOf("."), false, 2)[1].reversed() + ".parsed.json")
+                            val finalJsonFile = file.parentFile.resolve(file.name.reversed().split(delimiters = arrayOf("."), false, 2).joinToString("_").reversed() + ".parsed.json")
                             finalJsonFile.writeText(JsonUtil.toJson(finalDocument))
                             docTask.add(
                                 MarkdownUtil.renderMarkdown(

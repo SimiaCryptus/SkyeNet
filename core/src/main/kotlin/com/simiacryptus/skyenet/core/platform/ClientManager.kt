@@ -43,9 +43,9 @@ open class ClientManager {
     private val poolCache = mutableMapOf<SessionKey, ThreadPoolExecutor>()
     protected open fun createPool(session: Session, user: User?) =
         ThreadPoolExecutor(
-            0, Integer.MAX_VALUE,
+            8, Integer.MAX_VALUE,
             500, TimeUnit.MILLISECONDS,
-            ArrayBlockingQueue(1),
+            SynchronousQueue(),
             RecordingThreadFactory(session, user)
         )
 
