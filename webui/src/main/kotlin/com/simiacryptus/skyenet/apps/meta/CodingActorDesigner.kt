@@ -7,14 +7,14 @@ import com.simiacryptus.skyenet.interpreter.Interpreter
 import kotlin.reflect.KClass
 
 class CodingActorDesigner(
-    interpreterClass: KClass<out Interpreter>,
-    symbols: Map<String, Any>,
-    model: ChatModel,
-    temperature: Double
+  interpreterClass: KClass<out Interpreter>,
+  symbols: Map<String, Any>,
+  model: ChatModel,
+  temperature: Double
 ) : CodingActor(
-    interpreterClass = interpreterClass,
-    symbols = symbols,
-    details = """
+  interpreterClass = interpreterClass,
+  symbols = symbols,
+  details = """
     |
     |Your task is to design a system that uses gpt "actors" to form a "community" of actors interacting to solve problems.
     |Your task is to implement a "script" or "coding" actor that takes part in a larger system.
@@ -68,11 +68,11 @@ class CodingActorDesigner(
     |DO NOT subclass the CodingActor class. Use the constructor directly within the function.
     |
     """.trimMargin().trim(),
-    model = model,
-    temperature = temperature,
+  model = model,
+  temperature = temperature,
 ) {
-    init {
-        evalFormat = false
-        codeInterceptor = { fixups(it) }
-    }
+  init {
+    evalFormat = false
+    codeInterceptor = { fixups(it) }
+  }
 }

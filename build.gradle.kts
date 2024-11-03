@@ -3,7 +3,7 @@ group = properties("libraryGroup")
 version = properties("libraryVersion")
 
 tasks {
-    wrapper {
-        gradleVersion = properties("gradleVersion")
-    }
+  wrapper {
+    gradleVersion = properties("gradleVersion")
+  }
 }

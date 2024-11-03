@@ -14,30 +14,30 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.Semaphore
 
 class FileModificationTask(
-    planSettings: PlanSettings,
-    planTask: FileModificationTaskData?
+  planSettings: PlanSettings,
+  planTask: FileModificationTaskData?
 ) : AbstractFileTask<FileModificationTaskData>(planSettings, planTask) {
-    class FileModificationTaskData(
-        input_files: List<String>? = null,
-        output_files: List<String>? = null,
-        @Description("Specific modifications to be made to the files")
-        val modifications: Any? = null,
-        task_description: String? = null,
-        task_dependencies: List<String>? = null,
-        state: TaskState? = null
-    ) : FileTaskBase(
-        task_type = TaskType.FileModification.name,
-        task_description = task_description,
-        task_dependencies = task_dependencies,
-        input_files = input_files,
-        output_files = output_files,
-        state = state
-    )
+  class FileModificationTaskData(
+    input_files: List<String>? = null,
+    output_files: List<String>? = null,
+    @Description("Specific modifications to be made to the files")
+    val modifications: Any? = null,
+    task_description: String? = null,
+    task_dependencies: List<String>? = null,
+    state: TaskState? = null
+  ) : FileTaskBase(
+    task_type = TaskType.FileModification.name,
+    task_description = task_description,
+    task_dependencies = task_dependencies,
+    input_files = input_files,
+    output_files = output_files,
+    state = state
+  )
 
-    val fileModificationActor by lazy {
-        SimpleActor(
-            name = "FileModification",
-            prompt = """
+  val fileModificationActor by lazy {
+    SimpleActor(
+      name = "FileModification",
+      prompt = """
  Generate patches for existing files or create new files based on the given requirements and context.
  For existing files:
  Ensure modifications are efficient, maintain readability, and adhere to coding standards.
@@ -81,89 +81,89 @@ class FileModificationTask(
                 |}
  $TRIPLE_TILDE
                 """.trimMargin(),
-            model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
-            temperature = planSettings.temperature,
-        )
-    }
+      model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
+      temperature = planSettings.temperature,
+    )
+  }
 
-    override fun promptSegment(): String {
-        return """
+  override fun promptSegment(): String {
+    return """
  FileModification - Modify existing files or create new files
    ** For each file, specify the relative file path and the goal of the modification or creation
    ** List input files/tasks to be examined when designing the modifications or new files
         """.trimMargin()
-    }
+  }
 
-    override fun run(
-      agent: PlanCoordinator,
-      messages: List<String>,
-      task: SessionTask,
-      api: ChatClient,
-      resultFn: (String) -> Unit,
-      api2: OpenAIClient,
-      planSettings: PlanSettings
-    ) {
-        if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
-            task.complete("CONFIGURATION ERROR: No input files specified")
-            resultFn("CONFIGURATION ERROR: No input files specified")
-            return
-        }
-        val semaphore = Semaphore(0)
-        val onComplete = { semaphore.release() }
-        val process = { sb: StringBuilder ->
-            val codeResult = fileModificationActor.answer(
-                (messages + listOf(
-                    getInputFileCode(),
-                    this.planTask?.task_description ?: "",
-                )).filter { it.isNotBlank() }, api
-            )
-            resultFn(codeResult)
-            if (agent.planSettings.autoFix) {
-                val diffLinks = agent.ui.socketManager!!.addApplyFileDiffLinks(
-                    root = agent.root,
-                    response = codeResult,
-                    handle = { newCodeMap ->
-                        newCodeMap.forEach { (path, newCode) ->
-                            task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
-                        }
-                    },
-                    ui = agent.ui,
-                    api = api,
-                    shouldAutoApply = { agent.planSettings.autoFix },
-                    model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
-                )
-                task.complete()
-                onComplete()
-                renderMarkdown(diffLinks + "\n\n## Auto-applied changes", ui = agent.ui)
-            } else {
-                renderMarkdown(
-                    agent.ui.socketManager!!.addApplyFileDiffLinks(
-                        root = agent.root,
-                        response = codeResult,
-                        handle = { newCodeMap ->
-                            newCodeMap.forEach { (path, newCode) ->
-                                task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
-                            }
-                        },
-                        ui = agent.ui,
-                        api = api,
-                        model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
-                    ) + acceptButtonFooter(agent.ui) {
-                        task.complete()
-                        onComplete()
-                    }, ui = agent.ui
-                )
+  override fun run(
+    agent: PlanCoordinator,
+    messages: List<String>,
+    task: SessionTask,
+    api: ChatClient,
+    resultFn: (String) -> Unit,
+    api2: OpenAIClient,
+    planSettings: PlanSettings
+  ) {
+    if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
+      task.complete("CONFIGURATION ERROR: No input files specified")
+      resultFn("CONFIGURATION ERROR: No input files specified")
+      return
+    }
+    val semaphore = Semaphore(0)
+    val onComplete = { semaphore.release() }
+    val process = { sb: StringBuilder ->
+      val codeResult = fileModificationActor.answer(
+        (messages + listOf(
+          getInputFileCode(),
+          this.planTask?.task_description ?: "",
+        )).filter { it.isNotBlank() }, api
+      )
+      resultFn(codeResult)
+      if (agent.planSettings.autoFix) {
+        val diffLinks = agent.ui.socketManager!!.addApplyFileDiffLinks(
+          root = agent.root,
+          response = codeResult,
+          handle = { newCodeMap ->
+            newCodeMap.forEach { (path, newCode) ->
+              task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
             }
-        }
-        Retryable(agent.ui, task = task, process = process)
-        try {
-            semaphore.acquire()
-        } catch (e: Throwable) {
-            log.warn("Error", e)
-        }
+          },
+          ui = agent.ui,
+          api = api,
+          shouldAutoApply = { agent.planSettings.autoFix },
+          model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
+        )
+        task.complete()
+        onComplete()
+        renderMarkdown(diffLinks + "\n\n## Auto-applied changes", ui = agent.ui)
+      } else {
+        renderMarkdown(
+          agent.ui.socketManager!!.addApplyFileDiffLinks(
+            root = agent.root,
+            response = codeResult,
+            handle = { newCodeMap ->
+              newCodeMap.forEach { (path, newCode) ->
+                task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
+              }
+            },
+            ui = agent.ui,
+            api = api,
+            model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
+          ) + acceptButtonFooter(agent.ui) {
+            task.complete()
+            onComplete()
+          }, ui = agent.ui
+        )
+      }
     }
+    Retryable(agent.ui, task = task, process = process)
+    try {
+      semaphore.acquire()
+    } catch (e: Throwable) {
+      log.warn("Error", e)
+    }
+  }
 
-    companion object {
-        private val log = LoggerFactory.getLogger(FileModificationTask::class.java)
-    }
+  companion object {
+    private val log = LoggerFactory.getLogger(FileModificationTask::class.java)
+  }
 }

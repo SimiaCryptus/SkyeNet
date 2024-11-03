@@ -11,19 +11,19 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 
 class SessionThreadsServlet(
-    private val server: ApplicationServer,
+  private val server: ApplicationServer,
 ) : HttpServlet() {
-    override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
-        resp.contentType = "text/html"
-        resp.status = HttpServletResponse.SC_OK
-        if (req.parameterMap.containsKey("sessionId")) {
-            val session = Session(req.getParameter("sessionId"))
-            val user = authenticationManager.getUser(req.getCookie())
-            val pool = clientManager.getPool(session, user)
-            // Output all pool stack traces
-            //language=HTML
-            resp.writer.write(
-                """
+  override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
+    resp.contentType = "text/html"
+    resp.status = HttpServletResponse.SC_OK
+    if (req.parameterMap.containsKey("sessionId")) {
+      val session = Session(req.getParameter("sessionId"))
+      val user = authenticationManager.getUser(req.getCookie())
+      val pool = clientManager.getPool(session, user)
+      // Output all pool stack traces
+      //language=HTML
+      resp.writer.write(
+        """
                     |<html>
                     |<head>
                     |    <title>Session Threads</title>
@@ -100,28 +100,28 @@ class SessionThreadsServlet(
                     |<div class='pool-threads'>
                     |<h1>Thread Stacks</h1>
                     |${
-                    (pool.threadFactory as RecordingThreadFactory).threads.filter { it.isAlive }
-                        .joinToString("""<br/>""") { thread ->
-                            """
+          (pool.threadFactory as RecordingThreadFactory).threads.filter { it.isAlive }
+            .joinToString("""<br/>""") { thread ->
+              """
                         <div class='thread'>
                         <div class='thread-name'>${thread.name}</div>
                         <div class='stack-trace'>${
-                                thread.stackTrace.joinToString(separator = "\n")
-                                { stackTraceElement -> """<div class='stack-element'>$stackTraceElement</div>""" }
-                            }</div>
+                thread.stackTrace.joinToString(separator = "\n")
+                { stackTraceElement -> """<div class='stack-element'>$stackTraceElement</div>""" }
+              }</div>
                         </div>
                         """
-                        }
-                }
+            }
+        }
                     |</div>
                     |</body>
                     |</html>
                     """.trimMargin()
-            )
-            // (pool.threadFactory as RecordingThreadFactory).threads
-        } else {
-            resp.status = HttpServletResponse.SC_BAD_REQUEST
-            resp.writer.write("Session ID is required")
-        }
+      )
+      // (pool.threadFactory as RecordingThreadFactory).threads
+    } else {
+      resp.status = HttpServletResponse.SC_BAD_REQUEST
+      resp.writer.write("Session ID is required")
     }
+  }
 }

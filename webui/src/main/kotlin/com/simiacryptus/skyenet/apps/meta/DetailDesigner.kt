@@ -5,43 +5,43 @@ import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 class DetailDesigner(
-    model: ChatModel,
-    temperature: Double
+  model: ChatModel,
+  temperature: Double
 ) : ParsedActor<AgentFlowDesign>(
-    resultClass = AgentFlowDesign::class.java,
-    exampleInstance = AgentFlowDesign(
-        name = "TextAnalyzer",
-        description = "Analyze input text for sentiment and key topics",
-        mainInput = DataInfo(
-            type = "String",
-            description = "raw text"
-        ),
-        logicFlow = LogicFlow(
-            items = listOf(
-                LogicFlowItem(
-                    name = "Preprocess text",
-                    description = "Preprocess text (remove noise, normalize)",
-                    actors = listOf(
-                        "TextPreprocessor"
-                    ),
-                    inputs = listOf(
-                        DataInfo(
-                            type = "String",
-                            description = "raw text"
-                        )
-                    ),
-                    output = DataInfo(
-                        type = "String",
-                        description = "preprocessed text"
-                    )
-                ),
-            )
-        )
+  resultClass = AgentFlowDesign::class.java,
+  exampleInstance = AgentFlowDesign(
+    name = "TextAnalyzer",
+    description = "Analyze input text for sentiment and key topics",
+    mainInput = DataInfo(
+      type = "String",
+      description = "raw text"
     ),
-    model = model,
-    temperature = temperature,
-    parsingModel = OpenAIModels.GPT4o,
-    prompt = """
+    logicFlow = LogicFlow(
+      items = listOf(
+        LogicFlowItem(
+          name = "Preprocess text",
+          description = "Preprocess text (remove noise, normalize)",
+          actors = listOf(
+            "TextPreprocessor"
+          ),
+          inputs = listOf(
+            DataInfo(
+              type = "String",
+              description = "raw text"
+            )
+          ),
+          output = DataInfo(
+            type = "String",
+            description = "preprocessed text"
+          )
+        ),
+      )
+    )
+  ),
+  model = model,
+  temperature = temperature,
+  parsingModel = OpenAIModels.GPT4o,
+  prompt = """
         You are an expert detailed software designer specializing in AI agent systems.
         
         Your task is to expand on the high-level architecture and design a detailed "agent" system that uses GPT "actors" to model a creative process.

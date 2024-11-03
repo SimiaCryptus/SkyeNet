@@ -7,31 +7,31 @@ import com.simiacryptus.skyenet.apps.plan.file.TestGenerationTask.TestGeneration
 import org.slf4j.LoggerFactory
 
 class TestGenerationTask(
-    planSettings: PlanSettings,
-    planTask: TestGenerationTaskData?
+  planSettings: PlanSettings,
+  planTask: TestGenerationTaskData?
 ) : AbstractAnalysisTask<TestGenerationTaskData>(planSettings, planTask) {
 
-    class TestGenerationTaskData(
-        @Description("List of files for which tests should be generated")
-        val filesToTest: List<String>? = null,
-        @Description("List of input files or tasks to be examined when generating tests")
-        val inputReferences: List<String>? = null,
-        task_description: String? = null,
-        task_dependencies: List<String>? = null,
-        input_files: List<String>? = null,
-        output_files: List<String>? = null,
-        state: TaskState? = null
-    ) : FileTaskBase(
-        task_type = TaskType.TestGeneration.name,
-        task_description = task_description,
-        task_dependencies = task_dependencies,
-        input_files = input_files,
-        output_files = output_files,
-        state = state
-    )
+  class TestGenerationTaskData(
+    @Description("List of files for which tests should be generated")
+    val filesToTest: List<String>? = null,
+    @Description("List of input files or tasks to be examined when generating tests")
+    val inputReferences: List<String>? = null,
+    task_description: String? = null,
+    task_dependencies: List<String>? = null,
+    input_files: List<String>? = null,
+    output_files: List<String>? = null,
+    state: TaskState? = null
+  ) : FileTaskBase(
+    task_type = TaskType.TestGeneration.name,
+    task_description = task_description,
+    task_dependencies = task_dependencies,
+    input_files = input_files,
+    output_files = output_files,
+    state = state
+  )
 
-    override val actorName: String = "TestGeneration"
-    override val actorPrompt: String = """
+  override val actorName: String = "TestGeneration"
+  override val actorPrompt: String = """
  Generate comprehensive unit tests for the provided code files. The tests should:
                 |1. Cover all public methods and functions
                 |2. Include both positive and negative test cases
@@ -77,10 +77,10 @@ class TestGenerationTask(
  ${com.simiacryptus.skyenet.apps.plan.TRIPLE_TILDE}
     """.trimMargin()
 
-    override fun getAnalysisInstruction(): String = "Generate tests for the following code"
+  override fun getAnalysisInstruction(): String = "Generate tests for the following code"
 
-    override fun promptSegment(): String {
-        return """
+  override fun promptSegment(): String {
+    return """
  TestGeneration - Generate unit tests for the specified code files
   ** Specify the files for which tests should be generated using the 'filesToTest' field
   ** List input files/tasks to be examined when generating tests using the 'inputReferences' field
@@ -89,9 +89,9 @@ class TestGenerationTask(
    ** Specify the files for which tests should be generated
    ** List input files/tasks to be examined when generating tests
         """.trimMargin()
-    }
+  }
 
-    companion object {
-        private val log = LoggerFactory.getLogger(TestGenerationTask::class.java)
-    }
+  companion object {
+    private val log = LoggerFactory.getLogger(TestGenerationTask::class.java)
+  }
 }

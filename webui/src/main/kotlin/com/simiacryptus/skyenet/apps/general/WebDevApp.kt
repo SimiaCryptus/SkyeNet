@@ -33,64 +33,64 @@ import javax.imageio.ImageIO
 import kotlin.io.path.name
 
 open class WebDevApp(
-    applicationName: String = "Web Dev Assistant v1.2",
-    open val symbols: Map<String, Any> = mapOf(),
-    val temperature: Double = 0.1,
+  applicationName: String = "Web Dev Assistant v1.2",
+  open val symbols: Map<String, Any> = mapOf(),
+  val temperature: Double = 0.1,
 ) : ApplicationServer(
-    applicationName = applicationName,
-    path = "/webdev",
+  applicationName = applicationName,
+  path = "/webdev",
 ) {
-    override fun userMessage(
-        session: Session,
-        user: User?,
-        userMessage: String,
-        ui: ApplicationInterface,
-        api: API
-    ) {
-        val settings = getSettings(session, user) ?: Settings()
-        (api as ChatClient).budget = settings.budget ?: 2.00
-        WebDevAgent(
-            api = api,
-            dataStorage = dataStorage,
-            session = session,
-            user = user,
-            ui = ui,
-            tools = settings.tools,
-            model = settings.model,
-            parsingModel = settings.parsingModel,
-            root = root,
-        ).start(
-            userMessage = userMessage,
-        )
-    }
-
-    data class Settings(
-        val budget: Double? = 2.00,
-        val tools: List<String> = emptyList(),
-        val model: ChatModel = OpenAIModels.GPT4o,
-        val parsingModel: ChatModel = OpenAIModels.GPT4oMini,
+  override fun userMessage(
+    session: Session,
+    user: User?,
+    userMessage: String,
+    ui: ApplicationInterface,
+    api: API
+  ) {
+    val settings = getSettings(session, user) ?: Settings()
+    (api as ChatClient).budget = settings.budget ?: 2.00
+    WebDevAgent(
+      api = api,
+      dataStorage = dataStorage,
+      session = session,
+      user = user,
+      ui = ui,
+      tools = settings.tools,
+      model = settings.model,
+      parsingModel = settings.parsingModel,
+      root = root,
+    ).start(
+      userMessage = userMessage,
     )
+  }
 
-    override val settingsClass: Class<*> get() = Settings::class.java
+  data class Settings(
+    val budget: Double? = 2.00,
+    val tools: List<String> = emptyList(),
+    val model: ChatModel = OpenAIModels.GPT4o,
+    val parsingModel: ChatModel = OpenAIModels.GPT4oMini,
+  )
 
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> initSettings(session: Session): T? = Settings() as T
+  override val settingsClass: Class<*> get() = Settings::class.java
+
+  @Suppress("UNCHECKED_CAST")
+  override fun <T : Any> initSettings(session: Session): T? = Settings() as T
 }
 
 class WebDevAgent(
-    val api: API,
-    dataStorage: StorageInterface,
-    session: Session,
-    user: User?,
-    val ui: ApplicationInterface,
-    val model: ChatModel,
-    val parsingModel: ChatModel,
-    val tools: List<String> = emptyList(),
-    @Language("Markdown") val actorMap: Map<ActorTypes, BaseActor<*, *>> = mapOf(
-        ActorTypes.ArchitectureDiscussionActor to ParsedActor(
+  val api: API,
+  dataStorage: StorageInterface,
+  session: Session,
+  user: User?,
+  val ui: ApplicationInterface,
+  val model: ChatModel,
+  val parsingModel: ChatModel,
+  val tools: List<String> = emptyList(),
+  @Language("Markdown") val actorMap: Map<ActorTypes, BaseActor<*, *>> = mapOf(
+    ActorTypes.ArchitectureDiscussionActor to ParsedActor(
 //      parserClass = PageResourceListParser::class.java,
-            resultClass = ProjectSpec::class.java,
-            prompt = """
+      resultClass = ProjectSpec::class.java,
+      prompt = """
                 |Translate the user's idea into a detailed architecture for a simple web application. 
                 |          
                 |          List all html, css, javascript, and image files to be created, and for each file:
@@ -101,11 +101,11 @@ class WebDevAgent(
                 |Specify user interactions and how the application will respond to them.
                 |Identify key HTML classes and element IDs that will be used to bind the application to the HTML.
                 """.trimMargin(),
-            model = model,
-            parsingModel = parsingModel,
-        ),
-        ActorTypes.CodeReviewer to SimpleActor(
-            prompt = """
+      model = model,
+      parsingModel = parsingModel,
+    ),
+    ActorTypes.CodeReviewer to SimpleActor(
+      prompt = """
                 |Analyze the code summarized in the user's header-labeled code blocks.
                 |Review, look for bugs, and provide fixes. 
                 |Provide implementations for missing functions.
@@ -143,447 +143,447 @@ class WebDevAgent(
                 | });
                 |```
                 """.trimMargin(),
-            model = model,
-        ),
-        ActorTypes.HtmlCodingActor to SimpleActor(
-            prompt = """
+      model = model,
+    ),
+    ActorTypes.HtmlCodingActor to SimpleActor(
+      prompt = """
                 |You will translate the user request into a skeleton HTML file for a rich javascript application.
                 |The html file can reference needed CSS and JS files, which are will be located in the same directory as the html file.
                 |Do not output the content of the resource files, only the html file.
                 """.trimMargin(), model = model
-        ),
-        ActorTypes.JavascriptCodingActor to SimpleActor(
-            prompt = """
+    ),
+    ActorTypes.JavascriptCodingActor to SimpleActor(
+      prompt = """
                 |You will translate the user request into a javascript file for use in a rich javascript application.
                 """.trimMargin(), model = model
-        ),
-        ActorTypes.CssCodingActor to SimpleActor(
-            prompt = """
+    ),
+    ActorTypes.CssCodingActor to SimpleActor(
+      prompt = """
               |You will translate the user request into a CSS file for use in a rich javascript application.
               """.trimMargin(), model = model
-        ),
-        ActorTypes.EtcCodingActor to SimpleActor(
-            prompt = """
+    ),
+    ActorTypes.EtcCodingActor to SimpleActor(
+      prompt = """
               |You will translate the user request into a file for use in a web application.
             """.trimMargin(),
-            model = model,
-        ),
-        ActorTypes.ImageActor to ImageActor(
-            prompt = """
+      model = model,
+    ),
+    ActorTypes.ImageActor to ImageActor(
+      prompt = """
               |You will translate the user request into an image file for use in a web application.
             """.trimMargin(),
-            textModel = model,
-            imageModel = ImageModels.DallE3,
-        ),
+      textModel = model,
+      imageModel = ImageModels.DallE3,
     ),
-    val root: File,
+  ),
+  val root: File,
 ) : ActorSystem<WebDevAgent.ActorTypes>(actorMap.map { it.key.name to it.value }.toMap(), dataStorage, user, session) {
-    enum class ActorTypes {
-        HtmlCodingActor,
-        JavascriptCodingActor,
-        CssCodingActor,
-        ArchitectureDiscussionActor,
-        CodeReviewer,
-        EtcCodingActor,
-        ImageActor,
-    }
+  enum class ActorTypes {
+    HtmlCodingActor,
+    JavascriptCodingActor,
+    CssCodingActor,
+    ArchitectureDiscussionActor,
+    CodeReviewer,
+    EtcCodingActor,
+    ImageActor,
+  }
 
-    private val architectureDiscussionActor by lazy { getActor(ActorTypes.ArchitectureDiscussionActor) as ParsedActor<ProjectSpec> }
-    private val htmlActor by lazy { getActor(ActorTypes.HtmlCodingActor) as SimpleActor }
-    private val imageActor by lazy { getActor(ActorTypes.ImageActor) as ImageActor }
-    private val javascriptActor by lazy { getActor(ActorTypes.JavascriptCodingActor) as SimpleActor }
-    private val cssActor by lazy { getActor(ActorTypes.CssCodingActor) as SimpleActor }
-    private val codeReviewer by lazy { getActor(ActorTypes.CodeReviewer) as SimpleActor }
-    private val etcActor by lazy { getActor(ActorTypes.EtcCodingActor) as SimpleActor }
+  private val architectureDiscussionActor by lazy { getActor(ActorTypes.ArchitectureDiscussionActor) as ParsedActor<ProjectSpec> }
+  private val htmlActor by lazy { getActor(ActorTypes.HtmlCodingActor) as SimpleActor }
+  private val imageActor by lazy { getActor(ActorTypes.ImageActor) as ImageActor }
+  private val javascriptActor by lazy { getActor(ActorTypes.JavascriptCodingActor) as SimpleActor }
+  private val cssActor by lazy { getActor(ActorTypes.CssCodingActor) as SimpleActor }
+  private val codeReviewer by lazy { getActor(ActorTypes.CodeReviewer) as SimpleActor }
+  private val etcActor by lazy { getActor(ActorTypes.EtcCodingActor) as SimpleActor }
 
-    private val codeFiles = mutableSetOf<Path>()
+  private val codeFiles = mutableSetOf<Path>()
 
-    fun start(
-        userMessage: String,
-    ) {
-        val task = ui.newTask()
-        val toInput = { it: String -> listOf(it) }
-        val architectureResponse = Discussable(
-            task = task,
-            userMessage = { userMessage },
-            initialResponse = { it: String -> architectureDiscussionActor.answer(toInput(it), api = api) },
-            outputFn = { design: ParsedResponse<ProjectSpec> ->
-                //        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n```")
-                AgentPatterns.displayMapInTabs(
-                    mapOf(
-                        "Text" to renderMarkdown(design.text, ui = ui),
-                        "JSON" to renderMarkdown(
-                            "```json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n```",
-                            ui = ui
-                        ),
-                    )
-                )
-            },
-            ui = ui,
-            reviseResponse = { userMessages: List<Pair<String, Role>> ->
-                architectureDiscussionActor.respond(
-                    messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
-                        .toTypedArray<ApiModel.ChatMessage>()),
-                    input = toInput(userMessage),
-                    api = api
-                )
-            },
-            atomicRef = AtomicReference(),
-            semaphore = Semaphore(0),
-            heading = userMessage
-        ).call()
+  fun start(
+    userMessage: String,
+  ) {
+    val task = ui.newTask()
+    val toInput = { it: String -> listOf(it) }
+    val architectureResponse = Discussable(
+      task = task,
+      userMessage = { userMessage },
+      initialResponse = { it: String -> architectureDiscussionActor.answer(toInput(it), api = api) },
+      outputFn = { design: ParsedResponse<ProjectSpec> ->
+        //        renderMarkdown("${design.text}\n\n```json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n```")
+        AgentPatterns.displayMapInTabs(
+          mapOf(
+            "Text" to renderMarkdown(design.text, ui = ui),
+            "JSON" to renderMarkdown(
+              "```json\n${JsonUtil.toJson(design.obj)/*.indent("  ")*/}\n```",
+              ui = ui
+            ),
+          )
+        )
+      },
+      ui = ui,
+      reviseResponse = { userMessages: List<Pair<String, Role>> ->
+        architectureDiscussionActor.respond(
+          messages = (userMessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
+            .toTypedArray<ApiModel.ChatMessage>()),
+          input = toInput(userMessage),
+          api = api
+        )
+      },
+      atomicRef = AtomicReference(),
+      semaphore = Semaphore(0),
+      heading = userMessage
+    ).call()
 
 
-        try {
+    try {
 //            val toolSpecs = tools.map { ToolServlet.tools.find { t -> t.path == it } }
 //                .joinToString("\n\n") { it?.let { JsonUtil.toJson(it.openApiDescription) } ?: "" }
 //            var messageWithTools = userMessage
 //            if (toolSpecs.isNotBlank()) messageWithTools += "\n\nThese services are available:\n$toolSpecs"
-            task.echo(
-                renderMarkdown(
-                    "```json\n${JsonUtil.toJson(architectureResponse.obj)/*.indent("  ")*/}\n```",
-                    ui = ui
+      task.echo(
+        renderMarkdown(
+          "```json\n${JsonUtil.toJson(architectureResponse.obj)/*.indent("  ")*/}\n```",
+          ui = ui
+        )
+      )
+      val fileTabs = TabbedDisplay(task)
+      architectureResponse.obj.files.filter {
+        !it.name!!.startsWith("http")
+      }.map { (path, description) ->
+        val task = ui.newTask(false).apply { fileTabs[path.toString()] = placeholder }
+        task.header("Drafting $path")
+        codeFiles.add(File(path).toPath())
+        pool.submit {
+          when (path!!.split(".").last().lowercase()) {
+
+            "js" -> draftResourceCode(
+              task = task,
+              request = javascriptActor.chatMessages(
+                listOf(
+//                                    messageWithTools,
+                  architectureResponse.text,
+                  "Render $path - $description"
                 )
+              ),
+              actor = javascriptActor,
+              path = File(path).toPath(), "js", "javascript"
             )
-            val fileTabs = TabbedDisplay(task)
-            architectureResponse.obj.files.filter {
-                !it.name!!.startsWith("http")
-            }.map { (path, description) ->
-                val task = ui.newTask(false).apply { fileTabs[path.toString()] = placeholder }
-                task.header("Drafting $path")
-                codeFiles.add(File(path).toPath())
-                pool.submit {
-                    when (path!!.split(".").last().lowercase()) {
 
-                        "js" -> draftResourceCode(
-                            task = task,
-                            request = javascriptActor.chatMessages(
-                                listOf(
+
+            "css" -> draftResourceCode(
+              task = task,
+              request = cssActor.chatMessages(
+                listOf(
 //                                    messageWithTools,
-                                    architectureResponse.text,
-                                    "Render $path - $description"
-                                )
-                            ),
-                            actor = javascriptActor,
-                            path = File(path).toPath(), "js", "javascript"
-                        )
-
-
-                        "css" -> draftResourceCode(
-                            task = task,
-                            request = cssActor.chatMessages(
-                                listOf(
-//                                    messageWithTools,
-                                    architectureResponse.text,
-                                    "Render $path - $description"
-                                )
-                            ),
-                            actor = cssActor,
-                            path = File(path).toPath()
-                        )
-
-                        "html" -> draftResourceCode(
-                            task = task,
-                            request = htmlActor.chatMessages(
-                                listOf(
-//                                    messageWithTools,
-                                    architectureResponse.text,
-                                    "Render $path - $description"
-                                )
-                            ),
-                            actor = htmlActor,
-                            path = File(path).toPath()
-                        )
-
-                        "png" -> draftImage(
-                            task = task,
-                            request = etcActor.chatMessages(
-                                listOf(
-//                                    messageWithTools,
-                                    architectureResponse.text,
-                                    "Render $path - $description"
-                                )
-                            ),
-                            actor = imageActor,
-                            path = File(path).toPath()
-                        )
-
-                        "jpg" -> draftImage(
-                            task = task,
-                            request = etcActor.chatMessages(
-                                listOf(
-//                                    messageWithTools,
-                                    architectureResponse.text,
-                                    "Render $path - $description"
-                                )
-                            ),
-                            actor = imageActor,
-                            path = File(path).toPath()
-                        )
-
-                        else -> draftResourceCode(
-                            task = task,
-                            request = etcActor.chatMessages(
-                                listOf(
-//                                    messageWithTools,
-                                    architectureResponse.text,
-                                    "Render $path - $description"
-                                )
-                            ),
-                            actor = etcActor,
-                            path = File(path).toPath()
-                        )
-
-                    }
-                }
-            }.toTypedArray().forEach { it.get() }
-            // Apply codeReviewer
-
-            iterateCode(task)
-        } catch (e: Throwable) {
-            log.warn("Error", e)
-            task.error(ui, e)
-        }
-    }
-
-    fun codeSummary() = codeFiles.filter {
-        if (it.name.lowercase().endsWith(".png")) return@filter false
-        if (it.name.lowercase().endsWith(".jpg")) return@filter false
-        true
-    }.joinToString("\n\n") { path ->
-        "# $path\n```${path.toString().split('.').last()}\n${root.resolve(path.toFile()).readText()}\n```"
-    }
-
-    private fun iterateCode(
-        task: SessionTask
-    ) {
-        Discussable(
-            task = task,
-            heading = "Code Refinement",
-            userMessage = { codeSummary() },
-            initialResponse = {
-                codeReviewer.answer(listOf(it), api = api)
-            },
-            outputFn = { code ->
-                renderMarkdown(
-                    ui.socketManager!!.addApplyFileDiffLinks(
-                        root = root.toPath(),
-                        response = code,
-                        handle = { newCodeMap ->
-                            newCodeMap.forEach { (path, newCode) ->
-                                task.complete("<a href='${"fileIndex/$session/$path"}'>$path</a> Updated")
-                            }
-                        },
-                        ui = ui,
-                        api = api,
-                        model = model,
-                    )
+                  architectureResponse.text,
+                  "Render $path - $description"
                 )
+              ),
+              actor = cssActor,
+              path = File(path).toPath()
+            )
+
+            "html" -> draftResourceCode(
+              task = task,
+              request = htmlActor.chatMessages(
+                listOf(
+//                                    messageWithTools,
+                  architectureResponse.text,
+                  "Render $path - $description"
+                )
+              ),
+              actor = htmlActor,
+              path = File(path).toPath()
+            )
+
+            "png" -> draftImage(
+              task = task,
+              request = etcActor.chatMessages(
+                listOf(
+//                                    messageWithTools,
+                  architectureResponse.text,
+                  "Render $path - $description"
+                )
+              ),
+              actor = imageActor,
+              path = File(path).toPath()
+            )
+
+            "jpg" -> draftImage(
+              task = task,
+              request = etcActor.chatMessages(
+                listOf(
+//                                    messageWithTools,
+                  architectureResponse.text,
+                  "Render $path - $description"
+                )
+              ),
+              actor = imageActor,
+              path = File(path).toPath()
+            )
+
+            else -> draftResourceCode(
+              task = task,
+              request = etcActor.chatMessages(
+                listOf(
+//                                    messageWithTools,
+                  architectureResponse.text,
+                  "Render $path - $description"
+                )
+              ),
+              actor = etcActor,
+              path = File(path).toPath()
+            )
+
+          }
+        }
+      }.toTypedArray().forEach { it.get() }
+      // Apply codeReviewer
+
+      iterateCode(task)
+    } catch (e: Throwable) {
+      log.warn("Error", e)
+      task.error(ui, e)
+    }
+  }
+
+  fun codeSummary() = codeFiles.filter {
+    if (it.name.lowercase().endsWith(".png")) return@filter false
+    if (it.name.lowercase().endsWith(".jpg")) return@filter false
+    true
+  }.joinToString("\n\n") { path ->
+    "# $path\n```${path.toString().split('.').last()}\n${root.resolve(path.toFile()).readText()}\n```"
+  }
+
+  private fun iterateCode(
+    task: SessionTask
+  ) {
+    Discussable(
+      task = task,
+      heading = "Code Refinement",
+      userMessage = { codeSummary() },
+      initialResponse = {
+        codeReviewer.answer(listOf(it), api = api)
+      },
+      outputFn = { code ->
+        renderMarkdown(
+          ui.socketManager!!.addApplyFileDiffLinks(
+            root = root.toPath(),
+            response = code,
+            handle = { newCodeMap ->
+              newCodeMap.forEach { (path, newCode) ->
+                task.complete("<a href='${"fileIndex/$session/$path"}'>$path</a> Updated")
+              }
             },
             ui = ui,
-            reviseResponse = { userMessages ->
-                val userMessages = userMessages.toMutableList()
-                userMessages.set(0, userMessages.get(0).copy(first = codeSummary()))
-                val combinedMessages =
-                    userMessages.map { ApiModel.ChatMessage(Role.user, it.first.toContentList()) }
-                codeReviewer.respond(
-                    input = listOf(element = combinedMessages.joinToString("\n")),
-                    api = api,
-                    messages = combinedMessages.toTypedArray(),
-                )
-            },
-        ).call()
-    }
-
-    private fun draftImage(
-        task: SessionTask,
-        request: Array<ApiModel.ChatMessage>,
-        actor: ImageActor,
-        path: Path,
-    ) {
-        try {
-            var code = Discussable(
-                task = task,
-                userMessage = { "" },
-                heading = "Drafting $path",
-                initialResponse = {
-                    val messages = (request + ApiModel.ChatMessage(Role.user, "Draft $path".toContentList()))
-                        .toList().toTypedArray()
-                    actor.respond(
-                        listOf(request.joinToString("\n") { it.content?.joinToString() ?: "" }),
-                        api,
-                        *messages
-                    )
-
-                },
-                outputFn = { img ->
-                    renderMarkdown(
-                        "<img src='${
-                            task.saveFile(
-                                path.toString(),
-                                write(img, path)
-                            )
-                        }' style='max-width: 100%;'/>", ui = ui
-                    )
-                },
-                ui = ui,
-                reviseResponse = { userMessages: List<Pair<String, Role>> ->
-                    actor.respond(
-                        messages = (request.toList() + userMessages.map {
-                            ApiModel.ChatMessage(
-                                it.second,
-                                it.first.toContentList()
-                            )
-                        })
-                            .toTypedArray<ApiModel.ChatMessage>(),
-                        input = listOf(element = (request.toList() + userMessages.map {
-                            ApiModel.ChatMessage(
-                                it.second,
-                                it.first.toContentList()
-                            )
-                        })
-                            .joinToString("\n") { it.content?.joinToString() ?: "" }),
-                        api = api,
-                    )
-                },
-            ).call()
-            task.complete(
-                renderMarkdown(
-                    "<img src='${
-                        task.saveFile(
-                            path.toString(),
-                            write(code, path)
-                        )
-                    }' style='max-width: 100%;'/>", ui = ui
-                )
-            )
-        } catch (e: Throwable) {
-            val error = task.error(ui, e)
-            task.complete(ui.hrefLink("♻", "href-link regen-button") {
-                error?.clear()
-                draftImage(task, request, actor, path)
-            })
-        }
-    }
-
-    private fun write(
-        code: ImageResponse,
-        path: Path
-    ): ByteArray {
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        ImageIO.write(
-            code.image,
-            path.toString().split(".").last(),
-            byteArrayOutputStream
+            api = api,
+            model = model,
+          )
         )
-        val bytes = byteArrayOutputStream.toByteArray()
-        return bytes
-    }
+      },
+      ui = ui,
+      reviseResponse = { userMessages ->
+        val userMessages = userMessages.toMutableList()
+        userMessages.set(0, userMessages.get(0).copy(first = codeSummary()))
+        val combinedMessages =
+          userMessages.map { ApiModel.ChatMessage(Role.user, it.first.toContentList()) }
+        codeReviewer.respond(
+          input = listOf(element = combinedMessages.joinToString("\n")),
+          api = api,
+          messages = combinedMessages.toTypedArray(),
+        )
+      },
+    ).call()
+  }
 
-    private fun draftResourceCode(
-        task: SessionTask,
-        request: Array<ApiModel.ChatMessage>,
-        actor: SimpleActor,
-        path: Path,
-        vararg languages: String = arrayOf(path.toString().split(".").last().lowercase()),
-    ) {
-        try {
-            var code = Discussable(
-                task = task,
-                userMessage = { "Drafting $path" },
-                heading = "",
-                initialResponse = {
-                    actor.respond(
-                        listOf(request.joinToString("\n") { it.content?.joinToString() ?: "" }),
-                        api,
-                        *(request + ApiModel.ChatMessage(Role.user, "Draft $path".toContentList()))
-                            .toList().toTypedArray()
-                    )
-                },
-                outputFn = { design: String ->
-                    var design = design
-                    languages.forEach { language ->
-                        if (design.contains("```$language")) {
-                            design = design.substringAfter("```$language").substringBefore("```")
-                        }
-                    }
-                    renderMarkdown("```${languages.first()}\n${design.let { it }}\n```", ui = ui)
-                },
-                ui = ui,
-                reviseResponse = { userMessages: List<Pair<String, Role>> ->
-                    actor.respond(
-                        messages = (request.toList() + userMessages.map {
-                            ApiModel.ChatMessage(
-                                it.second,
-                                it.first.toContentList()
-                            )
-                        })
-                            .toTypedArray<ApiModel.ChatMessage>(),
-                        input = listOf(element = (request.toList() + userMessages.map {
-                            ApiModel.ChatMessage(
-                                it.second,
-                                it.first.toContentList()
-                            )
-                        })
-                            .joinToString("\n") { it.content?.joinToString() ?: "" }),
-                        api = api,
-                    )
-                },
-            ).call()
-            code = extractCode(code)
-            task.complete(
-                "<a href='${
-                    task.saveFile(
-                        path.toString(),
-                        code.toByteArray(Charsets.UTF_8)
-                    )
-                }'>$path</a> Updated"
-            )
-        } catch (e: Throwable) {
-            val error = task.error(ui, e)
-            task.complete(ui.hrefLink("♻", "href-link regen-button") {
-                error?.clear()
-                draftResourceCode(task, request, actor, path, *languages)
+  private fun draftImage(
+    task: SessionTask,
+    request: Array<ApiModel.ChatMessage>,
+    actor: ImageActor,
+    path: Path,
+  ) {
+    try {
+      var code = Discussable(
+        task = task,
+        userMessage = { "" },
+        heading = "Drafting $path",
+        initialResponse = {
+          val messages = (request + ApiModel.ChatMessage(Role.user, "Draft $path".toContentList()))
+            .toList().toTypedArray()
+          actor.respond(
+            listOf(request.joinToString("\n") { it.content?.joinToString() ?: "" }),
+            api,
+            *messages
+          )
+
+        },
+        outputFn = { img ->
+          renderMarkdown(
+            "<img src='${
+              task.saveFile(
+                path.toString(),
+                write(img, path)
+              )
+            }' style='max-width: 100%;'/>", ui = ui
+          )
+        },
+        ui = ui,
+        reviseResponse = { userMessages: List<Pair<String, Role>> ->
+          actor.respond(
+            messages = (request.toList() + userMessages.map {
+              ApiModel.ChatMessage(
+                it.second,
+                it.first.toContentList()
+              )
             })
-        }
+              .toTypedArray<ApiModel.ChatMessage>(),
+            input = listOf(element = (request.toList() + userMessages.map {
+              ApiModel.ChatMessage(
+                it.second,
+                it.first.toContentList()
+              )
+            })
+              .joinToString("\n") { it.content?.joinToString() ?: "" }),
+            api = api,
+          )
+        },
+      ).call()
+      task.complete(
+        renderMarkdown(
+          "<img src='${
+            task.saveFile(
+              path.toString(),
+              write(code, path)
+            )
+          }' style='max-width: 100%;'/>", ui = ui
+        )
+      )
+    } catch (e: Throwable) {
+      val error = task.error(ui, e)
+      task.complete(ui.hrefLink("♻", "href-link regen-button") {
+        error?.clear()
+        draftImage(task, request, actor, path)
+      })
     }
+  }
 
-    private fun extractCode(code: String): String {
-        var code = code
-        code = code.trim()
-        "(?s)```[^\\n]*\n(.*)\n```".toRegex().find(code)?.let {
-            code = it.groupValues[1]
-        }
-        return code
-    }
+  private fun write(
+    code: ImageResponse,
+    path: Path
+  ): ByteArray {
+    val byteArrayOutputStream = ByteArrayOutputStream()
+    ImageIO.write(
+      code.image,
+      path.toString().split(".").last(),
+      byteArrayOutputStream
+    )
+    val bytes = byteArrayOutputStream.toByteArray()
+    return bytes
+  }
 
-    companion object {
-        val log = org.slf4j.LoggerFactory.getLogger(WebDevAgent::class.java)
-
-        data class ProjectSpec(
-            @Description("Files in the project design, including all local html, css, and js files.")
-            val files: List<ProjectFile> = emptyList()
-        ) : ValidatedObject {
-            override fun validate(): String? = when {
-                files.isEmpty() -> "Resources are required"
-                files.any { it.validate() != null } -> "Invalid resource"
-                else -> null
+  private fun draftResourceCode(
+    task: SessionTask,
+    request: Array<ApiModel.ChatMessage>,
+    actor: SimpleActor,
+    path: Path,
+    vararg languages: String = arrayOf(path.toString().split(".").last().lowercase()),
+  ) {
+    try {
+      var code = Discussable(
+        task = task,
+        userMessage = { "Drafting $path" },
+        heading = "",
+        initialResponse = {
+          actor.respond(
+            listOf(request.joinToString("\n") { it.content?.joinToString() ?: "" }),
+            api,
+            *(request + ApiModel.ChatMessage(Role.user, "Draft $path".toContentList()))
+              .toList().toTypedArray()
+          )
+        },
+        outputFn = { design: String ->
+          var design = design
+          languages.forEach { language ->
+            if (design.contains("```$language")) {
+              design = design.substringAfter("```$language").substringBefore("```")
             }
-        }
-
-        data class ProjectFile(
-            @Description("The path to the file, relative to the project root.")
-            val name: String? = "",
-            @Description("A brief description of the file's purpose and contents.")
-            val description: String? = ""
-        ) : ValidatedObject {
-            override fun validate(): String? = when {
-                name.isNullOrBlank() -> "Path is required"
-                name.contains(" ") -> "Path cannot contain spaces"
-                !name.contains(".") -> "Path must contain a file extension"
-                else -> null
-            }
-        }
-
+          }
+          renderMarkdown("```${languages.first()}\n${design.let { it }}\n```", ui = ui)
+        },
+        ui = ui,
+        reviseResponse = { userMessages: List<Pair<String, Role>> ->
+          actor.respond(
+            messages = (request.toList() + userMessages.map {
+              ApiModel.ChatMessage(
+                it.second,
+                it.first.toContentList()
+              )
+            })
+              .toTypedArray<ApiModel.ChatMessage>(),
+            input = listOf(element = (request.toList() + userMessages.map {
+              ApiModel.ChatMessage(
+                it.second,
+                it.first.toContentList()
+              )
+            })
+              .joinToString("\n") { it.content?.joinToString() ?: "" }),
+            api = api,
+          )
+        },
+      ).call()
+      code = extractCode(code)
+      task.complete(
+        "<a href='${
+          task.saveFile(
+            path.toString(),
+            code.toByteArray(Charsets.UTF_8)
+          )
+        }'>$path</a> Updated"
+      )
+    } catch (e: Throwable) {
+      val error = task.error(ui, e)
+      task.complete(ui.hrefLink("♻", "href-link regen-button") {
+        error?.clear()
+        draftResourceCode(task, request, actor, path, *languages)
+      })
     }
+  }
+
+  private fun extractCode(code: String): String {
+    var code = code
+    code = code.trim()
+    "(?s)```[^\\n]*\n(.*)\n```".toRegex().find(code)?.let {
+      code = it.groupValues[1]
+    }
+    return code
+  }
+
+  companion object {
+    val log = org.slf4j.LoggerFactory.getLogger(WebDevAgent::class.java)
+
+    data class ProjectSpec(
+      @Description("Files in the project design, including all local html, css, and js files.")
+      val files: List<ProjectFile> = emptyList()
+    ) : ValidatedObject {
+      override fun validate(): String? = when {
+        files.isEmpty() -> "Resources are required"
+        files.any { it.validate() != null } -> "Invalid resource"
+        else -> null
+      }
+    }
+
+    data class ProjectFile(
+      @Description("The path to the file, relative to the project root.")
+      val name: String? = "",
+      @Description("A brief description of the file's purpose and contents.")
+      val description: String? = ""
+    ) : ValidatedObject {
+      override fun validate(): String? = when {
+        name.isNullOrBlank() -> "Path is required"
+        name.contains(" ") -> "Path cannot contain spaces"
+        !name.contains(".") -> "Path must contain a file extension"
+        else -> null
+      }
+    }
+
+  }
 }
