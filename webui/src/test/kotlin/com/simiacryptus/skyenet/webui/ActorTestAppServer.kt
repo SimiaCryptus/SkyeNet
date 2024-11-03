@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.webui
 
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.OpenAIModels
 import com.simiacryptus.jopenai.util.ClientUtil.keyTxt
 import com.simiacryptus.skyenet.apps.parse.DocumentParserApp
@@ -114,6 +115,7 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
                     },
                     model = OpenAIModels.GPT4o,
                     parsingModel = OpenAIModels.GPT4oMini,
+                    api2 = OpenAIClient()
                 )
             ),
             ChildWebApp("/stressTest", StressTestApp()),

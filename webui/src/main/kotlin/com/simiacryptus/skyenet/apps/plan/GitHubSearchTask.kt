@@ -1,10 +1,10 @@
-package com.simiacryptus.skyenet.apps.plan.file
+package com.simiacryptus.skyenet.apps.plan
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -51,16 +51,18 @@ GitHubSearch - Search GitHub for code, commits, issues, repositories, topics, or
     agent: PlanCoordinator,
     messages: List<String>,
     task: SessionTask,
-    api: API,
-    resultFn: (String) -> Unit
+    api: ChatClient,
+    resultFn: (String) -> Unit,
+    api2: OpenAIClient,
+    planSettings: PlanSettings
   ) {
-    val searchResults = performGitHubSearch()
+    val searchResults = performGitHubSearch(planSettings)
     val formattedResults = formatSearchResults(searchResults)
     task.add(MarkdownUtil.renderMarkdown(formattedResults, ui = agent.ui))
     resultFn(formattedResults)
   }
 
-  private fun performGitHubSearch(): String {
+  private fun performGitHubSearch(planSettings: PlanSettings): String {
     val client = HttpClient.newBuilder().build()
     val uriBuilder = StringBuilder("https://api.github.com/search/${planTask?.search_type}?q=${planTask?.search_query}&per_page=${planTask?.per_page}")
     planTask?.sort?.let { uriBuilder.append("&sort=$it") }

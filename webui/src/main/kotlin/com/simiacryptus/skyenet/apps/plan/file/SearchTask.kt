@@ -1,7 +1,8 @@
 package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.diff.FileValidationUtils
-import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
@@ -44,11 +45,13 @@ Search - Search for patterns in files and provide results with context
     """.trimMargin()
 
     override fun run(
-        agent: PlanCoordinator,
-        messages: List<String>,
-        task: SessionTask,
-        api: API,
-        resultFn: (String) -> Unit
+      agent: PlanCoordinator,
+      messages: List<String>,
+      task: SessionTask,
+      api: ChatClient,
+      resultFn: (String) -> Unit,
+      api2: OpenAIClient,
+      planSettings: PlanSettings
     ) {
         val searchResults = performSearch()
         val formattedResults = formatSearchResults(searchResults)

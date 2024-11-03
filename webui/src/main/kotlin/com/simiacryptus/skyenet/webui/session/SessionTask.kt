@@ -205,6 +205,8 @@ abstract class SessionTask(
     }
 
     abstract fun createFile(relativePath: String): Pair<String, File?>
+
+    fun update() = send()
 }
 
 val Throwable.stackTraceTxt: String

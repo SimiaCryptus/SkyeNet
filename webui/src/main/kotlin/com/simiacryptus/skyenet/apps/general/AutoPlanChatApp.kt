@@ -2,11 +2,13 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanTaskBase
+import com.simiacryptus.skyenet.apps.plan.TaskSettings
 import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
@@ -17,7 +19,6 @@ import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -33,6 +34,7 @@ open class AutoPlanChatApp(
     domainName: String = "localhost",
     showMenubar: Boolean = true,
     api: API? = null,
+    api2: OpenAIClient,
     val maxTaskHistoryChars: Int = 20000,
     val maxTasksPerIteration: Int = 3,
     val maxIterations: Int = 100
@@ -45,6 +47,7 @@ open class AutoPlanChatApp(
     domainName = domainName,
     showMenubar = showMenubar,
     api = api,
+    api2 = api2
 ) {
     override val stickyInput = true
     override val singleInput = false
@@ -220,7 +223,7 @@ open class AutoPlanChatApp(
                         tabbedDisplay["Task Execution $currentTaskId"] = taskExecutionTask.placeholder
                         val future = executor.submit<String> {
                             try {
-                                runTask(api, task, coordinator, currentTask, currentTaskId, userMessage, taskExecutionTask, thinkingStatus.get())
+                                runTask(api, api2, task, coordinator, currentTask, currentTaskId, userMessage, taskExecutionTask, thinkingStatus.get())
                             } catch (e: Exception) {
                                 taskExecutionTask.error(ui, e)
                                 log.error("Error executing task", e)
@@ -265,6 +268,7 @@ open class AutoPlanChatApp(
 
     protected open fun runTask(
         api: ChatClient,
+        api2: OpenAIClient,
         task: SessionTask,
         coordinator: PlanCoordinator,
         currentTask: PlanTaskBase,
@@ -283,14 +287,22 @@ open class AutoPlanChatApp(
         val taskImpl = TaskType.Companion.getImpl(coordinator.planSettings, currentTask)
         val result = StringBuilder()
         taskImpl.run(
-            agent = coordinator,
+            agent = coordinator.copy(
+                planSettings = coordinator.planSettings.copy(
+                    taskSettings = coordinator.planSettings.taskSettings.toList().toTypedArray().toMap().toMutableMap().apply {
+                        this["TaskPlanning"] = TaskSettings(enabled = false, model = null)
+                    }
+                )
+            ),
             messages = listOf(
                 userMessage,
                 "Current thinking status:\n${formatThinkingStatus(thinkingStatus!!)}"
             ) + formatEvalRecords(),
             task = taskExecutionTask,
             api = api,
-            resultFn = { result.append(it) }
+            resultFn ={ result.append(it) },
+            api2 = api2,
+            planSettings = planSettings,
         )
         return result.toString()
     }

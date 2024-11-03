@@ -1,7 +1,7 @@
 package com.simiacryptus.skyenet.apps.plan
 
-import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
@@ -52,11 +52,13 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
     }
 
     override fun run(
-        agent: PlanCoordinator,
-        messages: List<String>,
-        task: SessionTask,
-        api: API,
-        resultFn: (String) -> Unit
+      agent: PlanCoordinator,
+      messages: List<String>,
+      task: SessionTask,
+      api: ChatClient,
+      resultFn: (String) -> Unit,
+      api2: OpenAIClient,
+      planSettings: PlanSettings
     ) {
         val semaphore = Semaphore(0)
         val hasError = AtomicBoolean(false)
@@ -70,7 +72,8 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
                     ?.map { File(it) }?.associateBy { it.name }
                     ?.filterKeys { it.startsWith(alias ?: "") }
                     ?: emptyMap()
-                val executable = cmds.entries.firstOrNull()?.value
+                var executable = cmds.entries.firstOrNull()?.value
+                executable = executable ?: alias?.let { root.resolve(it).toFile() }
                 if (executable == null) {
                     throw IllegalArgumentException("Command not found: $alias")
                 }

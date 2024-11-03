@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.*
@@ -24,6 +25,7 @@ open class PlanChatApp(
     showMenubar: Boolean = true,
     initialPlan: TaskBreakdownWithPrompt? = null,
     api: API? = null,
+    api2: OpenAIClient,
 ) : PlanAheadApp(
     applicationName = applicationName,
     path = path,
@@ -34,6 +36,7 @@ open class PlanChatApp(
     showMenubar = showMenubar,
     initialPlan = initialPlan,
     api = api,
+    api2 = api2,
 ) {
     override val stickyInput = true
     override val singleInput = false
@@ -52,7 +55,8 @@ open class PlanChatApp(
                     ui = ui,
                     session = session,
                     user = user,
-                    api = api
+                    api = api,
+                    api2 = api2,
                 )
             }
             sessionHandler.handleUserMessage(
@@ -65,7 +69,8 @@ open class PlanChatApp(
         val ui: ApplicationInterface,
         val session: Session,
         val user: User?,
-        val api: API
+        val api: API,
+        val api2: OpenAIClient,
     ) {
         val messageHistory: MutableList<String> = mutableListOf()
 
@@ -118,7 +123,8 @@ open class PlanChatApp(
                     plan = modifiedPlan,
                     task = sessionTask,
                     userMessage = userMessage,
-                    api = api
+                    api = api,
+                    api2 = api2,
                 )
                 val response = planProcessingState.taskResult["respond_to_chat"] as? String
                 if (response != null) {

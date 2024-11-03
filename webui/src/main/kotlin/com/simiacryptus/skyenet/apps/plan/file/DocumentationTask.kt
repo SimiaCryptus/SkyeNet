@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet.apps.plan.file
 
 import com.simiacryptus.diff.addApplyFileDiffLinks
-import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.models.chatModel
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTaskData
@@ -66,11 +66,13 @@ class DocumentationTask(
     }
 
     override fun run(
-        agent: PlanCoordinator,
-        messages: List<String>,
-        task: SessionTask,
-        api: API,
-        resultFn: (String) -> Unit
+      agent: PlanCoordinator,
+      messages: List<String>,
+      task: SessionTask,
+      api: ChatClient,
+      resultFn: (String) -> Unit,
+      api2: OpenAIClient,
+      planSettings: PlanSettings
     ) {
         if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
             task.complete("No input or output files specified")

@@ -11,14 +11,14 @@ interface ParsingModel {
     interface ContentData {
         val type: String
         val text: String?
-        val content: List<ContentData>?
+        val content_list: List<ContentData>?
         val tags: List<String>?
     }
 
     interface DocumentData {
         val id: String?
-        val content: List<ContentData>?
-        val metadata: DocumentMetadata?
+        val content_list: List<ContentData>?
+//        val metadata: DocumentMetadata?
     }
 
     companion object {

@@ -36,7 +36,7 @@ val jackson_version = "2.17.2"
 
 dependencies {
 
-    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.11") {
+    implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.12") {
         exclude(group = "org.slf4j")
     }
 
@@ -90,6 +90,7 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = jackson_version)
 
 
+    implementation(group = "com.google.guava", name = "guava", version = "32.1.3-jre")
 //    implementation(group = "com.google.apis", name = "google-api-services-customsearch", version = "v1-rev20230702-2.0.0")
     compileOnly(group = "com.google.api-client", name = "google-api-client", version = "1.35.2" /*"1.35.2"*/)
     compileOnly(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")

@@ -17,12 +17,13 @@ import com.simiacryptus.skyenet.apps.plan.file.CodeOptimizationTask.CodeOptimiza
 import com.simiacryptus.skyenet.apps.plan.file.CodeReviewTask.CodeReviewTaskData
 import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTaskData
 import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
-import com.simiacryptus.skyenet.apps.plan.file.GoogleSearchTask.GoogleSearchTaskData
+import com.simiacryptus.skyenet.apps.plan.GoogleSearchTask.GoogleSearchTaskData
 import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskData
 import com.simiacryptus.skyenet.apps.plan.file.PerformanceAnalysisTask.PerformanceAnalysisTaskData
 import com.simiacryptus.skyenet.apps.plan.file.RefactorTask.RefactorTaskData
 import com.simiacryptus.skyenet.apps.plan.file.SecurityAuditTask.SecurityAuditTaskData
 import com.simiacryptus.skyenet.apps.plan.file.TestGenerationTask.TestGenerationTaskData
+import com.simiacryptus.skyenet.apps.plan.knowledge.EmbeddingSearchTask
 import com.simiacryptus.util.DynamicEnum
 import com.simiacryptus.util.DynamicEnumDeserializer
 import com.simiacryptus.util.DynamicEnumSerializer
@@ -92,11 +93,7 @@ class TaskType<out T : PlanTaskBase>(
         fun getImpl(
             planSettings: PlanSettings,
             planTask: PlanTaskBase?
-        ): AbstractTask<out PlanTaskBase> {
-            val taskType = planTask?.task_type?.let { valueOf(it) }
-                ?: throw RuntimeException("Task type not specified")
-            return getImpl(planSettings, taskType, planTask)
-        }
+        ) = getImpl(planSettings, planTask?.task_type?.let { valueOf(it) } ?: throw RuntimeException("Task type not specified"), planTask)
 
         fun getImpl(
             planSettings: PlanSettings,

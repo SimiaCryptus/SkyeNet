@@ -1,6 +1,8 @@
 package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ApiModel.Role
@@ -56,15 +58,17 @@ class PlanningTask(
         agent: PlanCoordinator,
         messages: List<String>,
         task: SessionTask,
-        api: API,
-        resultFn: (String) -> Unit
+        api: ChatClient,
+        resultFn: (String) -> Unit,
+        api2: OpenAIClient,
+        planSettings: PlanSettings
     ) {
         val userMessage = messages.joinToString("\n")
         val newTask = agent.ui.newTask(false).apply { add(placeholder) }
         fun toInput(s: String) = (messages + listOf(s)).filter { it.isNotBlank() }
 
         val subPlan = if (planSettings.allowBlocking && !planSettings.autoFix) {
-            createSubPlanDiscussable(newTask, userMessage, ::toInput, api, agent.ui).call().obj
+            createSubPlanDiscussable(newTask, userMessage, ::toInput, api, agent.ui, planSettings).call().obj
         } else {
             val design = planSettings.planningActor().answer(
                 toInput("Expand ${planTask?.task_description ?: ""}"),
@@ -80,7 +84,7 @@ class PlanningTask(
             )
             design.obj
         }
-        executeSubTasks(agent, userMessage, filterPlan { subPlan.tasksByID } ?: emptyMap(), task, api)
+        executeSubTasks(agent, userMessage, filterPlan { subPlan.tasksByID } ?: emptyMap(), task, api, api2)
     }
 
     private fun createSubPlanDiscussable(
@@ -88,7 +92,8 @@ class PlanningTask(
         userMessage: String,
         toInput: (String) -> List<String>,
         api: API,
-        ui: ApplicationInterface
+        ui: ApplicationInterface,
+        planSettings: PlanSettings
     ) = Discussable(
         task = task,
         userMessage = { "Expand ${planTask?.task_description ?: ""}" },
@@ -116,27 +121,34 @@ class PlanningTask(
     )
 
     private fun executeSubTasks(
-        agent: PlanCoordinator,
+        coordinator: PlanCoordinator,
         userMessage: String,
         subPlan: Map<String, PlanTaskBase>,
         parentTask: SessionTask,
-        api: API
+        api: API,
+        api2: OpenAIClient,
     ) {
-        val subPlanTask = agent.ui.newTask(false)
+        val subPlanTask = coordinator.ui.newTask(false)
         parentTask.add(subPlanTask.placeholder)
-        val subTasks = subPlan ?: emptyMap()
-        val planProcessingState = PlanProcessingState(subTasks.toMutableMap())
-        agent.executePlan(
+        val planProcessingState = PlanProcessingState(subPlan.toMutableMap())
+        coordinator.copy(
+            planSettings = coordinator.planSettings.copy(
+                taskSettings = coordinator.planSettings.taskSettings.toList().toTypedArray().toMap().toMutableMap().apply {
+                    this["TaskPlanning"] = TaskSettings(enabled = false, model = null)
+                }
+            )
+        ).executePlan(
             task = subPlanTask,
-            diagramBuffer = subPlanTask.add(diagram(agent.ui, planProcessingState.subTasks)),
-            subTasks = subTasks,
+            diagramBuffer = subPlanTask.add(diagram(coordinator.ui, planProcessingState.subTasks)),
+            subTasks = subPlan,
             diagramTask = subPlanTask,
             planProcessingState = planProcessingState,
-            taskIdProcessingQueue = executionOrder(subTasks).toMutableList(),
-            pool = agent.pool,
+            taskIdProcessingQueue = executionOrder(subPlan).toMutableList(),
+            pool = coordinator.pool,
             userMessage = userMessage,
             plan = subPlan,
             api = api,
+            api2 = api2,
         )
         subPlanTask.complete()
     }

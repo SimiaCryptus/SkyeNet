@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
@@ -29,6 +30,7 @@ open class PlanAheadApp(
     showMenubar: Boolean = true,
     val initialPlan: TaskBreakdownWithPrompt? = null,
     val api: API? = null,
+    val api2: OpenAIClient,
 ) : ApplicationServer(
     applicationName = applicationName,
     path = path,
@@ -59,7 +61,7 @@ open class PlanAheadApp(
                         root = planSettings?.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
                         planSettings = planSettings!!
                     )
-                    coordinator.executeTaskBreakdownWithPrompt(JsonUtil.toJson(initialPlan), api!!, ui.newTask())
+                    coordinator.executeTaskBreakdownWithPrompt(JsonUtil.toJson(initialPlan), api!!, api2, ui.newTask())
                 } catch (e: Throwable) {
                     ui.newTask().error(ui, e)
                     log.warn("Error", e)
@@ -98,7 +100,7 @@ open class PlanAheadApp(
                 planSettings = coordinator.planSettings,
                 api = api
             )
-            coordinator.executePlan(plan.plan, task, userMessage = userMessage, api = api)
+            coordinator.executePlan(plan.plan, task, userMessage = userMessage, api = api, api2 = api2)
         } catch (e: Throwable) {
             ui.newTask().error(ui, e)
             log.warn("Error", e)

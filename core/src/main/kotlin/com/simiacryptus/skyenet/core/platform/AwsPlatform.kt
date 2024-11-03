@@ -2,6 +2,7 @@ package com.simiacryptus.skyenet.core.platform
 
 import com.simiacryptus.skyenet.core.platform.model.CloudPlatformInterface
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.regions.Region
@@ -13,25 +14,29 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.nio.charset.StandardCharsets
 import java.util.*
 
+
 open class AwsPlatform(
     private val bucket: String = System.getProperty("share_bucket", "share.simiacrypt.us"),
-    override val shareBase: String = System.getProperty("share_base", "https://share.simiacrypt.us"),
-    private val region: Region? = Region.US_EAST_1
+    override val shareBase: String = System.getProperty("share_base", "https://" + bucket),
+    private val region: Region? = Region.US_EAST_1,
+    private val profileName: String = "default",
 ) : CloudPlatformInterface {
+    open val credentialsProvider: ProfileCredentialsProvider? = ProfileCredentialsProvider.create(profileName)
     private val log = LoggerFactory.getLogger(AwsPlatform::class.java)
 
     protected open val kmsClient: KmsClient by lazy {
         log.debug("Initializing KMS client for region: {}", Region.US_EAST_1)
-        KmsClient.builder().region(Region.US_EAST_1)
-            //.credentialsProvider(ProfileCredentialsProvider.create("data"))
-            .build()
+        var clientBuilder = KmsClient.builder().region(Region.US_EAST_1)
+        if(null != credentialsProvider) clientBuilder = clientBuilder.credentialsProvider(credentialsProvider)
+        clientBuilder.build()
     }
 
     protected open val s3Client: S3Client by lazy {
         log.debug("Initializing S3 client for region: {}", region)
-        S3Client.builder()
-            .region(region)
-            .build()
+        var clientBuilder = S3Client.builder()
+        if(null != credentialsProvider) clientBuilder = clientBuilder.credentialsProvider(credentialsProvider)
+        clientBuilder = clientBuilder.region(region)
+        clientBuilder.build()
     }
 
     override fun upload(

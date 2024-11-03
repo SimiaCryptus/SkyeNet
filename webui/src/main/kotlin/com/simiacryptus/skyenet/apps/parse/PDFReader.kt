@@ -9,13 +9,13 @@ import java.io.File
 class PDFReader(pdfFile: File) : DocumentParserApp.DocumentReader {
     private val document: PDDocument = PDDocument.load(pdfFile)
     private val renderer: PDFRenderer = PDFRenderer(document)
-    private val stripper: PDFTextStripper = PDFTextStripper().apply { sortByPosition = true }
 
     override fun getPageCount(): Int = document.numberOfPages
 
     override fun getText(startPage: Int, endPage: Int): String {
-        stripper.startPage = startPage
-        stripper.endPage = endPage
+        val stripper = PDFTextStripper().apply { sortByPosition = true } // Not to be confused with the stripper from last night
+        stripper.startPage = startPage+1
+        stripper.endPage = endPage+1
         return stripper.getText(document)
     }
 
