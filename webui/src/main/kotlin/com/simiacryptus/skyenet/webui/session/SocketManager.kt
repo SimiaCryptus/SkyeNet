@@ -4,8 +4,8 @@ import com.simiacryptus.skyenet.webui.chat.ChatSocket
 import org.eclipse.jetty.websocket.api.Session
 
 interface SocketManager {
-    fun removeSocket(socket: ChatSocket)
-    fun addSocket(socket: ChatSocket, session: Session)
-    fun getReplay(): List<String>
-    fun onWebSocketText(socket: ChatSocket, message: String)
+  fun removeSocket(socket: ChatSocket)
+  fun addSocket(socket: ChatSocket, session: Session)
+  fun getReplay(): List<String>
+  fun onWebSocketText(socket: ChatSocket, message: String)
 }

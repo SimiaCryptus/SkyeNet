@@ -1,19 +1,19 @@
 package com.simiacryptus.skyenet.apps.plan
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
+import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.simiacryptus.jopenai.ChatClient
-import com.simiacryptus.jopenai.OpenAIClient
-import com.simiacryptus.util.JsonUtil
 
 class GoogleSearchTask(
   planSettings: PlanSettings,
@@ -58,7 +58,8 @@ GoogleSearch - Search Google for web results
   private fun performGoogleSearch(planSettings: PlanSettings): String {
     val client = HttpClient.newBuilder().build()
     val encodedQuery = URLEncoder.encode(planTask?.search_query, "UTF-8")
-    val uriBuilder = "https://www.googleapis.com/customsearch/v1?key=${planSettings.googleApiKey}&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${planTask?.num_results}"
+    val uriBuilder =
+      "https://www.googleapis.com/customsearch/v1?key=${planSettings.googleApiKey}&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${planTask?.num_results}"
     val request = HttpRequest.newBuilder().uri(URI.create(uriBuilder)).GET().build()
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
     if (response.statusCode() != 200) {

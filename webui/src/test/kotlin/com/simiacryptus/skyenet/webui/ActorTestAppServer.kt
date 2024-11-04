@@ -27,126 +27,126 @@ import com.simiacryptus.skyenet.webui.test.*
 
 object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.ApplicationDirectory(port = 8082) {
 
-    data class TestJokeDataStructure(
-        val setup: String? = null,
-        val punchline: String? = null,
-        val type: String? = null,
+  data class TestJokeDataStructure(
+    val setup: String? = null,
+    val punchline: String? = null,
+    val type: String? = null,
+  )
+
+  override fun setupPlatform() {
+    super.setupPlatform()
+    try {
+      javaClass.classLoader.getResourceAsStream("openai.key.json.kms")?.readAllBytes()
+        ?.let { ApplicationServices.cloud?.decrypt(it) }
+        ?.apply {
+          keyTxt = this
+          log.info("Loaded key from KMS")
+        }
+    } catch (e: Throwable) {
+      log.warn("openai.key.json.kms", e)
+    }
+  }
+
+  override val childWebApps by lazy {
+    listOf(
+      ChildWebApp(
+        "/test_simple",
+        SimpleActorTestApp(
+          SimpleActor(
+            "Translate the user's request into pig latin.",
+            "PigLatin",
+            model = OpenAIModels.GPT4oMini
+          )
+        )
+      ),
+      ChildWebApp(
+        "/test_parsed_joke", ParsedActorTestApp(
+          ParsedActor(
+            resultClass = TestJokeDataStructure::class.java,
+            prompt = "Tell me a joke",
+            parsingModel = OpenAIModels.GPT4oMini,
+            model = OpenAIModels.GPT4oMini,
+          )
+        )
+      ),
+      ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = OpenAIModels.GPT4oMini))),
+      ChildWebApp(
+        "/test_coding_scala",
+        CodingActorTestApp(CodingActor(ScalaLocalInterpreter::class, model = OpenAIModels.GPT4oMini))
+      ),
+      ChildWebApp(
+        "/test_coding_kotlin",
+        CodingActorTestApp(CodingActor(KotlinInterpreter::class, model = OpenAIModels.GPT4oMini))
+      ),
+      ChildWebApp(
+        "/test_coding_groovy",
+        CodingActorTestApp(CodingActor(GroovyInterpreter::class, model = OpenAIModels.GPT4oMini))
+      ),
+      ChildWebApp("/test_file_patch", FilePatchTestApp()),
+      ChildWebApp(
+        "/taskDev",
+        PlanAheadApp(
+          planSettings = PlanSettings(
+            defaultModel = OpenAIModels.GPT4o,
+            parsingModel = OpenAIModels.GPT4oMini,
+            command = listOf("task"),
+            temperature = 0.2,
+            budget = 2.0,
+            autoFix = true,
+            commandAutoFixCommands = listOf(
+              "C:\\Program Files\\nodejs\\npx.cmd", "C:\\Program Files\\nodejs\\npm.cmd"
+            ),
+            env = mapOf(),
+            workingDir = ".",
+            language = if (isWindows) "powershell" else "bash",
+          ).apply {
+            setTaskSettings(
+              TaskType.TaskPlanning, TaskSettings(
+                enabled = true,
+                model = OpenAIModels.GPT4o,
+              )
+            )
+            setTaskSettings(
+              TaskType.RunShellCommand, TaskSettings(
+                enabled = false,
+                model = OpenAIModels.GPT4o,
+              )
+            )
+          },
+          model = OpenAIModels.GPT4o,
+          parsingModel = OpenAIModels.GPT4oMini,
+          api2 = OpenAIClient()
+        )
+      ),
+      ChildWebApp("/stressTest", StressTestApp()),
+      ChildWebApp("/pdfExtractor", DocumentParserApp(parsingModel = DocumentParsingModel(OpenAIModels.GPT4o, 0.1))),
     )
+  }
 
-    override fun setupPlatform() {
-        super.setupPlatform()
-        try {
-            javaClass.classLoader.getResourceAsStream("openai.key.json.kms")?.readAllBytes()
-                ?.let { ApplicationServices.cloud?.decrypt(it) }
-                ?.apply {
-                    keyTxt = this
-                    log.info("Loaded key from KMS")
-                }
-        } catch (e: Throwable) {
-            log.warn("openai.key.json.kms", e)
-        }
+  //    override val toolServlet: ToolServlet? get() = null
+  val log = org.slf4j.LoggerFactory.getLogger(ActorTestAppServer::class.java)
+
+  @JvmStatic
+  fun main(args: Array<String>) {
+    val mockUser = User(
+      "1",
+      "user@mock.test",
+      "Test User",
+      ""
+    )
+    ApplicationServices.authenticationManager = object : AuthenticationInterface {
+      override fun getUser(accessToken: String?) = mockUser
+      override fun putUser(accessToken: String, user: User) = throw UnsupportedOperationException()
+      override fun logout(accessToken: String, user: User) {}
     }
-
-    override val childWebApps by lazy {
-        listOf(
-            ChildWebApp(
-                "/test_simple",
-                SimpleActorTestApp(
-                    SimpleActor(
-                        "Translate the user's request into pig latin.",
-                        "PigLatin",
-                        model = OpenAIModels.GPT4oMini
-                    )
-                )
-            ),
-            ChildWebApp(
-                "/test_parsed_joke", ParsedActorTestApp(
-                    ParsedActor(
-                        resultClass = TestJokeDataStructure::class.java,
-                        prompt = "Tell me a joke",
-                        parsingModel = OpenAIModels.GPT4oMini,
-                        model = OpenAIModels.GPT4oMini,
-                    )
-                )
-            ),
-            ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = OpenAIModels.GPT4oMini))),
-            ChildWebApp(
-                "/test_coding_scala",
-                CodingActorTestApp(CodingActor(ScalaLocalInterpreter::class, model = OpenAIModels.GPT4oMini))
-            ),
-            ChildWebApp(
-                "/test_coding_kotlin",
-                CodingActorTestApp(CodingActor(KotlinInterpreter::class, model = OpenAIModels.GPT4oMini))
-            ),
-            ChildWebApp(
-                "/test_coding_groovy",
-                CodingActorTestApp(CodingActor(GroovyInterpreter::class, model = OpenAIModels.GPT4oMini))
-            ),
-            ChildWebApp("/test_file_patch", FilePatchTestApp()),
-            ChildWebApp(
-                "/taskDev",
-                PlanAheadApp(
-                    planSettings = PlanSettings(
-                        defaultModel = OpenAIModels.GPT4o,
-                        parsingModel = OpenAIModels.GPT4oMini,
-                        command = listOf("task"),
-                        temperature = 0.2,
-                        budget = 2.0,
-                        autoFix = true,
-                        commandAutoFixCommands = listOf(
-                            "C:\\Program Files\\nodejs\\npx.cmd", "C:\\Program Files\\nodejs\\npm.cmd"
-                        ),
-                        env = mapOf(),
-                        workingDir = ".",
-                        language = if (isWindows) "powershell" else "bash",
-                    ).apply {
-                        setTaskSettings(
-                            TaskType.TaskPlanning, TaskSettings(
-                                enabled = true,
-                                model = OpenAIModels.GPT4o,
-                            )
-                        )
-                        setTaskSettings(
-                            TaskType.RunShellCommand, TaskSettings(
-                                enabled = false,
-                                model = OpenAIModels.GPT4o,
-                            )
-                        )
-                    },
-                    model = OpenAIModels.GPT4o,
-                    parsingModel = OpenAIModels.GPT4oMini,
-                    api2 = OpenAIClient()
-                )
-            ),
-            ChildWebApp("/stressTest", StressTestApp()),
-            ChildWebApp("/pdfExtractor", DocumentParserApp(parsingModel = DocumentParsingModel(OpenAIModels.GPT4o, 0.1))),
-        )
+    ApplicationServices.authorizationManager = object : AuthorizationInterface {
+      override fun isAuthorized(
+        applicationClass: Class<*>?,
+        user: User?,
+        operationType: AuthorizationInterface.OperationType
+      ): Boolean = true
     }
-
-    //    override val toolServlet: ToolServlet? get() = null
-    val log = org.slf4j.LoggerFactory.getLogger(ActorTestAppServer::class.java)
-
-    @JvmStatic
-    fun main(args: Array<String>) {
-        val mockUser = User(
-            "1",
-            "user@mock.test",
-            "Test User",
-            ""
-        )
-        ApplicationServices.authenticationManager = object : AuthenticationInterface {
-            override fun getUser(accessToken: String?) = mockUser
-            override fun putUser(accessToken: String, user: User) = throw UnsupportedOperationException()
-            override fun logout(accessToken: String, user: User) {}
-        }
-        ApplicationServices.authorizationManager = object : AuthorizationInterface {
-            override fun isAuthorized(
-                applicationClass: Class<*>?,
-                user: User?,
-                operationType: AuthorizationInterface.OperationType
-            ): Boolean = true
-        }
-        super._main(args)
-    }
+    super._main(args)
+  }
 }
 

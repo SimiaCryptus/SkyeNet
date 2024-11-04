@@ -7,30 +7,30 @@ import com.simiacryptus.skyenet.apps.plan.file.RefactorTask.RefactorTaskData
 import org.slf4j.LoggerFactory
 
 class RefactorTask(
-    planSettings: PlanSettings,
-    planTask: RefactorTaskData?
+  planSettings: PlanSettings,
+  planTask: RefactorTaskData?
 ) : AbstractAnalysisTask<RefactorTaskData>(planSettings, planTask) {
-    class RefactorTaskData(
-        @Description("List of files to be refactored")
-        val filesToRefactor: List<String>? = null,
-        @Description("Specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)")
-        val refactoringFocus: List<String>? = null,
-        task_description: String? = null,
-        task_dependencies: List<String>? = null,
-        input_files: List<String>? = null,
-        output_files: List<String>? = null,
-        state: TaskState? = null
-    ) : FileTaskBase(
-        task_type = TaskType.RefactorTask.name,
-        task_description = task_description,
-        task_dependencies = task_dependencies,
-        input_files = input_files,
-        output_files = output_files,
-        state = state
-    )
+  class RefactorTaskData(
+    @Description("List of files to be refactored")
+    val filesToRefactor: List<String>? = null,
+    @Description("Specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)")
+    val refactoringFocus: List<String>? = null,
+    task_description: String? = null,
+    task_dependencies: List<String>? = null,
+    input_files: List<String>? = null,
+    output_files: List<String>? = null,
+    state: TaskState? = null
+  ) : FileTaskBase(
+    task_type = TaskType.RefactorTask.name,
+    task_description = task_description,
+    task_dependencies = task_dependencies,
+    input_files = input_files,
+    output_files = output_files,
+    state = state
+  )
 
-    override val actorName: String = "Refactor"
-    override val actorPrompt: String = """
+  override val actorName: String = "Refactor"
+  override val actorPrompt: String = """
 Analyze the provided code and suggest refactoring to improve code structure, readability, and maintainability. Focus on:
 1. Improving code organization
 2. Reducing code duplication
@@ -48,17 +48,17 @@ Format the response as a markdown document with appropriate headings and code sn
 Use diff format to show the proposed changes clearly.
     """.trimIndent()
 
-    override fun getAnalysisInstruction(): String = "Refactor the following code"
+  override fun getAnalysisInstruction(): String = "Refactor the following code"
 
-    override fun promptSegment(): String {
-        return """
+  override fun promptSegment(): String {
+    return """
 RefactorTask - Analyze and refactor existing code to improve structure, readability, and maintainability
   ** Specify the files to be refactored
   ** Optionally provide specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)
         """.trimMargin()
-    }
+  }
 
-    companion object {
-        private val log = LoggerFactory.getLogger(RefactorTask::class.java)
-    }
+  companion object {
+    private val log = LoggerFactory.getLogger(RefactorTask::class.java)
+  }
 }

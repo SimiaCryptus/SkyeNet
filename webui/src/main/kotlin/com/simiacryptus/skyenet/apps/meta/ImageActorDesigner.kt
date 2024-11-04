@@ -7,14 +7,14 @@ import com.simiacryptus.skyenet.interpreter.Interpreter
 import kotlin.reflect.KClass
 
 class ImageActorDesigner(
-    interpreterClass: KClass<out Interpreter>,
-    symbols: Map<String, Any>,
-    model: ChatModel,
-    temperature: Double
+  interpreterClass: KClass<out Interpreter>,
+  symbols: Map<String, Any>,
+  model: ChatModel,
+  temperature: Double
 ) : CodingActor(
-    interpreterClass = interpreterClass,
-    symbols = symbols,
-    details = """
+  interpreterClass = interpreterClass,
+  symbols = symbols,
+  details = """
         |
         |You are a software implementation assistant.
         |Your task is to implement a "image" actor that takes part in a larger system.
@@ -52,11 +52,11 @@ class ImageActorDesigner(
         |DO NOT subclass the ImageActor class. Use the constructor directly within the function.
         |
         """.trimMargin().trim(),
-    model = model,
-    temperature = temperature,
+  model = model,
+  temperature = temperature,
 ) {
-    init {
-        evalFormat = false
-        codeInterceptor = { fixups(it) }
-    }
+  init {
+    evalFormat = false
+    codeInterceptor = { fixups(it) }
+  }
 }

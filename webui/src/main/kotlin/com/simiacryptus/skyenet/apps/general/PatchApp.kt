@@ -24,178 +24,180 @@ import java.nio.file.Path
 import java.util.UUID
 
 abstract class PatchApp(
-    override val root: File,
-    val session: Session,
-    val settings: Settings,
-    val api: ChatClient,
-    val model: ChatModel,
-    val promptPrefix: String = """The following command was run and produced an error:"""
+  override val root: File,
+  val session: Session,
+  val settings: Settings,
+  val api: ChatClient,
+  val model: ChatModel,
+  val promptPrefix: String = """The following command was run and produced an error:"""
 ) : ApplicationServer(
-    applicationName = "Magic Code Fixer",
-    path = "/fixCmd",
-    showMenubar = false,
+  applicationName = "Magic Code Fixer",
+  path = "/fixCmd",
+  showMenubar = false,
 ) {
-    companion object {
-        private val log = LoggerFactory.getLogger(PatchApp::class.java)
-        const val tripleTilde = "`" + "``" // This is a workaround for the markdown parser when editing this file
-    }
+  companion object {
+    private val log = LoggerFactory.getLogger(PatchApp::class.java)
+    const val tripleTilde = "`" + "``" // This is a workaround for the markdown parser when editing this file
+  }
 
-    data class OutputResult(val exitCode: Int, val output: String)
+  data class OutputResult(val exitCode: Int, val output: String)
 
-    abstract fun codeFiles(): Set<Path>
-    abstract fun codeSummary(paths: List<Path>): String
-    abstract fun output(task: SessionTask): OutputResult
-    abstract fun searchFiles(searchStrings: List<String>): Set<Path>
-    override val singleInput = true
-    override val stickyInput = false
-    override fun newSession(user: User?, session: Session): SocketManager {
-        val socketManager = super.newSession(user, session)
-        val ui = (socketManager as ApplicationSocketManager).applicationInterface
-        val task = ui.newTask()
-        Retryable(
-            ui = ui,
-            task = task,
-            process = { content ->
-                val newTask = ui.newTask(false)
-                newTask.add("Running Command")
-                Thread {
-                    run(ui, newTask)
-                }.start()
-                newTask.placeholder
-            }
-        )
-        return socketManager
-    }
-
-    abstract fun projectSummary(): String
-
-    private fun prunePaths(paths: List<Path>, maxSize: Int): List<Path> {
-        val sortedPaths = paths.sortedByDescending { it.toFile().length() }
-        var totalSize = 0
-        val prunedPaths = mutableListOf<Path>()
-        for (path in sortedPaths) {
-            val fileSize = path.toFile().length().toInt()
-            if (totalSize + fileSize > maxSize) break
-            prunedPaths.add(path)
-            totalSize += fileSize
-        }
-        return prunedPaths
-    }
-
-    data class ParsedErrors(
-        val errors: List<ParsedError>? = null
+  abstract fun codeFiles(): Set<Path>
+  abstract fun codeSummary(paths: List<Path>): String
+  abstract fun output(task: SessionTask): OutputResult
+  abstract fun searchFiles(searchStrings: List<String>): Set<Path>
+  override val singleInput = true
+  override val stickyInput = false
+  override fun newSession(user: User?, session: Session): SocketManager {
+    val socketManager = super.newSession(user, session)
+    val ui = (socketManager as ApplicationSocketManager).applicationInterface
+    val task = ui.newTask()
+    Retryable(
+      ui = ui,
+      task = task,
+      process = { content ->
+        val newTask = ui.newTask(false)
+        newTask.add("Running Command")
+        Thread {
+          run(ui, newTask)
+        }.start()
+        newTask.placeholder
+      }
     )
+    return socketManager
+  }
 
-    data class ParsedError(
-        @Description("The error message")
-        val message: String? = null,
-        @Description("Files identified as needing modification and issue-related files")
-        val relatedFiles: List<String>? = null,
-        @Description("Files identified as needing modification and issue-related files")
-        val fixFiles: List<String>? = null,
-        @Description("Search strings to find relevant files")
-        val searchStrings: List<String>? = null
-    )
+  abstract fun projectSummary(): String
 
-    data class Settings(
-        var executable: File,
-        var arguments: String = "",
-        var workingDirectory: File? = null,
-        var exitCodeOption: String = "nonzero",
-        var additionalInstructions: String = "",
-        val autoFix: Boolean,
-    )
+  private fun prunePaths(paths: List<Path>, maxSize: Int): List<Path> {
+    val sortedPaths = paths.sortedByDescending { it.toFile().length() }
+    var totalSize = 0
+    val prunedPaths = mutableListOf<Path>()
+    for (path in sortedPaths) {
+      val fileSize = path.toFile().length().toInt()
+      if (totalSize + fileSize > maxSize) break
+      prunedPaths.add(path)
+      totalSize += fileSize
+    }
+    return prunedPaths
+  }
 
-    fun run(
-        ui: ApplicationInterface,
-        task: SessionTask,
-    ): OutputResult {
-        val output = output(task)
-        if (output.exitCode == 0 && settings.exitCodeOption == "nonzero") {
-            task.complete(
-                """
+  data class ParsedErrors(
+    val errors: List<ParsedError>? = null
+  )
+
+  data class ParsedError(
+    @Description("The error message")
+    val message: String? = null,
+    @Description("Files identified as needing modification and issue-related files")
+    val relatedFiles: List<String>? = null,
+    @Description("Files identified as needing modification and issue-related files")
+    val fixFiles: List<String>? = null,
+    @Description("Search strings to find relevant files")
+    val searchStrings: List<String>? = null
+  )
+
+  data class Settings(
+    var executable: File,
+    var arguments: String = "",
+    var workingDirectory: File? = null,
+    var exitCodeOption: String = "nonzero",
+    var additionalInstructions: String = "",
+    val autoFix: Boolean,
+  )
+
+  fun run(
+    ui: ApplicationInterface,
+    task: SessionTask,
+  ): OutputResult {
+    val output = output(task)
+    if (output.exitCode == 0 && settings.exitCodeOption == "nonzero") {
+      task.complete(
+        """
                 |<div>
                 |<div><b>Command executed successfully</b></div>
                 |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
                 |</div>
                 |""".trimMargin()
-            )
-            return output
-        }
-        if (settings.exitCodeOption == "zero" && output.exitCode != 0) {
-            task.complete(
-                """
+      )
+      return output
+    }
+    if (settings.exitCodeOption == "zero" && output.exitCode != 0) {
+      task.complete(
+        """
                 |<div>
                 |<div><b>Command failed</b></div>
                 |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
                 |</div>
                 |""".trimMargin()
-            )
-            return output
-        }
-        try {
-            task.add(
-                """
+      )
+      return output
+    }
+    try {
+      task.add(
+        """
                 |<div>
                 |<div><b>Command exit code: ${output.exitCode}</b></div>
                 |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
                 |</div>
                 """.trimMargin()
-            )
-            fixAll(settings, output, task, ui, api)
-        } catch (e: Exception) {
-            task.error(ui, e)
-        }
-        return output
+      )
+      fixAll(settings, output, task, ui, api)
+    } catch (e: Exception) {
+      task.error(ui, e)
     }
+    return output
+  }
 
-    private fun fixAll(
-        settings: Settings,
-        output: OutputResult,
-        task: SessionTask,
-        ui: ApplicationInterface,
-        api: ChatClient,
-    ) {
-        Retryable(ui, task) { content ->
-            fixAllInternal(
-                settings = settings,
-                output = output,
-                task = task,
-                ui = ui,
-                changed = mutableSetOf(),
-                api = api
-            )
-            content.clear()
-            ""
-        }
+  private fun fixAll(
+    settings: Settings,
+    output: OutputResult,
+    task: SessionTask,
+    ui: ApplicationInterface,
+    api: ChatClient,
+  ) {
+    Retryable(ui, task) { content ->
+      fixAllInternal(
+        settings = settings,
+        output = output,
+        task = task,
+        ui = ui,
+        changed = mutableSetOf(),
+        api = api
+      )
+      content.clear()
+      ""
     }
+  }
 
-    private fun fixAllInternal(
-        settings: Settings,
-        output: OutputResult,
-        task: SessionTask,
-        ui: ApplicationInterface,
-        changed: MutableSet<Path>,
-        api: ChatClient,
-    ) {
-        val api = api.getChildClient().apply {
-            val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
-            createFile.second?.apply {
-                logStreams += this.outputStream().buffered()
-                task.verbose("API log: <a href=\"file:///$this\">$this</a>")
-            }
-        }
-        val plan = ParsedActor(
-            resultClass = ParsedErrors::class.java,
-            exampleInstance = ParsedErrors(listOf(
-                ParsedError(
-                    message = "Error message",
-                    relatedFiles = listOf("src/main/java/com/example/Example.java"),
-                    fixFiles = listOf("src/main/java/com/example/Example.java"),
-                    searchStrings = listOf("def exampleFunction", "TODO")
-                )
-            )),
-            prompt = """
+  private fun fixAllInternal(
+    settings: Settings,
+    output: OutputResult,
+    task: SessionTask,
+    ui: ApplicationInterface,
+    changed: MutableSet<Path>,
+    api: ChatClient,
+  ) {
+    val api = api.getChildClient().apply {
+      val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
+      createFile.second?.apply {
+        logStreams += this.outputStream().buffered()
+        task.verbose("API log: <a href=\"file:///$this\">$this</a>")
+      }
+    }
+    val plan = ParsedActor(
+      resultClass = ParsedErrors::class.java,
+      exampleInstance = ParsedErrors(
+        listOf(
+          ParsedError(
+            message = "Error message",
+            relatedFiles = listOf("src/main/java/com/example/Example.java"),
+            fixFiles = listOf("src/main/java/com/example/Example.java"),
+            searchStrings = listOf("def exampleFunction", "TODO")
+          )
+        )
+      ),
+      prompt = """
                 |You are a helpful AI that helps people with coding.
                 |
                 |You will be answering questions about the following project:
@@ -212,89 +214,89 @@ abstract class PatchApp(
                 |   3) specify a search string to find relevant files - be as specific as possible
                 |${if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""}
                 """.trimMargin(),
-            model = model
-        ).answer(
-            listOf(
-                """
+      model = model
+    ).answer(
+      listOf(
+        """
                 |$promptPrefix
                 |
                 |${tripleTilde}
                 |${output.output}
                 |${tripleTilde}
                 """.trimMargin()
-            ), api = api
+      ), api = api
+    )
+    task.add(
+      AgentPatterns.displayMapInTabs(
+        mapOf(
+          "Text" to MarkdownUtil.renderMarkdown(plan.text, ui = ui),
+          "JSON" to MarkdownUtil.renderMarkdown(
+            "${tripleTilde}json\n${JsonUtil.toJson(plan.obj)}\n${tripleTilde}",
+            ui = ui
+          ),
         )
-        task.add(
-            AgentPatterns.displayMapInTabs(
-                mapOf(
-                    "Text" to MarkdownUtil.renderMarkdown(plan.text, ui = ui),
-                    "JSON" to MarkdownUtil.renderMarkdown(
-                        "${tripleTilde}json\n${JsonUtil.toJson(plan.obj)}\n${tripleTilde}",
-                        ui = ui
-                    ),
-                )
-            )
-        )
-        val progressHeader = task.header("Processing tasks")
-        plan.obj.errors?.forEach { error ->
-            task.header("Processing error: ${error.message}")
-            task.verbose(MarkdownUtil.renderMarkdown("```json\n${JsonUtil.toJson(error)}\n```", tabs = false, ui = ui))
-            // Search for files using the provided search strings
-            val searchResults = error.searchStrings?.flatMap { searchString ->
-                FileValidationUtils.filteredWalk(settings.workingDirectory!!) { !FileValidationUtils.isGitignore(it.toPath()) }
-                    .filter { FileValidationUtils.isLLMIncludableFile(it) }
-                    .filter { it.readText().contains(searchString, ignoreCase = true) }
-                    .map { it.toPath() }
-                    .toList()
-            }?.toSet() ?: emptySet()
-            task.verbose(
-                MarkdownUtil.renderMarkdown(
-                    """
+      )
+    )
+    val progressHeader = task.header("Processing tasks")
+    plan.obj.errors?.forEach { error ->
+      task.header("Processing error: ${error.message}")
+      task.verbose(MarkdownUtil.renderMarkdown("```json\n${JsonUtil.toJson(error)}\n```", tabs = false, ui = ui))
+      // Search for files using the provided search strings
+      val searchResults = error.searchStrings?.flatMap { searchString ->
+        FileValidationUtils.filteredWalk(settings.workingDirectory!!) { !FileValidationUtils.isGitignore(it.toPath()) }
+          .filter { FileValidationUtils.isLLMIncludableFile(it) }
+          .filter { it.readText().contains(searchString, ignoreCase = true) }
+          .map { it.toPath() }
+          .toList()
+      }?.toSet() ?: emptySet()
+      task.verbose(
+        MarkdownUtil.renderMarkdown(
+          """
                     |Search results:
                     |
                     |${searchResults.joinToString("\n") { "* `$it`" }}
                     """.trimMargin(), tabs = false, ui = ui
-                )
-            )
-            Retryable(ui, task) { content ->
-                fix(
-                    error, searchResults.toList().map { it.toFile().absolutePath },
-                    output, ui, content, settings.autoFix, changed, api
-                )
-                content.toString()
-            }
-        }
-        progressHeader?.clear()
-        task.append("", false)
+        )
+      )
+      Retryable(ui, task) { content ->
+        fix(
+          error, searchResults.toList().map { it.toFile().absolutePath },
+          output, ui, content, settings.autoFix, changed, api
+        )
+        content.toString()
+      }
     }
+    progressHeader?.clear()
+    task.append("", false)
+  }
 
-    private fun fix(
-        error: ParsedError,
-        additionalFiles: List<String>? = null,
-        output: OutputResult,
-        ui: ApplicationInterface,
-        content: StringBuilder,
-        autoFix: Boolean,
-        changed: MutableSet<Path>,
-        api: ChatClient,
-    ) {
-        val paths =
-            (
-                    (error.fixFiles ?: emptyList()) +
-                            (error.relatedFiles ?: emptyList()) +
-                            (additionalFiles ?: emptyList())
-                    ).map {
-                    try {
-                        File(it).toPath()
-                    } catch (e: Throwable) {
-                        log.warn("Error: root=${root}    ", e)
-                        null
-                    }
-                }.filterNotNull()
-        val prunedPaths = prunePaths(paths, 50 * 1024)
-        val summary = codeSummary(prunedPaths)
-        val response = SimpleActor(
-            prompt = """
+  private fun fix(
+    error: ParsedError,
+    additionalFiles: List<String>? = null,
+    output: OutputResult,
+    ui: ApplicationInterface,
+    content: StringBuilder,
+    autoFix: Boolean,
+    changed: MutableSet<Path>,
+    api: ChatClient,
+  ) {
+    val paths =
+      (
+          (error.fixFiles ?: emptyList()) +
+              (error.relatedFiles ?: emptyList()) +
+              (additionalFiles ?: emptyList())
+          ).map {
+          try {
+            File(it).toPath()
+          } catch (e: Throwable) {
+            log.warn("Error: root=${root}    ", e)
+            null
+          }
+        }.filterNotNull()
+    val prunedPaths = prunePaths(paths, 50 * 1024)
+    val summary = codeSummary(prunedPaths)
+    val response = SimpleActor(
+      prompt = """
                     |You are a helpful AI that helps people with coding.
                     |
                     |You will be answering questions about the following code:
@@ -337,10 +339,10 @@ abstract class PatchApp(
                     |
                     |If needed, new files can be created by using code blocks labeled with the filename in the same manner.
                     """.trimMargin(),
-            model = model
-        ).answer(
-            listOf(
-                """
+      model = model
+    ).answer(
+      listOf(
+        """
                 |$promptPrefix
                 |
                 |${tripleTilde}
@@ -351,26 +353,26 @@ abstract class PatchApp(
                 |  ${error.message?.replace("\n", "\n  ") ?: ""}
                 |${if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""}
                 """.trimMargin()
-            ), api = api
-        )
-        var markdown = ui.socketManager?.addApplyFileDiffLinks(
-            root = root.toPath(),
-            response = response,
-            ui = ui,
-            api = api,
-            shouldAutoApply = { path ->
-                if (autoFix && !changed.contains(path)) {
-                    changed.add(path)
-                    true
-                } else {
-                    false
-                }
-            },
-            model = model,
-        )
-        content.clear()
-        content.append("<div>${MarkdownUtil.renderMarkdown(markdown!!)}</div>")
-    }
+      ), api = api
+    )
+    var markdown = ui.socketManager?.addApplyFileDiffLinks(
+      root = root.toPath(),
+      response = response,
+      ui = ui,
+      api = api,
+      shouldAutoApply = { path ->
+        if (autoFix && !changed.contains(path)) {
+          changed.add(path)
+          true
+        } else {
+          false
+        }
+      },
+      model = model,
+    )
+    content.clear()
+    content.append("<div>${MarkdownUtil.renderMarkdown(markdown!!)}</div>")
+  }
 
 }
 
