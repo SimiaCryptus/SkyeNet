@@ -68,8 +68,8 @@ class KnowledgeIndexingTask(
         val threadPool = Executors.newFixedThreadPool(8)
         try {
             val parsingModel = when (planTask.parsing_type.lowercase()) {
-                "code" -> CodeParsingModel(planSettings.defaultModel.chatModel(), planTask.chunk_size)
-                else -> DocumentParsingModel(planSettings.defaultModel.chatModel(), planTask.chunk_size)
+                "code" -> CodeParsingModel(planSettings.defaultModel, planTask.chunk_size)
+                else -> DocumentParsingModel(planSettings.defaultModel, planTask.chunk_size)
             }
 
             val progressState = ProgressState()
@@ -82,11 +82,11 @@ class KnowledgeIndexingTask(
                 }
             }
 
-            saveAsBinary<Map<String, Any>>(
-                api2,
-                threadPool,
-                progressState = progressState,
-                *files.map { it.absolutePath }.toTypedArray()
+            saveAsBinary(
+              openAIClient = api2,
+              pool = threadPool,
+              progressState = progressState,
+              inputPaths = files.map { it.absolutePath }.toTypedArray()
             )
 
             val result = buildString {

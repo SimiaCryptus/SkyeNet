@@ -48,21 +48,20 @@ data class DocumentRecord(
   companion object {
     val log = org.slf4j.LoggerFactory.getLogger(DocumentRecord::class.java)
 
-    fun <T> saveAsBinary(
+    fun saveAsBinary(
       openAIClient: OpenAIClient,
       pool: ExecutorService,
       progressState: ProgressState? = null,
       vararg inputPaths: String,
-    ) {
-      inputPaths.forEach { inputPath ->
-        val futureList = mutableListOf<Future<*>>()
-        val infile = File(inputPath)
-        val fileData = JsonUtil.fromJson<T>(infile.readText(), Map::class.java) as T as? Map<String, Any>
-        val records = DocumentParsingModel.getRows(inputPath, progressState, futureList, pool, openAIClient, fileData)
-        val outputPath = infile.parentFile.resolve(infile.name.split("\\.".toRegex(), 2).first() + ".index.data").absolutePath
-        awaitAll(futureList.toTypedArray())
-        writeBinary(outputPath, records)
-      }
+    ) = inputPaths.map { inputPath ->
+      val futureList = mutableListOf<Future<*>>()
+      val infile = File(inputPath)
+      val fileData = JsonUtil.fromJson<Map<String, Any>>(infile.readText(), Map::class.java)
+      val records = DocumentParsingModel.getRows(inputPath, progressState, futureList, pool, openAIClient, fileData)
+      val outputPath = infile.parentFile.resolve(infile.name.split("\\.".toRegex(), 2).first() + ".index.data").absolutePath
+      awaitAll(futureList.toTypedArray())
+      writeBinary(outputPath, records)
+      outputPath
     }
 
     fun awaitAll(futureList: Array<Future<*>>) {
