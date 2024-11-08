@@ -32,7 +32,6 @@ class TensorflowProjector(
   }
 
   @Throws(IOException::class)
-
   private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {
     val vectors = words.map { word ->
       word to (api as OpenAIClient).createEmbedding(
