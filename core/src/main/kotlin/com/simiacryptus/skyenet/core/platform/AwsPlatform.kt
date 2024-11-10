@@ -21,7 +21,7 @@ open class AwsPlatform(
   private val bucket: String = System.getProperty("share_bucket", "share.simiacrypt.us"),
   override val shareBase: String = System.getProperty("share_base", "https://" + bucket),
   private val region: Region? = Region.US_EAST_1,
-  profileName: String? = "default",
+  profileName: String? = System.getProperty("aws.profile", "default").let { if (it.isBlank()) null else it },
 ) : CloudPlatformInterface {
 
   open val credentialsProvider = AwsCredentialsProviderChain.builder()
