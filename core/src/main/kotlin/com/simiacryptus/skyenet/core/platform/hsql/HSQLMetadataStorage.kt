@@ -14,7 +14,7 @@ class HSQLMetadataStorage(private val dbFile: File) : MetadataStorageInterface {
   private val log = LoggerFactory.getLogger(javaClass)
 
   private val connection: Connection by lazy {
-    require(dbFile.absoluteFile.mkdirs())
+    require(dbFile.absoluteFile.mkdirs()) { "Unable to create database directory: ${dbFile.absolutePath}" }
     log.info("Initializing HSQLMetadataStorage with database file: ${dbFile.absolutePath}")
     Class.forName("org.hsqldb.jdbc.JDBCDriver")
     val connection = DriverManager.getConnection("jdbc:hsqldb:file:${dbFile.absolutePath}/metadata;shutdown=true", "SA", "")
