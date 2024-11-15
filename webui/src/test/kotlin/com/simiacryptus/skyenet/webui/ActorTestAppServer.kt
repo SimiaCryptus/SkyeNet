@@ -7,6 +7,8 @@ import com.simiacryptus.skyenet.apps.parse.DocumentParserApp
 import com.simiacryptus.skyenet.apps.general.PlanAheadApp
 import com.simiacryptus.skyenet.apps.general.StressTestApp
 import com.simiacryptus.skyenet.apps.parse.DocumentParsingModel
+import com.simiacryptus.skyenet.apps.parse.ParsingModel
+import com.simiacryptus.skyenet.apps.parse.ParsingModel.DocumentData
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
 import com.simiacryptus.skyenet.apps.plan.TaskSettings
@@ -119,7 +121,8 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
         )
       ),
       ChildWebApp("/stressTest", StressTestApp()),
-      ChildWebApp("/pdfExtractor", DocumentParserApp(parsingModel = DocumentParsingModel(OpenAIModels.GPT4o, 0.1))),
+      ChildWebApp("/pdfExtractor", DocumentParserApp(parsingModel = DocumentParsingModel(OpenAIModels.GPT4o, 0.1) as ParsingModel<DocumentData>
+      )),
     )
   }
 

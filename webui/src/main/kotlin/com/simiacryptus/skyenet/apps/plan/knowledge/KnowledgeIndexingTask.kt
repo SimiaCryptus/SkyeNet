@@ -3,9 +3,7 @@ package com.simiacryptus.skyenet.apps.plan.knowledge
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.jopenai.models.chatModel
 import com.simiacryptus.skyenet.apps.parse.CodeParsingModel
-import com.simiacryptus.skyenet.apps.parse.DocumentParserApp
 import com.simiacryptus.skyenet.apps.parse.DocumentParsingModel
 import com.simiacryptus.skyenet.apps.parse.DocumentRecord.Companion.saveAsBinary
 import com.simiacryptus.skyenet.apps.parse.ProgressState
@@ -14,7 +12,6 @@ import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.nio.file.Files
 import java.util.concurrent.Executors
 
 class KnowledgeIndexingTask(

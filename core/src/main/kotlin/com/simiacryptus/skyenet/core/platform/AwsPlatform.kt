@@ -2,6 +2,8 @@ package com.simiacryptus.skyenet.core.platform
 
 import com.simiacryptus.skyenet.core.platform.model.CloudPlatformInterface
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.core.sync.RequestBody
@@ -19,9 +21,20 @@ open class AwsPlatform(
   private val bucket: String = System.getProperty("share_bucket", "share.simiacrypt.us"),
   override val shareBase: String = System.getProperty("share_base", "https://" + bucket),
   private val region: Region? = Region.US_EAST_1,
-  private val profileName: String = "default",
+  profileName: String? = System.getProperty("aws.profile", "default").let { if (it.isBlank()) null else it },
 ) : CloudPlatformInterface {
-  open val credentialsProvider: ProfileCredentialsProvider? = ProfileCredentialsProvider.create(profileName)
+
+  open val credentialsProvider = AwsCredentialsProviderChain.builder()
+    .credentialsProviders(
+      // Try EC2 instance profile credentials first
+      InstanceProfileCredentialsProvider.create(),
+      // Then try profile credentials if profile name is provided
+      profileName?.let {
+        ProfileCredentialsProvider.create(it)
+      } ?: ProfileCredentialsProvider.create()
+    )
+    .build()
+
   private val log = LoggerFactory.getLogger(AwsPlatform::class.java)
 
   protected open val kmsClient: KmsClient by lazy {

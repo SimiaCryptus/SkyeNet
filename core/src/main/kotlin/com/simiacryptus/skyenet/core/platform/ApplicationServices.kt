@@ -47,14 +47,11 @@ object ApplicationServices {
       require(!isLocked) { "ApplicationServices is locked" }
       field = value
     }
-
   var cloud: CloudPlatformInterface? = AwsPlatform.get()
     set(value) {
       require(!isLocked) { "ApplicationServices is locked" }
       field = value
     }
-
-
   var seleniumFactory: ((ThreadPoolExecutor, Array<out jakarta.servlet.http.Cookie>?) -> Selenium)? = null
     set(value) {
       require(!isLocked) { "ApplicationServices is locked" }

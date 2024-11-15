@@ -61,6 +61,8 @@ class TaskType<out T : PlanTaskBase>(
     val WebFetchAndTransform = TaskType("WebFetchAndTransform", WebFetchAndTransformTask.WebFetchAndTransformTaskData::class.java)
     val KnowledgeIndexing = TaskType("KnowledgeIndexing", KnowledgeIndexingTask.KnowledgeIndexingTaskData::class.java)
     val WebSearchAndIndex = TaskType("WebSearchAndIndex", WebSearchAndIndexTask.WebSearchAndIndexTaskData::class.java)
+    val SeleniumSession = TaskType("SeleniumSession", SeleniumSessionTask.SeleniumSessionTaskData::class.java)
+    val CommandSession = TaskType("CommandSession", CommandSessionTask.CommandSessionTaskData::class.java)
 
     init {
       registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
@@ -83,6 +85,8 @@ class TaskType<out T : PlanTaskBase>(
       registerConstructor(WebFetchAndTransform) { settings, task -> WebFetchAndTransformTask(settings, task) }
       registerConstructor(KnowledgeIndexing) { settings, task -> KnowledgeIndexingTask(settings, task) }
       registerConstructor(WebSearchAndIndex) { settings, task -> WebSearchAndIndexTask(settings, task) }
+      registerConstructor(SeleniumSession) { settings, task -> SeleniumSessionTask(settings, task) }
+      registerConstructor(CommandSession) { settings, task -> CommandSessionTask(settings, task) }
     }
 
     private fun <T : PlanTaskBase> registerConstructor(

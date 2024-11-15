@@ -10,13 +10,11 @@ import org.apache.hc.client5.http.impl.cookie.BasicClientCookie
 import org.apache.hc.core5.concurrent.FutureCallback
 import org.apache.hc.core5.http.Method
 import org.jsoup.Jsoup
-import org.openqa.selenium.By
-import org.openqa.selenium.Cookie
-import org.openqa.selenium.WebDriver
-import org.openqa.selenium.WebElement
+import org.openqa.selenium.*
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeDriverService
 import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.remote.RemoteWebDriver
 import java.io.File
 import java.net.URI
 import java.net.URL
@@ -26,13 +24,29 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 open class Selenium2S3(
   val pool: ThreadPoolExecutor = Executors.newCachedThreadPool() as ThreadPoolExecutor,
   private val cookies: Array<out jakarta.servlet.http.Cookie>?,
 ) : Selenium {
+  override fun navigate(url: String) {
+    (driver as WebDriver).navigate().to(url)
+  }
+  override fun getPageSource(): String {
+    return (driver as WebDriver).pageSource
+  }
+  override fun getCurrentUrl(): String {
+    return (driver as WebDriver).currentUrl
+  }
+  override fun executeScript(script: String): Any? {
+    return (driver as JavascriptExecutor).executeScript(script)
+  }
+  override fun quit() {
+    (driver as WebDriver).quit()
+  }
   var loadImages: Boolean = false
-  open val driver: WebDriver by lazy {
+  open val driver: RemoteWebDriver by lazy {
     chromeDriver(loadImages = loadImages).apply {
       setCookies(
         this,
@@ -102,6 +116,22 @@ open class Selenium2S3(
     log.debug("Saving")
     saveAll(saveRoot)
     log.debug("Done")
+  }
+
+   override fun setScriptTimeout(timeout: Long) {
+    (driver as WebDriver).manage().timeouts().setScriptTimeout(timeout, TimeUnit.MILLISECONDS)
+   }
+
+  override fun getBrowserInfo(): String {
+    return driver.capabilities.browserName
+  }
+
+  override fun forceQuit() {
+    driver.quit()
+  }
+
+  override fun isAlive(): Boolean {
+    return driver.sessionId != null
   }
 
   protected open fun process(

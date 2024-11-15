@@ -162,24 +162,29 @@ open class DataStorage(
     ApplicationServices.metadataStorageFactory(dataDir).deleteSession(user, session)
     sessionDir.deleteRecursively()
   }
+  @Deprecated("Use metadataStorage instead")
 
   override fun listSessions(dir: File, path: String): List<String> = ApplicationServices.metadataStorageFactory(dataDir).listSessions(path)
+  @Deprecated("Use metadataStorage instead")
 
   override fun getSessionName(
     user: User?,
     session: Session
   ): String = ApplicationServices.metadataStorageFactory(dataDir).getSessionName(user, session)
+  @Deprecated("Use metadataStorage instead")
 
   override fun getMessageIds(
     user: User?,
     session: Session
   ): List<String> = ApplicationServices.metadataStorageFactory(dataDir).getMessageIds(user, session)
+  @Deprecated("Use metadataStorage instead")
 
   override fun setMessageIds(
     user: User?,
     session: Session,
     ids: List<String>
   ) = ApplicationServices.metadataStorageFactory(dataDir).setMessageIds(user, session, ids)
+  @Deprecated("Use metadataStorage instead")
 
   override fun getSessionTime(
     user: User?,

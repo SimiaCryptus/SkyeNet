@@ -5,11 +5,20 @@ import java.io.File
 
 class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader {
   private val pages: List<String> = splitIntoPages(textFile.readLines().joinToString("\n"))
+  private lateinit var settings: DocumentParserApp.Settings
+  fun configure(settings: DocumentParserApp.Settings) {
+    this.settings = settings
+  }
 
   override fun getPageCount(): Int = pages.size
 
   override fun getText(startPage: Int, endPage: Int): String {
-    return pages.subList(startPage, endPage.coerceAtMost(pages.size)).joinToString("\n")
+    val text = pages.subList(startPage, endPage.coerceAtMost(pages.size)).joinToString("\n")
+    return if (settings.addLineNumbers) {
+      text.lines().mapIndexed { index, line -> 
+        "${(index + 1).toString().padStart(6)}: $line"
+      }.joinToString("\n")
+    } else text
   }
 
   override fun renderImage(pageIndex: Int, dpi: Float): BufferedImage {
@@ -25,8 +34,8 @@ class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader 
     val lines = text.split("\n")
     if (lines.size <= 1) return listOf(text)
     val splitFitnesses = lines.indices.map { i ->
-      val leftSize = lines.subList(0, i).joinToString("\n").length
-      val rightSize = lines.subList(i, lines.size).joinToString("\n").length
+      val leftSize = lines.subList(0, i).map { it.length }.sum()
+      val rightSize = lines.subList(i, lines.size).map { it.length }.sum()
       if (leftSize <= 0) return@map i to Double.MAX_VALUE
       if (rightSize <= 0) return@map i to Double.MAX_VALUE
       var fitness = -((leftSize.toDouble() / text.length) * Math.log1p(rightSize.toDouble() / text.length) +
