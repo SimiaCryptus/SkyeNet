@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.parse
 
+import com.google.common.util.concurrent.Futures
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.skyenet.TabbedDisplay
@@ -16,6 +17,7 @@ import com.simiacryptus.skyenet.webui.session.SocketManager
 import com.simiacryptus.util.JsonUtil
 import java.awt.image.BufferedImage
 import java.io.File
+import java.io.IOException
 import java.nio.file.Path
 import java.util.*
 import javax.imageio.ImageIO
@@ -25,7 +27,7 @@ open class DocumentParserApp(
   applicationName: String = "Document Extractor",
   path: String = "/pdfExtractor",
   val api: API = ChatClient(),
-  val parsingModel: ParsingModel,
+  val parsingModel: ParsingModel<DocumentData>,
   val reader: (File) -> DocumentReader = {
     when {
       it.name.endsWith(".pdf", ignoreCase = true) -> PDFReader(it)
@@ -33,6 +35,7 @@ open class DocumentParserApp(
     }
   },
   val fileInputs: List<Path>? = null,
+  val fastMode: Boolean = true
 ) : ApplicationServer(
   applicationName = applicationName,
   path = path,
@@ -89,6 +92,11 @@ open class DocumentParserApp(
     progressBar: ProgressState? = null
   ) {
     try {
+      // Validate inputs
+      if (fileInputs.isEmpty()) {
+        throw IllegalArgumentException("No input files provided")
+      }
+
       mainTask.header("PDF Extractor")
       val api = (api as ChatClient).getChildClient().apply {
         val createFile = mainTask.createFile(".logs/api-${UUID.randomUUID()}.log")
@@ -97,6 +105,12 @@ open class DocumentParserApp(
           mainTask.verbose("API log: <a href=\"file:///$this\">$this</a>")
         }
       }
+      // Create output directory
+      val outputDir = root.resolve("output").apply<File> { mkdirs() }
+      if (!outputDir.exists()) {
+        throw IOException("Failed to create output directory: $outputDir")
+      }
+
       val docTabs = TabbedDisplay(mainTask)
       fileInputs.map { it.toFile() }.forEach { file ->
         if (!file.exists()) {
@@ -108,10 +122,14 @@ open class DocumentParserApp(
           val pageTabs = TabbedDisplay(docTask)
           val outputDir = root.resolve("output").apply<File> { mkdirs() }
           reader(file).use<DocumentReader, Unit> { reader ->
+            if (reader is TextReader) {
+              reader.configure(settings)
+            }
             var previousPageText = "" // Keep this for context
             val pageCount = minOf(reader.getPageCount(), maxPages)
             val pageSets = 0 until pageCount step pagesPerBatch
             progressBar?.add(0.0, pageCount.toDouble())
+            var runningDocument = parsingModel.newDocument()
             val futures = pageSets.toList().mapNotNull { batchStart ->
               val pageTask = ui.newTask(false)
               val api = api.getChildClient().apply {
@@ -174,41 +192,15 @@ open class DocumentParserApp(
                                     """.trimMargin()
                 )
                 previousPageText = text
-                ui.socketManager.pool.submit<DocumentData?> {
-                  try {
-                    val jsonResult = parsingModel.getParser(api)(promptList.toList<String>().joinToString<String>("\n\n"))
-                    if (settings.saveTextFiles) {
-                      val jsonFile = outputDir.resolve("pages_${batchStart}_to_${batchEnd}_content.json")
-                      jsonFile.writeText(JsonUtil.toJson(jsonResult))
-                    }
-                    ui.newTask(false).apply<SessionTask> {
-                      pageTabs["Text"] = placeholder
-                      add(
-                        MarkdownUtil.renderMarkdown(
-                          "\n```text\n${
-                            text
-                          }\n```\n", ui = ui
-                        )
-                      )
-                    }
-                    ui.newTask(false).apply<SessionTask> {
-                      pageTabs["JSON"] = placeholder
-                      add(
-                        MarkdownUtil.renderMarkdown(
-                          "\n```json\n${
-                            JsonUtil.toJson(jsonResult)
-                          }\n```\n", ui = ui
-                        )
-                      )
-                    }
-                    jsonResult
-                  } catch (e: Throwable) {
-                    pageTask.error(ui, e)
-                    null
-                  } finally {
-                    progressBar?.add(1.0, 0.0)
-                    pageTask.complete()
+                if (fastMode) {
+                  ui.socketManager.pool.submit<DocumentData?> {
+                    val jsonResult = parsingModel.getFastParser(api)(promptList.toList<String>().joinToString<String>("\n\n"))
+                    handleParseResult(settings, outputDir, batchStart, batchEnd, jsonResult, ui, pageTabs, text, pageTask, progressBar)
                   }
+                } else {
+                  val jsonResult = parsingModel.getSmartParser(api)(runningDocument, promptList.toList<String>().joinToString<String>("\n\n"))
+                  runningDocument = handleParseResult(settings, outputDir, batchStart, batchEnd, jsonResult, ui, pageTabs, text, pageTask, progressBar)!!
+                  Futures.immediateFuture(runningDocument)
                 }
               } catch (e: Throwable) {
                 pageTask.error(ui, e)
@@ -255,6 +247,72 @@ open class DocumentParserApp(
     }
   }
 
+  private fun handleParseResult(
+    settings: Settings,
+    outputDir: File,
+    batchStart: Int,
+    batchEnd: Int,
+    jsonResult: DocumentData,
+    ui: ApplicationInterface,
+    pageTabs: TabbedDisplay,
+    text: String,
+    pageTask: SessionTask,
+    progressBar: ProgressState?
+  ): DocumentData? {
+    // Generate consistent file name pattern
+    val fileBaseName = generateFileBaseName(batchStart, batchEnd)
+
+    return try {
+      if (settings.saveTextFiles) {
+        val jsonFile = outputDir.resolve(generateJsonFileName(fileBaseName))
+        jsonFile.writeText(JsonUtil.toJson(jsonResult))
+      }
+      ui.newTask(false).apply<SessionTask> {
+        pageTabs["Text"] = placeholder
+        add(
+          MarkdownUtil.renderMarkdown(
+            generateMarkdownCodeBlock("text", text, settings),
+            ui = ui
+          )
+        )
+      }
+      ui.newTask(false).apply<SessionTask> {
+        pageTabs["JSON"] = placeholder
+        add(
+          MarkdownUtil.renderMarkdown(
+            generateMarkdownCodeBlock("json", JsonUtil.toJson(jsonResult), settings),
+            ui = ui
+          )
+        )
+      }
+      jsonResult
+    } catch (e: Throwable) {
+      pageTask.error(ui, e)
+      null
+    } finally {
+      progressBar?.add(1.0, 0.0)
+      pageTask.complete()
+    }
+  }
+
+  private fun generateFileBaseName(batchStart: Int, batchEnd: Int): String =
+    "pages_${batchStart}_to_${batchEnd}"
+
+  private fun generateJsonFileName(baseName: String): String =
+    "${baseName}_content.json"
+
+  private fun generateMarkdownCodeBlock(language: String, content: String, settings: Settings): String =
+    if (settings.addLineNumbers) {
+      val lines = content.lines()
+      val maxDigits = lines.size.toString().length
+      val numberedLines = lines.mapIndexed { index, line ->
+        String.format("%${maxDigits}d | %s", index + 1, line)
+      }.joinToString("\n")
+      "\n```$language\n$numberedLines\n```\n"
+    } else {
+      "\n```$language\n$content\n```\n"
+    }
+
   data class Settings(
     val dpi: Float = 120f,
     val maxPages: Int = Int.MAX_VALUE,
@@ -264,7 +322,9 @@ open class DocumentParserApp(
     val pagesPerBatch: Int = 1,
     val saveImageFiles: Boolean = false,
     val saveTextFiles: Boolean = false,
-    val saveFinalJson: Boolean = true
+    val saveFinalJson: Boolean = true,
+    val fastMode: Boolean = true,
+    val addLineNumbers: Boolean = false
   )
 
   override val settingsClass: Class<*> get() = Settings::class.java

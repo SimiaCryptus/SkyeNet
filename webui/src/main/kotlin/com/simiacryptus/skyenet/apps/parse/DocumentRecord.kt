@@ -19,7 +19,29 @@ data class DocumentRecord(
   val sourcePath: String,
   val jsonPath: String,
   var vector: DoubleArray?,
-) : Serializable {
+) : Serializable { 
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+    other as DocumentRecord
+    if (text != other.text) return false
+    if (metadata != other.metadata) return false 
+    if (sourcePath != other.sourcePath) return false
+    if (jsonPath != other.jsonPath) return false
+    if (vector != null) {
+      if (other.vector == null) return false
+      if (!vector.contentEquals(other.vector)) return false
+    } else if (other.vector != null) return false
+    return true
+  }
+  override fun hashCode(): Int {
+    var result = text?.hashCode() ?: 0
+    result = 31 * result + (metadata?.hashCode() ?: 0)
+    result = 31 * result + sourcePath.hashCode()
+    result = 31 * result + jsonPath.hashCode()
+    result = 31 * result + (vector?.contentHashCode() ?: 0)
+    return result
+  }
   @Throws(IOException::class)
   fun writeObject(out: ObjectOutputStream) {
     out.writeUTF(text ?: "")
@@ -107,4 +129,3 @@ data class DocumentRecord(
     }
   }
 }
-

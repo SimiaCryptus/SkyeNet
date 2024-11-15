@@ -123,10 +123,14 @@ open class ParsedActor<T : Any>(
         }
 
         contentUnwrapped.let {
-          return@Function JsonUtil.fromJson<T>(
-            it, resultClass
-              ?: throw RuntimeException("Result class undefined")
-          )
+          try {
+            return@Function JsonUtil.fromJson<T>(
+              it, resultClass
+                ?: throw RuntimeException("Result class undefined")
+            )
+          } catch (e: Exception) {
+            throw RuntimeException("Failed to parse response: ${it.replace("\n", "\n  ")}", e)
+          }
         }
       } catch (e: Exception) {
         log.info("Failed to parse response", e)

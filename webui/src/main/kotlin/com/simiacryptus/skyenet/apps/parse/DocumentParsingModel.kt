@@ -15,14 +15,12 @@ import java.util.concurrent.Future
 open class DocumentParsingModel(
   private val parsingModel: ChatModel,
   private val temperature: Double
-) : ParsingModel {
+) : ParsingModel<DocumentParsingModel.DocumentData> {
 
   override fun merge(
-    runningDocument: ParsingModel.DocumentData,
-    newData: ParsingModel.DocumentData
-  ): ParsingModel.DocumentData {
-    val runningDocument = runningDocument as DocumentData
-    val newData = newData as DocumentData
+    runningDocument: DocumentData,
+    newData: DocumentData
+  ): DocumentData {
     return DocumentData(
       id = newData.id ?: runningDocument.id,
       content_list = mergeContent(runningDocument.content_list, newData.content_list).takeIf { it.isNotEmpty() },
@@ -60,7 +58,7 @@ open class DocumentParsingModel(
 
   open val exampleInstance = DocumentData()
 
-  override fun getParser(api: API): (String) -> DocumentData {
+  override fun getFastParser(api: API): (String) -> DocumentData {
     val parser = ParsedActor(
       resultClass = DocumentData::class.java,
       exampleInstance = exampleInstance,

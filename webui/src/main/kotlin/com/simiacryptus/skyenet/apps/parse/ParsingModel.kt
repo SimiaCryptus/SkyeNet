@@ -2,12 +2,16 @@ package com.simiacryptus.skyenet.apps.parse
 
 import com.simiacryptus.jopenai.API
 
-interface ParsingModel {
-  fun merge(runningDocument: DocumentData, newData: DocumentData): DocumentData
-  fun getParser(api: API): (String) -> DocumentData
-  fun newDocument(): DocumentData
+interface ParsingModel<T : ParsingModel.DocumentData> {
+  fun merge(runningDocument: T, newData: T): T
+  fun getFastParser(api: API): (String) -> T = { prompt ->
+    getSmartParser(api)(newDocument(), prompt)
+  }
+  fun getSmartParser(api: API): (T, String) -> T = { runningDocument, prompt ->
+    getFastParser(api)(prompt)
+  }
+  fun newDocument(): T
 
-  interface DocumentMetadata
   interface ContentData {
     val type: String
     val text: String?
@@ -18,7 +22,6 @@ interface ParsingModel {
   interface DocumentData {
     val id: String?
     val content_list: List<ContentData>?
-//        val metadata: DocumentMetadata?
   }
 
   companion object {
