@@ -41,10 +41,10 @@ class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader 
       var fitness = -((leftSize.toDouble() / text.length) * Math.log1p(rightSize.toDouble() / text.length) +
           (rightSize.toDouble() / text.length) * Math.log1p(leftSize.toDouble() / text.length))
       if (lines[i].isEmpty()) fitness *= 2
-      i to fitness.toDouble()
+      i to fitness
     }.toTypedArray().toMutableList()
 
-    var bestSplitIndex = splitFitnesses.minByOrNull { it.second }?.first ?: lines.size / 2
+    val bestSplitIndex = splitFitnesses.minByOrNull { it.second }?.first ?: lines.size / 2
     val leftText = lines.subList(0, bestSplitIndex).joinToString("\n")
     val rightText = lines.subList(bestSplitIndex, lines.size).joinToString("\n")
     return splitIntoPages(leftText, maxChars) + splitIntoPages(rightText, maxChars)

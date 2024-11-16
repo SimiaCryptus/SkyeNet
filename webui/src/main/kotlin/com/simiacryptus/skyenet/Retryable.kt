@@ -19,25 +19,24 @@ open class Retryable(
     set(tabLabel, process(container))
   }
 
+  fun retry() {
+    val idx = tabs.size
+    val label = label(idx)
+    val content = StringBuilder("Retrying..." + SessionTask.spinner)
+    tabs.add(label to content)
+    update()
+    val newResult = process(content)
+    content.clear()
+    set(label, newResult)
+  }
+
   override fun renderTabButtons(): String = """
 <div class="tabs">${
     tabs.withIndex().joinToString("\n") { (index, _) ->
       val tabId = "$index"
       """<button class="tab-button" data-for-tab="$tabId">${index + 1}</button>"""
     }
-  }
-${
-    ui.hrefLink("♻") {
-      val idx = tabs.size
-      val label = label(idx)
-      val content = StringBuilder("Retrying..." + SessionTask.spinner)
-      tabs.add(label to content)
-      update()
-      val newResult = process(content)
-      content.clear()
-      set(label, newResult)
-    }
-  }
+  }${ui.hrefLink("♻") { retry() }}
 </div>
 """
 

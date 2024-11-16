@@ -89,26 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUserInfo(loginLink, usernameLink, userSettingsLink, userUsageLink, logoutLink);
 
     fetchAppConfig(sessionId)
-        .then(({singleInput, stickyInput, loadImages, showMenubar}) => {
-            // Use the config values as needed
-            console.log('App config loaded:', {singleInput, stickyInput, loadImages, showMenubar});
-        })
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
         });
 
-    updateTabs();
 
-    Array.from(document.getElementsByClassName('tabs-container')).forEach(tabsContainer => {
-        console.log('Restoring tabs for container:', tabsContainer.id);
-        const savedTab = localStorage.getItem(`selectedTab_${tabsContainer.id}`);
-        if (savedTab) {
-            const savedButton = tabsContainer.querySelector(`[data-for-tab="${savedTab}"]`);
-            console.log('Main script finished loading');
-            if (savedButton) {
-                savedButton.click();
-                console.log(`Restored saved tab: ${savedTab}`);
-            }
-        }
-    });
 });

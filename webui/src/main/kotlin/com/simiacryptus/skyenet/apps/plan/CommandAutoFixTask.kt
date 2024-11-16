@@ -60,10 +60,12 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
     api2: OpenAIClient,
     planSettings: PlanSettings
   ) {
+    var autoRetries = if(planSettings.autoFix) 5 else 0
     val semaphore = Semaphore(0)
     val hasError = AtomicBoolean(false)
     val onComplete = { semaphore.release() }
-    Retryable(agent.ui, task = task) {
+    lateinit var retryable: Retryable
+    retryable = Retryable(agent.ui, task = task) {
       val task = agent.ui.newTask(false).apply { it.append(placeholder) }
       this.planTask?.commands?.forEachIndexed { index, commandWithDir ->
         val alias = commandWithDir.command.firstOrNull()
@@ -122,19 +124,22 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
         )
       }
       resultFn("All Command Auto Fix tasks completed")
-      task.add(if (!hasError.get()) {
-        onComplete()
-        MarkdownUtil.renderMarkdown("## All Command Auto Fix tasks completed successfully\n", ui = agent.ui, tabs = false)
-      } else {
-        MarkdownUtil.renderMarkdown(
-          "## Some Command Auto Fix tasks failed\n",
-          ui = agent.ui
-        ) + acceptButtonFooter(
-          agent.ui
-        ) {
+      task.add(
+        if (!hasError.get()) {
           onComplete()
-        }
-      })
+          MarkdownUtil.renderMarkdown("## All Command Auto Fix tasks completed successfully\n", ui = agent.ui, tabs = false)
+        } else {
+          val s = MarkdownUtil.renderMarkdown(
+            "## Some Command Auto Fix tasks failed\n",
+            ui = agent.ui
+          ) + acceptButtonFooter(
+            agent.ui
+          ) {
+            onComplete()
+          }
+          if(autoRetries-- > 0) retryable.retry()
+          s
+        })
       task.placeholder
     }
     try {
