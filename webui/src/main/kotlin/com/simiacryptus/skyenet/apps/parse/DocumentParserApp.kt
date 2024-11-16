@@ -31,6 +31,8 @@ open class DocumentParserApp(
   val reader: (File) -> DocumentReader = {
     when {
       it.name.endsWith(".pdf", ignoreCase = true) -> PDFReader(it)
+      it.name.endsWith(".html", ignoreCase = true) -> HTMLReader(it)
+      it.name.endsWith(".htm", ignoreCase = true) -> HTMLReader(it)
       else -> TextReader(it)
     }
   },

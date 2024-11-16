@@ -34,26 +34,54 @@ open class LogDataParsingModel(
 
     override fun getFastParser(api: API): (String) -> LogData {
         val patternGenerator = LogPatternGenerator(parsingModel, temperature)
-
         return { originalText ->
-            var remainingText = originalText
-            var result: LogData? = null
-            var iterationCount = 0
-
-            try {
-                while (remainingText.isNotBlank() && iterationCount++ < maxIterations) {
-                    val patterns = patternGenerator.generatePatterns(api, remainingText)
-                    if (patterns.isEmpty()) break
-                    val applyPatterns = applyPatterns(remainingText, (result?.patterns ?: emptyList()) + patterns)
-                    result = applyPatterns.first
-                    remainingText = applyPatterns.second
-                }
-            } catch (e: Exception) {
-                log.error("Error parsing log data", e)
-            }
-            result ?: LogData()
+            parseText(originalText, patternGenerator, api, emptyList())
         }
     }
+
+    override fun getSmartParser(api: API): (LogData, String) -> LogData {
+        val patternGenerator = LogPatternGenerator(parsingModel, temperature)
+        return { runningDocument, prompt ->
+            parseText(prompt, patternGenerator, api, runningDocument.patterns ?: emptyList())
+        }
+    }
+
+    private fun parseText(
+        originalText: String,
+        patternGenerator: LogPatternGenerator,
+        api: API,
+        existingPatterns: List<PatternData>
+    ): LogData {
+        var remainingText = originalText
+        var result: LogData? = null
+        var iterationCount = 0
+        var currentPatterns = existingPatterns
+        try {
+            // First try with existing patterns
+            if (currentPatterns.isNotEmpty()) {
+                val applyPatterns = applyPatterns(remainingText, currentPatterns)
+                result = applyPatterns.first
+                remainingText = applyPatterns.second
+            }
+            // Then generate new patterns for remaining text
+            while (remainingText.isNotBlank() && iterationCount++ < maxIterations) {
+                val newPatterns = patternGenerator.generatePatterns(api, remainingText)
+                if (newPatterns.isEmpty()) break
+                currentPatterns = (currentPatterns + newPatterns).distinctBy { it.regex }
+                val applyPatterns = applyPatterns(remainingText, currentPatterns)
+                result = if (result != null) {
+                    merge(result, applyPatterns.first)
+                } else {
+                    applyPatterns.first
+                }
+                remainingText = applyPatterns.second
+            }
+        } catch (e: Exception) {
+            log.error("Error parsing log data", e)
+        }
+        return result ?: LogData()
+    }
+
 
     private fun applyPatterns(text: String, patterns: List<PatternData>): Pair<LogData, String> {
         val patterns = patterns.filter { it.regex != null }.groupBy { it.id }.map { it.value.first() }

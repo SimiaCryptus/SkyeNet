@@ -4,7 +4,7 @@ const tabCache = new Map();
 let isRestoringTabs = false;
 const MAX_RECURSION_DEPTH = 10;
 const OPERATION_TIMEOUT = 5000; // 5 seconds
-function setActiveTab(button, tabsContainer) {
+function setActiveTab(button, tabsContainer, depth = 0) {
     const forTab = button.getAttribute('data-for-tab');
     const tabsContainerId = tabsContainer.id;
     if (button.classList.contains('active')) return;
@@ -20,7 +20,7 @@ function setActiveTab(button, tabsContainer) {
         if (content.getAttribute('data-tab') === forTab) {
             content.classList.add('active');
             content.style.display = 'block';
-            updateNestedTabs(content, 0);
+            updateNestedTabs(content, depth + 1);
         } else {
             content.classList.remove('active');
             content.style.display = 'none';
@@ -31,19 +31,22 @@ function setActiveTab(button, tabsContainer) {
 export function updateTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabsContainers = new Set();
-    const clickHandler = (event) => {
-        event.stopPropagation();
-        const button = event.currentTarget;
-        const tabsContainer = button.closest('.tabs-container');
-        setActiveTab(button, tabsContainer);
-    };
 
     tabButtons.forEach(button => {
         const tabsContainer = button.closest('.tabs-container');
         tabsContainers.add(tabsContainer);
-        if (button.hasListener) return;
-        button.hasListener = true;
-        button.addEventListener('click', clickHandler);
+    });
+
+    tabsContainers.forEach(tabsContainer => {
+        if (tabsContainer.hasListener) return;
+        tabsContainer.hasListener = true;
+        tabsContainer.addEventListener('click', (event) => {
+            const button = event.target.closest('.tab-button');
+            if (button && tabsContainer.contains(button)) {
+                setActiveTab(button, tabsContainer, 0);
+                event.stopPropagation();
+            }
+        });
     });
 
     // Restore the selected tabs from localStorage
@@ -53,9 +56,11 @@ export function updateTabs() {
             requestAnimationFrame(() => {
                 const savedTab = getSavedTab(tabsContainer.id);
                 const buttonToActivate = savedTab
-                    ? tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`)
+                    ? tabsContainer.querySelector(`.tab-button[data-for-tab="${CSS.escape(savedTab)}"]`)
                     : tabsContainer.querySelector('.tab-button');
-                buttonToActivate?.click();
+                if (buttonToActivate) {
+                    buttonToActivate.click();
+                }
             });
         });
         isRestoringTabs = false;
@@ -74,8 +79,8 @@ function getSavedTab(containerId) {
     }
 }
 
-function updateNestedTabs(element, depth) {
-    if (depth > MAX_RECURSION_DEPTH) {
+function updateNestedTabs(element, depth = 0) {
+    if (depth >= MAX_RECURSION_DEPTH) {
         console.warn('Max recursion depth reached in updateNestedTabs');
         return;
     }
@@ -101,15 +106,19 @@ function updateNestedTabs(element, depth) {
                     ? tabsContainer.querySelector(`.tab-button[data-for-tab="${activeTab}"]`)
                     : tabsContainer.querySelector('.tab-button');
                 if (buttonToActivate) requestAnimationFrame(() => buttonToActivate.click());
+                const savedTab = getSavedTab(tabsContainer.id);
+                const savedButton = savedTab
+                    ? tabsContainer.querySelector(`.tab-button[data-for-tab="${CSS.escape(savedTab)}"]`)
+                    : null;
+                if (savedButton && !savedButton.classList.contains('active')) {
+                    requestAnimationFrame(() => savedButton.click());
+                }
             }
-            const savedTab = getSavedTab(tabsContainer.id);
-            const savedButton = savedTab && tabsContainer.querySelector(`.tab-button[data-for-tab="${savedTab}"]`);
-            if (savedButton && !savedButton.classList.contains('active')) requestAnimationFrame(() => savedButton.click());
         } catch (e) {
             console.warn('Failed to update nested tabs:', e);
         }
+        clearTimeout(timeoutId);
     }
-    clearTimeout(timeoutId);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

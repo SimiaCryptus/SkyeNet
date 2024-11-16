@@ -14,15 +14,18 @@ open class TabbedDisplay(
   }
 
   val size: Int get() = tabs.size
-  open fun render() = if (tabs.isEmpty()) "<div/>" else """
-<div class="tabs-container" id="${UUID.randomUUID()}">
-${renderTabButtons()}
-${
-    tabs.toTypedArray().withIndex().joinToString("\n")
-    { (idx, t) -> renderContentTab(t, idx) }
+  val tabId = UUID.randomUUID()
+  open fun render() = if (tabs.isEmpty()) "<div/>" else {
+    """
+  <div class="tabs-container" id="$tabId">
+  ${renderTabButtons()}
+  ${
+      tabs.toTypedArray().withIndex().joinToString("\n")
+      { (idx, t) -> renderContentTab(t, idx) }
+    }
+  </div>
+  """
   }
-</div>
-"""
 
   val container: StringBuilder by lazy {
     log.debug("Initializing container with rendered content")
