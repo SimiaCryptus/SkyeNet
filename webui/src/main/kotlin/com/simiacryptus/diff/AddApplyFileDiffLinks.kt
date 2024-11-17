@@ -31,6 +31,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
   api: API,
   shouldAutoApply: (Path) -> Boolean = { false },
   model: ChatModel? = null,
+  defaultFile: String? = null,
 ): String {
   // Check if there's an unclosed code block and close it if necessary
   val initiator = "(?s)```\\w*\n".toRegex()
@@ -43,6 +44,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
       ui,
       api,
       model = model,
+      defaultFile = defaultFile,
     )
   }
   val headerPattern = """(?<![^\n])#+\s*([^\n]+)""".toRegex() // capture filename
@@ -51,7 +53,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
   val findAll = codeblockPattern.findAll(response).toList()
   val codeblocks = findAll.filter { block ->
     try {
-      val header = headers.lastOrNull { it.first.last <= block.range.first }
+      val header = headers.lastOrNull { it.first.last <= block.range.first } ?: defaultFile?.let { IntRange(0,0) to it }
       if (header == null) {
         return@filter false
       }
@@ -64,7 +66,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
   }.map { it.range to it }.toList()
   val patchBlocks = findAll.filter { block ->
     try {
-      val header = headers.lastOrNull { it.first.last <= block.range.first }
+      val header = headers.lastOrNull { it.first.last <= block.range.first } ?: defaultFile?.let { IntRange(0,0) to it }
       if (header == null) {
         return@filter false
       }
