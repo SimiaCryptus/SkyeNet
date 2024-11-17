@@ -12,22 +12,54 @@ import java.util.*
 
 object MarkdownUtil {
   fun renderMarkdown(
-    markdown: String,
+    rawMarkdown: String,
     options: MutableDataSet = defaultOptions(),
     tabs: Boolean = true,
     ui: ApplicationInterface? = null,
-  ): String {
-    if (markdown.isBlank()) return ""
-    val parser = Parser.builder(options).build()
-    val renderer = HtmlRenderer.builder(options).build()
-    val document = parser.parse(markdown)
-    val html = renderer.render(document)
+  ) = renderMarkdown(rawMarkdown, options, tabs, ui) { it }
+
+  fun renderMarkdown(
+      rawMarkdown: String,
+      options: MutableDataSet = defaultOptions(),
+      tabs: Boolean = true,
+      ui: ApplicationInterface? = null,
+      markdownEditor: (String) -> String,
+    ): String {
+    val markdown = markdownEditor(rawMarkdown)
+    val stackInfo = """
+<ol style="visibility: hidden; height: 0;">
+${Thread.currentThread().stackTrace.joinToString("\n") { "<li>" + it.toString() + "</li>" }}
+</ol>
+      """
+    val asHtml =
+      stackInfo + HtmlRenderer.builder(options).build().render(Parser.builder(options).build().parse(markdown))
+        .let { renderMermaid(it, ui, tabs) }
+    return when {
+      markdown.isBlank() -> ""
+      asHtml == rawMarkdown -> asHtml
+      tabs -> {
+        displayMapInTabs(
+          mapOf(
+            "HTML" to asHtml,
+            "Markdown" to """<pre><code class="language-markdown">${
+              rawMarkdown.replace(Regex("<"), "&lt;").replace(Regex(">"), "&gt;")
+            }</code></pre>""",
+            "Hide" to "",
+          ), ui = ui
+        )
+      }
+
+      else -> asHtml
+    }
+  }
+
+  private fun renderMermaid(html: String, ui: ApplicationInterface?, tabs: Boolean): String {
     val mermaidRegex =
       Regex("<pre[^>]*><code class=\"language-mermaid\">(.*?)</code></pre>", RegexOption.DOT_MATCHES_ALL)
     val matches = mermaidRegex.findAll(html)
     var htmlContent = html
     matches.forEach { match ->
-      var mermaidCode = match.groups[1]!!.value
+      val mermaidCode = match.groups[1]!!.value
       // HTML Decode mermaidCode
       val fixedMermaidCode = fixupMermaidCode(mermaidCode)
       var mermaidDiagramHTML = """<pre class="mermaid">$fixedMermaidCode</pre>"""
@@ -46,31 +78,20 @@ object MarkdownUtil {
         log.warn("Failed to render Mermaid diagram", e)
       }
       val replacement = if (tabs) """
-            |<div class="tabs-container" id="${UUID.randomUUID()}">
-            |  <div class="tabs">
-            |    <button class="tab-button active" data-for-tab="1">Diagram</button>
-            |    <button class="tab-button" data-for-tab="2">Source</button>
-            |  </div>
-            |  <div class="tab-content active" data-tab="1">$mermaidDiagramHTML</div>
-            |  <div class="tab-content" data-tab="2"><pre><code class="language-mermaid">$fixedMermaidCode</code></pre></div>
-            |</div>
-            |""".trimMargin() else """
-            |$mermaidDiagramHTML
-            |""".trimMargin()
+              |<div class="tabs-container" id="${UUID.randomUUID()}">
+              |  <div class="tabs">
+              |    <button class="tab-button active" data-for-tab="1">Diagram</button>
+              |    <button class="tab-button" data-for-tab="2">Source</button>
+              |  </div>
+              |  <div class="tab-content active" data-tab="1">$mermaidDiagramHTML</div>
+              |  <div class="tab-content" data-tab="2"><pre><code class="language-mermaid">$fixedMermaidCode</code></pre></div>
+              |</div>
+              |""".trimMargin() else """
+              |$mermaidDiagramHTML
+              |""".trimMargin()
       htmlContent = htmlContent.replace(match.value, replacement)
     }
-    //language=HTML
-    return if (tabs) {
-      displayMapInTabs(
-        mapOf(
-          "HTML" to htmlContent,
-          "Markdown" to """<pre><code class="language-markdown">${
-            markdown.replace(Regex("<"), "&lt;").replace(Regex(">"), "&gt;")
-          }</code></pre>""",
-          "Hide" to "",
-        ), ui = ui
-      )
-    } else htmlContent
+    return htmlContent
   }
 
   var MMDC_CMD: List<String> = listOf("mmdc")
