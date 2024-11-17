@@ -21,15 +21,15 @@ import com.simiacryptus.util.JsonUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 
 abstract class PatchApp(
   override val root: File,
-  val session: Session,
-  val settings: Settings,
-  val api: ChatClient,
-  val model: ChatModel,
-  val promptPrefix: String = """The following command was run and produced an error:"""
+  private val session: Session,
+  protected val settings: Settings,
+  private val api: ChatClient,
+  private val model: ChatModel,
+  private val promptPrefix: String = """The following command was run and produced an error:"""
 ) : ApplicationServer(
   applicationName = "Magic Code Fixer",
   path = "/fixCmd",
@@ -38,6 +38,11 @@ abstract class PatchApp(
   companion object {
     private val log = LoggerFactory.getLogger(PatchApp::class.java)
     const val tripleTilde = "`" + "``" // This is a workaround for the markdown parser when editing this file
+  }
+
+  // Add structured logging
+  private fun logEvent(event: String, data: Map<String, Any?>) {
+    log.info("$event: ${JsonUtil.toJson(data)}")
   }
 
   data class OutputResult(val exitCode: Int, val output: String)
@@ -103,7 +108,7 @@ abstract class PatchApp(
     var workingDirectory: File? = null,
     var exitCodeOption: String = "nonzero",
     var additionalInstructions: String = "",
-    val autoFix: Boolean,
+    val autoFix: Boolean
   )
 
   fun run(
@@ -156,6 +161,13 @@ abstract class PatchApp(
     ui: ApplicationInterface,
     api: ChatClient,
   ) {
+    // Add logging for operation start
+    logEvent(
+      "Starting fix operation", mapOf(
+        "exitCode" to output.exitCode,
+        "settings" to settings
+      )
+    )
     Retryable(ui, task) { content ->
       fixAllInternal(
         settings = settings,
@@ -167,6 +179,13 @@ abstract class PatchApp(
       )
       content.clear()
       ""
+    }.also {
+      // Add logging for operation completion
+      logEvent(
+        "Fix operation completed", mapOf(
+          "success" to true
+        )
+      )
     }
   }
 
@@ -375,6 +394,3 @@ abstract class PatchApp(
   }
 
 }
-
-
-
