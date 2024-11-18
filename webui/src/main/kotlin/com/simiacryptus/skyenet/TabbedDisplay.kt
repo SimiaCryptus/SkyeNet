@@ -15,7 +15,7 @@ open class TabbedDisplay(
 
   val size: Int get() = tabs.size
   val tabId = UUID.randomUUID()
-  open fun render() = if (tabs.isEmpty()) "<div/>" else {
+  private fun render() = if (tabs.isEmpty()) "<div/>" else {
     """
   <div class="tabs-container" id="$tabId">
   ${renderTabButtons()}
@@ -32,7 +32,7 @@ open class TabbedDisplay(
     task.add(render())!!
   }
 
-  open fun renderTabButtons() = """
+  protected open fun renderTabButtons() = """
 <div class="tabs">${
     tabs.toTypedArray().withIndex().joinToString("\n") { (idx, pair) ->
       if (idx == selectedTab) {
@@ -44,7 +44,7 @@ open class TabbedDisplay(
   }</div>
 """
 
-  open fun renderContentTab(t: Pair<String, StringBuilder>, idx: Int) = """
+  protected open fun renderContentTab(t: Pair<String, StringBuilder>, idx: Int) = """
 <div class="tab-content ${
     when {
       idx == selectedTab -> "active"

@@ -53,11 +53,11 @@ fun SocketManagerBase.addApplyFileDiffLinks(
   val findAll = codeblockPattern.findAll(response).toList()
   val codeblocks = findAll.filter { block ->
     try {
-      val header = headers.lastOrNull { it.first.last <= block.range.first } ?: defaultFile?.let { IntRange(0,0) to it }
+      val header = headers.lastOrNull { it.first.last <= block.range.first }?.let { it.second } ?: defaultFile
       if (header == null) {
         return@filter false
       }
-      val filename = resolve(root, header.second)
+      val filename = resolve(root, header)
       !root.resolve(filename).toFile().exists()
     } catch (e: Throwable) {
       log.info("Error processing code block", e)
@@ -66,11 +66,11 @@ fun SocketManagerBase.addApplyFileDiffLinks(
   }.map { it.range to it }.toList()
   val patchBlocks = findAll.filter { block ->
     try {
-      val header = headers.lastOrNull { it.first.last <= block.range.first } ?: defaultFile?.let { IntRange(0,0) to it }
+      val header = headers.lastOrNull { it.first.last <= block.range.first }?.let { it.second } ?: defaultFile
       if (header == null) {
         return@filter false
       }
-      val filename = resolve(root, header.second)
+      val filename = resolve(root, header)
       root.resolve(filename).toFile().exists()
     } catch (e: Throwable) {
       log.info("Error processing code block", e)
@@ -127,7 +127,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
   // Process diff blocks and add patch links
   val withPatchLinks: String = patchBlocks.foldIndexed(response) { index, markdown, diffBlock ->
     val value = diffBlock.second.groupValues[2].trim()
-    var header = headers.lastOrNull { it.first.last < diffBlock.first.first }?.second ?: "Unknown"
+    var header = headers.lastOrNull { it.first.last < diffBlock.first.first }?.second ?: defaultFile ?: "Unknown"
     header = corrections?.get("patch_$index") ?: header
     val filename = resolve(root, header)
     val newValue = renderDiffBlock(root, filename, value, handle, ui, api, shouldAutoApply)
@@ -137,7 +137,7 @@ fun SocketManagerBase.addApplyFileDiffLinks(
   val withSaveLinks = codeblocks.foldIndexed(withPatchLinks) { index, markdown, codeBlock ->
     val lang = codeBlock.second.groupValues[1]
     val value = codeBlock.second.groupValues[2].trim()
-    var header = headers.lastOrNull { it.first.last < codeBlock.first.first }?.second
+    var header = headers.lastOrNull { it.first.last < codeBlock.first.first }?.second ?: defaultFile ?: "Unknown"
     header = corrections?.get("code_$index") ?: header
     val newMarkdown = renderNewFile(header, root, ui, shouldAutoApply, value, handle, lang)
     markdown.replace(codeBlock.second.value, newMarkdown)
