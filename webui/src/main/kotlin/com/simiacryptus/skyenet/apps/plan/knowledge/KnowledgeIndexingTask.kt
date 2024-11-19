@@ -16,10 +16,10 @@ import java.util.concurrent.Executors
 
 class KnowledgeIndexingTask(
     planSettings: PlanSettings,
-    planTask: KnowledgeIndexingTaskData?
-) : AbstractTask<KnowledgeIndexingTask.KnowledgeIndexingTaskData>(planSettings, planTask) {
+    planTask: KnowledgeIndexingTaskConfigData?
+) : AbstractTask<KnowledgeIndexingTask.KnowledgeIndexingTaskConfigData>(planSettings, planTask) {
 
-    class KnowledgeIndexingTaskData(
+    class KnowledgeIndexingTaskConfigData(
         @Description("The file paths to process and index")
         val file_paths: List<String>,
         @Description("The type of parsing to use (document, code)")
@@ -29,7 +29,7 @@ class KnowledgeIndexingTask(
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         state: TaskState? = null,
-    ) : PlanTaskBase(
+    ) : TaskConfigBase(
         task_type = TaskType.KnowledgeIndexing.name,
         task_description = task_description,
         task_dependencies = task_dependencies,

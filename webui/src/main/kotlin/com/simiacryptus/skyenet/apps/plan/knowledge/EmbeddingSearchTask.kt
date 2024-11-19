@@ -21,9 +21,9 @@ import kotlin.streams.asSequence
 
 class EmbeddingSearchTask(
   planSettings: PlanSettings,
-  planTask: EmbeddingSearchTaskData?
-) : AbstractTask<EmbeddingSearchTask.EmbeddingSearchTaskData>(planSettings, planTask) {
-  class EmbeddingSearchTaskData(
+  planTask: EmbeddingSearchTaskConfigData?
+) : AbstractTask<EmbeddingSearchTask.EmbeddingSearchTaskConfigData>(planSettings, planTask) {
+  class EmbeddingSearchTaskConfigData(
     @Description("The positive search queries to look for in the embeddings")
     val positive_queries: List<String>,
     @Description("The negative search queries to avoid in the embeddings")
@@ -39,7 +39,7 @@ class EmbeddingSearchTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = "EmbeddingSearch",
     task_description = task_description,
     task_dependencies = task_dependencies,

@@ -17,9 +17,9 @@ import java.net.http.HttpResponse
 
 class GoogleSearchTask(
   planSettings: PlanSettings,
-  planTask: GoogleSearchTaskData?
-) : AbstractTask<GoogleSearchTask.GoogleSearchTaskData>(planSettings, planTask) {
-  class GoogleSearchTaskData(
+  planTask: GoogleSearchTaskConfigData?
+) : AbstractTask<GoogleSearchTask.GoogleSearchTaskConfigData>(planSettings, planTask) {
+  class GoogleSearchTaskConfigData(
     @Description("The search query to use for Google search")
     val search_query: String,
     @Description("The number of results to return (max 10)")
@@ -27,7 +27,7 @@ class GoogleSearchTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = TaskType.GoogleSearch.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
@@ -14,8 +13,8 @@ import java.util.concurrent.TimeUnit
 
 class CommandSessionTask(
     planSettings: PlanSettings,
-    planTask: CommandSessionTaskData?
-) : AbstractTask<CommandSessionTask.CommandSessionTaskData>(planSettings, planTask) {
+    planTask: CommandSessionTaskConfigData?
+) : AbstractTask<CommandSessionTask.CommandSessionTaskConfigData>(planSettings, planTask) {
     companion object {
         private val log = LoggerFactory.getLogger(CommandSessionTask::class.java)
         private val activeSessions = ConcurrentHashMap<String, Process>()
@@ -68,7 +67,7 @@ class CommandSessionTask(
         fun getActiveSessionCount(): Int = activeSessions.size
     }
 
-    class CommandSessionTaskData(
+    class CommandSessionTaskConfigData(
         @Description("The command to start the interactive session")
         val command: List<String>,
         @Description("Commands to send to the interactive session")
@@ -82,7 +81,7 @@ class CommandSessionTask(
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         state: TaskState? = null,
-    ) : PlanTaskBase(
+    ) : TaskConfigBase(
         task_type = TaskType.CommandSession.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
@@ -175,7 +174,7 @@ class CommandSessionTask(
     }
 
     private fun formatResults(
-        planTask: CommandSessionTaskData,
+        planTask: CommandSessionTaskConfigData,
         results: List<String>
     ): String = buildString {
         appendLine("## Command Session Results")

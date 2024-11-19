@@ -92,13 +92,13 @@ open class Planner {
     api: API,
     planSettings: PlanSettings,
     inStrings: List<String>
-  ): ParsedResponse<Map<String, PlanTaskBase>> {
+  ): ParsedResponse<Map<String, TaskConfigBase>> {
     val planningActor = planSettings.planningActor()
     return planningActor.respond(
       messages = planningActor.chatMessages(inStrings),
       input = inStrings,
       api = api
-    ).map(Map::class.java) { it.tasksByID ?: emptyMap<String, PlanTaskBase>() } as ParsedResponse<Map<String, PlanTaskBase>>
+    ).map(Map::class.java) { it.tasksByID ?: emptyMap<String, TaskConfigBase>() } as ParsedResponse<Map<String, TaskConfigBase>>
   }
 
 

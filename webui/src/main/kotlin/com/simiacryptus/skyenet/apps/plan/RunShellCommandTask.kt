@@ -5,7 +5,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.apps.code.CodingAgent
-import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTaskData
+import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTaskConfigData
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -16,10 +16,10 @@ import kotlin.reflect.KClass
 
 class RunShellCommandTask(
   planSettings: PlanSettings,
-  planTask: RunShellCommandTaskData?
-) : AbstractTask<RunShellCommandTaskData>(planSettings, planTask) {
+  planTask: RunShellCommandTaskConfigData?
+) : AbstractTask<RunShellCommandTaskConfigData>(planSettings, planTask) {
 
-  class RunShellCommandTaskData(
+  class RunShellCommandTaskConfigData(
     @Description("The shell command to be executed")
     val command: String? = null,
     @Description("The relative file path of the working directory")
@@ -27,7 +27,7 @@ class RunShellCommandTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = TaskType.RunShellCommand.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

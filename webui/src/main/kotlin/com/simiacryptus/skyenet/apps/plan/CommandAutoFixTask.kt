@@ -6,7 +6,7 @@ import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
+import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskConfigData
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -16,16 +16,16 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class CommandAutoFixTask(
   planSettings: PlanSettings,
-  planTask: CommandAutoFixTaskData?
-) : AbstractTask<CommandAutoFixTaskData>(planSettings, planTask) {
+  planTask: CommandAutoFixTaskConfigData?
+) : AbstractTask<CommandAutoFixTaskConfigData>(planSettings, planTask) {
 
-  class CommandAutoFixTaskData(
+  class CommandAutoFixTaskConfigData(
     @Description("The commands to be executed with their respective working directories")
     val commands: List<CommandWithWorkingDir>? = null,
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = TaskType.CommandAutoFix.name,
     task_description = task_description,
     task_dependencies = task_dependencies,
@@ -64,7 +64,7 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
     val semaphore = Semaphore(0)
     val hasError = AtomicBoolean(false)
     val onComplete = { semaphore.release() }
-    lateinit var retryable: Retryable
+    var retryable: Retryable? = null
     retryable = Retryable(agent.ui, task = task) {
       val task = agent.ui.newTask(false).apply { it.append(placeholder) }
       this.planTask?.commands?.forEachIndexed { index, commandWithDir ->
@@ -137,7 +137,7 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
           ) {
             onComplete()
           }
-          if(autoRetries-- > 0) retryable.retry()
+          if(autoRetries-- > 0) retryable?.retry()
           s
         })
       task.placeholder

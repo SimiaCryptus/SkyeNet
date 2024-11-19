@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory
 
 open class WebFetchAndTransformTask(
   planSettings: PlanSettings,
-  planTask: WebFetchAndTransformTaskData?
-) : AbstractTask<WebFetchAndTransformTask.WebFetchAndTransformTaskData>(planSettings, planTask) {
-  class WebFetchAndTransformTaskData(
+  planTask: WebFetchAndTransformTaskConfigData?
+) : AbstractTask<WebFetchAndTransformTask.WebFetchAndTransformTaskConfigData>(planSettings, planTask) {
+  class WebFetchAndTransformTaskConfigData(
     @Description("The URL to fetch")
     val url: String,
     @Description("The desired format or focus for the transformation")
@@ -26,7 +26,7 @@ open class WebFetchAndTransformTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = TaskType.WebFetchAndTransform.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

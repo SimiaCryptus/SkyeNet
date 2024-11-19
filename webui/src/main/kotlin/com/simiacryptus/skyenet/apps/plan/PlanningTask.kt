@@ -12,7 +12,7 @@ import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskConfigData
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -21,14 +21,14 @@ import org.slf4j.LoggerFactory
 
 class PlanningTask(
   planSettings: PlanSettings,
-  planTask: PlanningTaskData?
-) : AbstractTask<PlanningTaskData>(planSettings, planTask) {
+  planTask: PlanningTaskConfigData?
+) : AbstractTask<PlanningTaskConfigData>(planSettings, planTask) {
 
-  class PlanningTaskData(
+  class PlanningTaskConfigData(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = TaskState.Pending,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = TaskType.TaskPlanning.name,
     task_description = task_description,
     task_dependencies = task_dependencies,
@@ -37,7 +37,7 @@ class PlanningTask(
 
   data class TaskBreakdownResult(
     @Description("A map where each task ID is associated with its corresponding PlanTask object. Crucial for defining task relationships and information flow.")
-    val tasksByID: Map<String, PlanTaskBase>? = null,
+    val tasksByID: Map<String, TaskConfigBase>? = null,
   )
 
   override fun promptSegment(): String {
@@ -123,7 +123,7 @@ class PlanningTask(
   private fun executeSubTasks(
     coordinator: PlanCoordinator,
     userMessage: String,
-    subPlan: Map<String, PlanTaskBase>,
+    subPlan: Map<String, TaskConfigBase>,
     parentTask: SessionTask,
     api: API,
     api2: OpenAIClient,

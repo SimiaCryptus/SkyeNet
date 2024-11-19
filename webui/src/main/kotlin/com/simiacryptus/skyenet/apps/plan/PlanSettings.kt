@@ -2,13 +2,13 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskData
+import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskData
+import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownResult
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
-import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 
@@ -144,7 +144,7 @@ ${taskType.name}:
   companion object {
     var exampleInstance = TaskBreakdownResult(
       tasksByID = mapOf(
-        "1" to CommandAutoFixTaskData(
+        "1" to CommandAutoFixTaskConfigData(
           task_description = "Task 1",
           task_dependencies = listOf(),
           commands = listOf(
@@ -154,13 +154,13 @@ ${taskType.name}:
             )
           )
         ),
-        "2" to FileModificationTaskData(
+        "2" to FileModificationTaskConfigData(
           task_description = "Task 2",
           task_dependencies = listOf("1"),
           input_files = listOf("input2.txt"),
           output_files = listOf("output2.txt"),
         ),
-        "3" to PlanningTaskData(
+        "3" to PlanningTaskConfigData(
           task_description = "Task 3",
           task_dependencies = listOf("2"),
         )

@@ -15,9 +15,9 @@ import java.net.http.HttpResponse
 
 class GitHubSearchTask(
   planSettings: PlanSettings,
-  planTask: GitHubSearchTaskData?
-) : AbstractTask<GitHubSearchTask.GitHubSearchTaskData>(planSettings, planTask) {
-  class GitHubSearchTaskData(
+  planTask: GitHubSearchTaskConfigData?
+) : AbstractTask<GitHubSearchTask.GitHubSearchTaskConfigData>(planSettings, planTask) {
+  class GitHubSearchTaskConfigData(
     @Description("The search query to use for GitHub search")
     val search_query: String,
     @Description("The type of GitHub search to perform (code, commits, issues, repositories, topics, users)")
@@ -31,7 +31,7 @@ class GitHubSearchTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = TaskType.GitHubSearch.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

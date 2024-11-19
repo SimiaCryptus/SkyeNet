@@ -6,7 +6,7 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.plan.*
-import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -15,9 +15,9 @@ import java.util.concurrent.Semaphore
 
 class FileModificationTask(
   planSettings: PlanSettings,
-  planTask: FileModificationTaskData?
-) : AbstractFileTask<FileModificationTaskData>(planSettings, planTask) {
-  class FileModificationTaskData(
+  planTask: FileModificationTaskConfigData?
+) : AbstractFileTask<FileModificationTaskConfigData>(planSettings, planTask) {
+  class FileModificationTaskConfigData(
     input_files: List<String>? = null,
     output_files: List<String>? = null,
     @Description("Specific modifications to be made to the files")
@@ -25,7 +25,7 @@ class FileModificationTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null
-  ) : FileTaskBase(
+  ) : FileTaskConfigBase(
     task_type = TaskType.FileModification.name,
     task_description = task_description,
     task_dependencies = task_dependencies,
@@ -103,11 +103,16 @@ class FileModificationTask(
     api2: OpenAIClient,
     planSettings: PlanSettings
   ) {
-    if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
+    val defaultFile = if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
       task.complete("CONFIGURATION ERROR: No input files specified")
       resultFn("CONFIGURATION ERROR: No input files specified")
       return
+    } else if(((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).distinct().size == 1) {
+      ((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).first()
+    } else {
+      null
     }
+
     val semaphore = Semaphore(0)
     val onComplete = { semaphore.release() }
     val process = { sb: StringBuilder ->
@@ -119,27 +124,29 @@ class FileModificationTask(
       )
       resultFn(codeResult)
       if (agent.planSettings.autoFix) {
-        val diffLinks = agent.ui.socketManager!!.addApplyFileDiffLinks(
-          root = agent.root,
-          response = codeResult,
-          handle = { newCodeMap ->
-            newCodeMap.forEach { (path, newCode) ->
-              task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
-            }
-          },
-          ui = agent.ui,
-          api = api,
-          shouldAutoApply = { agent.planSettings.autoFix },
-          model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
-        )
         task.complete()
         onComplete()
-        renderMarkdown(diffLinks + "\n\n## Auto-applied changes", ui = agent.ui)
-      } else {
-        renderMarkdown(
+        renderMarkdown(codeResult, ui = agent.ui) {
           agent.ui.socketManager!!.addApplyFileDiffLinks(
             root = agent.root,
-            response = codeResult,
+            response = it,
+            handle = { newCodeMap ->
+              newCodeMap.forEach { (path, newCode) ->
+                task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
+              }
+            },
+            ui = agent.ui,
+            api = api,
+            shouldAutoApply = { agent.planSettings.autoFix },
+            model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
+            defaultFile = defaultFile
+          ) + "\n\n## Auto-applied changes"
+        }
+      } else {
+        renderMarkdown(codeResult, ui = agent.ui) {
+          agent.ui.socketManager!!.addApplyFileDiffLinks(
+            root = agent.root,
+            response = it,
             handle = { newCodeMap ->
               newCodeMap.forEach { (path, newCode) ->
                 task.complete("<a href='${"fileIndex/${agent.session}/$path"}'>$path</a> Updated")
@@ -148,11 +155,12 @@ class FileModificationTask(
             ui = agent.ui,
             api = api,
             model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
+            defaultFile = defaultFile,
           ) + acceptButtonFooter(agent.ui) {
             task.complete()
             onComplete()
-          }, ui = agent.ui
-        )
+          }
+        }
       }
     }
     Retryable(agent.ui, task = task, process = process)
