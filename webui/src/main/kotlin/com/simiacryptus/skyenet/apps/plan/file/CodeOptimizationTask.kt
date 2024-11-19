@@ -3,15 +3,15 @@ package com.simiacryptus.skyenet.apps.plan.file
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.TaskType
-import com.simiacryptus.skyenet.apps.plan.file.CodeOptimizationTask.CodeOptimizationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.CodeOptimizationTask.CodeOptimizationTaskConfigData
 import org.slf4j.LoggerFactory
 
 class CodeOptimizationTask(
   planSettings: PlanSettings,
-  planTask: CodeOptimizationTaskData?
-) : AbstractAnalysisTask<CodeOptimizationTaskData>(planSettings, planTask) {
+  planTask: CodeOptimizationTaskConfigData?
+) : AbstractAnalysisTask<CodeOptimizationTaskConfigData>(planSettings, planTask) {
 
-  class CodeOptimizationTaskData(
+  class CodeOptimizationTaskConfigData(
     @Description("Files to be optimized")
     val filesToOptimize: List<String>? = null,
     @Description("Specific areas of focus for the optimization")
@@ -21,7 +21,7 @@ class CodeOptimizationTask(
     input_files: List<String>? = null,
     output_files: List<String>? = null,
     state: TaskState? = null
-  ) : FileTaskBase(
+  ) : FileTaskConfigBase(
     task_type = TaskType.Optimization.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

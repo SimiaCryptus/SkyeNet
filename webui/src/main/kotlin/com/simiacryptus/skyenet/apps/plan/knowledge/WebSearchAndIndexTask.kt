@@ -7,7 +7,7 @@ import com.simiacryptus.skyenet.apps.parse.DocumentRecord
 import com.simiacryptus.skyenet.apps.plan.AbstractTask
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
-import com.simiacryptus.skyenet.apps.plan.PlanTaskBase
+import com.simiacryptus.skyenet.apps.plan.TaskConfigBase
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
 import org.apache.commons.io.FileUtils
@@ -30,10 +30,10 @@ import kotlin.text.trimMargin
 
 class WebSearchAndIndexTask(
   planSettings: PlanSettings,
-  planTask: WebSearchAndIndexTaskData?
-) : AbstractTask<WebSearchAndIndexTask.WebSearchAndIndexTaskData>(planSettings, planTask) {
+  planTask: WebSearchAndIndexTaskConfigData?
+) : AbstractTask<WebSearchAndIndexTask.WebSearchAndIndexTaskConfigData>(planSettings, planTask) {
 
-  class WebSearchAndIndexTaskData(
+  class WebSearchAndIndexTaskConfigData(
     @Description("The search query to use for web search")
     val search_query: String,
     @Description("The number of search results to process (max 10)")
@@ -43,7 +43,7 @@ class WebSearchAndIndexTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = "WebSearchAndIndex",
     task_description = task_description,
     task_dependencies = task_dependencies,

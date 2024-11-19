@@ -22,9 +22,9 @@ import kotlin.streams.asSequence
 
 class InquiryTask(
   planSettings: PlanSettings,
-  planTask: InquiryTaskData?
-) : AbstractTask<InquiryTask.InquiryTaskData>(planSettings, planTask) {
-  class InquiryTaskData(
+  planTask: InquiryTaskConfigData?
+) : AbstractTask<InquiryTask.InquiryTaskConfigData>(planSettings, planTask) {
+  class InquiryTaskConfigData(
     @Description("The specific questions or topics to be addressed in the inquiry")
     val inquiry_questions: List<String>? = null,
     @Description("The goal or purpose of the inquiry")
@@ -34,7 +34,7 @@ class InquiryTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = TaskType.Inquiry.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

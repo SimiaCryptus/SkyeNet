@@ -14,9 +14,9 @@ import kotlin.streams.asSequence
 
 class SearchTask(
   planSettings: PlanSettings,
-  planTask: SearchTaskData?
-) : AbstractTask<SearchTask.SearchTaskData>(planSettings, planTask) {
-  class SearchTaskData(
+  planTask: SearchTaskConfigData?
+) : AbstractTask<SearchTask.SearchTaskConfigData>(planSettings, planTask) {
+  class SearchTaskConfigData(
     @Description("The search pattern (substring or regex) to look for in the files")
     val search_pattern: String,
     @Description("Whether the search pattern is a regex (true) or a substring (false)")
@@ -28,7 +28,7 @@ class SearchTask(
     task_description: String? = null,
     task_dependencies: List<String>? = null,
     state: TaskState? = null,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = TaskType.Search.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

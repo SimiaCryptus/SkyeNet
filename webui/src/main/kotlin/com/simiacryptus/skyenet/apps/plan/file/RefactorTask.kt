@@ -3,14 +3,14 @@ package com.simiacryptus.skyenet.apps.plan.file
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.TaskType
-import com.simiacryptus.skyenet.apps.plan.file.RefactorTask.RefactorTaskData
+import com.simiacryptus.skyenet.apps.plan.file.RefactorTask.RefactorTaskConfigData
 import org.slf4j.LoggerFactory
 
 class RefactorTask(
   planSettings: PlanSettings,
-  planTask: RefactorTaskData?
-) : AbstractAnalysisTask<RefactorTaskData>(planSettings, planTask) {
-  class RefactorTaskData(
+  planTask: RefactorTaskConfigData?
+) : AbstractAnalysisTask<RefactorTaskConfigData>(planSettings, planTask) {
+  class RefactorTaskConfigData(
     @Description("List of files to be refactored")
     val filesToRefactor: List<String>? = null,
     @Description("Specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)")
@@ -20,7 +20,7 @@ class RefactorTask(
     input_files: List<String>? = null,
     output_files: List<String>? = null,
     state: TaskState? = null
-  ) : FileTaskBase(
+  ) : FileTaskConfigBase(
     task_type = TaskType.RefactorTask.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

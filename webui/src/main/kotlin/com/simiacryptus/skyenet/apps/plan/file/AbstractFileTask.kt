@@ -4,18 +4,18 @@ import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.AbstractTask
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
-import com.simiacryptus.skyenet.apps.plan.PlanTaskBase
-import com.simiacryptus.skyenet.apps.plan.file.AbstractFileTask.FileTaskBase
+import com.simiacryptus.skyenet.apps.plan.TaskConfigBase
+import com.simiacryptus.skyenet.apps.plan.file.AbstractFileTask.FileTaskConfigBase
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import kotlin.streams.asSequence
 
-abstract class AbstractFileTask<T : FileTaskBase>(
+abstract class AbstractFileTask<T : FileTaskConfigBase>(
   planSettings: PlanSettings,
   planTask: T?
 ) : AbstractTask<T>(planSettings, planTask) {
 
-  open class FileTaskBase(
+  open class FileTaskConfigBase(
     task_type: String,
     task_description: String? = null,
     task_dependencies: List<String>? = null,
@@ -24,7 +24,7 @@ abstract class AbstractFileTask<T : FileTaskBase>(
     @Description("The relative file paths to be generated as output for the task")
     val output_files: List<String>? = null,
     state: TaskState? = TaskState.Pending,
-  ) : PlanTaskBase(
+  ) : TaskConfigBase(
     task_type = task_type,
     task_description = task_description,
     task_dependencies = task_dependencies,

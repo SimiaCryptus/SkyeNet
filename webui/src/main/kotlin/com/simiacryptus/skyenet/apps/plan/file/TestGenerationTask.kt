@@ -3,15 +3,15 @@ package com.simiacryptus.skyenet.apps.plan.file
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.TaskType
-import com.simiacryptus.skyenet.apps.plan.file.TestGenerationTask.TestGenerationTaskData
+import com.simiacryptus.skyenet.apps.plan.file.TestGenerationTask.TestGenerationTaskConfigData
 import org.slf4j.LoggerFactory
 
 class TestGenerationTask(
   planSettings: PlanSettings,
-  planTask: TestGenerationTaskData?
-) : AbstractAnalysisTask<TestGenerationTaskData>(planSettings, planTask) {
+  planTask: TestGenerationTaskConfigData?
+) : AbstractAnalysisTask<TestGenerationTaskConfigData>(planSettings, planTask) {
 
-  class TestGenerationTaskData(
+  class TestGenerationTaskConfigData(
     @Description("List of files for which tests should be generated")
     val filesToTest: List<String>? = null,
     @Description("List of input files or tasks to be examined when generating tests")
@@ -21,7 +21,7 @@ class TestGenerationTask(
     input_files: List<String>? = null,
     output_files: List<String>? = null,
     state: TaskState? = null
-  ) : FileTaskBase(
+  ) : FileTaskConfigBase(
     task_type = TaskType.TestGeneration.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

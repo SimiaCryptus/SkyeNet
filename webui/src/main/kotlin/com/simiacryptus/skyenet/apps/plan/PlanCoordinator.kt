@@ -86,11 +86,11 @@ class PlanCoordinator(
   }
 
   fun executePlan(
-    plan: Map<String, PlanTaskBase>,
-    task: SessionTask,
-    userMessage: String,
-    api: API,
-    api2: OpenAIClient,
+      plan: Map<String, TaskConfigBase>,
+      task: SessionTask,
+      userMessage: String,
+      api: API,
+      api2: OpenAIClient,
   ): PlanProcessingState {
     val api = (api as ChatClient).getChildClient().apply {
       val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
@@ -127,24 +127,24 @@ class PlanCoordinator(
     return planProcessingState
   }
 
-  private fun newState(plan: Map<String, PlanTaskBase>) =
+  private fun newState(plan: Map<String, TaskConfigBase>) =
     PlanProcessingState(
-      subTasks = (filterPlan { plan }?.entries?.toTypedArray<Map.Entry<String, PlanTaskBase>>()
+      subTasks = (filterPlan { plan }?.entries?.toTypedArray<Map.Entry<String, TaskConfigBase>>()
         ?.associate { it.key to it.value } ?: mapOf()).toMutableMap()
     )
 
   fun executePlan(
-    task: SessionTask,
-    diagramBuffer: StringBuilder?,
-    subTasks: Map<String, PlanTaskBase>,
-    diagramTask: SessionTask,
-    planProcessingState: PlanProcessingState,
-    taskIdProcessingQueue: MutableList<String>,
-    pool: ThreadPoolExecutor,
-    userMessage: String,
-    plan: Map<String, PlanTaskBase>,
-    api: API,
-    api2: OpenAIClient,
+      task: SessionTask,
+      diagramBuffer: StringBuilder?,
+      subTasks: Map<String, TaskConfigBase>,
+      diagramTask: SessionTask,
+      planProcessingState: PlanProcessingState,
+      taskIdProcessingQueue: MutableList<String>,
+      pool: ThreadPoolExecutor,
+      userMessage: String,
+      plan: Map<String, TaskConfigBase>,
+      api: API,
+      api2: OpenAIClient,
   ) {
     val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
     val api = (api as ChatClient).getChildClient().apply {

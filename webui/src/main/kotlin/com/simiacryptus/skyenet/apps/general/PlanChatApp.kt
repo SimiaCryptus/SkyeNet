@@ -4,9 +4,8 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.apps.plan.*
-import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskData
+import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskConfigData
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.util.MarkdownUtil
@@ -143,11 +142,11 @@ open class PlanChatApp(
 
   }
 
-  protected open fun addRespondToChatTask(plan: Map<String, PlanTaskBase>): Map<String, PlanTaskBase> {
+  protected open fun addRespondToChatTask(plan: Map<String, TaskConfigBase>): Map<String, TaskConfigBase> {
     val tasksByID = plan?.toMutableMap() ?: mutableMapOf()
     val respondTaskId = "respond_to_chat"
 
-    tasksByID[respondTaskId] = InquiryTaskData(
+    tasksByID[respondTaskId] = InquiryTaskConfigData(
       task_description = "Respond to the user's chat message based on the executed plan",
       task_dependencies = tasksByID.keys.toList()
     )

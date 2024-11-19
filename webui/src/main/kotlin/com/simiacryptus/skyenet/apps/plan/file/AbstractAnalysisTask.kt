@@ -11,7 +11,7 @@ import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.io.File
 
-abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskBase>(
+abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskConfigBase>(
   planSettings: PlanSettings,
   planTask: T?
 ) : AbstractFileTask<T>(planSettings, planTask) {

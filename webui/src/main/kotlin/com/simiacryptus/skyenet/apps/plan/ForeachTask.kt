@@ -3,7 +3,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskData
+import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -11,18 +11,18 @@ import org.slf4j.LoggerFactory
 
 class ForeachTask(
   planSettings: PlanSettings,
-  planTask: ForeachTaskData?
-) : AbstractTask<ForeachTaskData>(planSettings, planTask) {
+  planTask: ForeachTaskConfigData?
+) : AbstractTask<ForeachTaskConfigData>(planSettings, planTask) {
 
-  class ForeachTaskData(
-    @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")
+  class ForeachTaskConfigData(
+      @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")
     val foreach_items: List<String>? = null,
-    @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
-    val foreach_subplan: Map<String, PlanTaskBase>? = null,
-    task_description: String? = null,
-    task_dependencies: List<String>? = null,
-    state: TaskState? = null,
-  ) : PlanTaskBase(
+      @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
+    val foreach_subplan: Map<String, TaskConfigBase>? = null,
+      task_description: String? = null,
+      task_dependencies: List<String>? = null,
+      state: TaskState? = null,
+  ) : TaskConfigBase(
     task_type = TaskType.ForeachTask.name,
     task_description = task_description,
     task_dependencies = task_dependencies,

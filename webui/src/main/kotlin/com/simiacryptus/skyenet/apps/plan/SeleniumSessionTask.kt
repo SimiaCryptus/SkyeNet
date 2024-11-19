@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 class SeleniumSessionTask(
     planSettings: PlanSettings,
-    planTask: SeleniumSessionTaskData?
-) : AbstractTask<SeleniumSessionTask.SeleniumSessionTaskData>(planSettings, planTask) {
+    planTask: SeleniumSessionTaskConfigData?
+) : AbstractTask<SeleniumSessionTask.SeleniumSessionTaskConfigData>(planSettings, planTask) {
     companion object {
         private val log = LoggerFactory.getLogger(SeleniumSessionTask::class.java)
         private val activeSessions = ConcurrentHashMap<String, Selenium>()
@@ -75,7 +75,7 @@ class SeleniumSessionTask(
         }
     }
 
-    class SeleniumSessionTaskData(
+    class SeleniumSessionTaskConfigData(
         @Description("The URL to navigate to")
         val url: String,
         @Description("JavaScript commands to execute")
@@ -89,7 +89,7 @@ class SeleniumSessionTask(
         task_description: String? = null,
         task_dependencies: List<String>? = null,
         state: TaskState? = null,
-    ) : PlanTaskBase(
+    ) : TaskConfigBase(
         task_type = TaskType.SeleniumSession.name,
         task_description = task_description,
         task_dependencies = task_dependencies,
@@ -186,7 +186,7 @@ class SeleniumSessionTask(
     }
 
     private fun formatResults(
-        planTask: SeleniumSessionTaskData,
+        planTask: SeleniumSessionTaskConfigData,
         selenium: Selenium,
         results: List<String>
     ): String = buildString(capacity = 16384) { // Pre-allocate buffer for better performance

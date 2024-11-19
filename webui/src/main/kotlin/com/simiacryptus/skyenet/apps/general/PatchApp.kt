@@ -57,14 +57,19 @@ abstract class PatchApp(
     val socketManager = super.newSession(user, session)
     val ui = (socketManager as ApplicationSocketManager).applicationInterface
     val task = ui.newTask()
-    Retryable(
+    lateinit var retry : Retryable
+    var retries = 3
+    retry = Retryable(
       ui = ui,
       task = task,
       process = { content ->
         val newTask = ui.newTask(false)
         newTask.add("Running Command")
         Thread {
-          run(ui, newTask)
+          val result = run(ui, newTask)
+          if (result.exitCode != 0 && retries-- > 0) {
+            retry.retry()
+          }
         }.start()
         newTask.placeholder
       }

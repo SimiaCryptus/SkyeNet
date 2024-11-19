@@ -9,7 +9,7 @@ import java.io.File
 import java.nio.file.Path
 
 
-abstract class AbstractTask<T : PlanTaskBase>(
+abstract class AbstractTask<T : TaskConfigBase>(
   val planSettings: PlanSettings,
   val planTask: T?
 ) {

@@ -13,7 +13,7 @@ object PlanUtil {
 
   fun diagram(
     ui: ApplicationInterface,
-    taskMap: Map<String, PlanTaskBase>
+    taskMap: Map<String, TaskConfigBase>
   ) = MarkdownUtil.renderMarkdown(
     """
             |## Sub-Plan Task Dependency Graph
@@ -44,7 +44,7 @@ object PlanUtil {
     )
   )
 
-  fun executionOrder(tasks: Map<String, PlanTaskBase>): List<String> {
+  fun executionOrder(tasks: Map<String, TaskConfigBase>): List<String> {
     val taskIds: MutableList<String> = mutableListOf()
     val taskMap = tasks.toMutableMap()
     while (taskMap.isNotEmpty()) {
@@ -81,7 +81,7 @@ object PlanUtil {
   private val mermaidGraphCache = ConcurrentHashMap<String, String>()
   private val mermaidExceptionCache = ConcurrentHashMap<String, Exception>()
 
-  fun buildMermaidGraph(subTasks: Map<String, PlanTaskBase>): String {
+  fun buildMermaidGraph(subTasks: Map<String, TaskConfigBase>): String {
     // Generate a unique key based on the subTasks map
     val cacheKey = JsonUtil.toJson(subTasks)
     // Return cached result if available
@@ -121,7 +121,7 @@ object PlanUtil {
     }
   }
 
-  fun filterPlan(retries: Int = 3, fn: () -> Map<String, PlanTaskBase>?): Map<String, PlanTaskBase>? {
+  fun filterPlan(retries: Int = 3, fn: () -> Map<String, TaskConfigBase>?): Map<String, TaskConfigBase>? {
     val obj = fn() ?: emptyMap()
     val tasksByID = obj.filter { (k, v) ->
       when {
@@ -160,9 +160,9 @@ object PlanUtil {
   }
 
   fun getAllDependencies(
-    subPlanTask: PlanTaskBase,
-    subTasks: Map<String, PlanTaskBase>,
-    visited: MutableSet<String>
+      subPlanTask: TaskConfigBase,
+      subTasks: Map<String, TaskConfigBase>,
+      visited: MutableSet<String>
   ): List<String> {
     val dependencies = subPlanTask.task_dependencies?.toMutableList() ?: mutableListOf()
     subPlanTask.task_dependencies?.forEach { dep ->

@@ -3,14 +3,11 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
+import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.TabbedDisplay
-import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
-import com.simiacryptus.skyenet.apps.plan.PlanSettings
-import com.simiacryptus.skyenet.apps.plan.PlanTaskBase
-import com.simiacryptus.skyenet.apps.plan.TaskSettings
-import com.simiacryptus.skyenet.apps.plan.TaskType
-import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskData
+import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.User
@@ -20,8 +17,7 @@ import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
 import java.io.File
-import java.util.Date
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
 
@@ -56,48 +52,76 @@ open class AutoPlanChatApp(
     private val log = org.slf4j.LoggerFactory.getLogger(AutoPlanChatApp::class.java)
   }
 
+  private fun logDebug(message: String, data: Any? = null) {
+    if (data != null) {
+      log.debug("$message: ${JsonUtil.toJson(data)}")
+    } else {
+      log.debug(message)
+    }
+  }
+
+  @Description("The current thinking status of the AI assistant.")
   data class ThinkingStatus(
+    @Description("The original user prompt or request that initiated the conversation.")
     var initialPrompt: String? = null,
+    @Description("The hierarchical goals structure defining both immediate and long-term objectives.")
     val goals: Goals? = null,
+    @Description("The accumulated knowledge, facts, and uncertainties gathered during the conversation.")
     val knowledge: Knowledge? = null,
+    @Description("The operational context including task history, current state, and planned actions.")
     val executionContext: ExecutionContext? = null
   )
 
+  @Description("The goals of the AI assistant.")
   data class Goals(
+    @Description("Immediate objectives that need to be accomplished in the current iteration.")
     val shortTerm: MutableList<Any>? = null,
+    @Description("Overall objectives that span multiple iterations or the entire conversation.")
     val longTerm: MutableList<Any>? = null
   )
 
+  @Description("The knowledge base of the AI assistant.")
   data class Knowledge(
+    @Description("Verified information and concrete data gathered from task results and user input.")
     val facts: MutableList<Any>? = null,
+    @Description("Tentative conclusions and working assumptions that need verification.")
     val hypotheses: MutableList<Any>? = null,
+    @Description("Unresolved questions and areas requiring further investigation or clarification.")
     val openQuestions: MutableList<Any>? = null
   )
 
+  @Description("The execution context of the AI assistant.")
   data class ExecutionContext(
+    @Description("History of successfully executed tasks and their outcomes.")
     val completedTasks: MutableList<Any>? = null,
+    @Description("Details of the task currently in progress, if any.")
     val currentTask: CurrentTask? = null,
+    @Description("Planned future actions and their expected outcomes.")
     val nextSteps: MutableList<Any>? = null
   )
 
+  @Description("The current task being executed.")
   data class CurrentTask(
+    @Description("Unique identifier for tracking and referencing the task.")
     val taskId: String? = null,
+    @Description("Detailed description of the task's objectives and requirements.")
     val description: String? = null
   )
 
   data class ExecutionRecord(
     val time: Date? = Date(),
-    val task: PlanTaskBase? = null,
+    val task: TaskConfigBase? = null,
     val result: String? = null
   )
 
   data class Tasks(
-    val tasks: MutableList<PlanTaskBase>? = null
+    val tasks: MutableList<TaskConfigBase>? = null
   )
 
   private val currentUserMessage = AtomicReference<String?>(null)
   private var isRunning = false
   val executionRecords = mutableListOf<ExecutionRecord>()
+
 
   override fun userMessage(
     session: Session,
@@ -107,13 +131,13 @@ open class AutoPlanChatApp(
     api: API
   ) {
     try {
-      log.info("Received user message: $userMessage")
+      logDebug("Received user message", userMessage)
       if (!isRunning) {
         isRunning = true
-        log.info("Starting new auto plan chat")
+        logDebug("Starting new auto plan chat session")
         startAutoPlanChat(session, user, userMessage, ui, api)
       } else {
-        log.info("Injecting user message into ongoing chat")
+        logDebug("Injecting user message into ongoing chat", userMessage)
         val userMessageTask = ui.newTask()
         userMessageTask.echo(renderMarkdown("User: $userMessage", ui = ui))
         currentUserMessage.set(userMessage)
@@ -131,12 +155,14 @@ open class AutoPlanChatApp(
     ui: ApplicationInterface,
     api: API
   ) {
+    logDebug("Starting auto plan chat with initial message", userMessage)
     val thinkingStatus = AtomicReference<ThinkingStatus?>(null);
     val task = ui.newTask(true)
     val api = (api as ChatClient).getChildClient().apply {
       val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
       createFile.second?.apply {
         logStreams += this.outputStream().buffered()
+        logDebug("Created API log file", this)
         task.verbose("API log: <a href=\"file:///$this\">$this</a>")
       }
     }
@@ -146,10 +172,12 @@ open class AutoPlanChatApp(
     var continueLoop = true
     executor.execute {
       try {
+        logDebug("Starting main execution loop")
         ui.newTask(false).let { task ->
           tabbedDisplay["Controls"] = task.placeholder
           lateinit var stopLink: StringBuilder
           stopLink = task.add(ui.hrefLink("Stop") {
+            logDebug("Stop button clicked - terminating execution")
             continueLoop = false
             executor.shutdown()
             stopLink.set("Stopped")
@@ -158,11 +186,11 @@ open class AutoPlanChatApp(
         }
         tabbedDisplay.update()
         task.complete()
-
         val initialPromptTask = ui.newTask(false)
         initialPromptTask.add(renderMarkdown("Starting Auto Plan Chat for prompt: $userMessage"))
         tabbedDisplay["Initial Prompt"] = initialPromptTask.placeholder
         val planSettings = getSettings(session, user, PlanSettings::class.java) ?: planSettings.copy(allowBlocking = false)
+        logDebug("Initialized plan settings", planSettings)
         api.budget = planSettings.budget
         val coordinator = PlanCoordinator(
           user = user,
@@ -172,19 +200,23 @@ open class AutoPlanChatApp(
           root = planSettings.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
           planSettings = planSettings
         )
-        val initialStatus = initThinking(planSettings, userMessage)
+        logDebug("Created plan coordinator")
+        val initialStatus = initThinking(planSettings, userMessage, api)
+        logDebug("Initialized thinking status", initialStatus)
         initialStatus.initialPrompt = userMessage
         thinkingStatus.set(initialStatus)
         initialPromptTask.complete(renderMarkdown("Initial Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"))
 
         var iteration = 0
         while (iteration++ < maxIterations && continueLoop) {
+          logDebug("Starting iteration $iteration")
           task.complete()
           val task = ui.newTask(false).apply { tabbedDisplay["Iteration $iteration"] = placeholder }
           val api = api.getChildClient().apply {
             val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
             createFile.second?.apply {
               logStreams += this.outputStream().buffered()
+              logDebug("Created iteration API log file", this)
               task.verbose("API log: <a href=\"file:///$this\">$this</a>")
             }
           }
@@ -199,6 +231,7 @@ open class AutoPlanChatApp(
             formatThinkingStatus(thinkingStatus.get()!!).let { add(renderMarkdown(it)) }
           }
           val nextTask = try {
+            logDebug("Getting next task")
             getNextTask(api, planSettings, coordinator, userMessage, thinkingStatus.get())
           } catch (e: Exception) {
             log.error("Error choosing next task", e)
@@ -206,13 +239,16 @@ open class AutoPlanChatApp(
             break
           }
           if (nextTask?.isEmpty() != false) {
+            logDebug("No more tasks to execute")
             task.add(renderMarkdown("No more tasks to execute. Finishing Auto Plan Chat."))
             break
           }
+          logDebug("Retrieved next tasks", nextTask)
 
-          val taskResults = mutableListOf<Pair<PlanTaskBase, Future<String>>>()
+          val taskResults = mutableListOf<Pair<TaskConfigBase, Future<String>>>()
           for ((index, currentTask) in nextTask.withIndex()) {
             val currentTaskId = "task_${index + 1}"
+            logDebug("Executing task $currentTaskId", currentTask)
             val taskExecutionTask = ui.newTask(false)
             taskExecutionTask.add(
               renderMarkdown(
@@ -235,6 +271,7 @@ open class AutoPlanChatApp(
           }
           val completedTasks = taskResults.map { (task, future) ->
             val result = future.get()
+            logDebug("Task completed", mapOf("task" to task, "result" to result))
             ExecutionRecord(
               time = Date(),
               task = task,
@@ -244,16 +281,20 @@ open class AutoPlanChatApp(
           executionRecords.addAll(completedTasks)
 
           val thinkingStatusTask = ui.newTask(false).apply { tabbedDisplay["Thinking Status"] = placeholder }
+          logDebug("Updating thinking status")
           thinkingStatus.set(
             updateThinking(api, planSettings, thinkingStatus.get(), completedTasks)
           )
+          logDebug("Updated thinking status", thinkingStatus.get())
           thinkingStatusTask.complete(renderMarkdown("Updated Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"))
         }
+        logDebug("Main execution loop completed")
         task.complete("Auto Plan Chat completed.")
       } catch (e: Throwable) {
         task.error(ui, e)
         log.error("Error in startAutoPlanChat", e)
       } finally {
+        logDebug("Finalizing auto plan chat")
         val summaryTask = ui.newTask(false).apply { tabbedDisplay["Summary"] = placeholder }
         summaryTask.add(
           renderMarkdown(
@@ -273,7 +314,7 @@ open class AutoPlanChatApp(
     api2: OpenAIClient,
     task: SessionTask,
     coordinator: PlanCoordinator,
-    currentTask: PlanTaskBase,
+    currentTask: TaskConfigBase,
     currentTaskId: String,
     userMessage: String,
     taskExecutionTask: SessionTask,
@@ -286,7 +327,7 @@ open class AutoPlanChatApp(
         task.verbose("API log: <a href=\"file:///$this\">$this</a>")
       }
     }
-    val taskImpl = TaskType.Companion.getImpl(coordinator.planSettings, currentTask)
+    val taskImpl = TaskType.getImpl(coordinator.planSettings, currentTask)
     val result = StringBuilder()
     taskImpl.run(
       agent = coordinator.copy(
@@ -315,25 +356,25 @@ open class AutoPlanChatApp(
     coordinator: PlanCoordinator,
     userMessage: String,
     thinkingStatus: ThinkingStatus?
-  ): List<PlanTaskBase>? {
+  ): List<TaskConfigBase>? {
     val describer1 = planSettings.describer()
     val tasks = ParsedActor(
       name = "SingleTaskChooser",
       resultClass = Tasks::class.java,
       exampleInstance = Tasks(
         listOf(
-          FileModificationTaskData(
+          FileModificationTaskConfigData(
             task_description = "Modify the file 'example.txt' to include the given input."
           )
-        ).toMutableList<PlanTaskBase>()
+        ).toMutableList()
       ),
       prompt = """
                         Given the following input, choose up to ${maxTasksPerIteration} tasks to execute. Do not create a full plan, just select the most appropriate task types for the given input.
                         Available task types:
                         
                         ${
-        TaskType.Companion.getAvailableTaskTypes(coordinator.planSettings).joinToString<TaskType<*>>("\n") { taskType ->
-          "* ${TaskType.Companion.getImpl(coordinator.planSettings, taskType).promptSegment()}"
+        TaskType.getAvailableTaskTypes(coordinator.planSettings).joinToString("\n") { taskType ->
+          "* ${TaskType.getImpl(coordinator.planSettings, taskType).promptSegment()}"
         }
       }
                         
@@ -347,7 +388,7 @@ open class AutoPlanChatApp(
                         Task Subtype Schema:
                         
                         ${
-        TaskType.Companion.getAvailableTaskTypes(coordinator.planSettings).joinToString<TaskType<*>>("\n\n") { taskType ->
+        TaskType.getAvailableTaskTypes(coordinator.planSettings).joinToString("\n\n") { taskType ->
           """
                         ${taskType.name}:
                           ${describer1.describe(taskType.taskDataClass).replace("\n", "\n  ")}
@@ -369,7 +410,7 @@ open class AutoPlanChatApp(
       task to (if (task.task_type == null) {
         null
       } else {
-        TaskType.Companion.getImpl(coordinator.planSettings, task)
+        TaskType.getImpl(coordinator.planSettings, task)
       })?.planTask
     }
     if (tasks.isNullOrEmpty()) {
@@ -392,21 +433,49 @@ open class AutoPlanChatApp(
     name = "UpdateQuestionsActor",
     resultClass = ThinkingStatus::class.java,
     exampleInstance = ThinkingStatus(
-      initialPrompt = "Example prompt",
+      initialPrompt = "Create a Python script to analyze log files and generate a summary report",
       goals = Goals(
-        shortTerm = mutableListOf("Analyze task results"),
-        longTerm = mutableListOf("Complete the user's request")
+        shortTerm = mutableListOf(
+          "Understand log file format requirements",
+          "Define report structure",
+          "Plan implementation approach"
+        ),
+        longTerm = mutableListOf(
+          "Deliver working Python script",
+          "Ensure robust error handling",
+          "Provide documentation"
+        )
       ),
       knowledge = Knowledge(
         facts = mutableListOf(
-          "Initial Context: User's request received",
-          "Task 1 Result: Analyzed user's request"
+          "Project requires Python programming",
+          "Output format needs to be a summary report",
+          "Input consists of log files"
         ),
-        openQuestions = mutableListOf("What is the next task?", "Are there any remaining tasks?")
+        hypotheses = mutableListOf(
+          "Log files might be in different formats",
+          "Performance optimization may be needed for large files"
+        ),
+        openQuestions = mutableListOf(
+          "What is the specific log file format?",
+          "Are there any performance requirements?",
+          "What specific metrics should be included in the report?"
+        )
       ),
       executionContext = ExecutionContext(
-        completedTasks = mutableListOf("task_1"),
-        nextSteps = mutableListOf("Analyze task results", "Determine next action"),
+        completedTasks = mutableListOf(
+          "Initial requirements analysis",
+          "Project scope definition"
+        ),
+        currentTask = CurrentTask(
+          taskId = "TASK_003",
+          description = "Design log parsing algorithm"
+        ),
+        nextSteps = mutableListOf(
+          "Implement log file reader",
+          "Create report generator",
+          "Add error handling"
+        )
       )
     ),
     prompt = """
@@ -429,9 +498,9 @@ open class AutoPlanChatApp(
             "Completed task: ${record.task?.task_description}",
             "Task result: ${record.result}"
           )
-        } + (currentUserMessage.get()?.let<String, List<String>> { listOf("User message: $it") } ?: listOf<String>()),
+        } + (currentUserMessage.get()?.let { listOf("User message: $it") } ?: listOf()),
     api
-  ).obj.apply<ThinkingStatus> {
+  ).obj.apply {
     this@AutoPlanChatApp.currentUserMessage.set(null)
     knowledge?.facts?.apply {
       this.addAll(completedTasks.mapIndexed { index, (task, result) ->
@@ -442,7 +511,8 @@ open class AutoPlanChatApp(
 
   protected open fun initThinking(
     planSettings: PlanSettings,
-    userMessage: String
+    userMessage: String,
+    api: ChatClient
   ): ThinkingStatus {
     val initialStatus = ParsedActor(
       name = "ThinkingStatusInitializer",
@@ -462,18 +532,30 @@ open class AutoPlanChatApp(
         )
       ),
       prompt = """
-                                Given the user's initial prompt, initialize the thinking status for an AI assistant.
-                                Set short-term and long-term goals.
-                                Generate relevant open questions and hypotheses to guide the planning process.
-                                Initialize the knowledge base with any relevant information from the initial prompt.
-                                Set up the execution context with initial next steps, progress (0-100), estimated time remaining, and confidence level (0-100).
-                                Identify potential challenges and available resources.
-                                """.trimIndent(),
+        Initialize a comprehensive thinking status for an AI assistant based on the user's prompt.
+        Goals:
+        1. Short-term goals: Define immediate objectives that can be accomplished in 1-2 iterations
+        2. Long-term goals: Outline the overall project objectives and desired end state
+        Knowledge Base:
+        1. Facts: Extract concrete information and requirements from the prompt
+        2. Hypotheses: Form initial assumptions that need validation
+        3. Open Questions: List critical uncertainties and information gaps
+        Execution Context:
+        1. Next Steps: Plan initial 2-3 concrete actions
+        2. Potential Challenges: Identify possible obstacles and constraints
+        3. Available Resources: List tools and capabilities at disposal
+        Analysis Guidelines:
+        * Break down complex requirements into manageable components
+        * Consider both technical and non-technical aspects
+        * Identify dependencies and prerequisites
+        * Maintain alignment between short-term actions and long-term goals
+        * Ensure scalability and maintainability of the approach
+        """.trimIndent(),
       model = planSettings.defaultModel,
       parsingModel = planSettings.parsingModel,
       temperature = planSettings.temperature,
       describer = planSettings.describer()
-    ).answer(listOf(userMessage) + contextData(), this.api!!).obj
+    ).answer(listOf(userMessage) + contextData(), api).obj
     return initialStatus
   }
 
