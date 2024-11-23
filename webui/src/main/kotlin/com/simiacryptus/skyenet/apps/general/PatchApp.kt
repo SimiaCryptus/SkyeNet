@@ -25,7 +25,6 @@ import java.util.*
 
 abstract class PatchApp(
   override val root: File,
-  private val session: Session,
   protected val settings: Settings,
   private val api: ChatClient,
   private val model: ChatModel,
@@ -35,6 +34,9 @@ abstract class PatchApp(
   path = "/fixCmd",
   showMenubar = false,
 ) {
+
+  data class OutputResult(val exitCode: Int, val output: String)
+
   companion object {
     private val log = LoggerFactory.getLogger(PatchApp::class.java)
     const val tripleTilde = "`" + "``" // This is a workaround for the markdown parser when editing this file
@@ -45,8 +47,6 @@ abstract class PatchApp(
     log.info("$event: ${JsonUtil.toJson(data)}")
   }
 
-  data class OutputResult(val exitCode: Int, val output: String)
-
   abstract fun codeFiles(): Set<Path>
   abstract fun codeSummary(paths: List<Path>): String
   abstract fun output(task: SessionTask): OutputResult
@@ -54,22 +54,32 @@ abstract class PatchApp(
   override val singleInput = true
   override val stickyInput = false
   override fun newSession(user: User?, session: Session): SocketManager {
+    var retries: Int = when {
+      settings.autoFix -> 3
+      else -> 0
+    }
     val socketManager = super.newSession(user, session)
     val ui = (socketManager as ApplicationSocketManager).applicationInterface
     val task = ui.newTask()
     lateinit var retry : Retryable
-    var retries = 3
     retry = Retryable(
       ui = ui,
       task = task,
       process = { content ->
+        if(retries < 0) {
+          retries = when {
+            settings.autoFix -> 3
+            else -> 0
+          }
+        }
         val newTask = ui.newTask(false)
         newTask.add("Running Command")
         Thread {
           val result = run(ui, newTask)
-          if (result.exitCode != 0 && retries-- > 0) {
+          if (result.exitCode != 0 && retries > 0) {
             retry.retry()
           }
+          retries -= 1
         }.start()
         newTask.placeholder
       }

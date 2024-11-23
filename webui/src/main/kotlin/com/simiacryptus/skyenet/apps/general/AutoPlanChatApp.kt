@@ -50,6 +50,22 @@ open class AutoPlanChatApp(
 
   companion object {
     private val log = org.slf4j.LoggerFactory.getLogger(AutoPlanChatApp::class.java)
+    private val currentUserMessages = mutableMapOf<String, AtomicReference<String?>>()
+    private val runningStates = mutableMapOf<String, Boolean>()
+    private val executionRecordMap = mutableMapOf<String, MutableList<ExecutionRecord>>()
+    private val thinkingStatuses = mutableMapOf<String, AtomicReference<ThinkingStatus?>>();
+    @Synchronized
+    private fun getState(sessionId: String): Triple<AtomicReference<String?>, Boolean, MutableList<ExecutionRecord>> {
+      return Triple(
+        currentUserMessages.getOrPut(sessionId) { AtomicReference(null) },
+        runningStates.getOrPut(sessionId) { false },
+        executionRecordMap.getOrPut(sessionId) { mutableListOf() }
+      )
+    }
+    @Synchronized
+    private fun setState(sessionId: String, running: Boolean) {
+      runningStates[sessionId] = running
+    }
   }
 
   private fun logDebug(message: String, data: Any? = null) {
@@ -118,11 +134,6 @@ open class AutoPlanChatApp(
     val tasks: MutableList<TaskConfigBase>? = null
   )
 
-  private val currentUserMessage = AtomicReference<String?>(null)
-  private var isRunning = false
-  val executionRecords = mutableListOf<ExecutionRecord>()
-
-
   override fun userMessage(
     session: Session,
     user: User?,
@@ -132,8 +143,9 @@ open class AutoPlanChatApp(
   ) {
     try {
       logDebug("Received user message", userMessage)
+      val (currentUserMessage, isRunning, _) = getState(session.sessionId)
       if (!isRunning) {
-        isRunning = true
+        setState(session.sessionId, true)
         logDebug("Starting new auto plan chat session")
         startAutoPlanChat(session, user, userMessage, ui, api)
       } else {
@@ -156,8 +168,9 @@ open class AutoPlanChatApp(
     api: API
   ) {
     logDebug("Starting auto plan chat with initial message", userMessage)
-    val thinkingStatus = AtomicReference<ThinkingStatus?>(null);
+    val thinkingStatus = thinkingStatuses.computeIfAbsent(session.sessionId) { AtomicReference<ThinkingStatus?>(null) };
     val task = ui.newTask(true)
+    val (currentUserMessage, _, executionRecords) = getState(session.sessionId)
     val api = (api as ChatClient).getChildClient().apply {
       val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
       createFile.second?.apply {
@@ -226,13 +239,13 @@ open class AutoPlanChatApp(
             header("Project Info")
             contextData().forEach { add(renderMarkdown(it)) }
             header("Evaluation Records")
-            formatEvalRecords().forEach { add(renderMarkdown(it)) }
+            formatEvalRecords(session = session).forEach { add(renderMarkdown(it)) }
             header("Current Thinking Status")
             formatThinkingStatus(thinkingStatus.get()!!).let { add(renderMarkdown(it)) }
           }
           val nextTask = try {
             logDebug("Getting next task")
-            getNextTask(api, planSettings, coordinator, userMessage, thinkingStatus.get())
+            getNextTask(api, planSettings, coordinator, userMessage, thinkingStatus.get(), session)
           } catch (e: Exception) {
             log.error("Error choosing next task", e)
             tabbedDisplay["Errors"]?.append(renderMarkdown("Error choosing next task: ${e.message}"))
@@ -260,7 +273,7 @@ open class AutoPlanChatApp(
             tabbedDisplay["Task Execution $currentTaskId"] = taskExecutionTask.placeholder
             val future = executor.submit<String> {
               try {
-                runTask(api, api2, task, coordinator, currentTask, currentTaskId, userMessage, taskExecutionTask, thinkingStatus.get())
+                runTask(api, api2, task, coordinator, currentTask, currentTaskId, userMessage, taskExecutionTask, thinkingStatus.get(), session)
               } catch (e: Exception) {
                 taskExecutionTask.error(ui, e)
                 log.error("Error executing task", e)
@@ -283,7 +296,7 @@ open class AutoPlanChatApp(
           val thinkingStatusTask = ui.newTask(false).apply { tabbedDisplay["Thinking Status"] = placeholder }
           logDebug("Updating thinking status")
           thinkingStatus.set(
-            updateThinking(api, planSettings, thinkingStatus.get(), completedTasks)
+            updateThinking(api, planSettings, thinkingStatus.get(), completedTasks, session)
           )
           logDebug("Updated thinking status", thinkingStatus.get())
           thinkingStatusTask.complete(renderMarkdown("Updated Thinking Status:\n${formatThinkingStatus(thinkingStatus.get()!!)}"))
@@ -295,6 +308,7 @@ open class AutoPlanChatApp(
         log.error("Error in startAutoPlanChat", e)
       } finally {
         logDebug("Finalizing auto plan chat")
+      setState(session.sessionId, false)
         val summaryTask = ui.newTask(false).apply { tabbedDisplay["Summary"] = placeholder }
         summaryTask.add(
           renderMarkdown(
@@ -318,7 +332,8 @@ open class AutoPlanChatApp(
     currentTaskId: String,
     userMessage: String,
     taskExecutionTask: SessionTask,
-    thinkingStatus: ThinkingStatus?
+    thinkingStatus: ThinkingStatus?,
+    session: Session,
   ): String {
     val api = api.getChildClient().apply {
       val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
@@ -340,7 +355,7 @@ open class AutoPlanChatApp(
       messages = listOf(
         userMessage,
         "Current thinking status:\n${formatThinkingStatus(thinkingStatus!!)}"
-      ) + formatEvalRecords(),
+      ) + formatEvalRecords(session=session),
       task = taskExecutionTask,
       api = api,
       resultFn = { result.append(it) },
@@ -355,7 +370,8 @@ open class AutoPlanChatApp(
     planSettings: PlanSettings,
     coordinator: PlanCoordinator,
     userMessage: String,
-    thinkingStatus: ThinkingStatus?
+    thinkingStatus: ThinkingStatus?,
+    session: Session,
   ): List<TaskConfigBase>? {
     val describer1 = planSettings.describer()
     val tasks = ParsedActor(
@@ -405,7 +421,7 @@ open class AutoPlanChatApp(
                                                             If there are no tasks to execute, return {}.
                                                         """.trimIndent()
           )
-          + formatEvalRecords(), api
+          + formatEvalRecords(session=session), api
     ).obj.tasks?.map { task ->
       task to (if (task.task_type == null) {
         null
@@ -428,7 +444,8 @@ open class AutoPlanChatApp(
     api: ChatClient,
     planSettings: PlanSettings,
     thinkingStatus: ThinkingStatus?,
-    completedTasks: List<ExecutionRecord>
+    completedTasks: List<ExecutionRecord>,
+    session: Session,
   ): ThinkingStatus = ParsedActor(
     name = "UpdateQuestionsActor",
     resultClass = ThinkingStatus::class.java,
@@ -479,14 +496,14 @@ open class AutoPlanChatApp(
       )
     ),
     prompt = """
-                                        Given the current thinking status, the last completed task, and its result,
-                                        update the open questions to guide the next steps of the planning process.
-                                        Consider what information is still needed and what new questions arise from the task result.
-                                        Update the current goal if necessary, adjust the progress, suggest next steps, and add any new insights.
-                                        Update the knowledge base with new facts and hypotheses.
-                                        Update the estimated time remaining and adjust the confidence level based on progress.
-                                        Reassess challenges, available resources, and alternative approaches.
-                                    """.trimIndent(),
+        Given the current thinking status, the last completed task, and its result,
+        update the open questions to guide the next steps of the planning process.
+        Consider what information is still needed and what new questions arise from the task result.
+        Update the current goal if necessary, adjust the progress, suggest next steps, and add any new insights.
+        Update the knowledge base with new facts and hypotheses.
+        Update the estimated time remaining and adjust the confidence level based on progress.
+        Reassess challenges, available resources, and alternative approaches.
+    """.trimIndent(),
     model = planSettings.defaultModel,
     parsingModel = planSettings.parsingModel,
     temperature = planSettings.temperature,
@@ -498,10 +515,10 @@ open class AutoPlanChatApp(
             "Completed task: ${record.task?.task_description}",
             "Task result: ${record.result}"
           )
-        } + (currentUserMessage.get()?.let { listOf("User message: $it") } ?: listOf()),
+        } + (currentUserMessages.get(session.sessionId)?.let { listOf("User message: $it") } ?: listOf()),
     api
   ).obj.apply {
-    this@AutoPlanChatApp.currentUserMessage.set(null)
+    currentUserMessages.get(session.sessionId)?.set(null)
     knowledge?.facts?.apply {
       this.addAll(completedTasks.mapIndexed { index, (task, result) ->
         "Task ${(executionContext?.completedTasks?.size ?: 0) + index + 1} Result: $result"
@@ -559,12 +576,13 @@ open class AutoPlanChatApp(
     return initialStatus
   }
 
-  protected open fun formatEvalRecords(maxTotalLength: Int = maxTaskHistoryChars): List<String> {
+  protected open fun formatEvalRecords(maxTotalLength: Int = maxTaskHistoryChars, session: Session): List<String> {
     var currentLength = 0
     val formattedRecords = mutableListOf<String>()
-    for (record in executionRecords.reversed()) {
+    val sessionExecutionRecords = executionRecordMap[session.sessionId] ?: mutableListOf()
+    for (record in sessionExecutionRecords.reversed()) {
       val formattedRecord = """
-# Task ${executionRecords.indexOf(record) + 1}
+# Task ${sessionExecutionRecords.indexOf(record) + 1}
 
 ## Task:
 ```json

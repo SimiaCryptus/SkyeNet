@@ -4,7 +4,6 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -14,12 +13,11 @@ import java.util.concurrent.TimeUnit
 
 class CmdPatchApp(
   root: Path,
-  session: Session,
   settings: Settings,
   api: ChatClient,
   val files: Array<out File>?,
   model: ChatModel
-) : PatchApp(root.toFile(), session, settings, api, model) {
+) : PatchApp(root.toFile(), settings, api, model) {
   companion object {
     private val log = LoggerFactory.getLogger(CmdPatchApp::class.java)
 
