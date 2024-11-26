@@ -10,57 +10,103 @@ const logThemeChange = (theme: DefaultTheme) => {
 };
 
 export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-  body {
-      font-family: ${({theme}: { theme: DefaultTheme }) => {
-          logThemeChange(theme);
-          return theme.typography.fontFamily;
-      }};
-      background-color: ${({theme}: { theme: DefaultTheme }) => {
-          console.log('Setting background color:', theme.colors.background);
-          return theme.colors.background;
-      }};
-      color: ${({theme}: { theme: DefaultTheme }) => {
-          console.log('Setting text color:', theme.colors.text.primary);
-          return theme.colors.text.primary;
-      }};
-    line-height: 1.5;
-    font-size: ${({ theme }: { theme: DefaultTheme }) => theme.typography.fontSize.md};
-  }
+    body {
+        font-family: ${({theme}: { theme: DefaultTheme }) => {
+            logThemeChange(theme);
+            return theme.typography.fontFamily;
+        }};
+        background-color: ${({theme}: { theme: DefaultTheme }) => {
+            console.log('Setting background color:', theme.colors.background);
+            return theme.colors.background;
+        }};
+        color: ${({theme}: { theme: DefaultTheme }) => {
+            console.log('Setting text color:', theme.colors.text.primary);
+            return theme.colors.text.primary;
+        }};
+        line-height: 1.5;
+        font-size: ${({theme}: { theme: DefaultTheme }) => theme.typography.fontSize.md};
+    }
 
-  button {
-    font-family: inherit;
-    cursor: pointer;
-  }
+    .chat-input {
+        background-color: ${({theme}: { theme: DefaultTheme }) => theme.colors.surface};
+        color: ${({theme}: { theme: DefaultTheme }) => theme.colors.text.primary};
+        border-radius: ${({theme}: { theme: DefaultTheme }) => theme.sizing.borderRadius.md};
+        padding: 10px;
+        margin-bottom: 10px;
+        overflow: auto;
+        resize: vertical;
+        border: 1px solid ${({theme}: { theme: DefaultTheme }) => theme.colors.border};
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+        min-height: 40px;
+    }
 
-  input, textarea {
-    font-family: inherit;
-  }
+    .chat-input:focus {
+        outline: none;
+        border-color: ${({theme}: { theme: DefaultTheme }) => theme.colors.primary};
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
 
-  /* Transitions for theme switching */
-  body, button, input, textarea {
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
+    button {
+        font-family: inherit;
+        cursor: pointer;
+    }
 
-  /* Log when transitions complete */
-  body {
-      &:after {
-          content: '';
-          transition: background-color 0.3s ease;
-          opacity: 0;
-      }
+    input, textarea {
+        font-family: inherit;
+    }
 
-      &.theme-transition-complete:after {
-          opacity: 1;
-          ${() => {
-              console.log('Theme transition completed');
-              return '';
-          }}
-      }
-  }
+    /* Transitions for theme switching */
+    body, button, input, textarea {
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Log when transitions complete */
+    body {
+        &:after {
+            content: '';
+            transition: background-color 0.3s ease;
+            opacity: 0;
+        }
+
+        &.theme-transition-complete:after {
+            opacity: 1;
+            ${() => {
+                console.log('Theme transition completed');
+                return '';
+            }}
+        }
+    }
+
+    .cmd-button {
+        display: inline-block;
+        padding: 8px 15px;
+        font-size: 14px;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        outline: none;
+        color: #fff;
+        background-color: #4CAF50;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 0 9px #999;
+    }
+
+    .cmd-button:hover {
+        background-color: #3e8e41;
+    }
+
+    .cmd-button:active {
+        background-color: #3e8e41;
+        box-shadow: 0 5px #666;
+        transform: translateY(4px);
+    }
 `;

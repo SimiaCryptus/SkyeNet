@@ -4,6 +4,8 @@ import {createRoot} from 'react-dom/client';
 import App from './App';
 import {store} from './store';
 import './index.css';
+import mermaid from 'mermaid';
+import QRCode from 'qrcode-generator';
 
 console.log('Application initializing...');
 
@@ -16,6 +18,9 @@ if (!rootElement) {
 
 const root = createRoot(rootElement);
 console.log('React root created successfully');
+mermaid.initialize({startOnLoad: true});
+window.mermaid = mermaid; // Make mermaid globally accessible
+window.QRCode = QRCode; // Make QRCode globally accessible
 try {
 
     root.render(

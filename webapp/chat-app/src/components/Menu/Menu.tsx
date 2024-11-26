@@ -1,13 +1,12 @@
 import React from 'react';
 import styled from 'styled-components';
-import {useDispatch} from 'react-redux';
-import {useTheme} from '../../hooks/useTheme';
-import {showModal} from '../../store/slices/uiSlice';
-import {ThemeName} from '../../themes/themes';
+import {useSelector} from 'react-redux';
+import {useModal} from '../../hooks/useModal';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCog, faHome, faSignInAlt, faSignOutAlt} from '@fortawesome/free-solid-svg-icons';
 import {ThemeMenu} from "./ThemeMenu";
 import {WebSocketMenu} from "./WebSocketMenu";
+import {RootState} from "@store/index";
 
 const MenuContainer = styled.div`
     display: flex;
@@ -22,7 +21,6 @@ const ToolbarLeft = styled.div`
     gap: ${({theme}) => theme.sizing.spacing.md};
 `;
 
-// BUG: This component does not open the dropdown menu
 const Dropdown = styled.div`
     color: ${({theme}) => theme.colors.text.primary};
     padding: ${({theme}) => theme.sizing.spacing.sm};
@@ -78,17 +76,13 @@ const DropdownItem = styled.a`
 `;
 
 export const Menu: React.FC = () => {
-    const dispatch = useDispatch();
-    const [, setTheme] = useTheme();
+    useSelector((state: RootState) => state.config.websocket);
+    const {openModal} = useModal();
+    const verboseMode = useSelector((state: RootState) => state.ui.verboseMode);
 
-    const handleThemeChange = (theme: ThemeName) => {
-        console.log(`Theme changed to: ${theme}`);
-        setTheme(theme);
-    };
-
-    const handleModalOpen = (modalType: string) => {
-        console.log(`Opening modal: ${modalType}`);
-        dispatch(showModal(modalType));
+    const handleMenuClick = (modalType: string) => {
+        console.log('Opening modal:', modalType);
+        openModal(modalType);
         // Verify the action was dispatched
         console.log('[Menu] Modal action dispatched:', {
             type: 'showModal',
@@ -111,7 +105,7 @@ export const Menu: React.FC = () => {
                 <Dropdown>
                     <DropButton>App</DropButton>
                     <DropdownContent>
-                        <DropdownItem onClick={() => handleModalOpen('sessions')}>Session List</DropdownItem>
+                        <DropdownItem onClick={() => openModal('sessions')}>Session List</DropdownItem>
                         <DropdownItem onClick={() => console.log('Creating new session')}>New</DropdownItem>
                     </DropdownContent>
                 </Dropdown>
@@ -121,14 +115,16 @@ export const Menu: React.FC = () => {
                         <FontAwesomeIcon icon={faCog}/> Session
                     </DropButton>
                     <DropdownContent>
-                        <DropdownItem onClick={() => handleModalOpen('settings')}>Settings</DropdownItem>
-                        <DropdownItem onClick={() => handleModalOpen('files')}>Files</DropdownItem>
-                        <DropdownItem onClick={() => handleModalOpen('usage')}>Usage</DropdownItem>
-                        <DropdownItem onClick={() => handleModalOpen('threads')}>Threads</DropdownItem>
-                        <DropdownItem onClick={() => handleModalOpen('share')}>Share</DropdownItem>
-                        <DropdownItem onClick={() => handleModalOpen('cancel')}>Cancel</DropdownItem>
-                        <DropdownItem onClick={() => handleModalOpen('delete')}>Delete</DropdownItem>
-                        <DropdownItem onClick={() => handleModalOpen('verbose')}>Show Verbose</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('settings')}>Settings</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('files')}>Files</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('usage')}>Usage</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('threads')}>Threads</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('share')}>Share</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('cancel')}>Cancel</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('delete')}>Delete</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('verbose')}>
+                            {verboseMode ? 'Hide Verbose' : 'Show Verbose'}
+                        </DropdownItem>
                     </DropdownContent>
                 </Dropdown>
 
@@ -137,8 +133,8 @@ export const Menu: React.FC = () => {
                 <Dropdown>
                     <DropButton onClick={() => console.log('About menu clicked')}>About</DropButton>
                     <DropdownContent>
-                        <DropdownItem onClick={() => handleModalOpen('privacy')}>Privacy Policy</DropdownItem>
-                        <DropdownItem onClick={() => handleModalOpen('tos')}>Terms of Service</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('privacy')}>Privacy Policy</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('tos')}>Terms of Service</DropdownItem>
                     </DropdownContent>
                 </Dropdown>
 
@@ -156,8 +152,8 @@ export const Menu: React.FC = () => {
                     <FontAwesomeIcon icon={faSignInAlt}/> Login
                 </DropButton>
                 <DropdownContent>
-                    <DropdownItem onClick={() => handleModalOpen('user-settings')}>Settings</DropdownItem>
-                    <DropdownItem onClick={() => handleModalOpen('user-usage')}>Usage</DropdownItem>
+                    <DropdownItem onClick={() => handleMenuClick('user-settings')}>Settings</DropdownItem>
+                    <DropdownItem onClick={() => handleMenuClick('user-usage')}>Usage</DropdownItem>
                     <DropdownItem onClick={handleLogout}>
                         <FontAwesomeIcon icon={faSignOutAlt}/> Logout
                     </DropdownItem>

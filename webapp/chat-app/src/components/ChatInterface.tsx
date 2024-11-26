@@ -40,14 +40,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         const handleMessage = (data: WebSocketMessage) => {
             console.log('[ChatInterface] Received message:', data);
-            // If data is an object with raw data property, use that instead
-            const messageData = typeof data === 'object' ? data.data : data;
-            if (!messageData || typeof messageData !== 'string') {
+            // Handle HTML messages differently
+            if (data.isHtml) {
+                console.debug('[ChatInterface] Processing HTML message');
+                dispatch(addMessage({
+                    id: `${Date.now()}`,
+                    content: data.data,
+                    type: 'response',
+                    timestamp: data.timestamp,
+                    isHtml: true,
+                    rawHtml: data.data,
+                    version: '1.0',
+                    sanitized: false
+                }));
+                return;
+            }
+            // Handle regular messages
+            if (!data.data || typeof data.data !== 'string') {
                 console.warn('[ChatInterface] Invalid message format received:', data);
                 return;
             }
+            // Ignore connect messages
+            if (data.data.includes('"type":"connect"')) {
+                console.debug('[ChatInterface] Ignoring connect message');
+                return;
+            }
 
-            const [id, version, content] = messageData.split(',');
+            const [id, version, content] = data.data.split(',');
             const timestamp = Date.now();
             const messageObject = {
                 id: `${id}-${timestamp}`,

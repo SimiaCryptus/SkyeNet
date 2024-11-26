@@ -5,42 +5,42 @@ import {RootState} from '../../store';
 import {updateWebSocketConfig} from '../../store/slices/configSlice';
 
 const MenuContainer = styled.div`
-  padding: 1rem;
-  background: ${({theme}) => theme.colors.surface};
-  border-radius: ${({theme}) => theme.sizing.borderRadius.md};
-  border: 1px solid ${({theme}) => theme.colors.border};
+    padding: 1rem;
+    background: ${({theme}) => theme.colors.surface};
+    border-radius: ${({theme}) => theme.sizing.borderRadius.md};
+    border: 1px solid ${({theme}) => theme.colors.border};
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1rem;
+    margin-bottom: 1rem;
 `;
 
 const Label = styled.label`
-  display: block;
-  margin-bottom: 0.5rem;
-  color: ${({theme}) => theme.colors.text.secondary};
+    display: block;
+    margin-bottom: 0.5rem;
+    color: ${({theme}) => theme.colors.text.secondary};
 `;
 
 const Input = styled.input`
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid ${({theme}) => theme.colors.border};
-  border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
-  background: ${({theme}) => theme.colors.background};
-  color: ${({theme}) => theme.colors.text.primary};
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid ${({theme}) => theme.colors.border};
+    border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
+    background: ${({theme}) => theme.colors.background};
+    color: ${({theme}) => theme.colors.text.primary};
 `;
 
 const Button = styled.button`
-  padding: 0.5rem 1rem;
-  background: ${({theme}) => theme.colors.primary};
-  color: white;
-  border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
-  border: none;
-  cursor: pointer;
+    padding: 0.5rem 1rem;
+    background: ${({theme}) => theme.colors.primary};
+    color: white;
+    border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
+    border: none;
+    cursor: pointer;
 
-  &:hover {
-    opacity: 0.9;
-  }
+    &:hover {
+        opacity: 0.9;
+    }
 `;
 
 export const WebSocketMenu: React.FC = () => {

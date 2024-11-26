@@ -108,22 +108,30 @@ export class WebSocketService {
             try {
                 const savedConfig = localStorage.getItem('websocketConfig');
                 if (savedConfig) {
-                    console.log('Using WebSocket config from localStorage:', JSON.parse(savedConfig));
-                    return JSON.parse(savedConfig);
+                    const config = JSON.parse(savedConfig);
+                    console.log('Using WebSocket config from localStorage:', config);
+                    // Ensure protocol is correct based on window.location.protocol
+                    config.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    return config;
                 }
             } catch (error) {
                 console.error('Error reading WebSocket config from localStorage:', error);
             }
         }
-        return state.config.websocket;
+        return {
+            url: window.location.hostname,
+            port: state.config.websocket.port || window.location.port || '8083',
+            protocol: window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        };
     }
 
     private getWebSocketPath(): string {
         const path = window.location.pathname;
         const strings = path.split('/');
-        const wsPath = strings.length >= 2 && strings[1] !== '' && strings[1] !== 'index.html'
-            ? '/' + strings[1] + '/'
-            : '/';
+        let wsPath = '/';
+        if (strings.length >= 2 && strings[1] !== '' && strings[1] !== 'index.html') {
+            wsPath = '/' + strings[1] + '/';
+        }
         console.debug(`[WebSocket] Calculated WebSocket path: ${wsPath}`);
         return wsPath;
     }
@@ -142,20 +150,29 @@ export class WebSocketService {
             if (this.connectionTimeout) {
                 clearTimeout(this.connectionTimeout);
             }
+            // Send initial connection message
+            this.send(JSON.stringify({type: 'connect', sessionId: this.sessionId}));
         };
         this.ws.onmessage = (event) => {
-            console.debug('[WebSocket] Message received:',
-                typeof event.data === 'string'
-                    ? event.data.substring(0, 100) + (event.data.length > 100 ? '...' : '')
-                    : 'Binary data');
+            const truncatedData = typeof event.data === 'string'
+                ? event.data.substring(0, 100) + (event.data.length > 100 ? '...' : '')
+                : 'Binary data';
+            console.debug('[WebSocket] Message received:', truncatedData);
+
             // Enhanced HTML detection and handling
             const isHtml = typeof event.data === 'string' &&
                 (/<[a-z][\s\S]*>/i.test(event.data));
+            // Ignore connect messages
+            if (event.data.includes('"type":"connect"')) {
+                console.debug('[WebSocket] Ignoring connect message');
+                return;
+            }
+
             if (isHtml) {
                 console.debug('[WebSocket] HTML content detected, preserving markup');
             }
 
-            this.messageHandlers.forEach((handler) => handler({
+            const message: Message = {
                 id: event.data.split(',')[0],
                 type: 'response',
                 version: event.data.split(',')[1],
@@ -164,7 +181,8 @@ export class WebSocketService {
                 rawHtml: isHtml ? event.data.split(',')[2] : null,
                 timestamp: Date.now(),
                 sanitized: false
-            }))
+            };
+            this.messageHandlers.forEach((handler) => handler(message));
         };
 
         this.ws.onclose = () => {

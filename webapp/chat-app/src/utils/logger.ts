@@ -21,23 +21,6 @@ class Logger {
         console.log(`Log level set to: ${level}`);
     }
 
-    private log(level: LogLevel, message: string, data?: unknown): void {
-        // Skip debug logs unless debug level is enabled
-        if (level === 'debug' && this.logLevel !== 'debug') {
-            return;
-        }
-
-        const entry: LogEntry = {
-            timestamp: Date.now(),
-            level,
-            message,
-            data
-        };
-
-        this.logHistory.push(entry);
-        console[level](message, data || '');
-    }
-
     public debug(message: string, data?: unknown): void {
         this.log('debug', message, data);
     }
@@ -64,6 +47,23 @@ class Logger {
 
     public clearHistory(): void {
         this.logHistory = [];
+    }
+
+    private log(level: LogLevel, message: string, data?: unknown): void {
+        // Skip debug logs unless debug level is enabled
+        if (level === 'debug' && this.logLevel !== 'debug') {
+            return;
+        }
+
+        const entry: LogEntry = {
+            timestamp: Date.now(),
+            level,
+            message,
+            data
+        };
+
+        this.logHistory.push(entry);
+        console[level](message, data || '');
     }
 }
 

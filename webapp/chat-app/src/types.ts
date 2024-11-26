@@ -12,16 +12,6 @@ export interface LogEntry {
     source?: string;
 }
 
-
-interface UIState {
-    activeTab: string;
-    modalOpen: boolean;
-    modalType: string | null;
-    verboseMode: boolean;
-    theme: ThemeName;
-    logHistory: LogEntry[];
-}
-
 // Message type
 export interface Message {
     id: string;
@@ -62,30 +52,3 @@ export interface UserInfo {
     isAuthenticated: boolean;
     preferences?: Record<string, unknown>;
 }
-
-export interface WebSocketState {
-    connected: boolean;
-    connecting: boolean;
-    error: string | null;
-    lastLog?: LogEntry;
-}
-
-// Logger service interface
-export interface LoggerService {
-    debug(message: string, data?: unknown): void;
-
-    info(message: string, data?: unknown): void;
-
-    warn(message: string, data?: unknown): void;
-
-    error(message: string, data?: unknown): void;
-
-    getHistory(): LogEntry[];
-
-    clearHistory(): void;
-}
-
-// Export types
-export type {
-    UIState
-};

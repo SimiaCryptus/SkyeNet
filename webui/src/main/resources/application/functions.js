@@ -1,15 +1,16 @@
 export async function fetchData(endpoint, useSession = true) {
     try {
-        // Add session id to the endpoint as a path parameter
-        if (useSession) {
-            const sessionId = getSessionId();
-            if (sessionId) {
-                endpoint = endpoint + "?sessionId=" + sessionId;
-            }
-        }
         const modalContent = getCachedElement('modal-content');
         if (modalContent) modalContent.innerHTML = "<div>Loading...</div>";
-        const response = await fetch(endpoint);
+        // Use the configured host/port from the app config
+        const config = window.appConfig || {};
+        const protocol = window.location.protocol;
+        const host = config.websocket?.url || window.location.hostname;
+        const port = config.websocket?.port || window.location.port;
+        // Handle endpoints that already have query parameters
+        const separator = endpoint.includes('?') ? '&' : '?';
+        const url = `${protocol}//${host}:${port}/${endpoint}${useSession ? `${separator}sessionId=${getSessionId()}` : ''}`;
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }

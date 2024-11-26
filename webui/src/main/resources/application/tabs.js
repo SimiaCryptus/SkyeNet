@@ -14,9 +14,9 @@ function setActiveTab(button, tabsContainer, depth = 0) {
     } catch (e) {
         console.warn('Failed to save tab state to localStorage:', e);
     }
-    tabsContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+   tabsContainer.querySelectorAll('button.tab-button').forEach(btn => btn.classList.remove('active'));
     button.classList.add('active');
-    tabsContainer.querySelectorAll('.tab-content').forEach(content => {
+   tabsContainer.querySelectorAll('div.tab-content').forEach(content => {
         if (content.getAttribute('data-tab') === forTab) {
             content.classList.add('active');
             content.style.display = 'block';

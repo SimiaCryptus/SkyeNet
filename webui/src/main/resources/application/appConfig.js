@@ -2,6 +2,10 @@ export let singleInput = false;
 export let stickyInput = false;
 export let loadImages = "true";
 export let showMenubar = true;
+export let websocket = {
+    url: window.location.hostname,
+    port: window.location.port
+};
 
 export function fetchAppConfig(sessionId) {
     return fetch('appInfo?session=' + sessionId)
@@ -27,12 +31,23 @@ export function fetchAppConfig(sessionId) {
                 if (data.loadImages) {
                     loadImages = data.loadImages;
                 }
+                if (data.websocket) {
+                    websocket = data.websocket;
+                }
                 if (data.showMenubar != null) {
                     showMenubar = data.showMenubar;
                     applyMenubarConfig(showMenubar);
                 }
+                // Make config available globally
+                window.appConfig = {
+                    singleInput,
+                    stickyInput,
+                    loadImages,
+                    showMenubar,
+                    websocket
+                };
             }
-            return {singleInput, stickyInput, loadImages, showMenubar};
+            return {singleInput, stickyInput, loadImages, showMenubar, websocket};
         });
 }
 

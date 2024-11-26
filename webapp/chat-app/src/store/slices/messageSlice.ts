@@ -18,7 +18,7 @@ const initialState: MessageState = {
 const sanitizeHtmlContent = (content: string): string => {
     console.debug('Sanitizing HTML content');
     return DOMPurify.sanitize(content, {
-        ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+        ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'button', 'input', 'label', 'select', 'option', 'textarea'],
         ALLOWED_ATTR: ['class', 'href', 'target']
     });
 };
@@ -36,7 +36,8 @@ const messageSlice = createSlice({
             });
             // Only sanitize if not already sanitized
             if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
-                action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
+                action.payload.content = action.payload.rawHtml;
+                // action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                 action.payload.sanitized = true;
                 console.debug('HTML content sanitized');
             }

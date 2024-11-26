@@ -8,7 +8,7 @@ export const useTheme = (initialTheme?: ThemeName): [ThemeName, (theme: ThemeNam
     console.log('useTheme hook initialized with:', {initialTheme});
 
     const dispatch = useDispatch();
-  const currentTheme = useSelector((state: RootState) => state.ui.theme);
+    const currentTheme = useSelector((state: RootState) => state.ui.theme);
     console.log('Current theme from state:', currentTheme);
 
     const updateTheme = useCallback(
@@ -22,14 +22,14 @@ export const useTheme = (initialTheme?: ThemeName): [ThemeName, (theme: ThemeNam
     );
 
     // Use initialTheme if provided and no theme is set in state
-  React.useEffect(() => {
-      console.log('Theme effect running with:', {initialTheme, currentTheme});
-    if (initialTheme && !currentTheme) {
-        console.log('Setting initial theme:', initialTheme);
-      updateTheme(initialTheme);
-    }
-  }, [initialTheme, currentTheme, updateTheme]);
+    React.useEffect(() => {
+        console.log('Theme effect running with:', {initialTheme, currentTheme});
+        if (initialTheme && !currentTheme) {
+            console.log('Setting initial theme:', initialTheme);
+            updateTheme(initialTheme);
+        }
+    }, [initialTheme, currentTheme, updateTheme]);
     console.log('useTheme hook returning:', {currentTheme});
 
-  return [currentTheme, updateTheme];
+    return [currentTheme, updateTheme];
 };
