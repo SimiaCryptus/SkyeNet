@@ -7,6 +7,12 @@ import MessageList from './MessageList';
 import InputArea from './InputArea';
 import websocket from '@services/websocket';
 
+interface WebSocketMessage {
+    data: string;
+    isHtml: boolean;
+    timestamp: number;
+}
+
 interface ChatInterfaceProps {
     sessionId?: string;
     websocket: typeof websocket;
@@ -32,10 +38,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     useEffect(() => {
         console.log('[ChatInterface] Setting up message handler for sessionId:', sessionId);
 
-        const handleMessage = (data: string) => {
+        const handleMessage = (data: WebSocketMessage) => {
             console.log('[ChatInterface] Received message:', data);
+            // If data is an object with raw data property, use that instead
+            const messageData = typeof data === 'object' ? data.data : data;
+            if (!messageData || typeof messageData !== 'string') {
+                console.warn('[ChatInterface] Invalid message format received:', data);
+                return;
+            }
 
-            const [id, version, content] = data.split(',');
+            const [id, version, content] = messageData.split(',');
             const timestamp = Date.now();
             const messageObject = {
                 id: `${id}-${timestamp}`,

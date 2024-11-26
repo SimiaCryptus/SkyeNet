@@ -139,6 +139,12 @@ export const Menu: React.FC = () => {
                     <DropdownContent>
                         <DropdownItem onClick={() => handleModalOpen('privacy')}>Privacy Policy</DropdownItem>
                         <DropdownItem onClick={() => handleModalOpen('tos')}>Terms of Service</DropdownItem>
+                    </DropdownContent>
+                </Dropdown>
+
+                <Dropdown>
+                    <DropButton onClick={() => console.log('About menu clicked')}>Config</DropButton>
+                    <DropdownContent>
                         <WebSocketMenu/>
                     </DropdownContent>
                 </Dropdown>

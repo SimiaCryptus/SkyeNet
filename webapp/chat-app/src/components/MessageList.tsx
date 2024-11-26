@@ -50,9 +50,9 @@ const MessageList: React.FC = () => {
       {messages.map((message) => {
         logger.debug('MessageList - Rendering message', message);
         return (
-          <MessageItem key={`${message.id}-${message.timestamp}`} type={message.type}>
-            {message.content}
-          </MessageItem>
+            <MessageItem key={`${message.id}-${message.timestamp}`} type={message.type}>
+              <div className="message-body" dangerouslySetInnerHTML={{__html: message.content}}/>
+            </MessageItem>
         );
       })}
     </MessageListContainer>

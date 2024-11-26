@@ -30,6 +30,12 @@ export interface Message {
   parentId?: string;
   timestamp: number;
     logLevel?: LogLevel;
+    isHtml?: boolean;
+    rawHtml?: string | null;
+    sanitized?: boolean;
+    dangerouslySetInnerHTML?: {
+        __html: string;
+    };
 }
 
 // AppConfig type 

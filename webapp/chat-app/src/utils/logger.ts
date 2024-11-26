@@ -3,6 +3,7 @@ import {LogEntry, LogLevel} from '../types';
 class Logger {
     private static instance: Logger;
     private logHistory: LogEntry[] = [];
+    private logLevel: LogLevel = 'info';
 
     private constructor() {
         console.log('Logger initialized');
@@ -15,7 +16,17 @@ class Logger {
         return Logger.instance;
     }
 
+    public setLogLevel(level: LogLevel): void {
+        this.logLevel = level;
+        console.log(`Log level set to: ${level}`);
+    }
+
     private log(level: LogLevel, message: string, data?: unknown): void {
+        // Skip debug logs unless debug level is enabled
+        if (level === 'debug' && this.logLevel !== 'debug') {
+            return;
+        }
+
         const entry: LogEntry = {
             timestamp: Date.now(),
             level,
