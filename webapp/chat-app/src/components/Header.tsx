@@ -6,13 +6,13 @@ import {ThemeName} from '../types';
 const HeaderContainer = styled.header`
     background-color: ${({theme}) => theme.colors.surface};
     padding: 1rem;
-    border-bottom: 1px solid ${props => props.theme.colors.border};
+    border-bottom: 1px solid ${(props) => props.theme.colors.border};
 `;
 
 const ThemeSelect = styled.select`
     padding: 0.5rem;
-    border-radius: ${props => props.theme.sizing.borderRadius.sm};
-    border: 1px solid ${props => props.theme.colors.border};
+    border-radius: ${(props) => props.theme.sizing.borderRadius.sm};
+    border: 1px solid ${(props) => props.theme.colors.border};
 `;
 
 interface HeaderProps {
@@ -24,10 +24,7 @@ const Header: React.FC<HeaderProps> = ({onThemeChange}) => {
 
     return (
         <HeaderContainer>
-            <ThemeSelect
-                value={currentTheme}
-                onChange={(e) => setTheme(e.target.value as any)}
-            >
+            <ThemeSelect value={currentTheme} onChange={(e) => setTheme(e.target.value as any)}>
                 <option value="main">Day</option>
                 <option value="night">Night</option>
                 <option value="forest">Forest</option>

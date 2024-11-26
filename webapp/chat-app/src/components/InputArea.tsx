@@ -3,15 +3,15 @@ import styled from 'styled-components';
 
 const InputContainer = styled.div`
     padding: 1rem;
-    background-color: ${props => props.theme.colors.surface};
-    border-top: 1px solid ${props => props.theme.colors.border};
+    background-color: ${(props) => props.theme.colors.surface};
+    border-top: 1px solid ${(props) => props.theme.colors.border};
 `;
 
 const TextArea = styled.textarea`
     width: 100%;
     padding: 0.5rem;
-    border-radius: ${props => props.theme.sizing.borderRadius.md};
-    border: 1px solid ${props => props.theme.colors.border};
+    border-radius: ${(props) => props.theme.sizing.borderRadius.md};
+    border: 1px solid ${(props) => props.theme.colors.border};
     font-family: inherit;
     resize: vertical;
 `;

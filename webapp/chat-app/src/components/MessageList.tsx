@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
+import {useSelector} from 'react-redux';
+import {RootState} from '../store';
 
 const MessageListContainer = styled.div`
   flex: 1;
@@ -36,7 +36,7 @@ const MessageList: React.FC = () => {
   return (
     <MessageListContainer>
       {messages.map((message) => (
-        <MessageItem key={message.id} type={message.type}>
+          <MessageItem key={`${message.id}-${message.timestamp}`} type={message.type}>
           {message.content}
         </MessageItem>
       ))}

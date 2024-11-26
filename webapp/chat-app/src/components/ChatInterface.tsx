@@ -5,8 +5,7 @@ import {useWebSocket} from '../hooks/useWebSocket';
 import {addMessage} from '../store/slices/messageSlice';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
-import Header from './Header';
-import websocket from "@services/websocket";
+import websocket from '@services/websocket';
 
 interface ChatInterfaceProps {
     sessionId?: string;
@@ -20,7 +19,11 @@ const ChatContainer = styled.div`
     height: 100vh;
 `;
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({sessionId: propSessionId, websocket, isConnected}) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({
+                                                         sessionId: propSessionId,
+                                                         websocket,
+                                                         isConnected,
+                                                     }) => {
     const [sessionId] = useState(() => propSessionId || window.location.hash.slice(1) || 'new');
     const dispatch = useDispatch();
     const ws = useWebSocket(sessionId);
@@ -28,14 +31,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({sessionId: propSessionId, 
     useEffect(() => {
         const handleMessage = (data: string) => {
             const [id, version, content] = data.split(',');
+            const timestamp = Date.now();
 
-            dispatch(addMessage({
-                id,
-                content: content,
-                version,
-                type: id.startsWith('u') ? 'user' : 'response',
-                timestamp: Date.now()
-            }));
+            dispatch(
+                addMessage({
+                    id: `${id}-${timestamp}`, // Make IDs more unique
+                    content: content,
+                    version,
+                    type: id.startsWith('u') ? 'user' : 'response',
+                    timestamp,
+                })
+            );
         };
 
         websocket.addMessageHandler(handleMessage);
@@ -44,8 +50,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({sessionId: propSessionId, 
 
     return (
         <ChatContainer>
-            <Header onThemeChange={(theme) => {
-            }}/>
             <MessageList/>
             <InputArea onSendMessage={(msg) => ws.send(msg)}/>
         </ChatContainer>

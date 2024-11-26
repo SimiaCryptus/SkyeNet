@@ -1,5 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AppConfig } from '../../types';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {AppConfig} from '../../types';
 
 const initialState: AppConfig = {
   singleInput: false,

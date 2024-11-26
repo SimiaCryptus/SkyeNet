@@ -1,7 +1,5 @@
-import { DefaultTheme } from 'styled-components';
 // Define theme names
 export type ThemeName = 'main' | 'night' | 'forest' | 'pony' | 'alien';
-
 
 interface ThemeColors {
   primary: string;

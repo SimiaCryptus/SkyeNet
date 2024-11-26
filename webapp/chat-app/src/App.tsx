@@ -4,9 +4,8 @@ import {store} from './store';
 import websocket from './services/websocket';
 import {GlobalStyles} from './styles/GlobalStyles';
 import ChatInterface from './components/ChatInterface';
-import Header from "./components/Header";
-import {setTheme} from "./store/slices/uiSlice";
 import ThemeProvider from './themes/ThemeProvider';
+import {Menu} from "./components/Menu/Menu";
 
 const App: React.FC = () => {
     const sessionId = websocket.getSessionId();
@@ -16,7 +15,7 @@ const App: React.FC = () => {
             <ThemeProvider>
                 <GlobalStyles/>
                 <div className="App">
-                    <Header onThemeChange={setTheme}/>
+                    <Menu/>
                     <ChatInterface 
                         sessionId={sessionId} 
                         websocket={websocket}

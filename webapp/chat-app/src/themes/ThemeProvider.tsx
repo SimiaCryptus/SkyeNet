@@ -1,8 +1,8 @@
 import React from 'react';
-import { ThemeProvider as StyledThemeProvider } from 'styled-components';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { themes } from './themes';
+import {ThemeProvider as StyledThemeProvider} from 'styled-components';
+import {useSelector} from 'react-redux';
+import {RootState} from '../store';
+import {themes} from './themes';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
