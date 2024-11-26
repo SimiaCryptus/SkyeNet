@@ -1,5 +1,13 @@
 // Define theme names
 export type ThemeName = 'main' | 'night' | 'forest' | 'pony' | 'alien';
+// Logger for theme operations
+const logTheme = (action: string, themeName: string) => {
+  console.log(`Theme ${action}: ${themeName}`, {
+    timestamp: new Date().toISOString(),
+    theme: themeName
+  });
+};
+
 
 interface ThemeColors {
   primary: string;
@@ -30,6 +38,11 @@ interface ThemeSizing {
     md: string;
     lg: string;
   };
+  console: {
+    minHeight: string;
+    maxHeight: string;
+    padding: string;
+  };
 }
 
 interface ThemeTypography {
@@ -46,6 +59,11 @@ interface ThemeTypography {
     medium: number;
     bold: number;
   };
+  console: {
+    fontFamily: string;
+    fontSize: string;
+    lineHeight: string;
+  };
 }
 
 export interface ExtendedTheme {
@@ -56,6 +74,12 @@ export interface ExtendedTheme {
 }
 
 const baseTheme = {
+  _init() {
+    console.log('Base theme initialized', {
+      spacing: this.sizing.spacing,
+      typography: this.typography.fontSize
+    });
+  },
   sizing: {
     spacing: {
       xs: '0.25rem',
@@ -68,6 +92,11 @@ const baseTheme = {
       sm: '0.25rem',
       md: '0.5rem',
       lg: '1rem',
+    },
+    console: {
+      minHeight: '200px',
+      maxHeight: '500px',
+      padding: '1rem',
     },
   },
   typography: {
@@ -83,6 +112,11 @@ const baseTheme = {
       regular: 400,
       medium: 500,
       bold: 700,
+    },
+    console: {
+      fontFamily: "'Fira Code', 'Consolas', monospace",
+      fontSize: '0.9rem',
+      lineHeight: '1.5',
     },
   },
 };
@@ -106,6 +140,7 @@ export const mainTheme: ExtendedTheme = {
   },
   ...baseTheme,
 };
+logTheme('initialized', 'main');
 
 export const nightTheme: ExtendedTheme = {
   name: 'night',
@@ -126,6 +161,7 @@ export const nightTheme: ExtendedTheme = {
   },
   ...baseTheme,
 };
+logTheme('initialized', 'night');
 
 export const forestTheme: ExtendedTheme = {
   name: 'forest',
@@ -146,6 +182,7 @@ export const forestTheme: ExtendedTheme = {
   },
   ...baseTheme,
 };
+logTheme('initialized', 'forest');
 
 export const ponyTheme: ExtendedTheme = {
   name: 'pony',
@@ -166,6 +203,7 @@ export const ponyTheme: ExtendedTheme = {
   },
   ...baseTheme,
 };
+logTheme('initialized', 'pony');
 
 export const alienTheme: ExtendedTheme = {
   name: 'alien',
@@ -186,6 +224,7 @@ export const alienTheme: ExtendedTheme = {
   },
   ...baseTheme,
 };
+logTheme('initialized', 'alien');
 
 export const themes = {
   main: mainTheme,
@@ -193,4 +232,14 @@ export const themes = {
   forest: forestTheme,
   pony: ponyTheme,
   alien: alienTheme,
+};
+// Log available themes on initialization
+console.log('Available themes:', Object.keys(themes));
+// Export a helper function to log theme changes
+export const logThemeChange = (from: ThemeName, to: ThemeName) => {
+  console.log('Theme changed', {
+    from,
+    to,
+    timestamp: new Date().toISOString()
+  });
 };

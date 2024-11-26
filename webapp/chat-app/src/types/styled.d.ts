@@ -16,6 +16,24 @@ declare module 'styled-components' {
       success: string;
       warning: string;
       info: string;
+        console: {
+            background: string;
+            text: string;
+            error: string;
+            warning: string;
+            success: string;
+            info: string;
+            debug: string;
+        };
+        console: {
+            background: string;
+            text: string;
+            error: string;
+            warning: string;
+            success: string;
+            info: string;
+            debug: string;
+        };
     };
     sizing: {
       spacing: {
@@ -30,6 +48,16 @@ declare module 'styled-components' {
         md: string;
         lg: string;
       };
+        console: {
+            minHeight: string;
+            maxHeight: string;
+            padding: string;
+        };
+        console: {
+            minHeight: string;
+            maxHeight: string;
+            padding: string;
+        };
     };
     typography: {
       fontFamily: string;
@@ -45,7 +73,28 @@ declare module 'styled-components' {
         medium: number;
         bold: number;
       };
+        console: {
+            fontFamily: string;
+            fontSize: string;
+            lineHeight: string;
+        };
     };
     name: string;
+      logging?: {
+          colors: {
+              error: string;
+              warning: string;
+              info: string;
+              debug: string;
+              success: string;
+          };
+          fontSize: {
+              normal: string;
+              large: string;
+          };
+          padding: {
+              message: string;
+          };
+      };
   }
 }

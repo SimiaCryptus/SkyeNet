@@ -18,7 +18,20 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  return (
+    // Log when component mounts
+    React.useEffect(() => {
+        console.log('[Layout] Component mounted');
+        return () => {
+            console.log('[Layout] Component will unmount');
+        };
+    }, []);
+    // Log when children prop changes
+    React.useEffect(() => {
+        console.log('[Layout] Children updated:', {children});
+    }, [children]);
+    console.log('[Layout] Rendering component');
+
+    return (
     <LayoutContainer>
       {/* Toolbar will go here */}
       {/* Menubar will go here */}

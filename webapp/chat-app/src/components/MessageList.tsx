@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
+import {logger} from '../utils/logger';
 
 const MessageListContainer = styled.div`
   flex: 1;
@@ -31,17 +32,32 @@ const MessageItem = styled.div<{ type: 'user' | 'system' | 'response' }>`
 `;
 
 const MessageList: React.FC = () => {
+  logger.component('MessageList', 'Rendering component');
+  // Log when component is mounted/unmounted
+  React.useEffect(() => {
+    logger.component('MessageList', 'Component mounted');
+    return () => {
+      logger.component('MessageList', 'Component unmounted');
+    };
+  }, []);
   const messages = useSelector((state: RootState) => state.messages.messages);
+  React.useEffect(() => {
+    logger.debug('MessageList - Messages updated', messages);
+  }, [messages]);
 
   return (
     <MessageListContainer>
-      {messages.map((message) => (
+      {messages.map((message) => {
+        logger.debug('MessageList - Rendering message', message);
+        return (
           <MessageItem key={`${message.id}-${message.timestamp}`} type={message.type}>
-          {message.content}
-        </MessageItem>
-      ))}
+            {message.content}
+          </MessageItem>
+        );
+      })}
     </MessageListContainer>
   );
 };
+
 
 export default MessageList;

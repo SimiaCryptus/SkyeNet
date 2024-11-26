@@ -21,11 +21,19 @@ const ToolbarLeft = styled.div`
     gap: ${({theme}) => theme.sizing.spacing.md};
 `;
 
+// BUG: This component does not open the dropdown menu
 const Dropdown = styled.div`
-    position: relative;
-    display: inline-block;
+    color: ${({theme}) => theme.colors.text.primary};
+    padding: ${({theme}) => theme.sizing.spacing.sm};
+    text-decoration: none;
+    cursor: pointer;
 
-    &:hover .dropdown-content {
+    &:hover {
+        background-color: ${({theme}) => theme.colors.primary};
+        color: white;
+    }
+
+    &:hover .div {
         display: block;
     }
 `;
@@ -69,17 +77,24 @@ export const Menu: React.FC = () => {
     const [, setTheme] = useTheme();
 
     const handleThemeChange = (theme: ThemeName) => {
+        console.log(`Theme changed to: ${theme}`);
         setTheme(theme);
     };
 
     const handleModalOpen = (modalType: string) => {
+        console.log(`Opening modal: ${modalType}`);
         dispatch(showModal(modalType));
     };
+
+    const handleLogout = () => {
+        console.log('User logging out');
+    };
+
 
     return (
         <MenuContainer>
             <ToolbarLeft>
-                <DropButton href="/">
+                <DropButton href="/" onClick={() => console.log('Navigating to home')}>
                     <FontAwesomeIcon icon={faHome}/> Home
                 </DropButton>
 
@@ -87,12 +102,12 @@ export const Menu: React.FC = () => {
                     <DropButton>App</DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => handleModalOpen('sessions')}>Session List</DropdownItem>
-                        <DropdownItem href="">New</DropdownItem>
+                        <DropdownItem onClick={() => console.log('Creating new session')}>New</DropdownItem>
                     </DropdownContent>
                 </Dropdown>
 
                 <Dropdown>
-                    <DropButton>
+                    <DropButton onClick={() => console.log('Session menu clicked')}>
                         <FontAwesomeIcon icon={faCog}/> Session
                     </DropButton>
                     <DropdownContent>
@@ -110,7 +125,7 @@ export const Menu: React.FC = () => {
                 <ThemeMenu/>
 
                 <Dropdown>
-                    <DropButton>About</DropButton>
+                    <DropButton onClick={() => console.log('About menu clicked')}>About</DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => handleModalOpen('privacy')}>Privacy Policy</DropdownItem>
                         <DropdownItem onClick={() => handleModalOpen('tos')}>Terms of Service</DropdownItem>
@@ -119,13 +134,13 @@ export const Menu: React.FC = () => {
             </ToolbarLeft>
 
             <Dropdown>
-                <DropButton>
+                <DropButton onClick={() => console.log('Login menu clicked')}>
                     <FontAwesomeIcon icon={faSignInAlt}/> Login
                 </DropButton>
                 <DropdownContent>
                     <DropdownItem onClick={() => handleModalOpen('user-settings')}>Settings</DropdownItem>
                     <DropdownItem onClick={() => handleModalOpen('user-usage')}>Usage</DropdownItem>
-                    <DropdownItem>
+                    <DropdownItem onClick={handleLogout}>
                         <FontAwesomeIcon icon={faSignOutAlt}/> Logout
                     </DropdownItem>
                 </DropdownContent>

@@ -19,11 +19,6 @@
      "jsx": "react-jsx",
     "skipDefaultLibCheck": true,
      "baseUrl": "src",
-    "plugins": [
-      {
-        "name": "typescript-styled-plugin"
-      }
-    ],
      "paths": {
        "@components/*": ["components/*"],
        "@services/*": ["services/*"],
@@ -32,7 +27,12 @@
        "@types/*": ["types/*"],
        "@themes/*": ["themes/*"],
        "@utils/*": ["utils/*"]
-     }
+     },
+    "plugins": [
+      {
+        "name": "typescript-styled-plugin"
+      }
+    ]
    },
    "include": ["src/**/*"],
   "exclude": ["node_modules", "build", "scripts", "**/*.spec.ts", "**/*.test.ts"]

@@ -1,7 +1,7 @@
-import React from 'react';
-import styled from 'styled-components';
-import { DefaultTheme } from 'styled-components';
-import { Message } from '../../types';
+import React, {useEffect} from 'react';
+import styled, {DefaultTheme} from 'styled-components';
+import {Message} from '../../types';
+import {logger} from '../../utils/logger';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -26,6 +26,26 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ messages, onSendMessage }) => {
+  // Log component mount and updates
+  useEffect(() => {
+    logger.component('Chat', 'Component mounted');
+    logger.component('Chat', 'Initial messages:', messages);
+    return () => {
+      logger.component('Chat', 'Component unmounting');
+    };
+  }, []);
+  // Log when messages change
+  useEffect(() => {
+    console.log('[Chat] Messages updated:', messages);
+  }, [messages]);
+  // Wrap onSendMessage to add logging
+  const handleSendMessage = (content: string) => {
+    console.log('[Chat] Sending message:', content);
+    onSendMessage(content);
+  };
+  // Log render
+  console.log('[Chat] Rendering with', messages.length, 'messages');
+
   return (
     <ChatContainer>
       <MessageList>
@@ -37,5 +57,8 @@ const Chat: React.FC<ChatProps> = ({ messages, onSendMessage }) => {
     </ChatContainer>
   );
 };
+// Add display name for better debugging
+Chat.displayName = 'Chat';
+
 
 export default Chat;

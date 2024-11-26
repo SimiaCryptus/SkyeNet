@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import {useTheme} from '../../hooks/useTheme';
 import {themes} from '../../themes/themes';
 
+const LOG_PREFIX = '[ThemeMenu]';
+
 const ThemeMenuContainer = styled.div`
     position: relative;
     display: inline-block;
@@ -52,27 +54,40 @@ const ThemeOption = styled.button`
 export const ThemeMenu: React.FC = () => {
     const [currentTheme, setTheme] = useTheme();
     const [isOpen, setIsOpen] = React.useState(false);
+    React.useEffect(() => {
+        console.log(`${LOG_PREFIX} Current theme:`, currentTheme);
+    }, [currentTheme]);
+
 
     const handleThemeChange = (themeName: keyof typeof themes) => {
+        console.log(`${LOG_PREFIX} Changing theme from ${currentTheme} to ${themeName}`);
         setTheme(themeName);
         setIsOpen(false);
     };
+    const handleMenuToggle = () => {
+        console.log(`${LOG_PREFIX} Theme menu ${!isOpen ? 'opening' : 'closing'}`);
+        setIsOpen(!isOpen);
+    };
+
 
     return (
         <ThemeMenuContainer>
-            <ThemeButton onClick={() => setIsOpen(!isOpen)}>
+            <ThemeButton onClick={handleMenuToggle}>
                 Theme: {currentTheme}
             </ThemeButton>
             {isOpen && (
                 <ThemeList>
-                    {Object.keys(themes).map((themeName) => (
-                        <ThemeOption
-                            key={themeName}
-                            onClick={() => handleThemeChange(themeName as keyof typeof themes)}
-                        >
-                            {themeName}
-                        </ThemeOption>
-                    ))}
+                    {Object.keys(themes).map((themeName) => {
+                        console.log(`${LOG_PREFIX} Rendering theme option:`, themeName);
+                        return (
+                            <ThemeOption
+                                key={themeName}
+                                onClick={() => handleThemeChange(themeName as keyof typeof themes)}
+                            >
+                                {themeName}
+                            </ThemeOption>
+                        );
+                    })}
                 </ThemeList>
             )}
         </ThemeMenuContainer>

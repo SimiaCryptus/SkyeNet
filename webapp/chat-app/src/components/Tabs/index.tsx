@@ -1,6 +1,5 @@
-import React from 'react';
-import styled from 'styled-components';
-import { DefaultTheme } from 'styled-components';
+import React, {useEffect} from 'react';
+import styled, {DefaultTheme} from 'styled-components';
 
 const TabContainer = styled.div`
   display: flex;
@@ -30,22 +29,44 @@ interface TabsProps {
 }
 
 const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, children }) => {
+  // Log when component mounts or updates
+  useEffect(() => {
+    console.log('Tabs component mounted/updated with:', {
+      tabsCount: tabs.length,
+      activeTab,
+      availableTabs: tabs.map(t => t.id)
+    });
+    return () => {
+      console.log('Tabs component unmounting');
+    };
+  }, [tabs, activeTab]);
+  const handleTabClick = (tabId: string) => {
+    console.log('Tab clicked:', tabId);
+    onTabChange(tabId);
+  };
+
   return (
     <TabContainer>
       <TabList>
-        {tabs.map(tab => (
+        {tabs.map(tab => {
+          console.log('Rendering tab:', tab.id, 'active:', activeTab === tab.id);
+          return (
           <TabButton
             key={tab.id}
             active={activeTab === tab.id}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => handleTabClick(tab.id)}
           >
             {tab.label}
           </TabButton>
-        ))}
+          )
+        })}
       </TabList>
       {children}
     </TabContainer>
   );
 };
+// Add component display name for better debugging
+Tabs.displayName = 'Tabs';
+
 
 export default Tabs;

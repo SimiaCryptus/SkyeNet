@@ -22,21 +22,33 @@ interface InputAreaProps {
 
 const InputArea: React.FC<InputAreaProps> = ({onSendMessage}) => {
     const [message, setMessage] = useState('');
+    console.log('[InputArea] Rendering with message:', message);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('[InputArea] Form submitted with message:', message);
         if (message.trim()) {
+            console.log('[InputArea] Sending message:', message);
             onSendMessage(message);
             setMessage('');
+            console.log('[InputArea] Message sent and input cleared');
+        } else {
+            console.log('[InputArea] Empty message, not sending');
         }
     };
+    const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const newMessage = e.target.value;
+        console.log('[InputArea] Message changed:', newMessage);
+        setMessage(newMessage);
+    };
+
 
     return (
         <InputContainer>
             <form onSubmit={handleSubmit}>
                 <TextArea
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={handleMessageChange}
                     placeholder="Type a message..."
                     rows={3}
                 />
@@ -45,5 +57,8 @@ const InputArea: React.FC<InputAreaProps> = ({onSendMessage}) => {
         </InputContainer>
     );
 };
+// Log when component is imported
+console.log('[InputArea] Component loaded');
+
 
 export default InputArea;

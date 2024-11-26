@@ -24,36 +24,50 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                                          websocket,
                                                          isConnected,
                                                      }) => {
+    console.log('[ChatInterface] Rendering with props:', {propSessionId, isConnected});
     const [sessionId] = useState(() => propSessionId || window.location.hash.slice(1) || 'new');
     const dispatch = useDispatch();
     const ws = useWebSocket(sessionId);
 
     useEffect(() => {
+        console.log('[ChatInterface] Setting up message handler for sessionId:', sessionId);
+
         const handleMessage = (data: string) => {
+            console.log('[ChatInterface] Received message:', data);
+
             const [id, version, content] = data.split(',');
             const timestamp = Date.now();
+            const messageObject = {
+                id: `${id}-${timestamp}`,
+                content: content,
+                version,
+                type: id.startsWith('u') ? 'user' as const : 'response' as const,
+                timestamp,
+            };
+            console.log('[ChatInterface] Dispatching message:', messageObject);
 
-            dispatch(
-                addMessage({
-                    id: `${id}-${timestamp}`, // Make IDs more unique
-                    content: content,
-                    version,
-                    type: id.startsWith('u') ? 'user' : 'response',
-                    timestamp,
-                })
-            );
+            dispatch(addMessage(messageObject));
         };
 
         websocket.addMessageHandler(handleMessage);
-        return () => websocket.removeMessageHandler(handleMessage);
+        return () => {
+            console.log('[ChatInterface] Cleaning up message handler for sessionId:', sessionId);
+            websocket.removeMessageHandler(handleMessage);
+        };
     }, [dispatch, ws]);
+    const handleSendMessage = (msg: string) => {
+        console.log('[ChatInterface] Sending message:', msg);
+        ws.send(msg);
+    };
+
 
     return (
         <ChatContainer>
             <MessageList/>
-            <InputArea onSendMessage={(msg) => ws.send(msg)}/>
+            <InputArea onSendMessage={handleSendMessage}/>
         </ChatContainer>
     );
 };
+console.log('[ChatInterface] Component defined');
 
 export default ChatInterface;
