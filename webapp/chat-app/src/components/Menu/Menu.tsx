@@ -7,6 +7,7 @@ import {ThemeName} from '../../themes/themes';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCog, faHome, faSignInAlt, faSignOutAlt} from '@fortawesome/free-solid-svg-icons';
 import {ThemeMenu} from "./ThemeMenu";
+import {WebSocketMenu} from "./WebSocketMenu";
 
 const MenuContainer = styled.div`
     display: flex;
@@ -138,8 +139,10 @@ export const Menu: React.FC = () => {
                     <DropdownContent>
                         <DropdownItem onClick={() => handleModalOpen('privacy')}>Privacy Policy</DropdownItem>
                         <DropdownItem onClick={() => handleModalOpen('tos')}>Terms of Service</DropdownItem>
+                        <WebSocketMenu/>
                     </DropdownContent>
                 </Dropdown>
+
             </ToolbarLeft>
 
             <Dropdown>

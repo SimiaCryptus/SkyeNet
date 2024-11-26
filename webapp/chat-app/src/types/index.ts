@@ -39,6 +39,11 @@ export interface AppConfig {
   loadImages: boolean;
   showMenubar: boolean;
   applicationName?: string;
+  websocket: {
+    url: string;
+    port: string;
+    protocol: string;
+  };
     logging: {
         enabled: boolean;
         level: LogLevel;

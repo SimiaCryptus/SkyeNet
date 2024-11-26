@@ -1,5 +1,23 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {AppConfig} from '../../types';
+// Load websocket config from localStorage or use defaults
+const loadWebSocketConfig = () => {
+  try {
+    const savedConfig = localStorage.getItem('websocketConfig');
+    if (savedConfig) {
+      console.log('Loading saved WebSocket config from localStorage:', JSON.parse(savedConfig));
+      return JSON.parse(savedConfig);
+    }
+  } catch (error) {
+    console.error('Error loading WebSocket config from localStorage:', error);
+  }
+  return {
+    url: window.location.hostname,
+    port: window.location.port,
+    protocol: window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  };
+};
+
 
 const initialState: AppConfig = {
   singleInput: false,
@@ -7,6 +25,7 @@ const initialState: AppConfig = {
   loadImages: true,
   showMenubar: true,
   applicationName: 'Chat App',
+  websocket: loadWebSocketConfig(),
   logging: {
     enabled: true,
     level: 'info',
@@ -19,6 +38,21 @@ const configSlice = createSlice({
   name: 'config',
   initialState,
   reducers: {
+    updateWebSocketConfig: (state, action: PayloadAction<Partial<AppConfig['websocket']>>) => {
+      console.log('Updating WebSocket config:', {
+        current: state.websocket,
+        updates: action.payload,
+        new: {...state.websocket, ...action.payload}
+      });
+      state.websocket = {...state.websocket, ...action.payload};
+      // Persist to localStorage
+      try {
+        localStorage.setItem('websocketConfig', JSON.stringify(state.websocket));
+        console.log('WebSocket config saved to localStorage');
+      } catch (error) {
+        console.error('Error saving WebSocket config to localStorage:', error);
+      }
+    },
     updateConfig: (state: AppConfig, action: PayloadAction<Partial<AppConfig>>) => {
       console.log('Updating config:', {
         current: state,
@@ -72,6 +106,7 @@ export const {
   toggleLoadImages,
   toggleMenubar,
   setApplicationName,
+  updateWebSocketConfig,
 } = configSlice.actions;
 
 export default configSlice.reducer;

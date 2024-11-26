@@ -1,12 +1,28 @@
+import { store } from '../store';
+
 export class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
   private sessionId = '';
   private messageHandlers: ((data: any) => void)[] = [];
-  private protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  private host: string = window.location.hostname;
-  private port: string = window.location.port;
+
+  private getConfig() {
+    const state = store.getState();
+    // Load from localStorage as fallback if store is not yet initialized
+    if (!state.config?.websocket) {
+      try {
+        const savedConfig = localStorage.getItem('websocketConfig');
+        if (savedConfig) {
+          console.log('Using WebSocket config from localStorage:', JSON.parse(savedConfig));
+          return JSON.parse(savedConfig);
+        }
+      } catch (error) {
+        console.error('Error reading WebSocket config from localStorage:', error);
+      }
+    }
+    return state.config.websocket;
+  }
   private isReconnecting = false;
   private connectionTimeout: NodeJS.Timeout | null = null;
 
@@ -21,6 +37,11 @@ export class WebSocketService {
   connect(sessionId: string): void {
     try {
       console.log(`[WebSocket] Initiating connection with sessionId: ${sessionId}`);
+      const config = this.getConfig();
+      if (!config) {
+        throw new Error('WebSocket configuration not available');
+      }
+
       // Clear any existing connection timeout
       if (this.connectionTimeout) {
         clearTimeout(this.connectionTimeout);
@@ -30,11 +51,9 @@ export class WebSocketService {
       const path = this.getWebSocketPath();
       // Only create new connection if not already connected or reconnecting
       if (!this.isConnected() && !this.isReconnecting) {
-        const wsUrl = `${this.protocol}//${this.host}:${this.port}${path}ws?sessionId=${sessionId}`;
+        const wsUrl = `${config.protocol}//${config.url}:${config.port}${path}ws?sessionId=${sessionId}`;
         console.log(`[WebSocket] Connecting to: ${wsUrl}`);
-        this.ws = new WebSocket(
-            wsUrl
-        );
+        this.ws = new WebSocket(wsUrl);
         this.setupEventHandlers();
         // Set connection timeout
         this.connectionTimeout = setTimeout(() => {

@@ -6,3 +6,4 @@ const logMenuComponent = (componentName: string) => {
 // Log when ThemeMenu is imported
 logMenuComponent('ThemeMenu');
 export {ThemeMenu} from './ThemeMenu';
+export {WebSocketMenu} from './WebSocketMenu';
