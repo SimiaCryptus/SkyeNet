@@ -29,7 +29,6 @@ interface TabsProps {
 }
 
 const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, children }) => {
-  // Log when component mounts or updates
   useEffect(() => {
     console.log('Tabs component mounted/updated with:', {
       tabsCount: tabs.length,
@@ -65,7 +64,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, children }) =
     </TabContainer>
   );
 };
-// Add component display name for better debugging
+
 Tabs.displayName = 'Tabs';
 
 

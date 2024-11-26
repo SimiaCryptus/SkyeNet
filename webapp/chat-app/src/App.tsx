@@ -6,6 +6,7 @@ import {GlobalStyles} from './styles/GlobalStyles';
 import ChatInterface from './components/ChatInterface';
 import ThemeProvider from './themes/ThemeProvider';
 import {Menu} from "./components/Menu/Menu";
+import {Modal} from "./components/Modal/Modal";
 
 const App: React.FC = () => {
     console.log('[App] Component rendering');
@@ -41,6 +42,7 @@ const App: React.FC = () => {
                                             websocket={websocket}
                                             isConnected={isConnected}
                                         />
+                                        <Modal/>
                                     </div>
                                 </>
                             );

@@ -27,14 +27,12 @@ const Dropdown = styled.div`
     padding: ${({theme}) => theme.sizing.spacing.sm};
     text-decoration: none;
     cursor: pointer;
+    position: relative;
 
     &:hover {
         background-color: ${({theme}) => theme.colors.primary};
         color: white;
-    }
 
-    &:hover .div {
-        display: block;
     }
 `;
 
@@ -57,6 +55,12 @@ const DropdownContent = styled.div`
     min-width: 160px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     z-index: 1;
+    top: 100%;
+    left: 0;
+
+    ${Dropdown}:hover & {
+        display: block;
+    }
 `;
 
 const DropdownItem = styled.a`
@@ -84,6 +88,11 @@ export const Menu: React.FC = () => {
     const handleModalOpen = (modalType: string) => {
         console.log(`Opening modal: ${modalType}`);
         dispatch(showModal(modalType));
+        // Verify the action was dispatched
+        console.log('[Menu] Modal action dispatched:', {
+            type: 'showModal',
+            modalType
+        });
     };
 
     const handleLogout = () => {

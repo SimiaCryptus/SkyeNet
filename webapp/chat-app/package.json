@@ -25,22 +25,35 @@
     "@types/react-redux": "^7.1.34",
     "@types/react-router-dom": "^5.3.3",
     "@types/styled-components": "^5.1.34",
+    "cross-env": "^7.0.3",
     "eslint": "^8.0.0",
     "typescript": "^4.9.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "cross-env GENERATE_SOURCEMAP=true react-scripts start",
+    "build": "cross-env GENERATE_SOURCEMAP=true INLINE_RUNTIME_CHUNK=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\" --fix",
+    "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\" --fix --max-warnings=0",
     "type-check": "tsc --noEmit"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "no-console": [
+        "warn",
+        {
+          "allow": [
+            "warn",
+            "error"
+          ]
+        }
+      ],
+      "no-debugger": "warn"
+    }
   },
   "browserslist": {
     "production": [

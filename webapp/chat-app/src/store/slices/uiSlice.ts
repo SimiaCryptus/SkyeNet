@@ -24,12 +24,23 @@ const uiSlice = createSlice({
       state.theme = action.payload;
     },
     showModal: (state, action: PayloadAction<string>) => {
-      console.log('[UI Slice] Showing modal:', action.payload);
+      console.log('[UI Slice] Showing modal:', {
+        modalType: action.payload,
+        previousState: {
+          modalOpen: state.modalOpen,
+          modalType: state.modalType
+        }
+      });
       state.modalOpen = true;
       state.modalType = action.payload;
     },
     hideModal: (state) => {
-      console.log('[UI Slice] Hiding modal');
+      console.log('[UI Slice] Hiding modal', {
+        previousState: {
+          modalOpen: state.modalOpen,
+          modalType: state.modalType
+        }
+      });
       state.modalOpen = false;
       state.modalType = null;
     },
