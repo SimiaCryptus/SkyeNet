@@ -1,6 +1,12 @@
 import 'styled-components';
+import {HTMLAttributes} from 'react';
 
 declare module 'styled-components' {
+    export interface StyledComponentProps<T> extends HTMLAttributes<T> {
+        'data-tab'?: string;
+        theme?: DefaultTheme;
+    }
+
     export interface DefaultTheme {
         sizing: {
             spacing: {
@@ -57,6 +63,7 @@ declare module 'styled-components' {
             info: string;
         };
         name: string;
+        activeTab?: string;
         config: {
             stickyInput: boolean;
             singleInput: boolean;

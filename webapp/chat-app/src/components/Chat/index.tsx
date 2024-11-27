@@ -1,7 +1,6 @@
 import React, {useEffect} from 'react';
 import styled from 'styled-components';
 import {Message} from '../../types';
-import Tabs from '../Tabs';
 import MessageList from '../MessageList';
 import InputArea from '../InputArea';
 import {useSelector} from 'react-redux';
@@ -37,12 +36,88 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({messages, onSendMessage}) => {
-    const [activeTab, setActiveTab] = React.useState('chat');
+    console.group(`${LOG_PREFIX} Rendering Chat component`);
+
+    const [activeTab, setActiveTab] = React.useState(() => {
+        const savedTab = localStorage.getItem('activeTab');
+        console.log(`${LOG_PREFIX} Initial active tab:`, {
+            savedTab,
+            fallback: 'chat'
+        });
+        return savedTab || 'chat';
+    });
+    // Validate tab on mount
+    React.useEffect(() => {
+        const validTabs = ['chat', 'files', 'settings'];
+        console.log(`${LOG_PREFIX} Validating active tab:`, {
+            current: activeTab,
+            valid: validTabs.includes(activeTab),
+            allowedTabs: validTabs
+        });
+        if (!validTabs.includes(activeTab)) {
+            console.warn(`${LOG_PREFIX} Invalid active tab "${activeTab}". Resetting to chat.`);
+            setActiveTab('chat');
+        }
+    }, []);
+    // Add debug logging for active tab changes
+    React.useEffect(() => {
+        console.log(`${LOG_PREFIX} Active tab changed:`, activeTab);
+    }, [activeTab]);
     const config = useSelector((state: RootState) => state.config);
     // Add error boundary
     const [error, setError] = React.useState<Error | null>(null);
     // Add error handling for messages prop
     const safeMessages = messages || [];
+    const handleTabChange = (tabId: string) => {
+        console.group(`${LOG_PREFIX} Tab Change Handler`);
+        console.log('Current tab:', activeTab);
+        console.log('Requested tab:', tabId);
+
+        if (tabId === activeTab) {
+            console.log('Tab already active - no change needed');
+            console.groupEnd();
+            return;
+        }
+        try {
+            console.log(`${LOG_PREFIX} Changing tab to:`, tabId);
+            setActiveTab(tabId);
+            // Force a re-render of the tab content
+            setTimeout(() => {
+                const content = document.querySelector(`[data-tab="${tabId}"]`);
+                if (content) {
+                    content.classList.add('active');
+                }
+            }, 0);
+            localStorage.setItem('activeTab', tabId);
+            console.log(`${LOG_PREFIX} Tab change complete:`, {
+                newTab: tabId,
+                savedToStorage: true
+            });
+        } catch (error) {
+            console.error(`${LOG_PREFIX} Error changing tab:`, error);
+        }
+        console.groupEnd();
+    };
+    // Add diagnostic logging for TabContent rendering
+    const renderTabContent = (id: string, content: React.ReactNode) => {
+        const isActive = activeTab === id;
+        console.log(`${LOG_PREFIX} Rendering tab content:`, {
+            id,
+            isActive,
+            hasContent: !!content
+        });
+        return (
+            <TabContent
+                key={id}
+                data-tab={id}
+                style={{display: isActive ? 'flex' : 'none'}}
+                data-testid="chat-tabs"
+            >
+                {content}
+            </TabContent>
+        );
+    };
+
 
     if (error) {
         console.error(`${LOG_PREFIX} Error encountered:`, error);
@@ -99,30 +174,11 @@ const Chat: React.FC<ChatProps> = ({messages, onSendMessage}) => {
 
     return (
         <ChatContainer>
-            <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab}>
-                <TabContent>
-                    {activeTab === 'chat' && (
-                        <>
-                            <MessageList messages={safeMessages}/>
-                            <InputArea onSendMessage={onSendMessage}/>
-                        </>
-                    )}
-                    {activeTab === 'files' && (
-                        <div className="tab-content" data-tab="files">
-                            <h2>Files</h2>
-                            <p>Browse and manage your chat files here.</p>
-                        </div>
-                    )}
-                    {activeTab === 'settings' && (
-                        <div className="tab-content" data-tab="settings">
-                            <h2>Settings</h2>
-                            <p>Configure your chat preferences here.</p>
-                        </div>
-                    )}
-                </TabContent>
-            </Tabs>
+            <MessageList messages={safeMessages}/>
+            <InputArea onSendMessage={onSendMessage}/>
         </ChatContainer>
     );
+    console.groupEnd();
 };
 // Add display name for better debugging
 Chat.displayName = 'Chat';

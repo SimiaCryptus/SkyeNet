@@ -2,6 +2,7 @@ import 'styled-components';
 // Extend the styled-components DefaultTheme interface
 declare module 'styled-components' {
     export interface DefaultTheme {
+        activeTab?: string;
         sizing: {
             spacing: {
                 xs: string;
