@@ -1,14 +1,15 @@
 import React from 'react';
 import {Provider} from 'react-redux';
 import {store} from './store';
-import CodeHighlighter from './components/CodeHighlighter';
-import MermaidDiagram from './components/MermaidDiagram';
+import './App.css';
 import websocket from './services/websocket';
 import {GlobalStyles} from './styles/GlobalStyles';
 import ChatInterface from './components/ChatInterface';
 import ThemeProvider from './themes/ThemeProvider';
 import {Menu} from "./components/Menu/Menu";
 import {Modal} from "./components/Modal/Modal";
+import {setupUIHandlers} from './utils/uiHandlers';
+import {setupMessageHandling} from './utils/messageHandling';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-css';
@@ -26,6 +27,11 @@ const App: React.FC = () => {
 
     const sessionId = websocket.getSessionId();
     const isConnected = websocket.isConnected();
+    // Initialize UI handlers and message handling
+    React.useEffect(() => {
+        setupUIHandlers();
+        setupMessageHandling();
+    }, []);
     console.log('[App] WebSocket state:', {
         sessionId,
         isConnected,
@@ -63,8 +69,6 @@ const App: React.FC = () => {
                                             websocket={websocket}
                                             isConnected={isConnected}
                                         />
-                                        <CodeHighlighter code={`const hello = "world";`}/>
-                                        <MermaidDiagram chart={`graph TD; A-->B; A-->C; B-->D; C-->D;`}/>
                                         <Modal/>
                                     </div>
                                 </>

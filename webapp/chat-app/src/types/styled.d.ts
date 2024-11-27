@@ -25,15 +25,6 @@ declare module 'styled-components' {
                 info: string;
                 debug: string;
             };
-            console: {
-                background: string;
-                text: string;
-                error: string;
-                warning: string;
-                success: string;
-                info: string;
-                debug: string;
-            };
         };
         sizing: {
             spacing: {
@@ -47,11 +38,6 @@ declare module 'styled-components' {
                 sm: string;
                 md: string;
                 lg: string;
-            };
-            console: {
-                minHeight: string;
-                maxHeight: string;
-                padding: string;
             };
             console: {
                 minHeight: string;
@@ -80,7 +66,11 @@ declare module 'styled-components' {
             };
         };
         name: string;
-        logging?: {
+        config: {
+            stickyInput: boolean;
+            singleInput: boolean;
+        };
+        logging: {
             colors: {
                 error: string;
                 warning: string;

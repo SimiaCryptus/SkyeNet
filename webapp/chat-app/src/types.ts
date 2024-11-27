@@ -37,12 +37,18 @@ export interface AppConfig {
         url: string;
         port: string;
         protocol: string;
+        retryAttempts?: number;
+        timeout?: number;
     };
     logging: {
         enabled: boolean;
         level: LogLevel;
         maxEntries?: number;
         persistLogs?: boolean;
+    };
+    theme: {
+        current: ThemeName;
+        autoSwitch: boolean;
     };
 }
 

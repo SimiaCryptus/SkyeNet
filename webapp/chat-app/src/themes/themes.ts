@@ -71,6 +71,26 @@ export interface ExtendedTheme {
     sizing: ThemeSizing;
     typography: ThemeTypography;
     name: string;
+    config: {
+        stickyInput: boolean;
+        singleInput: boolean;
+    };
+    logging: {
+        colors: {
+            error: string;
+            warning: string;
+            info: string;
+            debug: string;
+            success: string;
+        };
+        fontSize: {
+            normal: string;
+            large: string;
+        };
+        padding: {
+            message: string;
+        };
+    };
 }
 
 const baseTheme = {
@@ -79,6 +99,26 @@ const baseTheme = {
             spacing: this.sizing.spacing,
             typography: this.typography.fontSize
         });
+    },
+    config: {
+        stickyInput: true,
+        singleInput: false
+    },
+    logging: {
+        colors: {
+            error: '#FF3B30',
+            warning: '#FF9500',
+            info: '#007AFF',
+            debug: '#5856D6',
+            success: '#34C759'
+        },
+        fontSize: {
+            normal: '0.9rem',
+            large: '1.1rem'
+        },
+        padding: {
+            message: '0.5rem'
+        }
     },
     sizing: {
         spacing: {

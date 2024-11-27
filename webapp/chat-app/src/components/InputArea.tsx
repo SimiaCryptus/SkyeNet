@@ -1,10 +1,13 @@
 import React, {useState} from 'react';
 import styled from 'styled-components';
+import {useSelector} from 'react-redux';
+import {RootState} from '../store';
 
 const InputContainer = styled.div`
     padding: 1rem;
     background-color: ${(props) => props.theme.colors.surface};
     border-top: 1px solid ${(props) => props.theme.colors.border};
+    display: ${({theme}) => theme.config?.singleInput ? 'none' : 'block'};
 `;
 
 const TextArea = styled.textarea`
@@ -14,6 +17,8 @@ const TextArea = styled.textarea`
     border: 1px solid ${(props) => props.theme.colors.border};
     font-family: inherit;
     resize: vertical;
+    min-height: 40px;
+    max-height: ${({theme}) => theme.sizing.console.maxHeight};
 `;
 
 interface InputAreaProps {
@@ -22,6 +27,7 @@ interface InputAreaProps {
 
 const InputArea: React.FC<InputAreaProps> = ({onSendMessage}) => {
     const [message, setMessage] = useState('');
+    const config = useSelector((state: RootState) => state.config);
     console.log('[InputArea] Rendering with message:', message);
 
     const handleSubmit = (e: React.FormEvent) => {

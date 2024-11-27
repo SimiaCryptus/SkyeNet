@@ -6,6 +6,8 @@ import {Message} from "../types";
 
 export const useWebSocket = (sessionId: string) => {
     const [isConnected, setIsConnected] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
+    const [isReconnecting, setIsReconnecting] = useState(false);
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -36,21 +38,33 @@ export const useWebSocket = (sessionId: string) => {
         const handleConnectionChange = (connected: boolean) => {
             console.log('[WebSocket] Disconnected');
             setIsConnected(connected);
+            if (connected) {
+                setError(null);
+                setIsReconnecting(false);
+            }
+        };
+        const handleError = (err: Error) => {
+            setError(err);
+            setIsReconnecting(true);
         };
 
         WebSocketService.addMessageHandler(handleMessage);
         WebSocketService.addConnectionHandler(handleConnectionChange);
+        WebSocketService.addErrorHandler(handleError);
         WebSocketService.connect(sessionId);
 
         return () => {
             console.log('[WebSocket] Cleaning up connection');
             WebSocketService.removeMessageHandler(handleMessage);
             WebSocketService.removeConnectionHandler(handleConnectionChange);
+            WebSocketService.removeErrorHandler(handleError);
             WebSocketService.disconnect();
         };
     }, [sessionId]);
 
     return {
+        error,
+        isReconnecting,
         send: (message: string) => {
             console.log('[WebSocket] Sending message:', message);
             return WebSocketService.send(message);

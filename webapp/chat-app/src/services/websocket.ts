@@ -8,8 +8,34 @@ export class WebSocketService {
     private sessionId = '';
     private messageHandlers: ((data: Message) => void)[] = [];
     private connectionHandlers: ((connected: boolean) => void)[] = [];
+    private errorHandlers: ((error: Error) => void)[] = [];
     private isReconnecting = false;
     private connectionTimeout: NodeJS.Timeout | null = null;
+    private messageQueue: string[] = [];
+
+    public addErrorHandler(handler: (error: Error) => void): void {
+        this.errorHandlers.push(handler);
+        console.log('[WebSocket] Error handler added');
+    }
+
+    public removeErrorHandler(handler: (error: Error) => void): void {
+        this.errorHandlers = this.errorHandlers.filter(h => h !== handler);
+        console.log('[WebSocket] Error handler removed');
+    }
+
+    queueMessage(message: string) {
+        this.messageQueue.push(message);
+        this.processMessageQueue();
+    }
+
+    private processMessageQueue() {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+            while (this.messageQueue.length > 0) {
+                const message = this.messageQueue.shift();
+                if (message) this.send(message);
+            }
+        }
+    }
 
     public addConnectionHandler(handler: (connected: boolean) => void): void {
         this.connectionHandlers.push(handler);
@@ -195,6 +221,7 @@ export class WebSocketService {
 
         this.ws.onerror = (error) => {
             console.error('[WebSocket] Error occurred:', error);
+            this.errorHandlers.forEach(handler => handler(new Error('WebSocket connection error')));
             if (this.ws?.readyState !== WebSocket.OPEN) {
                 this.attemptReconnect();
             }

@@ -5,11 +5,21 @@ import {logger} from '../../utils/logger';
 import Tabs from '../Tabs';
 import MessageList from '../MessageList';
 import InputArea from '../InputArea';
+import {useSelector} from 'react-redux';
+import {RootState} from '../../store';
 
 const ChatContainer = styled.div`
     display: flex;
     flex-direction: column;
     height: 100%;
+`;
+const MainInput = styled.form`
+    position: ${({theme}) => theme.config?.stickyInput ? 'sticky' : 'relative'};
+    bottom: 0;
+    display: ${({theme}) => theme.config?.singleInput ? 'none' : 'block'};
+    z-index: 1;
+    padding: 1rem;
+    background: ${({theme}) => theme.colors.surface};
 `;
 
 const TabContent = styled.div`
@@ -26,6 +36,20 @@ interface ChatProps {
 
 const Chat: React.FC<ChatProps> = ({messages, onSendMessage}) => {
     const [activeTab, setActiveTab] = React.useState('chat');
+    const config = useSelector((state: RootState) => state.config);
+    // Add error boundary
+    const [error, setError] = React.useState<Error | null>(null);
+    if (error) {
+        return (
+            <div className="error-boundary">
+                <h2>Something went wrong</h2>
+                <p>{error.message}</p>
+                <button onClick={() => setError(null)}>Try again</button>
+            </div>
+        );
+    }
+
+
     const tabs = [
         {id: 'chat', label: 'Chat'},
         {id: 'files', label: 'Files'},
