@@ -37,25 +37,44 @@ interface MessageListProps {
 }
 
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
-    logger.component('MessageList', 'Rendering component');
+    logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
+
     // Log when component is mounted/unmounted
     React.useEffect(() => {
-        logger.component('MessageList', 'Component mounted');
+        logger.component('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
         return () => {
-            logger.component('MessageList', 'Component unmounted');
+            logger.component('MessageList', 'Component unmounted', {timestamp: new Date().toISOString()});
         };
     }, []);
+
     const storeMessages = useSelector((state: RootState) => state.messages.messages);
-    const messages = propMessages || storeMessages;
+    // Ensure messages is always an array
+    const messages = Array.isArray(propMessages) ? propMessages :
+        Array.isArray(storeMessages) ? storeMessages : [];
 
     React.useEffect(() => {
-        logger.debug('MessageList - Messages updated', messages);
+        logger.debug('MessageList - Messages updated', {
+            messageCount: messages.length,
+            messages: messages,
+            source: propMessages ? 'props' : 'store'
+        });
     }, [messages]);
 
     return (
         <MessageListContainer>
             {messages.map((message) => {
-                logger.debug('MessageList - Rendering message', message);
+                logger.debug('MessageList - Rendering message', {
+                    id: message.id,
+                    type: message.type,
+                    timestamp: message.timestamp,
+                    contentLength: message.content?.length || 0
+                });
+                // Log message render before returning JSX
+                logger.debug('MessageList - Message rendered', {
+                    id: message.id,
+                    type: message.type
+                });
+
                 return (
                     <MessageItem key={`${message.id}-${message.timestamp}-${Math.random()}`} type={message.type}>
                         <div className="message-body" dangerouslySetInnerHTML={{__html: message.content}}/>

@@ -1,13 +1,15 @@
 import {store} from '../store';
-import {toggleVerbose} from '../store/slices/uiSlice';
-import {showModal} from '../store/slices/uiSlice';
+import {showModal, toggleVerbose} from '../store/slices/uiSlice';
 import WebSocketService from '../services/websocket';
 
 export const setupUIHandlers = () => {
+    console.log('Setting up UI event handlers...');
+
     // Keyboard shortcuts
     document.addEventListener('keydown', (event) => {
         if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'v') {
             event.preventDefault();
+            console.log('Keyboard shortcut triggered: Toggle verbose mode');
             store.dispatch(toggleVerbose());
         }
     });
@@ -19,6 +21,7 @@ export const setupUIHandlers = () => {
             event.preventDefault();
             const modalType = target.getAttribute('data-modal');
             if (modalType) {
+                console.log(`Modal trigger clicked: ${modalType}`);
                 store.dispatch(showModal(modalType));
             }
         }
@@ -32,11 +35,14 @@ export const setupUIHandlers = () => {
         
         if (messageAction && messageId) {
             event.preventDefault();
+            console.log(`Message action triggered - ID: ${messageId}, Action: ${messageAction}`);
             handleMessageAction(messageId, messageAction);
         }
     });
+    console.log('UI event handlers setup complete');
 };
 
 const handleMessageAction = (messageId: string, action: string) => {
+    console.log(`Sending message action to WebSocket - ID: ${messageId}, Action: ${action}`);
     WebSocketService.send(`!${messageId},${action}`);
 };

@@ -2,6 +2,17 @@ import React, {useState} from 'react';
 import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
+// Debug logging utility
+const DEBUG = true;
+const log = (message: string, data?: any) => {
+    if (DEBUG) {
+        if (data) {
+            console.log(`[InputArea] ${message}`, data);
+        } else {
+            console.log(`[InputArea] ${message}`);
+        }
+    }
+};
 
 const InputContainer = styled.div`
     padding: 1rem;
@@ -26,27 +37,44 @@ interface InputAreaProps {
 }
 
 const InputArea: React.FC<InputAreaProps> = ({onSendMessage}) => {
+    log('Initializing component');
     const [message, setMessage] = useState('');
     const config = useSelector((state: RootState) => state.config);
-    console.log('[InputArea] Rendering with message:', message);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('[InputArea] Form submitted with message:', message);
+        log('Submit attempt');
         if (message.trim()) {
-            console.log('[InputArea] Sending message:', message);
+            setIsSubmitting(true);
+            log('Sending message', {
+                messageLength: message.length,
+                message: message.substring(0, 100) + (message.length > 100 ? '...' : '')
+            });
             onSendMessage(message);
             setMessage('');
-            console.log('[InputArea] Message sent and input cleared');
+            setIsSubmitting(false);
+            log('Message sent and form reset');
         } else {
-            console.log('[InputArea] Empty message, not sending');
+            log('Empty message, not sending');
         }
     };
+
     const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newMessage = e.target.value;
-        console.log('[InputArea] Message changed:', newMessage);
+        log('Message changed', {
+            length: newMessage.length,
+            isEmpty: newMessage.trim().length === 0
+        });
         setMessage(newMessage);
     };
+
+    React.useEffect(() => {
+        log('Component mounted', {configState: config});
+        return () => {
+            log('Component unmounting');
+        };
+    }, [config]);
 
 
     return (
@@ -63,8 +91,8 @@ const InputArea: React.FC<InputAreaProps> = ({onSendMessage}) => {
         </InputContainer>
     );
 };
-// Log when component is imported
-console.log('[InputArea] Component loaded');
+// Log when module is imported
+log('Module loaded');
 
 
 export default InputArea;

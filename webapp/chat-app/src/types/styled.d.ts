@@ -2,30 +2,6 @@ import 'styled-components';
 
 declare module 'styled-components' {
     export interface DefaultTheme {
-        colors: {
-            primary: string;
-            secondary: string;
-            background: string;
-            surface: string;
-            text: {
-                primary: string;
-                secondary: string;
-            };
-            border: string;
-            error: string;
-            success: string;
-            warning: string;
-            info: string;
-            console: {
-                background: string;
-                text: string;
-                error: string;
-                warning: string;
-                success: string;
-                info: string;
-                debug: string;
-            };
-        };
         sizing: {
             spacing: {
                 xs: string;
@@ -65,6 +41,21 @@ declare module 'styled-components' {
                 lineHeight: string;
             };
         };
+        colors: {
+            primary: string;
+            secondary: string;
+            background: string;
+            surface: string;
+            text: {
+                primary: string;
+                secondary: string;
+            };
+            border: string;
+            error: string;
+            success: string;
+            warning: string;
+            info: string;
+        };
         name: string;
         config: {
             stickyInput: boolean;
@@ -77,13 +68,37 @@ declare module 'styled-components' {
                 info: string;
                 debug: string;
                 success: string;
+                trace: string;
+                verbose: string;
+                system: string;
             };
             fontSize: {
                 normal: string;
                 large: string;
+                small: string;
+                system: string;
             };
             padding: {
                 message: string;
+                container: string;
+                timestamp: string;
+            };
+            background: {
+                error: string;
+                warning: string;
+                info: string;
+                debug: string;
+                success: string;
+                system: string;
+            };
+            border: {
+                radius: string;
+                style: string;
+                width: string;
+            };
+            timestamp: {
+                format: string;
+                color: string;
             };
         };
     }

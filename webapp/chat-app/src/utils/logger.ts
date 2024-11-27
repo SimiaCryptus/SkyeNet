@@ -1,12 +1,26 @@
 import {LogEntry, LogLevel} from '../types';
 
 class Logger {
+    private readonly LOG_LEVELS = {
+        debug: 0,
+        info: 1,
+        warn: 2,
+        error: 3
+    };
+    private isDevelopment = process.env.NODE_ENV === 'development';
+    private groupDepth = 0;
     private static instance: Logger;
     private logHistory: LogEntry[] = [];
     private logLevel: LogLevel = 'info';
+    private readonly logLevelSeverity: Record<LogLevel, number> = {
+        debug: 0,
+        info: 1,
+        warn: 2,
+        error: 3
+    };
 
     private constructor() {
-        console.log('Logger initialized');
+        console.log('%cLogger initialized', 'color: #8a2be2; font-weight: bold;');
     }
 
     public static getInstance(): Logger {
@@ -18,7 +32,7 @@ class Logger {
 
     public setLogLevel(level: LogLevel): void {
         this.logLevel = level;
-        console.log(`Log level set to: ${level}`);
+        console.log(`%cLog level set to: ${level}`, 'color: #8a2be2; font-style: italic;');
     }
 
     public debug(message: string, data?: unknown): void {
@@ -38,7 +52,12 @@ class Logger {
     }
 
     public component(name: string, message: string, data?: unknown): void {
-        this.log('debug', `[${name}] ${message}`, data);
+        const formattedMessage = `%c[${name}]%c ${message}`;
+        const formattedData = {
+            styles: ['color: #4CAF50; font-weight: bold', 'color: inherit'],
+            originalData: data
+        };
+        this.log('debug', formattedMessage, formattedData);
     }
 
     public getHistory(): LogEntry[] {
@@ -47,11 +66,27 @@ class Logger {
 
     public clearHistory(): void {
         this.logHistory = [];
+        console.clear();
+        console.log('%cLog history cleared', 'color: #8a2be2; font-style: italic;');
+    }
+
+    public group(label: string): void {
+        this.groupDepth++;
+        console.group(label);
+    }
+
+    public groupEnd(): void {
+        this.groupDepth = Math.max(0, this.groupDepth - 1);
+        console.groupEnd();
     }
 
     private log(level: LogLevel, message: string, data?: unknown): void {
-        // Skip debug logs unless debug level is enabled
-        if (level === 'debug' && this.logLevel !== 'debug') {
+        // Skip non-critical logs in production
+        if (!this.isDevelopment && level !== 'error') {
+            return;
+        }
+        // Skip debug logs if not at debug level
+        if (level === 'debug' && this.LOG_LEVELS[this.logLevel] > this.LOG_LEVELS.debug) {
             return;
         }
 
@@ -63,7 +98,19 @@ class Logger {
         };
 
         this.logHistory.push(entry);
-        console[level](message, data || '');
+        const timestamp = new Date(entry.timestamp).toLocaleTimeString();
+        const logStyles: Record<LogLevel, string> = {
+            debug: 'color: #6c757d',
+            info: 'color: #17a2b8',
+            warn: 'color: #ffc107; font-weight: bold',
+            error: 'color: #dc3545; font-weight: bold'
+        };
+        console[level](
+            `%c${timestamp} ${'.'.repeat(this.groupDepth)}[${level}]:%c ${message}`,
+            logStyles[level],
+            'color: inherit',
+            data || ''
+        );
     }
 }
 

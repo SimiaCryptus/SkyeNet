@@ -1,12 +1,21 @@
 import {createGlobalStyle, DefaultTheme} from 'styled-components';
+// Enhanced logging function with timestamp
+const logStyleChange = (component: string, property: string, value: any) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] GlobalStyles: ${component} - ${property}:`, value);
+};
+
 // Log when global styles are being applied
 const logThemeChange = (theme: DefaultTheme) => {
-    console.log('Applying global styles with theme:', {
+    const timestamp = new Date().toISOString();
+    console.group(`[${timestamp}] GlobalStyles: Theme Application`);
+    console.log('Theme configuration:', {
         background: theme.colors.background,
         textColor: theme.colors.text.primary,
         fontFamily: theme.typography.fontFamily,
         fontSize: theme.typography.fontSize.md
     });
+    console.groupEnd();
 };
 
 export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
@@ -18,19 +27,22 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
 
     body {
         font-family: ${({theme}: { theme: DefaultTheme }) => {
-            logThemeChange(theme);
+            logStyleChange('body', 'font-family', theme.typography.fontFamily);
             return theme.typography.fontFamily;
         }};
         background-color: ${({theme}: { theme: DefaultTheme }) => {
-            console.log('Setting background color:', theme.colors.background);
+            logStyleChange('body', 'background-color', theme.colors.background);
             return theme.colors.background;
         }};
         color: ${({theme}: { theme: DefaultTheme }) => {
-            console.log('Setting text color:', theme.colors.text.primary);
+            logStyleChange('body', 'color', theme.colors.text.primary);
             return theme.colors.text.primary;
         }};
         line-height: 1.5;
-        font-size: ${({theme}: { theme: DefaultTheme }) => theme.typography.fontSize.md};
+        font-size: ${({theme}: { theme: DefaultTheme }) => {
+            logStyleChange('body', 'font-size', theme.typography.fontSize.md);
+            return theme.typography.fontSize.md;
+        }};
     }
 
     .chat-input {
@@ -79,7 +91,7 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
         &.theme-transition-complete:after {
             opacity: 1;
             ${() => {
-                console.log('Theme transition completed');
+                logStyleChange('body', 'transition', 'completed');
                 return '';
             }}
         }

@@ -1,8 +1,37 @@
 // Define theme names
 export type ThemeName = 'main' | 'night' | 'forest' | 'pony' | 'alien';
+// Enhanced logger configuration
+const logger = {
+    styles: {
+        theme: 'color: #4CAF50; font-weight: bold',
+        action: 'color: #2196F3; font-weight: bold',
+        timestamp: 'color: #9E9E9E',
+        details: 'color: #757575',
+    },
+    log(action: string, themeName: string, details?: object) {
+        console.groupCollapsed(
+            `%cTheme %c${action} %c${themeName}`,
+            this.styles.theme,
+            this.styles.action,
+            this.styles.theme
+        );
+        console.log(
+            '%cTimestamp:%c %s',
+            this.styles.details,
+            'color: inherit',
+            new Date().toISOString()
+        );
+        if (details) {
+            console.log('%cDetails:', this.styles.details);
+            console.table(details);
+        }
+        console.groupEnd();
+    }
+};
+
 // Logger for theme operations
 const logTheme = (action: string, themeName: string) => {
-    console.log(`Theme ${action}: ${themeName}`, {
+    logger.log(action, themeName, {
         timestamp: new Date().toISOString(),
         theme: themeName
     });
@@ -66,7 +95,7 @@ interface ThemeTypography {
     };
 }
 
-export interface ExtendedTheme {
+interface ExtendedTheme {
     colors: ThemeColors;
     sizing: ThemeSizing;
     typography: ThemeTypography;
@@ -82,20 +111,44 @@ export interface ExtendedTheme {
             info: string;
             debug: string;
             success: string;
+            trace: string;
+            verbose: string;
+            system: string;
         };
         fontSize: {
             normal: string;
             large: string;
+            small: string;
+            system: string;
         };
         padding: {
             message: string;
+            container: string;
+            timestamp: string;
+        };
+        background: {
+            error: string;
+            warning: string;
+            info: string;
+            debug: string;
+            success: string;
+            system: string;
+        };
+        border: {
+            radius: string;
+            style: string;
+            width: string;
+        };
+        timestamp: {
+            format: string;
+            color: string;
         };
     };
 }
 
 const baseTheme = {
     _init() {
-        console.log('Base theme initialized', {
+        logger.log('base initialized', 'default', {
             spacing: this.sizing.spacing,
             typography: this.typography.fontSize
         });
@@ -110,14 +163,38 @@ const baseTheme = {
             warning: '#FF9500',
             info: '#007AFF',
             debug: '#5856D6',
-            success: '#34C759'
+            success: '#34C759',
+            trace: '#8E8E93',
+            verbose: '#C7C7CC',
+            system: '#48484A'
         },
         fontSize: {
             normal: '0.9rem',
-            large: '1.1rem'
+            large: '1.1rem',
+            small: '0.8rem',
+            system: '0.85rem'
         },
         padding: {
-            message: '0.5rem'
+            message: '0.5rem',
+            container: '1rem',
+            timestamp: '0.25rem'
+        },
+        background: {
+            error: '#FFE5E5',
+            warning: '#FFF3E0',
+            info: '#E3F2FD',
+            debug: '#F3E5F5',
+            success: '#E8F5E9',
+            system: '#FAFAFA'
+        },
+        border: {
+            radius: '4px',
+            style: 'solid',
+            width: '1px'
+        },
+        timestamp: {
+            format: 'HH:mm:ss',
+            color: '#8E8E93'
         }
     },
     sizing: {
@@ -273,13 +350,19 @@ export const themes = {
     pony: ponyTheme,
     alien: alienTheme,
 };
-// Log available themes on initialization
-console.log('Available themes:', Object.keys(themes));
+// Enhanced logging for available themes
+logger.log('available', 'all', {
+    count: Object.keys(themes).length,
+    themes: Object.keys(themes)
+});
+
 // Export a helper function to log theme changes
 export const logThemeChange = (from: ThemeName, to: ThemeName) => {
-    console.log('Theme changed', {
+    logger.log('changed', `${from} → ${to}`, {
         from,
         to,
         timestamp: new Date().toISOString()
     });
 };
+// Export logger for use in other components
+export const themeLogger = logger;

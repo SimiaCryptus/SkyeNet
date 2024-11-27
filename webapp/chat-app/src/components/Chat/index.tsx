@@ -1,12 +1,14 @@
 import React, {useEffect} from 'react';
 import styled from 'styled-components';
 import {Message} from '../../types';
-import {logger} from '../../utils/logger';
 import Tabs from '../Tabs';
 import MessageList from '../MessageList';
 import InputArea from '../InputArea';
 import {useSelector} from 'react-redux';
 import {RootState} from '../../store';
+
+const LOG_PREFIX = '[Chat]';
+
 
 const ChatContainer = styled.div`
     display: flex;
@@ -39,7 +41,11 @@ const Chat: React.FC<ChatProps> = ({messages, onSendMessage}) => {
     const config = useSelector((state: RootState) => state.config);
     // Add error boundary
     const [error, setError] = React.useState<Error | null>(null);
+    // Add error handling for messages prop
+    const safeMessages = messages || [];
+
     if (error) {
+        console.error(`${LOG_PREFIX} Error encountered:`, error);
         return (
             <div className="error-boundary">
                 <h2>Something went wrong</h2>
@@ -58,23 +64,38 @@ const Chat: React.FC<ChatProps> = ({messages, onSendMessage}) => {
 
     // Log component mount and updates
     useEffect(() => {
-        logger.component('Chat', 'Component mounted');
-        logger.component('Chat', 'Initial messages:', messages);
+        console.group(`${LOG_PREFIX} Component Lifecycle`);
+        console.log('Component mounted');
+        console.log('Initial messages:', messages);
+        console.groupEnd();
+
         return () => {
-            logger.component('Chat', 'Component unmounting');
+            console.log(`${LOG_PREFIX} Component unmounting`);
         };
-    }, []);
+    }, [messages]);
     // Save active tab to localStorage when it changes
     useEffect(() => {
-        logger.component('Chat', 'Saved active tab:', activeTab);
+        console.log(`${LOG_PREFIX} Tab changed:`, {
+            activeTab,
+            timestamp: new Date().toISOString()
+        });
     }, [activeTab]);
 
 
     useEffect(() => {
-        console.log('[Chat] Messages updated:', messages);
+        console.group(`${LOG_PREFIX} Messages Updated`);
+        console.log('Count:', messages.length);
+        console.log('Latest message:', messages[messages.length - 1]);
+        console.log('Timestamp:', new Date().toISOString());
+        console.groupEnd();
     }, [messages]);
 
-    console.log('[Chat] Rendering with', messages.length, 'messages');
+    console.debug(`${LOG_PREFIX} Rendering`, {
+        messageCount: messages.length,
+        activeTab,
+        hasError: !!error,
+        configEnabled: !!config
+    });
 
     return (
         <ChatContainer>
@@ -82,7 +103,7 @@ const Chat: React.FC<ChatProps> = ({messages, onSendMessage}) => {
                 <TabContent>
                     {activeTab === 'chat' && (
                         <>
-                            <MessageList messages={messages}/>
+                            <MessageList messages={safeMessages}/>
                             <InputArea onSendMessage={onSendMessage}/>
                         </>
                     )}

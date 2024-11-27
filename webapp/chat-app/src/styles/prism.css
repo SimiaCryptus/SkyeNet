@@ -144,3 +144,42 @@ code {
     font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Console logging styles */
+.console-log {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 8px 0;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+.console-log-info {
+    color: #4CAF50;
+}
+
+.console-log-warn {
+    color: #FFC107;
+}
+
+.console-log-error {
+    color: #F44336;
+}
+
+.console-log-debug {
+    color: #2196F3;
+}
+
+.console-log-timestamp {
+    color: #9E9E9E;
+    font-size: 0.9em;
+    margin-right: 8px;
+}
+
+.console-log-object {
+    background-color: #383838;
+    padding: 8px;
+    border-radius: 2px;
+    margin-top: 4px;
+}

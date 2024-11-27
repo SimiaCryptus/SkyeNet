@@ -1,6 +1,9 @@
 import React, {useEffect} from 'react';
 import styled, {DefaultTheme} from 'styled-components';
 
+const LOG_PREFIX = '[Tabs]';
+
+
 const TabContainer = styled.div`
     display: flex;
     flex-direction: column;
@@ -83,35 +86,51 @@ interface TabsProps {
 
 const Tabs: React.FC<TabsProps> = ({tabs, activeTab, onTabChange, children}) => {
     useEffect(() => {
-        console.log('Tabs component mounted/updated with:', {
-            tabsCount: tabs.length,
-            activeTab,
-            availableTabs: tabs.map(t => t.id)
+        console.group(`${LOG_PREFIX} Component Lifecycle`);
+        console.log('Component mounted/updated', {
+            state: {
+                tabsCount: tabs.length,
+                activeTab,
+                availableTabs: tabs.map(t => t.id)
+            }
         });
+
         // Restore the selected tab from localStorage
         const savedTab = localStorage.getItem('activeTab');
         if (savedTab && tabs.some(tab => tab.id === savedTab)) {
+            console.log(`${LOG_PREFIX} Restoring saved tab:`, savedTab);
             onTabChange(savedTab);
         } else if (!tabs.some(tab => tab.id === activeTab)) {
-            console.warn(`Active tab "${activeTab}" not found in available tabs. Defaulting to first tab.`);
+            console.warn(`${LOG_PREFIX} Active tab "${activeTab}" not found in available tabs. Defaulting to first tab.`);
             onTabChange(tabs[0].id);
         }
-        if (!tabs.some(tab => tab.id === activeTab)) {
-            console.warn(`Active tab "${activeTab}" not found in available tabs. Defaulting to first tab.`);
-            onTabChange(tabs[0].id);
-        }
+
         return () => {
-            console.log('Tabs component unmounting');
+            console.log(`${LOG_PREFIX} Component unmounting`);
+            console.groupEnd();
         };
     }, [tabs, activeTab]);
+
     const handleTabClick = (tabId: string) => {
-        console.log('Tab clicked:', tabId);
+        console.group(`${LOG_PREFIX} Tab Interaction`);
+        console.log('Tab clicked', {
+            previousTab: activeTab,
+            newTab: tabId,
+            timestamp: new Date().toISOString()
+        });
         onTabChange(tabId);
         localStorage.setItem('activeTab', tabId);
+        console.groupEnd();
     };
 
     let elements = tabs.map(tab => {
-        console.log('Rendering tab:', tab.id, 'active:', activeTab === tab.id);
+        if (process.env.NODE_ENV === 'development') {
+            console.debug(`${LOG_PREFIX} Rendering tab`, {
+                id: tab.id,
+                label: tab.label,
+                active: activeTab === tab.id
+            });
+        }
         return (
             <TabButton
                 key={tab.id}

@@ -6,19 +6,34 @@ interface StoreProviderProps {
     children: React.ReactNode;
 }
 
+const LOG_PREFIX = '[StoreProvider]';
+
+
 export const StoreProvider: React.FC<StoreProviderProps> = ({children}) => {
     useEffect(() => {
-        console.log('[StoreProvider] Mounted');
+        console.group(`${LOG_PREFIX} Lifecycle`);
+        console.log('🟢 Component Mounted');
+        console.debug('Initial Store State:', store.getState());
+        console.groupEnd();
+
         return () => {
-            console.log('[StoreProvider] Unmounted');
+            console.group(`${LOG_PREFIX} Lifecycle`);
+            console.log('🔴 Component Unmounted');
+            console.debug('Final Store State:', store.getState());
+            console.groupEnd();
         };
     }, []);
-    console.log('[StoreProvider] Rendering');
+    console.log(`${LOG_PREFIX} 🔄 Rendering`);
 
     return <Provider store={store}>{children}</Provider>;
 };
+
 // Log store initialization
-console.log('[StoreProvider] Module initialized, store:', store);
+console.group(`${LOG_PREFIX} Initialization`);
+console.log('📦 Store Module Initialized');
+console.debug('Store Instance:', store);
+console.debug('Initial State:', store.getState());
+console.groupEnd();
 
 
 export default StoreProvider;

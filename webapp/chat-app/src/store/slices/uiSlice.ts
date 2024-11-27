@@ -14,39 +14,59 @@ const initialState: UiState = {
     modalType: null,
     verboseMode: localStorage.getItem('verboseMode') === 'true'
 };
+// Debug logging helper
+const logStateChange = (action: string, payload: any = null, prevState: any = null, newState: any = null) => {
+    console.log(`[UI Slice] ${action}`, {
+        ...(payload && {payload}),
+        ...(prevState && {prevState}),
+        ...(newState && {newState})
+    });
+};
+
 
 const uiSlice = createSlice({
     name: 'ui',
     initialState,
     reducers: {
         setTheme: (state, action: PayloadAction<ThemeName>) => {
-            console.log('[UI Slice] Setting theme:', action.payload);
+            logStateChange('Setting theme', action.payload, {theme: state.theme});
             state.theme = action.payload;
+            localStorage.setItem('theme', action.payload);
+        },
+        setDarkMode: (state, action: PayloadAction<boolean>) => {
+            const newTheme = action.payload ? 'night' : 'main';
+            logStateChange('Setting dark mode', {
+                darkMode: action.payload,
+                newTheme
+            }, {currentTheme: state.theme});
+            state.theme = newTheme;
+            localStorage.setItem('theme', newTheme);
         },
         showModal: (state, action: PayloadAction<string>) => {
-            console.log('[UI Slice] Showing modal:', {
-                modalType: action.payload,
-                previousState: {
-                    modalOpen: state.modalOpen,
-                    modalType: state.modalType
-                }
+            logStateChange('Showing modal', {
+                modalType: action.payload
+            }, {
+                modalOpen: state.modalOpen,
+                modalType: state.modalType
             });
             state.modalOpen = true;
             state.modalType = action.payload;
         },
         hideModal: (state) => {
-            console.log('[UI Slice] Hiding modal', {
-                previousState: {
-                    modalOpen: state.modalOpen,
-                    modalType: state.modalType
-                }
+            logStateChange('Hiding modal', null, {
+                modalOpen: state.modalOpen,
+                modalType: state.modalType
             });
             state.modalOpen = false;
             state.modalType = null;
         },
         toggleVerbose: (state) => {
             const newVerboseState = !state.verboseMode;
-            console.log('[UI Slice] Toggling verbose mode:', newVerboseState);
+            logStateChange('Toggling verbose mode', {
+                newState: newVerboseState
+            }, {
+                previousState: state.verboseMode
+            });
             localStorage.setItem('verboseMode', newVerboseState.toString());
             state.verboseMode = !state.verboseMode;
         }
@@ -54,7 +74,7 @@ const uiSlice = createSlice({
 });
 
 export const {setTheme, showModal, hideModal, toggleVerbose} = uiSlice.actions;
-// Add debug logging for initial state
-console.log('[UI Slice] Initialized with state:', initialState);
+// Log initial state with helper
+logStateChange('Initialized slice', null, null, initialState);
 
 export default uiSlice.reducer;

@@ -4,6 +4,8 @@ import styled from 'styled-components';
 import {RootState} from '../../store';
 import {updateWebSocketConfig} from '../../store/slices/configSlice';
 
+const logPrefix = '[WebSocketMenu]';
+
 const MenuContainer = styled.div`
     padding: 1rem;
     background: ${({theme}) => theme.colors.surface};
@@ -46,6 +48,8 @@ const Button = styled.button`
 export const WebSocketMenu: React.FC = () => {
     const dispatch = useDispatch();
     const wsConfig = useSelector((state: RootState) => state.config.websocket);
+    console.log(`${logPrefix} Initial websocket config:`, wsConfig);
+
 
     const [config, setConfig] = useState({
         url: wsConfig.url,
@@ -55,12 +59,19 @@ export const WebSocketMenu: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Submitting WebSocket configuration:', config);
+        console.log(`${logPrefix} Submitting WebSocket configuration:`, config);
         dispatch(updateWebSocketConfig(config));
+        console.log(`${logPrefix} Configuration updated successfully`);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
+        console.log(`${logPrefix} Field "${name}" changed to:`, value);
+        if (name === 'port' && !/^\d*$/.test(value)) {
+            console.warn(`${logPrefix} Invalid port value entered:`, value);
+            return;
+        }
+
         setConfig(prev => ({...prev, [name]: value}));
     };
 

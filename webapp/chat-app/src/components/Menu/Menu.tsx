@@ -81,7 +81,7 @@ export const Menu: React.FC = () => {
     const verboseMode = useSelector((state: RootState) => state.ui.verboseMode);
 
     const handleMenuClick = (modalType: string) => {
-        console.log('Opening modal:', modalType);
+        console.log('[Menu] Opening modal:', modalType);
         openModal(modalType);
         // Verify the action was dispatched
         console.log('[Menu] Modal action dispatched:', {
@@ -91,14 +91,14 @@ export const Menu: React.FC = () => {
     };
 
     const handleLogout = () => {
-        console.log('User logging out');
+        console.log('[Menu] User logging out');
     };
 
 
     return (
         <MenuContainer>
             <ToolbarLeft>
-                <DropButton href="/" onClick={() => console.log('Navigating to home')}>
+                <DropButton href="/" onClick={() => console.log('[Menu] Navigating to home')}>
                     <FontAwesomeIcon icon={faHome}/> Home
                 </DropButton>
 
@@ -106,12 +106,12 @@ export const Menu: React.FC = () => {
                     <DropButton>App</DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => openModal('sessions')}>Session List</DropdownItem>
-                        <DropdownItem onClick={() => console.log('Creating new session')}>New</DropdownItem>
+                        <DropdownItem onClick={() => console.log('[Menu] Creating new session')}>New</DropdownItem>
                     </DropdownContent>
                 </Dropdown>
 
                 <Dropdown>
-                    <DropButton onClick={() => console.log('Session menu clicked')}>
+                    <DropButton onClick={() => console.log('[Menu] Session menu clicked')}>
                         <FontAwesomeIcon icon={faCog}/> Session
                     </DropButton>
                     <DropdownContent>
@@ -131,7 +131,7 @@ export const Menu: React.FC = () => {
                 <ThemeMenu/>
 
                 <Dropdown>
-                    <DropButton onClick={() => console.log('About menu clicked')}>About</DropButton>
+                    <DropButton onClick={() => console.log('[Menu] About menu clicked')}>About</DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => handleMenuClick('privacy')}>Privacy Policy</DropdownItem>
                         <DropdownItem onClick={() => handleMenuClick('tos')}>Terms of Service</DropdownItem>
@@ -139,7 +139,7 @@ export const Menu: React.FC = () => {
                 </Dropdown>
 
                 <Dropdown>
-                    <DropButton onClick={() => console.log('About menu clicked')}>Config</DropButton>
+                    <DropButton onClick={() => console.log('[Menu] Config menu clicked')}>Config</DropButton>
                     <DropdownContent>
                         <WebSocketMenu/>
                     </DropdownContent>
@@ -148,7 +148,7 @@ export const Menu: React.FC = () => {
             </ToolbarLeft>
 
             <Dropdown>
-                <DropButton onClick={() => console.log('Login menu clicked')}>
+                <DropButton onClick={() => console.log('[Menu] Login menu clicked')}>
                     <FontAwesomeIcon icon={faSignInAlt}/> Login
                 </DropButton>
                 <DropdownContent>
@@ -162,3 +162,4 @@ export const Menu: React.FC = () => {
         </MenuContainer>
     );
 };
+export default Menu;

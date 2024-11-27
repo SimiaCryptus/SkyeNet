@@ -16,22 +16,29 @@ export const useModal = () => {
     const [modalContent, setModalContent] = useState('');
 
     const getModalUrl = (endpoint: string) => {
+        console.log('[Modal] Constructing modal URL for endpoint:', endpoint);
         const protocol = window.location.protocol;
         const host = config.url || window.location.hostname;
         const port = config.port || window.location.port;
         // Handle endpoints that already have query parameters
         const separator = endpoint.includes('?') ? '&' : '?';
-        return `${protocol}//${host}:${port}/${endpoint}${separator}sessionId=${WebSocketService.getSessionId()}`;
+        const url = `${protocol}//${host}:${port}/${endpoint}${separator}sessionId=${WebSocketService.getSessionId()}`;
+        console.log('[Modal] Constructed URL:', url);
+        return url;
     };
 
     const openModal = (endpoint: string, event?: React.MouseEvent) => {
+        console.log('[Modal] Opening modal for endpoint:', endpoint);
         if (event) {
+            console.log('[Modal] Preventing default event behavior');
             event.preventDefault();
             event.stopPropagation();
         }
+        console.log('[Modal] Setting initial loading state');
 
         setModalContent('<div>Loading...</div>');
         dispatch(showModalAction(endpoint));
+        console.log('[Modal] Fetching content from:', getModalUrl(endpoint));
 
         fetch(getModalUrl(endpoint), {
             mode: 'cors',
@@ -40,10 +47,18 @@ export const useModal = () => {
                 credentials: 'include'
             }
         })
-            .then(response => response.text())
+            .then(response => {
+                console.log('[Modal] Received response:', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
+                return response.text();
+            })
             .then(content => {
+                console.log('[Modal] Content received, length:', content.length);
                 setModalContent(content);
                 if (Prism) {
+                    console.log('[Modal] Applying Prism syntax highlighting');
                     Prism.highlightAll();
                 }
             })
@@ -51,12 +66,14 @@ export const useModal = () => {
                 console.error('[Modal] Failed to load content:', {
                     endpoint,
                     error: error.message,
-                    status: error.status
+                    status: error.status,
+                    stack: error.stack
                 });
                 setModalContent('<div>Error loading content. Please try again later.</div>');
                 // Keep modal open to show error
             });
     };
+    console.log('[Modal] Hook initialized');
 
     return {openModal, getModalUrl, modalContent};
 };

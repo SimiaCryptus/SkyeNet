@@ -4,6 +4,9 @@
     "es2021": false,
     "node": false
   },
+  "globals": {
+    "process": "readonly"
+  },
   "extends": [
     "eslint:recommended",
     "plugin:react/recommended",

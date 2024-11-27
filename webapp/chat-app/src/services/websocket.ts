@@ -2,9 +2,11 @@ import {store} from '../store';
 import {Message} from "../types";
 
 export class WebSocketService {
-    private ws: WebSocket | null = null;
+    public ws: WebSocket | null = null;
+    private readonly DEBUG = process.env.NODE_ENV === 'development';
+    private maxReconnectAttempts = 5;
     private reconnectAttempts = 0;
-    private maxReconnectAttempts = 10;
+    private heartbeatInterval: NodeJS.Timeout | null = null;
     private sessionId = '';
     private messageHandlers: ((data: Message) => void)[] = [];
     private connectionHandlers: ((connected: boolean) => void)[] = [];
@@ -12,6 +14,25 @@ export class WebSocketService {
     private isReconnecting = false;
     private connectionTimeout: NodeJS.Timeout | null = null;
     private messageQueue: string[] = [];
+    private readonly HEARTBEAT_INTERVAL = 30000;
+
+    queueMessage(message: string) {
+        console.debug('[WebSocket] Queuing message:', message.substring(0, 100) + (message.length > 100 ? '...' : ''));
+        this.messageQueue.push(message);
+        this.processMessageQueue();
+    }
+
+    public getSessionId(): string {
+        console.debug('[WebSocket] Getting session ID:', this.sessionId);
+        return this.sessionId;
+    }
+
+    public getUrl(): string {
+        const config = this.getConfig();
+        if (!config) return 'not available';
+        const path = this.getWebSocketPath();
+        return `${config.protocol}//${config.url}:${config.port}${path}ws`;
+    }
 
     public addErrorHandler(handler: (error: Error) => void): void {
         this.errorHandlers.push(handler);
@@ -23,20 +44,16 @@ export class WebSocketService {
         console.log('[WebSocket] Error handler removed');
     }
 
-    queueMessage(message: string) {
-        this.messageQueue.push(message);
-        this.processMessageQueue();
-    }
-
-    private processMessageQueue() {
+    send(message: string): void {
         if (this.ws?.readyState === WebSocket.OPEN) {
-            while (this.messageQueue.length > 0) {
-                const message = this.messageQueue.shift();
-                if (message) this.send(message);
-            }
+            this.debugLog('Sending message:',
+                message.length > 100 ? message.substring(0, 100) + '...' : message
+            );
+            this.ws.send(message);
+        } else {
+            console.warn('[WebSocket] Cannot send message - connection not open');
         }
     }
-
     public addConnectionHandler(handler: (connected: boolean) => void): void {
         this.connectionHandlers.push(handler);
         console.log('[WebSocket] Connection handler added');
@@ -47,13 +64,24 @@ export class WebSocketService {
         console.log('[WebSocket] Connection handler removed');
     }
 
-    public getSessionId(): string {
-        return this.sessionId;
+    private debugLog(message: string, ...args: any[]) {
+        if (this.DEBUG) {
+            console.debug(`[WebSocket] ${message}`, ...args);
+        }
     }
 
     public isConnected(): boolean {
         return this.ws?.readyState === WebSocket.OPEN;
     }
+
+    private stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+            console.log('[WebSocket] Stopped heartbeat monitoring');
+        }
+    }
+
 
     connect(sessionId: string): void {
         try {
@@ -118,12 +146,13 @@ export class WebSocketService {
         }
     }
 
-    send(message: string): void {
+    private processMessageQueue() {
         if (this.ws?.readyState === WebSocket.OPEN) {
-            console.debug('[WebSocket] Sending message:', message.substring(0, 100) + (message.length > 100 ? '...' : ''));
-            this.ws.send(message);
-        } else {
-            console.warn('[WebSocket] Cannot send message - connection not open');
+            console.debug(`[WebSocket] Processing message queue (${this.messageQueue.length} messages)`);
+            while (this.messageQueue.length > 0) {
+                const message = this.messageQueue.shift();
+                if (message) this.send(message);
+            }
         }
     }
 
@@ -131,19 +160,21 @@ export class WebSocketService {
         const state = store.getState();
         // Load from localStorage as fallback if store is not yet initialized
         if (!state.config?.websocket) {
+            console.debug('[WebSocket] Config not found in store, checking localStorage');
             try {
                 const savedConfig = localStorage.getItem('websocketConfig');
                 if (savedConfig) {
                     const config = JSON.parse(savedConfig);
-                    console.log('Using WebSocket config from localStorage:', config);
+                    console.log('[WebSocket] Using config from localStorage:', config);
                     // Ensure protocol is correct based on window.location.protocol
                     config.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                     return config;
                 }
             } catch (error) {
-                console.error('Error reading WebSocket config from localStorage:', error);
+                console.error('[WebSocket] Error reading config from localStorage:', error);
             }
         }
+        console.debug('[WebSocket] Using default config');
         return {
             url: window.location.hostname,
             port: state.config.websocket.port || window.location.port || '8083',
@@ -167,6 +198,7 @@ export class WebSocketService {
             console.warn('[WebSocket] Cannot setup event handlers - no WebSocket instance');
             return;
         }
+        this.debugLog('Setting up event handlers');
 
         this.ws.onopen = () => {
             console.log('[WebSocket] Connection established successfully');
@@ -176,14 +208,11 @@ export class WebSocketService {
             if (this.connectionTimeout) {
                 clearTimeout(this.connectionTimeout);
             }
-            // Send initial connection message
-            this.send(JSON.stringify({type: 'connect', sessionId: this.sessionId}));
+            console.debug('[WebSocket] Sending initial connect message');
         };
         this.ws.onmessage = (event) => {
-            const truncatedData = typeof event.data === 'string'
-                ? event.data.substring(0, 100) + (event.data.length > 100 ? '...' : '')
-                : 'Binary data';
-            console.debug('[WebSocket] Message received:', truncatedData);
+            // Only log message receipt in debug mode
+            this.debugLog('Message received');
 
             // Enhanced HTML detection and handling
             const isHtml = typeof event.data === 'string' &&
@@ -212,7 +241,8 @@ export class WebSocketService {
         };
 
         this.ws.onclose = () => {
-            console.log('[WebSocket] Connection closed');
+            console.log('[WebSocket] Connection closed, stopping heartbeat');
+            this.stopHeartbeat();
             this.connectionHandlers.forEach(handler => handler(false));
             if (!this.isReconnecting) {
                 this.attemptReconnect();
@@ -231,13 +261,25 @@ export class WebSocketService {
     private attemptReconnect(): void {
         if (this.isReconnecting) return;
 
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        const maxAttempts = this.maxReconnectAttempts;
+        if (this.reconnectAttempts >= maxAttempts) {
             console.error(`[WebSocket] Max reconnection attempts (${this.maxReconnectAttempts}) reached`);
+            // Dispatch global error state
+            this.errorHandlers.forEach(handler =>
+                handler(new Error(`Maximum reconnection attempts (${maxAttempts}) reached`))
+            );
+            this.isReconnecting = false;
+            this.reconnectAttempts = 0;
             return;
         }
         this.isReconnecting = true;
         const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 30000);
         console.log(`[WebSocket] Attempting reconnect #${this.reconnectAttempts + 1} in ${delay}ms`);
+        // Show reconnection status to user
+        this.connectionHandlers.forEach(handler =>
+            handler(false)
+        );
+
 
         setTimeout(() => {
             this.reconnectAttempts++;

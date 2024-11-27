@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import styled from 'styled-components';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from '../../store';
@@ -27,15 +27,26 @@ const ModalContent = styled.div`
     max-height: 80vh;
     overflow: auto;
 `;
+const LOG_PREFIX = '[Modal]';
+
 
 export const Modal: React.FC = () => {
     const dispatch = useDispatch();
     const {modalContent} = useModal();
     const {modalOpen, modalType} = useSelector((state: RootState) => state.ui);
 
-    if (!modalOpen) return null;
+    useEffect(() => {
+        console.log(`${LOG_PREFIX} Modal state changed:`, {
+            modalOpen,
+            modalType,
+            hasContent: !!modalContent
+        });
+    }, [modalOpen, modalType, modalContent]);
 
-    console.log('[Modal] Rendering modal:', {modalType});
+    if (!modalOpen) {
+        console.log(`${LOG_PREFIX} Not rendering - modal is closed`);
+        return null;
+    }
 
     return (
         <ModalOverlay onClick={() => dispatch(hideModal())}>

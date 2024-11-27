@@ -22,43 +22,54 @@ import 'prismjs/plugins/show-language/prism-show-language';
 import mermaid from 'mermaid';
 import QRCode from 'qrcode-generator';
 
+const APP_VERSION = '1.0.0';
+const LOG_PREFIX = '[App]';
+
 const App: React.FC = () => {
-    console.log('[App] Component rendering');
+    console.group(`${LOG_PREFIX} Initializing v${APP_VERSION}`);
+    console.log('Starting component render');
 
     const sessionId = websocket.getSessionId();
     const isConnected = websocket.isConnected();
+    console.log('WebSocket state:', {
+        sessionId,
+        isConnected
+    });
+
     // Initialize UI handlers and message handling
     React.useEffect(() => {
+        console.log(`${LOG_PREFIX} Setting up handlers`);
         setupUIHandlers();
         setupMessageHandling();
     }, []);
-    console.log('[App] WebSocket state:', {
-        sessionId,
-        isConnected,
-    });
+
     React.useEffect(() => {
-        console.log('[App] Component mounted');
+        console.log(`${LOG_PREFIX} Component mounted, initializing libraries`);
+        // Initialize syntax highlighting
         Prism.highlightAll();
-        Prism.highlightAll();
+        console.log(`${LOG_PREFIX} Prism initialized`);
+        // Initialize mermaid diagrams
         mermaid.run();
-        // Example of generating a QR code
+        console.log(`${LOG_PREFIX} Mermaid initialized`);
+        // Initialize QR code generator
         const qr = QRCode(0, 'L');
         qr.addData('https://example.com');
         qr.make();
-        console.log(qr.createImgTag());
+        console.log(`${LOG_PREFIX} QR Code generator initialized`);
+
         return () => {
-            console.log('[App] Component unmounting');
+            console.log(`${LOG_PREFIX} Component unmounting, cleaning up...`);
         };
     }, []);
 
     return (
         <Provider store={store}>
             {(() => {
-                console.log('[App] Rendering Provider with store');
+                console.debug(`${LOG_PREFIX} Rendering Provider with store`);
                 return (
                     <ThemeProvider>
                         {(() => {
-                            console.log('[App] Rendering ThemeProvider');
+                            console.debug(`${LOG_PREFIX} Rendering ThemeProvider`);
                             return (
                                 <>
                                     <GlobalStyles/>
@@ -80,8 +91,9 @@ const App: React.FC = () => {
         </Provider>
     );
 };
-// Add version info to help with debugging
-console.log('[App] Version 1.0.0 loaded');
+// Close the logging group when component is loaded
+console.groupEnd();
+console.log(`${LOG_PREFIX} v${APP_VERSION} loaded successfully`);
 
 
 export default App;

@@ -1,6 +1,9 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Message} from '../../types';
 import DOMPurify from 'dompurify';
+import {RootState} from '../index';
+
+const LOG_PREFIX = '[MessageSlice]';
 
 interface MessageState {
     messages: Message[];
@@ -15,8 +18,15 @@ const initialState: MessageState = {
     messageQueue: [],
     isProcessing: false,
 };
+// Add type-safe selector
+// Ensure selector always returns an array
+export const selectMessages = (state: RootState) => {
+    const messages = state.messages?.messages;
+    return Array.isArray(messages) ? messages : [];
+};
+// Add selector for messages
 const sanitizeHtmlContent = (content: string): string => {
-    console.debug('Sanitizing HTML content');
+    console.debug(`${LOG_PREFIX} Sanitizing HTML content`);
     return DOMPurify.sanitize(content, {
         ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'button', 'input', 'label', 'select', 'option', 'textarea'],
         ALLOWED_ATTR: ['class', 'href', 'target']
@@ -29,7 +39,7 @@ const messageSlice = createSlice({
     reducers: {
         addMessage: (state: MessageState, action: PayloadAction<Message>) => {
             // Only log message ID and type to reduce noise
-            console.debug('Adding message:', {
+            console.debug(`${LOG_PREFIX} Adding message:`, {
                 id: action.payload.id,
                 type: action.payload.type,
                 isHtml: action.payload.isHtml
@@ -39,57 +49,67 @@ const messageSlice = createSlice({
                 action.payload.content = action.payload.rawHtml;
                 // action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                 action.payload.sanitized = true;
-                console.debug('HTML content sanitized');
+                console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
             }
             state.messages.push(action.payload);
-            console.debug('Messages updated, count:', state.messages.length);
+            console.debug(`${LOG_PREFIX} Messages updated, total count: ${state.messages.length}`);
         },
         updateMessage: (state: MessageState, action: PayloadAction<{ id: string; updates: Partial<Message> }>) => {
             const {id, updates} = action.payload;
-            console.log('Updating message:', id, 'with updates:', updates);
+            console.debug(`${LOG_PREFIX} Updating message ${id}:`, updates);
             const messageIndex = state.messages.findIndex((msg: Message) => msg.id === id);
             if (messageIndex !== -1) {
                 state.messages[messageIndex] = {...state.messages[messageIndex], ...updates};
-                console.log('Message updated successfully');
+                console.debug(`${LOG_PREFIX} Message ${id} updated successfully`);
             } else {
-                console.warn('Message not found for update:', id);
+                console.warn(`${LOG_PREFIX} Message not found for update: ${id}`);
             }
         },
         deleteMessage: (state: MessageState, action: PayloadAction<string>) => {
-            console.log('Deleting message:', action.payload);
+            console.debug(`${LOG_PREFIX} Deleting message: ${action.payload}`);
             state.messages = state.messages.filter((msg: Message) => msg.id !== action.payload);
-            console.log('Updated messages after deletion:', state.messages);
+            console.debug(`${LOG_PREFIX} Messages updated after deletion, remaining: ${state.messages.length}`);
         },
         addToPendingMessages: (state: MessageState, action: PayloadAction<Message>) => {
-            console.log('Adding pending message:', action.payload);
+            console.debug(`${LOG_PREFIX} Adding pending message:`, {
+                id: action.payload.id,
+                type: action.payload.type
+            });
             state.pendingMessages.push(action.payload);
-            console.log('Updated pending messages:', state.pendingMessages);
+            console.debug(`${LOG_PREFIX} Pending messages count: ${state.pendingMessages.length}`);
         },
         removePendingMessage: (state: MessageState, action: PayloadAction<string>) => {
-            console.log('Removing pending message:', action.payload);
+            console.debug(`${LOG_PREFIX} Removing pending message: ${action.payload}`);
             state.pendingMessages = state.pendingMessages.filter((msg: Message) => msg.id !== action.payload);
-            console.log('Updated pending messages:', state.pendingMessages);
+            console.debug(`${LOG_PREFIX} Pending messages count: ${state.pendingMessages.length}`);
         },
         addToMessageQueue: (state, action: PayloadAction<Message>) => {
-            console.log('Adding message to queue:', action.payload);
+            console.debug(`${LOG_PREFIX} Adding message to queue:`, {
+                id: action.payload.id,
+                type: action.payload.type
+            });
             state.messageQueue.push(action.payload);
-            console.log('Updated message queue:', state.messageQueue);
+            console.debug(`${LOG_PREFIX} Message queue size: ${state.messageQueue.length}`);
         },
         clearMessageQueue: (state: MessageState) => {
-            console.log('Clearing message queue');
+            console.debug(`${LOG_PREFIX} Clearing message queue of ${state.messageQueue.length} messages`);
             state.messageQueue = [];
         },
         setProcessing: (state: MessageState, action: PayloadAction<boolean>) => {
-            console.log('Setting processing state:', action.payload);
+            console.debug(`${LOG_PREFIX} Setting processing state to: ${action.payload}`);
             state.isProcessing = action.payload;
         },
         clearMessages: (state: MessageState) => {
-            console.log('Clearing all messages and states');
+            console.debug(`${LOG_PREFIX} Clearing all messages and states`, {
+                messages: state.messages.length,
+                pending: state.pendingMessages.length,
+                queue: state.messageQueue.length
+            });
             state.messages = [];
             state.pendingMessages = [];
             state.messageQueue = [];
             state.isProcessing = false;
-            console.log('All states cleared');
+            console.debug(`${LOG_PREFIX} All states cleared successfully`);
         },
     },
 });
