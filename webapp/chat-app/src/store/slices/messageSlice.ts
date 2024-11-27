@@ -2,6 +2,7 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Message} from '../../types';
 import DOMPurify from 'dompurify';
 import {RootState} from '../index';
+import {resetTabState, updateTabs} from '../../utils/tabHandling';
 
 const LOG_PREFIX = '[MessageSlice]';
 
@@ -28,8 +29,9 @@ export const selectMessages = (state: RootState) => {
 const sanitizeHtmlContent = (content: string): string => {
     console.debug(`${LOG_PREFIX} Sanitizing HTML content`);
     return DOMPurify.sanitize(content, {
-        ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'button', 'input', 'label', 'select', 'option', 'textarea'],
-        ALLOWED_ATTR: ['class', 'href', 'target']
+        ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'table', 'tr', 'td', 'th', 'thead', 'tbody',
+            'button', 'input', 'label', 'select', 'option', 'textarea', 'code', 'pre', 'div', 'section'],
+        ALLOWED_ATTR: ['class', 'href', 'target', 'data-tab', 'data-for-tab', 'style', 'type', 'value', 'id', 'name'],
     });
 };
 
@@ -44,12 +46,24 @@ const messageSlice = createSlice({
                 type: action.payload.type,
                 isHtml: action.payload.isHtml
             });
+            // Reset tab state when new messages arrive
+            resetTabState();
+
             // Only sanitize if not already sanitized
             if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
                 action.payload.content = action.payload.rawHtml;
-                // action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
+                action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                 action.payload.sanitized = true;
                 console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
+                // Process tabs after sanitization using MutationObserver
+                const observer = new MutationObserver(() => {
+                    updateTabs();
+                    observer.disconnect();
+                });
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
             }
             state.messages.push(action.payload);
             console.debug(`${LOG_PREFIX} Messages updated, total count: ${state.messages.length}`);

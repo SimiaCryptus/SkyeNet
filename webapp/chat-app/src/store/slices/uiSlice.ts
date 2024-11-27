@@ -6,13 +6,17 @@ interface UiState {
     modalOpen: boolean;
     modalType: string | null;
     verboseMode: boolean;
+    activeTab: string;
+    lastUpdate?: number;
 }
 
 const initialState: UiState = {
     theme: 'main',
     modalOpen: false,
     modalType: null,
-    verboseMode: localStorage.getItem('verboseMode') === 'true'
+    verboseMode: localStorage.getItem('verboseMode') === 'true',
+    activeTab: 'chat', // Set default tab
+    lastUpdate: Date.now()
 };
 // Debug logging helper
 const logStateChange = (action: string, payload: any = null, prevState: any = null, newState: any = null) => {
@@ -28,6 +32,10 @@ const uiSlice = createSlice({
     name: 'ui',
     initialState,
     reducers: {
+        setActiveTab: (state, action: PayloadAction<string>) => {
+            logStateChange('Setting active tab', action.payload, {activeTab: state.activeTab});
+            state.activeTab = action.payload;
+        },
         setTheme: (state, action: PayloadAction<ThemeName>) => {
             logStateChange('Setting theme', action.payload, {theme: state.theme});
             state.theme = action.payload;
@@ -73,7 +81,7 @@ const uiSlice = createSlice({
     },
 });
 
-export const {setTheme, showModal, hideModal, toggleVerbose} = uiSlice.actions;
+export const {setTheme, showModal, hideModal, toggleVerbose, setActiveTab} = uiSlice.actions;
 // Log initial state with helper
 logStateChange('Initialized slice', null, null, initialState);
 

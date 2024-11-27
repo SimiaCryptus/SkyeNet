@@ -162,4 +162,3 @@ export const Menu: React.FC = () => {
         </MenuContainer>
     );
 };
-export default Menu;

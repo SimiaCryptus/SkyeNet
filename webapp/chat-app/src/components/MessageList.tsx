@@ -4,6 +4,7 @@ import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 import {logger} from '../utils/logger';
 import {Message} from '../types';
+import {updateTabs} from '../utils/tabHandling';
 
 const MessageListContainer = styled.div`
     flex: 1;
@@ -57,6 +58,10 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
             messageCount: messages.length,
             messages: messages,
             source: propMessages ? 'props' : 'store'
+        });
+        // Process tabs after messages update
+        requestAnimationFrame(() => {
+            updateTabs();
         });
     }, [messages]);
 

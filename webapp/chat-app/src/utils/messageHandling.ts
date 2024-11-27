@@ -1,6 +1,7 @@
 import {store} from '../store';
 import {addMessage} from '../store/slices/messageSlice';
 import {Message} from '../types';
+import {updateTabs} from './tabHandling';
 
 export const setupMessageHandling = () => {
     const messageVersions = new Map<string, string>();
@@ -16,6 +17,18 @@ export const setupMessageHandling = () => {
 
         store.dispatch(addMessage(message));
         console.log(`[MessageHandler] Dispatched message to store`);
+        // Process tabs after message is added
+        if (message.isHtml) {
+            requestAnimationFrame(() => {
+                updateTabs();
+            });
+        }
+        // Process tabs after message is added
+        if (message.isHtml) {
+            requestAnimationFrame(() => {
+                updateTabs();
+            });
+        }
     };
 
     return {
