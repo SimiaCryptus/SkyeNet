@@ -1,12 +1,14 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch} from 'react-redux';
 import styled from 'styled-components';
+import {fetchAppConfig} from '../services/appConfig';
 import {useWebSocket} from '../hooks/useWebSocket';
 import {addMessage} from '../store/slices/messageSlice';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
 import {Message} from '../types';
 import websocket from '@services/websocket';
+import {logger} from '../utils/logger';
 
 const LOG_PREFIX = '[ChatInterface]';
 
@@ -51,6 +53,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const ws = useWebSocket(sessionId);
 
     useEffect(() => {
+        // Fetch app config when component mounts
+        if (sessionId) {
+            fetchAppConfig(sessionId).catch(error => {
+                logger.error('Failed to fetch app config:', error);
+            });
+        }
+        // Fetch app config when component mounts
+        if (sessionId) {
+            fetchAppConfig(sessionId).catch(error => {
+                logger.error('Failed to fetch app config:', error);
+            });
+        }
         debugLog('Setting up message handler', {
             sessionId,
             isConnected,

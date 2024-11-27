@@ -11,6 +11,7 @@ interface MessageState {
     pendingMessages: Message[];
     messageQueue: Message[];
     isProcessing: boolean;
+    messageVersions: Record<string, string>; // Track message versions
 }
 
 const initialState: MessageState = {
@@ -18,6 +19,7 @@ const initialState: MessageState = {
     pendingMessages: [],
     messageQueue: [],
     isProcessing: false,
+    messageVersions: {},
 };
 // Add type-safe selector
 // Ensure selector always returns an array
@@ -40,12 +42,32 @@ const messageSlice = createSlice({
     initialState,
     reducers: {
         addMessage: (state: MessageState, action: PayloadAction<Message>) => {
+            const messageId = action.payload.id;
+            const messageVersion = action.payload.version;
+            // Check if message already exists and compare versions
+            const existingVersion = state.messageVersions[messageId];
+            if (existingVersion && existingVersion >= messageVersion) {
+                console.debug(`${LOG_PREFIX} Ignoring older/duplicate message version:`, {
+                    id: messageId,
+                    existing: existingVersion,
+                    received: messageVersion
+                });
+                return;
+            }
             // Only log message ID and type to reduce noise
+
             console.debug(`${LOG_PREFIX} Adding message:`, {
-                id: action.payload.id,
+                id: messageId,
+                version: messageVersion,
                 type: action.payload.type,
                 isHtml: action.payload.isHtml
             });
+            // Update version tracking
+            state.messageVersions[messageId] = messageVersion;
+            // Remove existing message if it's an update
+            if (existingVersion) {
+                state.messages = state.messages.filter(msg => msg.id !== messageId);
+            }
             // Reset tab state when new messages arrive
             resetTabState();
 

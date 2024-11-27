@@ -1,5 +1,6 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {AppConfig, ThemeName} from '../../types';
+import {logger} from '../../utils/logger';
 // Helper function to validate theme name
 const isValidTheme = (theme: string | null): theme is ThemeName => {
     return theme === 'main' || theme === 'night' || theme === 'forest' ||
@@ -68,10 +69,35 @@ const initialState: AppConfig = {
     }
 };
 
-const configSlice = createSlice({
+export const configSlice = createSlice({
     name: 'config',
     initialState,
     reducers: {
+        setAppInfo: (state, action: PayloadAction<any>) => {
+            logger.info('Setting app info:', action.payload);
+            if (action.payload) {
+                if (action.payload.applicationName) {
+                    state.applicationName = action.payload.applicationName;
+                    document.title = action.payload.applicationName;
+                }
+                if (action.payload.singleInput !== undefined) {
+                    state.singleInput = action.payload.singleInput;
+                }
+                if (action.payload.stickyInput !== undefined) {
+                    state.stickyInput = action.payload.stickyInput;
+                }
+                if (action.payload.loadImages !== undefined) {
+                    state.loadImages = action.payload.loadImages;
+                }
+                if (action.payload.websocket) {
+                    state.websocket = {...state.websocket, ...action.payload.websocket};
+                }
+                if (action.payload.showMenubar !== undefined) {
+                    state.showMenubar = action.payload.showMenubar;
+                    applyMenubarConfig(state.showMenubar);
+                }
+            }
+        },
         resetConfig: () => {
             console.log('[ConfigSlice] Resetting to initial state', {
                 newState: initialState
@@ -171,6 +197,25 @@ const configSlice = createSlice({
     },
 });
 
+function applyMenubarConfig(showMenubar: boolean) {
+    if (showMenubar === false) {
+        const menubar = document.getElementById('toolbar');
+        if (menubar) menubar.style.display = 'none';
+        const namebar = document.getElementById('namebar');
+        if (namebar) namebar.style.display = 'none';
+        const mainInput = document.getElementById('main-input');
+        if (mainInput) {
+            mainInput.style.top = '0px';
+        }
+        const session = document.getElementById('session');
+        if (session) {
+            session.style.top = '0px';
+            session.style.width = '100%';
+            session.style.position = 'absolute';
+        }
+    }
+}
+
 export const {
     updateConfig,
     toggleSingleInput,
@@ -179,6 +224,7 @@ export const {
     toggleMenubar,
     setApplicationName,
     updateWebSocketConfig,
+    setAppInfo,
 } = configSlice.actions;
 
 export default configSlice.reducer;

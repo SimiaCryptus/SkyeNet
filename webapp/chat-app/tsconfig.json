@@ -2,7 +2,7 @@
    "compilerOptions": {
      "target": "es6",
      "lib": ["dom", "dom.iterable", "esnext"],
-    "types": ["node", "react", "react-dom", "styled-components"],
+    "types": ["node", "react", "react-dom", "styled-components", "qrcode-generator"],
      "typeRoots": ["./node_modules/@types", "./src/types"],
      "allowJs": true,
      "skipLibCheck": true,

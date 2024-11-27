@@ -1,7 +1,22 @@
+import type {MermaidAPI} from 'mermaid';
+import type QRCodeGenerator from 'qrcode-generator';
+
 // Extend the Window interface to include the mermaid property
-interface Window {
-    mermaid: import('mermaid').Mermaid;
-    QRCode: typeof import('qrcode-generator');
+declare global {
+    interface Window {
+        mermaid: MermaidAPI;
+        QRCode: typeof QRCodeGenerator;
+        appConfig?: {
+            singleInput: boolean;
+            stickyInput: boolean;
+            loadImages: boolean;
+            showMenubar: boolean;
+            websocket: {
+                url: string;
+                port: string;
+                protocol: string;
+            };
+        };
     // Extended console interface with additional logging methods
     console: {
         debug(...args: any[]): void;
@@ -16,4 +31,18 @@ interface Window {
         time(label: string): void;
         timeEnd(label: string): void;
     };
+    }
 }
+
+interface AppConfig {
+    singleInput: boolean;
+    stickyInput: boolean;
+    loadImages: boolean;
+    showMenubar: boolean;
+    applicationName: string;
+    websocket: WebSocketConfig;
+    appInfo: any | null;
+    // ... other existing properties
+}
+
+export type {AppConfig};

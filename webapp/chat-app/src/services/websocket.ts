@@ -54,6 +54,7 @@ export class WebSocketService {
             console.warn('[WebSocket] Cannot send message - connection not open');
         }
     }
+
     public addConnectionHandler(handler: (connected: boolean) => void): void {
         this.connectionHandlers.push(handler);
         console.log('[WebSocket] Connection handler added');
@@ -213,12 +214,18 @@ export class WebSocketService {
         this.ws.onmessage = (event) => {
             // Only log message receipt in debug mode
             this.debugLog('Message received');
+            // Parse message data
+            const [id, version, content] = event.data.split(',');
+            if (!id || !version) {
+                console.warn('[WebSocket] Received malformed message:', event.data);
+                return;
+            }
 
             // Enhanced HTML detection and handling
-            const isHtml = typeof event.data === 'string' &&
-                (/<[a-z][\s\S]*>/i.test(event.data));
+            const isHtml = typeof content === 'string' &&
+                (/<[a-z][\s\S]*>/i.test(content));
             // Ignore connect messages
-            if (event.data.includes('"type":"connect"')) {
+            if (content.includes('"type":"connect"')) {
                 console.debug('[WebSocket] Ignoring connect message');
                 return;
             }
@@ -228,12 +235,12 @@ export class WebSocketService {
             }
 
             const message: Message = {
-                id: event.data.split(',')[0],
+                id,
                 type: 'response',
-                version: event.data.split(',')[1],
-                content: event.data.split(',')[2],
+                version,
+                content,
                 isHtml,
-                rawHtml: isHtml ? event.data.split(',')[2] : null,
+                rawHtml: isHtml ? content : null,
                 timestamp: Date.now(),
                 sanitized: false
             };
