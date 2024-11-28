@@ -1,30 +1,17 @@
 import {store} from '../store';
 import {addMessage} from '../store/slices/messageSlice';
 import {Message} from '../types';
-import {updateTabs} from './tabHandling';
+import {expandMessageReferences, updateTabs} from './tabHandling';
 import WebSocketService from '../services/websocket';
 import {logger} from './logger';
 
 const messageCache = new Map<string, string>();
-const MAX_EXPANSION_DEPTH = 10;
-const expandMessageReferences = (content: string, depth = 0): string => {
-    if (depth > MAX_EXPANSION_DEPTH) {
-        logger.warn('Max message expansion depth reached', {content});
-        return content;
-    }
-    return content.replace(/\{([^}]+)}/g, (match, messageId) => {
-        const cachedContent = messageCache.get(messageId);
-        if (cachedContent) {
-            return expandMessageReferences(cachedContent, depth + 1);
-        }
-        return match;
-    });
-};
+
 const processTabContent = () => {
     const activeTabs = document.querySelectorAll('.tab-content.active');
     activeTabs.forEach(tab => {
         const content = tab.innerHTML;
-        const expandedContent = expandMessageReferences(content);
+        const expandedContent = expandMessageReferences(content, []);
         if (content !== expandedContent) {
             tab.innerHTML = expandedContent;
         }

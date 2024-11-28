@@ -11,6 +11,7 @@ interface MessageState {
     pendingMessages: Message[];
     messageQueue: Message[];
     isProcessing: boolean;
+    referenceMessages: Record<string, Message>;
     messageVersions: Record<string, string>; // Track message versions
 }
 
@@ -20,6 +21,7 @@ const initialState: MessageState = {
     messageQueue: [],
     isProcessing: false,
     messageVersions: {},
+    referenceMessages: {},
 };
 // Add type-safe selector
 // Ensure selector always returns an array

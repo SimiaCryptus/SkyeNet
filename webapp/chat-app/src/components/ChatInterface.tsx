@@ -55,8 +55,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     useEffect(() => {
         // Fetch app config when component mounts
         if (sessionId) {
-            fetchAppConfig(sessionId).catch(error => {
-                logger.error('Failed to fetch app config:', error);
+        fetchAppConfig(sessionId).then(config => {
+            if (config) {
+                logger.info('App config loaded successfully');
+            } else {
+                logger.warn('Could not load app config, using defaults');
+            }
             });
         }
         // Fetch app config when component mounts

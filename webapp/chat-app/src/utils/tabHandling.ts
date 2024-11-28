@@ -1,4 +1,27 @@
 const LOG_PREFIX = '[TabHandler]';
+import {store} from '../store';
+// Helper function to expand message references
+export const expandMessageReferences = (content: string, messages: any[]): string => {
+    if (!content || !messages?.length) return content || '';
+    let expandedContent = content;
+    let iterations = 0;
+    const MAX_ITERATIONS = 10;
+    while (iterations < MAX_ITERATIONS) {
+        const prevContent = expandedContent;
+        expandedContent = expandedContent.replace(/\{([^}]+)}/g, (match, messageId) => {
+            const referencedMessage = messages.find(m => m.id === messageId);
+            if (referencedMessage) {
+                // Prevent circular references
+                const tempMessages = messages.filter(m => m.id !== messageId);
+                return expandMessageReferences(referencedMessage.content, tempMessages);
+            }
+            return match;
+        });
+        if (prevContent === expandedContent) break;
+        iterations++;
+    }
+    return expandedContent;
+};
 
 interface TabState {
     containerId: string;
@@ -30,13 +53,44 @@ const tabStates = new Map<string, TabState>();
 const processedTabs = new Set<string>();
 // Track active mutations to prevent infinite loops
 let isMutating = false;
+// Helper function to initialize tab content
+function initializeTabContent(content: Element) {
+    // Re-initialize syntax highlighting if needed
+    if ((window as any).Prism) {
+        (window as any).Prism.highlightAllUnder(content);
+    }
+    // Re-initialize other interactive elements
+    content.querySelectorAll('.referenced-message').forEach(ref => {
+        ref.addEventListener('click', (e) => {
+            if (e.target === ref) {
+                ref.classList.toggle('expanded');
+            }
+        });
+    });
+}
+// Define the content processor function
+function processTabContent(content: Element) {
+    const messages = store.getState().messages.messages;
+    const rawContent = content.innerHTML;
+    const processedContent = expandMessageReferences(rawContent, messages);
+    if (rawContent !== processedContent) {
+        // Preserve scroll position
+        const scrollTop = (content as HTMLElement).scrollTop;
+        content.innerHTML = processedContent;
+        (content as HTMLElement).scrollTop = scrollTop;
+        // Re-initialize any interactive elements
+        initializeTabContent(content);
+    }
+}
 
 
 // Move helper functions to module scope
 function saveTabState(containerId: string, activeTab: string) {
     try {
+        // Only store in memory, avoid localStorage due to quota issues
+        tabStates.set(containerId, {containerId, activeTab}); 
+        // Only store in memory
         tabStates.set(containerId, {containerId, activeTab});
-        localStorage.setItem(`tab_state_${containerId}`, activeTab);
         console.log(`${LOG_PREFIX} Saved tab state:`, {containerId, activeTab});
     } catch (error) {
         console.warn(`${LOG_PREFIX} Failed to save tab state:`, error);
@@ -72,11 +126,78 @@ function setActiveTab(button: HTMLElement, container: HTMLElement) {
         if (content.getAttribute('data-tab') === forTab) {
             content.classList.add('active');
             (content as HTMLElement).style.display = 'block';
+            const processTabContentWithDebounce = debounce(() => {
+                const state = store.getState();
+                const messages = state.messages.messages;
+                const references = state.messages.referenceMessages || {};
+                // Process placeholders first
+                content.querySelectorAll('.referenced-message.placeholder').forEach(placeholder => {
+                    const refId = placeholder.getAttribute('data-ref-id');
+                    if (refId && references[refId]) {
+                        placeholder.innerHTML = references[refId].content;
+                        placeholder.classList.remove('placeholder');
+                    }
+                });
+                // Then process any new references
+                const rawContent = content.innerHTML;
+                const processedContent = expandMessageReferences(rawContent, messages);
+                if (rawContent !== processedContent) {
+                    content.innerHTML = processedContent;
+                }
+            }, 100);
+            // Process message references with debouncing
+            const processContent = debounce(() => {
+                const messages = store.getState().messages.messages;
+                const processedContent = expandMessageReferences(content.innerHTML, messages);
+                if (content.innerHTML !== processedContent) {
+                    content.innerHTML = processedContent;
+                }
+            }, 100);
+            // Initial content processing
+            processTabContent(content);
+            // Set up enhanced mutation observer
+             const observer = new MutationObserver((mutations, observer) => {
+                 mutations.forEach(mutation => {
+                     if (mutation.target instanceof Element) {
+                         processTabContent(mutation.target);
+                     }
+                 });
+             });
+            observer.observe(content, {
+                childList: true,
+                subtree: true,
+                 characterData: true,
+                attributes: true,
+                attributeFilter: ['data-ref-id']
+            });
+            // Store observer reference for cleanup
+            (content as any)._contentObserver = observer;
+            // Process message references in tab content
+            requestAnimationFrame(() => {
+                const messages = store.getState().messages.messages;
+                const processedContent = expandMessageReferences(content.innerHTML, messages);
+                if (content.innerHTML !== processedContent) {
+                    content.innerHTML = processedContent;
+                }
+            });
+            // Process message references in tab content
+            const messages = store.getState().messages.messages;
+            const rawContent = content.innerHTML;
+            const processedContent = expandMessageReferences(rawContent, messages);
+            if (rawContent !== processedContent) {
+                content.innerHTML = processedContent;
+            }
             // Update nested tabs
+
             updateNestedTabs(content as HTMLElement);
         } else {
             content.classList.remove('active');
             (content as HTMLElement).style.display = 'none';
+            // Cleanup observer when tab is hidden
+            if ((content as any)._contentObserver) {
+                (content as any)._contentObserver.disconnect();
+                delete (content as any)._contentObserver;
+            }
         }
     });
 }
@@ -85,8 +206,8 @@ function setActiveTab(button: HTMLElement, container: HTMLElement) {
 function restoreTabState(container: TabContainer) {
     try {
         const containerId = container.id;
-        const savedTab = localStorage.getItem(`tab_state_${containerId}`) ||
-            tabStates.get(containerId)?.activeTab;
+        // Only use in-memory state
+        const savedTab = tabStates.get(containerId)?.activeTab;
         if (savedTab) {
             const button = container.querySelector(
                 `.tab-button[data-for-tab="${savedTab}"]`
@@ -108,6 +229,12 @@ function restoreTabState(container: TabContainer) {
     } catch (error) {
         console.warn(`${LOG_PREFIX} Failed to restore tab state:`, error);
     }
+}
+// Add cleanup function to reset state
+export function resetTabState() {
+    processedTabs.clear();
+    tabStates.clear();
+    isMutating = false;
 }
 
 
@@ -138,12 +265,6 @@ export const updateTabs = debounce(() => {
     isMutating = false;
 }, 100);
 
-// Add cleanup function to reset state
-export function resetTabState() {
-    processedTabs.clear();
-    tabStates.clear();
-    isMutating = false;
-}
 
 function setupTabContainer(container: TabContainer) {
     if (!container.id) {

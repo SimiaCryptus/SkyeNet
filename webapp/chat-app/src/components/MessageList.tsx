@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 import {logger} from '../utils/logger';
 import {Message} from '../types';
-import {updateTabs} from '../utils/tabHandling';
+import {updateTabs, resetTabState} from '../utils/tabHandling';
 import {handleMessageAction} from '../utils/messageHandling';
 
 const expandMessageReferences = (content: string, messages: Message[]): string => {
@@ -114,6 +114,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         });
         // Process tabs after messages update
         requestAnimationFrame(() => {
+        try {
             updateTabs();
             // Process message references in visible tab content
             document.querySelectorAll('.tab-content.active').forEach(tab => {
@@ -123,6 +124,11 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                     tab.innerHTML = expandedContent;
                 }
             });
+        } catch (error) {
+            logger.error('Error processing tabs:', error);
+            // Reset tab state on error
+            resetTabState();
+        }
         });
     }, [messages]);
 
