@@ -1,7 +1,6 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Message} from '../../types';
 import DOMPurify from 'dompurify';
-import {RootState} from '../index';
 import {resetTabState, updateTabs} from '../../utils/tabHandling';
 
 const LOG_PREFIX = '[MessageSlice]';
@@ -29,7 +28,7 @@ const sanitizeHtmlContent = (content: string): string => {
     return DOMPurify.sanitize(content, {
         ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'table', 'tr', 'td', 'th', 'thead', 'tbody',
             'button', 'input', 'label', 'select', 'option', 'textarea', 'code', 'pre', 'div', 'section'],
-        ALLOWED_ATTR: ['class', 'href', 'target', 'data-tab', 'data-for-tab', 'style', 'type', 'value', 'id', 'name', 
+        ALLOWED_ATTR: ['class', 'href', 'target', 'data-tab', 'data-for-tab', 'style', 'type', 'value', 'id', 'name',
             'data-message-id', 'data-id', 'data-message-action', 'data-action', 'data-ref-id', 'data-version'],
     });
 };
@@ -78,7 +77,9 @@ const messageSlice = createSlice({
                 action.payload.sanitized = true;
                 console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
                 // Use requestAnimationFrame for smoother updates
-                requestAnimationFrame(() => { updateTabs(); });
+                requestAnimationFrame(() => {
+                    updateTabs();
+                });
             }
             state.messages.push(action.payload);
             console.debug(`${LOG_PREFIX} Messages updated, total count: ${state.messages.length}`);

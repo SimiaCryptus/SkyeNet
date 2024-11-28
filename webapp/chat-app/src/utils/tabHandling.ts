@@ -1,7 +1,7 @@
 import {expandMessageReferences} from "../components/MessageList";
+import {store} from '../store';
 
 const LOG_PREFIX = '[TabHandler]';
-import {store} from '../store';
 
 interface TabState {
     containerId: string;
@@ -179,10 +179,10 @@ function restoreTabState(container: TabContainer) {
                 `.tab-button[data-for-tab="${savedTab}"]`
             ) as HTMLElement;
             if (button) {
-                console.log(`${LOG_PREFIX} Restoring tab state:`, {
-                    containerId,
-                    savedTab
-                });
+                // console.log(`${LOG_PREFIX} Restoring tab state:`, {
+                //     containerId,
+                //     savedTab
+                // });
                 setActiveTab(button, container);
             }
         } else {

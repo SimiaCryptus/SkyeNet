@@ -17,10 +17,10 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
         if (node.id && node.id.startsWith('z')) {
             const referencedMessage = messages.find(m => m.id === node.id);
             if (referencedMessage) {
-                logger.debug('Expanding referenced message', {id: node.id, contentLength: referencedMessage.content.length});
+                // logger.debug('Expanding referenced message', {id: node.id, contentLength: referencedMessage.content.length});
                 node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
             } else {
-                logger.debug('Referenced message not found', {id: node.id});
+                // logger.debug('Referenced message not found', {id: node.id});
             }
         }
         // Recursively process child elements
@@ -30,7 +30,7 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
             }
         });
     };
-    logger.debug('Expanding message references', {content});
+    // logger.debug('Expanding message references', {content});
     processNode(tempDiv);
     return tempDiv.innerHTML;
 };
@@ -214,27 +214,27 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                 .filter((message) => message.id && !message.id.startsWith("z"))
                 .filter((message) => message.content && message.content.length > 0)
                 .map((message) => {
-                logger.debug('MessageList - Rendering message', {
-                    id: message.id,
-                    type: message.type,
-                    timestamp: message.timestamp,
-                    contentLength: message.content?.length || 0
-                });
-                return (
-                    <MessageItem
-                        key={`${message.id}-${message.timestamp}`}
-                        type={message.type}
-                    >
-                        <MessageContent
-                            className="message-body"
-                            onClick={handleClick}
-                            dangerouslySetInnerHTML={{
-                                __html: processMessageContent(message.content)
-                            }}
-                        />
-                    </MessageItem>
-                );
-            })}
+                    logger.debug('MessageList - Rendering message', {
+                        id: message.id,
+                        type: message.type,
+                        timestamp: message.timestamp,
+                        contentLength: message.content?.length || 0
+                    });
+                    return (
+                        <MessageItem
+                            key={`${message.id}-${message.timestamp}`}
+                            type={message.type}
+                        >
+                            <MessageContent
+                                className="message-body"
+                                onClick={handleClick}
+                                dangerouslySetInnerHTML={{
+                                    __html: processMessageContent(message.content)
+                                }}
+                            />
+                        </MessageItem>
+                    );
+                })}
         </MessageListContainer>
     );
 };

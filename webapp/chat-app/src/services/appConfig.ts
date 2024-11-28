@@ -1,6 +1,7 @@
 import {store} from '../store';
 import {logger} from '../utils/logger';
 import {setAppInfo} from '../store/slices/configSlice';
+
 const BASE_API_URL = process.env.REACT_APP_API_URL || window.location.origin;
 
 
@@ -13,10 +14,10 @@ export const fetchAppConfig = async (sessionId: string) => {
         // Add error handling for failed requests
         try {
             response = await fetch(url.toString(), {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
         } catch (networkError) {
             logger.warn('Network request failed:', networkError);
             return null;
@@ -36,7 +37,7 @@ export const fetchAppConfig = async (sessionId: string) => {
         if (!data || typeof data !== 'object') {
             throw new Error('Invalid response format');
         }
-        
+
         logger.info('Received app config:', data);
 
         store.dispatch(setAppInfo(data));

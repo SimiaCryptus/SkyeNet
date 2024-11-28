@@ -37,16 +37,16 @@ declare module 'styled-components' {
             fast: string;
             slow: string;
         };
-    shadows: {
-        small: string;
-        medium: string;
-        large: string;
-    };
-    transitions: {
-        default: string;
-        fast: string;
-        slow: string;
-    };
+        shadows: {
+            small: string;
+            medium: string;
+            large: string;
+        };
+        transitions: {
+            default: string;
+            fast: string;
+            slow: string;
+        };
         typography: {
             fontFamily: string;
             fontSize: {

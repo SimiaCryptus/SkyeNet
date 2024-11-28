@@ -27,23 +27,27 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
+
     /* Theme variables */
-    
+
     :root {
         --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
         --transition-duration: 0.3s;
     }
+
     /* Improve focus styles globally */
     *:focus-visible {
         outline: 2px solid ${({theme}) => theme.colors.primary};
         outline-offset: 2px;
     }
+
     /* Improve button accessibility */
     button {
         font-family: inherit;
         font-size: inherit;
         line-height: inherit;
     }
+
     /* Improve transitions */
     .theme-transition {
         transition: all var(--transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
@@ -138,13 +142,13 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
     }
 
     .cmd-button:hover {
-    background-color: ${({theme}) => theme.colors.primaryDark || theme.colors.primary};
-    transform: translateY(-2px);
+        background-color: ${({theme}) => theme.colors.primaryDark || theme.colors.primary};
+        transform: translateY(-2px);
         box-shadow: ${({theme}) => theme.shadows?.large};
     }
 
     .cmd-button:active {
-    transform: translateY(0);
-    box-shadow: ${({theme}) => theme.shadows.medium};
+        transform: translateY(0);
+        box-shadow: ${({theme}) => theme.shadows.medium};
     }
 `;

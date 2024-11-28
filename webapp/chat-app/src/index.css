@@ -180,3 +180,7 @@ body {
         opacity: 1;
     }
 }
+
+.verbose {
+    visibility: hidden;
+}

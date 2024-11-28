@@ -75,32 +75,32 @@ const App: React.FC = () => {
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
             <Provider store={store}>
-            {(() => {
-                console.debug(`${LOG_PREFIX} Rendering Provider with store`);
-                return (
-                    <ThemeProvider>
-                        {(() => {
-                            console.debug(`${LOG_PREFIX} Rendering ThemeProvider`);
-                            return (
-                                <>
-                                    <GlobalStyles/>
-                    <div className={`App ${isLoading ? 'loading' : ''}`}>
-                        {isLoading && <LoadingSpinner />}
-                                        <Menu/>
-                                        <ChatInterface
-                                            sessionId={sessionId}
-                                            websocket={websocket}
-                                            isConnected={isConnected}
-                                        />
-                                        <Modal/>
-                                    </div>
-                                </>
-                            );
-                        })()}
-                    </ThemeProvider>
-                );
-            })()}
-        </Provider>
+                {(() => {
+                    console.debug(`${LOG_PREFIX} Rendering Provider with store`);
+                    return (
+                        <ThemeProvider>
+                            {(() => {
+                                console.debug(`${LOG_PREFIX} Rendering ThemeProvider`);
+                                return (
+                                    <>
+                                        <GlobalStyles/>
+                                        <div className={`App ${isLoading ? 'loading' : ''}`}>
+                                            {isLoading && <LoadingSpinner/>}
+                                            <Menu/>
+                                            <ChatInterface
+                                                sessionId={sessionId}
+                                                websocket={websocket}
+                                                isConnected={isConnected}
+                                            />
+                                            <Modal/>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </ThemeProvider>
+                    );
+                })()}
+            </Provider>
         </ErrorBoundary>
     );
 };

@@ -4,6 +4,7 @@
     flex-direction: column;
     transition: all 0.3s ease;
 }
+
 /* Dark mode improvements */
 /* Improve dark mode media query placement */
 @media (prefers-color-scheme: dark) {
@@ -15,36 +16,41 @@
         --success-color: #2ecc71;
         --hover-color: #27ae60;
     }
-    
+
     .App {
         background-color: var(--background-color);
         color: var(--text-color);
     }
-    
+
     .tab-button {
         color: var(--primary-color);
     }
-    
+
     .tab-button:hover {
         background: var(--hover-background);
     }
+
     .cmd-button {
         background-color: var(--success-color);
     }
+
     .cmd-button:hover {
         background-color: var(--hover-color);
     }
 }
+
 /* Improve tab button accessibility */
 .tab-button {
     padding: 0.75rem 1.25rem;
     min-width: 100px;
     transition: all 0.3s ease;
 }
+
 .tab-button:focus-visible {
     outline: 3px solid var(--primary-color);
     outline-offset: 2px;
 }
+
 /* Improve button states */
 .cmd-button {
     position: relative;
@@ -52,6 +58,7 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .cmd-button:before {
     content: '';
     position: absolute;
@@ -64,10 +71,12 @@
     transform: translate(-50%, -50%);
     transition: width 0.3s ease, height 0.3s ease;
 }
+
 .cmd-button:hover:before {
     width: 300%;
     height: 300%;
 }
+
 /* Loading state refinements */
 
 .App-main {
@@ -175,16 +184,18 @@
 .cmd-button:hover {
     background-color: var(--hover-color);
 }
- /* Loading state styles */
+
+/* Loading state styles */
 .App.loading {
-  opacity: 0.7;
-  pointer-events: none;
-  transition: all 0.3s ease;
+    opacity: 0.7;
+    pointer-events: none;
+    transition: all 0.3s ease;
 }
+
 /* Improve accessibility */
 .tab-button:focus {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
     background-color: var(--primary-color-dark);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
@@ -194,7 +205,8 @@
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
- /* CSS variables for consistent theming */
+
+/* CSS variables for consistent theming */
 :root {
     /* Color palette */
     --color-primary: #3498db;
