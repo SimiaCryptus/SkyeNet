@@ -6,7 +6,8 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCog, faHome, faSignInAlt, faSignOutAlt} from '@fortawesome/free-solid-svg-icons';
 import {ThemeMenu} from "./ThemeMenu";
 import {WebSocketMenu} from "./WebSocketMenu";
-import {RootState} from "@store/index";
+import {RootState} from "../../store/index";
+import {toggleVerbose} from "../../store/slices/uiSlice";
 
 const MenuContainer = styled.div`
     display: flex;
@@ -122,7 +123,7 @@ export const Menu: React.FC = () => {
                         <DropdownItem onClick={() => handleMenuClick('share')}>Share</DropdownItem>
                         <DropdownItem onClick={() => handleMenuClick('cancel')}>Cancel</DropdownItem>
                         <DropdownItem onClick={() => handleMenuClick('delete')}>Delete</DropdownItem>
-                        <DropdownItem onClick={() => handleMenuClick('verbose')}>
+                        <DropdownItem onClick={() => toggleVerbose()}>
                             {verboseMode ? 'Hide Verbose' : 'Show Verbose'}
                         </DropdownItem>
                     </DropdownContent>

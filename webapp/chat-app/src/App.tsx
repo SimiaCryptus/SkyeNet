@@ -9,7 +9,6 @@ import ThemeProvider from './themes/ThemeProvider';
 import {Menu} from "./components/Menu/Menu";
 import {Modal} from "./components/Modal/Modal";
 import {setupUIHandlers} from './utils/uiHandlers';
-import {setupMessageHandling} from './utils/messageHandling';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-css';
@@ -40,7 +39,6 @@ const App: React.FC = () => {
     React.useEffect(() => {
         console.log(`${LOG_PREFIX} Setting up handlers`);
         setupUIHandlers();
-        setupMessageHandling();
     }, []);
 
     React.useEffect(() => {

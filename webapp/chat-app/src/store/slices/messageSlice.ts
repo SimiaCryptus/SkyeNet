@@ -23,13 +23,7 @@ const initialState: MessageState = {
     messageVersions: {},
     referenceMessages: {},
 };
-// Add type-safe selector
-// Ensure selector always returns an array
-export const selectMessages = (state: RootState) => {
-    const messages = state.messages?.messages;
-    return Array.isArray(messages) ? messages : [];
-};
-// Add selector for messages
+
 const sanitizeHtmlContent = (content: string): string => {
     console.debug(`${LOG_PREFIX} Sanitizing HTML content`);
     return DOMPurify.sanitize(content, {
@@ -46,7 +40,6 @@ const messageSlice = createSlice({
         addMessage: (state: MessageState, action: PayloadAction<Message>) => {
             const messageId = action.payload.id;
             const messageVersion = action.payload.version;
-            // Check if message already exists and compare versions
             const existingVersion = state.messageVersions[messageId];
             if (existingVersion && existingVersion >= messageVersion) {
                 console.debug(`${LOG_PREFIX} Ignoring older/duplicate message version:`, {
@@ -56,30 +49,23 @@ const messageSlice = createSlice({
                 });
                 return;
             }
-            // Only log message ID and type to reduce noise
-
             console.debug(`${LOG_PREFIX} Adding message:`, {
                 id: messageId,
                 version: messageVersion,
                 type: action.payload.type,
                 isHtml: action.payload.isHtml
             });
-            // Update version tracking
             state.messageVersions[messageId] = messageVersion;
-            // Remove existing message if it's an update
             if (existingVersion) {
                 state.messages = state.messages.filter(msg => msg.id !== messageId);
             }
-            // Reset tab state when new messages arrive
             resetTabState();
 
-            // Only sanitize if not already sanitized
             if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
                 action.payload.content = action.payload.rawHtml;
                 action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                 action.payload.sanitized = true;
                 console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
-                // Process tabs after sanitization using MutationObserver
                 const observer = new MutationObserver(() => {
                     updateTabs();
                     observer.disconnect();

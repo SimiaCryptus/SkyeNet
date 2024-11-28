@@ -48,11 +48,11 @@ function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
     };
 }
 
-
 const tabStates = new Map<string, TabState>();
 const processedTabs = new Set<string>();
 // Track active mutations to prevent infinite loops
 let isMutating = false;
+
 // Helper function to initialize tab content
 function initializeTabContent(content: Element) {
     // Re-initialize syntax highlighting if needed
@@ -126,33 +126,6 @@ function setActiveTab(button: HTMLElement, container: HTMLElement) {
         if (content.getAttribute('data-tab') === forTab) {
             content.classList.add('active');
             (content as HTMLElement).style.display = 'block';
-            const processTabContentWithDebounce = debounce(() => {
-                const state = store.getState();
-                const messages = state.messages.messages;
-                const references = state.messages.referenceMessages || {};
-                // Process placeholders first
-                content.querySelectorAll('.referenced-message.placeholder').forEach(placeholder => {
-                    const refId = placeholder.getAttribute('data-ref-id');
-                    if (refId && references[refId]) {
-                        placeholder.innerHTML = references[refId].content;
-                        placeholder.classList.remove('placeholder');
-                    }
-                });
-                // Then process any new references
-                const rawContent = content.innerHTML;
-                const processedContent = expandMessageReferences(rawContent, messages);
-                if (rawContent !== processedContent) {
-                    content.innerHTML = processedContent;
-                }
-            }, 100);
-            // Process message references with debouncing
-            const processContent = debounce(() => {
-                const messages = store.getState().messages.messages;
-                const processedContent = expandMessageReferences(content.innerHTML, messages);
-                if (content.innerHTML !== processedContent) {
-                    content.innerHTML = processedContent;
-                }
-            }, 100);
             // Initial content processing
             processTabContent(content);
             // Set up enhanced mutation observer
@@ -188,7 +161,6 @@ function setActiveTab(button: HTMLElement, container: HTMLElement) {
                 content.innerHTML = processedContent;
             }
             // Update nested tabs
-
             updateNestedTabs(content as HTMLElement);
         } else {
             content.classList.remove('active');

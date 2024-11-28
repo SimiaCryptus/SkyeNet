@@ -25,6 +25,7 @@ mermaid.initialize({startOnLoad: true});
 window.mermaid = mermaid; // Make mermaid globally accessible
 window.QRCode = QRCodeGenerator; // Make QRCode globally accessible
 console.log('[App] Mermaid initialized, QRCode ready');
+
 try {
     console.log('[App] Starting application render...');
 

@@ -5,7 +5,7 @@ import {RootState} from '../store';
 import {logger} from '../utils/logger';
 import {Message} from '../types';
 import {updateTabs, resetTabState} from '../utils/tabHandling';
-import {handleMessageAction} from '../utils/messageHandling';
+import WebSocketService from "../services/websocket";
 
 const expandMessageReferences = (content: string, messages: Message[]): string => {
     if (!content) return '';
@@ -26,6 +26,7 @@ const MessageListContainer = styled.div`
     flex-direction: column;
     gap: 1rem;
 `;
+
 const MessageContent = styled.div`
     .href-link, .play-button, .regen-button, .cancel-button, .text-submit-button {
         cursor: pointer;
@@ -36,6 +37,7 @@ const MessageContent = styled.div`
         }
     }
 `;
+
 const extractMessageAction = (target: HTMLElement): { messageId: string | undefined, action: string | undefined } => {
     // Check for data attributes
     const messageId = target.getAttribute('data-message-id') ??
@@ -61,17 +63,18 @@ const MessageItem = styled.div<{ type: 'user' | 'system' | 'response' }>`
     max-width: 80%;
     align-self: ${({type}) => type === 'user' ? 'flex-end' : 'flex-start'};
     background-color: ${({type}) => {
-    switch (type) {
-        case 'user':
-            return '#007bff';
-        case 'system':
-            return '#6c757d';
-        default:
-            return '#f8f9fa';
-    }
-}};
+        switch (type) {
+            case 'user':
+                return '#007bff';
+            case 'system':
+                return '#6c757d';
+            default:
+                return '#f8f9fa';
+        }
+    }};
     color: ${({type}) => type === 'user' || type === 'system' ? '#fff' : '#212529'};
 `;
+
 const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const {messageId, action} = extractMessageAction(target);
@@ -81,6 +84,51 @@ const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         handleMessageAction(messageId, action);
     }
+};
+
+export const handleMessageAction = (messageId: string, action: string) => {
+    logger.debug('Processing message action', {messageId, action});
+
+    // Handle text submit actions specially
+    if (action === 'text-submit') {
+        const input = document.querySelector(`.reply-input[data-message-id="${messageId}"]`) as HTMLTextAreaElement;
+        if (input) {
+            const text = input.value;
+            const escapedText = encodeURIComponent(text);
+            const message = `!${messageId},userTxt,${escapedText}`;
+            WebSocketService.send(message);
+            logger.debug('Sent text submit message', {messageId, text: text.substring(0, 100)});
+            input.value = '';
+        }
+        return;
+    }
+    // Handle link clicks
+    if (action === 'link') {
+        logger.debug('Processing link click', {messageId});
+        WebSocketService.send(`!${messageId},link`);
+        return;
+    }
+    // Handle run/play button clicks
+    if (action === 'run') {
+        logger.debug('Processing run action', {messageId});
+        WebSocketService.send(`!${messageId},run`);
+        return;
+    }
+    // Handle regenerate button clicks
+    if (action === 'regen') {
+        logger.debug('Processing regenerate action', {messageId});
+        WebSocketService.send(`!${messageId},regen`);
+        return;
+    }
+    // Handle cancel button clicks
+    if (action === 'stop') {
+        logger.debug('Processing stop action', {messageId});
+        WebSocketService.send(`!${messageId},stop`);
+        return;
+    }
+    // Handle all other actions
+    logger.debug('Processing generic action', {messageId, action});
+    WebSocketService.send(`!${messageId},${action}`);
 };
 
 interface MessageListProps {
@@ -99,10 +147,12 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     }, []);
 
     const storeMessages = useSelector((state: RootState) => state.messages.messages);
-    // Ensure messages is always an array
+
     const messages = Array.isArray(propMessages) ? propMessages :
         Array.isArray(storeMessages) ? storeMessages : [];
+
     const processMessageContent = useCallback((content: string) => {
+        logger.debug('Processing message content', {contentLength: content.length});
         return expandMessageReferences(content, messages);
     }, [messages]);
 
@@ -134,18 +184,12 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
 
     return (
         <MessageListContainer>
-
             {messages.map((message) => {
                 logger.debug('MessageList - Rendering message', {
                     id: message.id,
                     type: message.type,
                     timestamp: message.timestamp,
                     contentLength: message.content?.length || 0
-                });
-                // Log message render before returning JSX
-                logger.debug('MessageList - Message rendered', {
-                    id: message.id,
-                    type: message.type
                 });
                 return (
                     <MessageItem

@@ -18,7 +18,7 @@ const initialState: UiState = {
     activeTab: 'chat', // Set default tab
     lastUpdate: Date.now()
 };
-// Debug logging helper
+
 const logStateChange = (action: string, payload: any = null, prevState: any = null, newState: any = null) => {
     console.log(`[UI Slice] ${action}`, {
         ...(payload && {payload}),
@@ -26,7 +26,6 @@ const logStateChange = (action: string, payload: any = null, prevState: any = nu
         ...(newState && {newState})
     });
 };
-
 
 const uiSlice = createSlice({
     name: 'ui',
@@ -82,7 +81,6 @@ const uiSlice = createSlice({
 });
 
 export const {setTheme, showModal, hideModal, toggleVerbose, setActiveTab} = uiSlice.actions;
-// Log initial state with helper
 logStateChange('Initialized slice', null, null, initialState);
 
 export default uiSlice.reducer;

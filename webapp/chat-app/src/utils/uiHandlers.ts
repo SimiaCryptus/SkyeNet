@@ -7,7 +7,7 @@ export const setupUIHandlers = () => {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (event) => {
-        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'v') {
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'V') {
             event.preventDefault();
             console.log('Keyboard shortcut triggered: Toggle verbose mode');
             store.dispatch(toggleVerbose());
