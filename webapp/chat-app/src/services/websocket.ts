@@ -14,24 +14,10 @@ export class WebSocketService {
     private isReconnecting = false;
     private connectionTimeout: NodeJS.Timeout | null = null;
     private messageQueue: string[] = [];
-    private readonly HEARTBEAT_INTERVAL = 30000;
-
-    queueMessage(message: string) {
-        console.debug('[WebSocket] Queuing message:', message.substring(0, 100) + (message.length > 100 ? '...' : ''));
-        this.messageQueue.push(message);
-        this.processMessageQueue();
-    }
 
     public getSessionId(): string {
         console.debug('[WebSocket] Getting session ID:', this.sessionId);
         return this.sessionId;
-    }
-
-    public getUrl(): string {
-        const config = this.getConfig();
-        if (!config) return 'not available';
-        const path = this.getWebSocketPath();
-        return `${config.protocol}//${config.url}:${config.port}${path}ws`;
     }
 
     public addErrorHandler(handler: (error: Error) => void): void {
@@ -65,24 +51,9 @@ export class WebSocketService {
         console.log('[WebSocket] Connection handler removed');
     }
 
-    private debugLog(message: string, ...args: any[]) {
-        if (this.DEBUG) {
-            console.debug(`[WebSocket] ${message}`, ...args);
-        }
-    }
-
     public isConnected(): boolean {
         return this.ws?.readyState === WebSocket.OPEN;
     }
-
-    private stopHeartbeat() {
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
-            console.log('[WebSocket] Stopped heartbeat monitoring');
-        }
-    }
-
 
     connect(sessionId: string): void {
         try {
@@ -104,7 +75,14 @@ export class WebSocketService {
             const path = this.getWebSocketPath();
             // Only create new connection if not already connected or reconnecting
             if (!this.isConnected() && !this.isReconnecting) {
-                const wsUrl = `${config.protocol}//${config.url}:${config.port}${path}ws?sessionId=${sessionId}`;
+                // Construct URL with proper handling of default ports
+                let wsUrl = `${config.protocol}//${config.url}`;
+                // Only add port if it's non-standard
+                if ((config.protocol === 'ws:' && config.port !== '80') ||
+                    (config.protocol === 'wss:' && config.port !== '443')) {
+                    wsUrl += `:${config.port}`;
+                }
+                wsUrl += `${path}ws?sessionId=${sessionId}`;
                 console.log(`[WebSocket] Connecting to: ${wsUrl}`);
                 this.ws = new WebSocket(wsUrl);
                 this.setupEventHandlers();
@@ -115,7 +93,7 @@ export class WebSocketService {
                         this.ws?.close();
                         this.attemptReconnect();
                     }
-                }, 5000);
+                }, 10000); // Increase timeout to 10 seconds
             }
         } catch (error) {
             console.error('[WebSocket] Connection error:', error);
@@ -147,13 +125,17 @@ export class WebSocketService {
         }
     }
 
-    private processMessageQueue() {
-        if (this.ws?.readyState === WebSocket.OPEN) {
-            console.debug(`[WebSocket] Processing message queue (${this.messageQueue.length} messages)`);
-            while (this.messageQueue.length > 0) {
-                const message = this.messageQueue.shift();
-                if (message) this.send(message);
-            }
+    private debugLog(message: string, ...args: any[]) {
+        if (this.DEBUG) {
+            console.debug(`[WebSocket] ${message}`, ...args);
+        }
+    }
+
+    private stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+            console.log('[WebSocket] Stopped heartbeat monitoring');
         }
     }
 
@@ -176,9 +158,10 @@ export class WebSocketService {
             }
         }
         console.debug('[WebSocket] Using default config');
+        const defaultPort = window.location.protocol === 'https:' ? '443' : '8083';
         return {
             url: window.location.hostname,
-            port: state.config.websocket.port || window.location.port || '8083',
+            port: state.config?.websocket?.port || window.location.port || defaultPort,
             protocol: window.location.protocol === 'https:' ? 'wss:' : 'ws:'
         };
     }
@@ -187,8 +170,13 @@ export class WebSocketService {
         const path = window.location.pathname;
         const strings = path.split('/');
         let wsPath = '/';
-        if (strings.length >= 2 && strings[1] !== '' && strings[1] !== 'index.html') {
+        // Simplify path handling to avoid potential issues
+        if (strings.length >= 2 && strings[1]) {
             wsPath = '/' + strings[1] + '/';
+        }
+        // Ensure path ends with trailing slash
+        if (!wsPath.endsWith('/')) {
+            wsPath += '/';
         }
         console.debug(`[WebSocket] Calculated WebSocket path: ${wsPath}`);
         return wsPath;

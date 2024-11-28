@@ -32,7 +32,7 @@ export const setupUIHandlers = () => {
         const target = event.target as HTMLElement;
         const messageAction = target.getAttribute('data-message-action');
         const messageId = target.getAttribute('data-message-id');
-        
+
         if (messageAction && messageId) {
             event.preventDefault();
             console.log(`Message action triggered - ID: ${messageId}, Action: ${messageAction}`);

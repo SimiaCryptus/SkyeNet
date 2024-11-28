@@ -10,7 +10,6 @@ interface ThemeProviderProps {
 
 const LOG_PREFIX = '[ThemeProvider]';
 
-
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
     const currentTheme = useSelector((state: RootState) => state.ui.theme);
     const isInitialMount = useRef(true);

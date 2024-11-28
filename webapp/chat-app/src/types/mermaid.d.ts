@@ -6,8 +6,8 @@ declare module 'mermaid' {
         parse: (text: string) => void;
         parseError?: Error;
     }
-    
+
     const mermaid: MermaidAPI;
     export default mermaid;
-    export type { MermaidAPI };
+    export type {MermaidAPI};
 }

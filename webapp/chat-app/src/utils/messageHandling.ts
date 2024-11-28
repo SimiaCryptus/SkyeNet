@@ -5,9 +5,35 @@ import {updateTabs} from './tabHandling';
 import WebSocketService from '../services/websocket';
 import {logger} from './logger';
 
+const messageCache = new Map<string, string>();
+const MAX_EXPANSION_DEPTH = 10;
+const expandMessageReferences = (content: string, depth = 0): string => {
+    if (depth > MAX_EXPANSION_DEPTH) {
+        logger.warn('Max message expansion depth reached', {content});
+        return content;
+    }
+    return content.replace(/\{([^}]+)}/g, (match, messageId) => {
+        const cachedContent = messageCache.get(messageId);
+        if (cachedContent) {
+            return expandMessageReferences(cachedContent, depth + 1);
+        }
+        return match;
+    });
+};
+const processTabContent = () => {
+    const activeTabs = document.querySelectorAll('.tab-content.active');
+    activeTabs.forEach(tab => {
+        const content = tab.innerHTML;
+        const expandedContent = expandMessageReferences(content);
+        if (content !== expandedContent) {
+            tab.innerHTML = expandedContent;
+        }
+    });
+};
+
 export const handleMessageAction = (messageId: string, action: string) => {
     logger.debug('Processing message action', {messageId, action});
-    
+
     // Handle text submit actions specially
     if (action === 'text-submit') {
         const input = document.querySelector(`.reply-input[data-message-id="${messageId}"]`) as HTMLTextAreaElement;
@@ -29,7 +55,7 @@ export const handleMessageAction = (messageId: string, action: string) => {
     }
     // Handle run/play button clicks
     if (action === 'run') {
-        logger.debug('Processing run action', {messageId}); 
+        logger.debug('Processing run action', {messageId});
         WebSocketService.send(`!${messageId},run`);
         return;
     }
@@ -57,8 +83,9 @@ export const setupMessageHandling = () => {
     const handleMessage = (message: Message) => {
         const {id, version, content} = message;
         console.log(`[MessageHandler] Processing message: ${id} (v${version})`);
-        
+
         messageVersions.set(id, version);
+        messageCache.set(id, content);
         messageMap.set(id, content);
         console.log(`[MessageHandler] Stored message content: "${content}"`);
 
@@ -74,6 +101,7 @@ export const setupMessageHandling = () => {
         if (message.isHtml) {
             requestAnimationFrame(() => {
                 updateTabs();
+                processTabContent();
             });
         }
     };
@@ -83,29 +111,4 @@ export const setupMessageHandling = () => {
         messageVersions,
         messageMap
     };
-};
-
-export const substituteMessages = (
-    messageContent: string, 
-    messageMap: Map<string, string>,
-    depth = 0
-) : string => {
-    const MAX_DEPTH = 10;
-    if (depth > MAX_DEPTH) {
-        console.warn(`[MessageSubstitution] Max depth (${MAX_DEPTH}) reached for content: "${messageContent}"`);
-        return messageContent;
-    }
-    console.log(`[MessageSubstitution] Processing substitutions at depth ${depth}: "${messageContent}"`);
-
-
-    return messageContent.replace(/\{([^}]+)}/g, (match, id) => {
-        console.log(`[MessageSubstitution] Found reference: ${id}`);
-        const substitution = messageMap.get(id);
-        if (substitution) {
-            console.log(`[MessageSubstitution] Substituting ${id} with: "${substitution}"`);
-            return substituteMessages(substitution, messageMap, depth + 1);
-        }
-        console.log(`[MessageSubstitution] No substitution found for: ${id}`);
-        return match;
-    });
 };

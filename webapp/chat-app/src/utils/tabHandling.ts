@@ -177,34 +177,4 @@ function setupTabContainer(container: TabContainer) {
         }
     }
 
-
-    function restoreTabState(container: HTMLElement) {
-        try {
-            const containerId = container.id;
-            const savedTab = localStorage.getItem(`tab_state_${containerId}`)
-                || tabStates.get(containerId)?.activeTab;
-
-            if (savedTab) {
-                const button = container.querySelector(
-                    `.tab-button[data-for-tab="${savedTab}"]`
-                ) as HTMLElement;
-
-                if (button) {
-                    console.log(`${LOG_PREFIX} Restoring tab state:`, {
-                        containerId,
-                        savedTab
-                    });
-                    setActiveTab(button, container);
-                }
-            } else {
-                // Set first tab as active by default
-                const firstButton = container.querySelector('.tab-button') as HTMLElement;
-                if (firstButton) {
-                    setActiveTab(firstButton, container);
-                }
-            }
-        } catch (error) {
-            console.warn(`${LOG_PREFIX} Failed to restore tab state:`, error);
-        }
-    }
 }

@@ -10,7 +10,6 @@ declare module 'qrcode-generator' {
     }
 
     export interface QRCodeGenerator {
-        (type?: number, errorCorrectionLevel?: string): QRCode;
         TypeNumber: number;
         ErrorCorrectionLevel: {
             L: string;
@@ -18,6 +17,8 @@ declare module 'qrcode-generator' {
             Q: string;
             H: string;
         };
+
+        (type?: number, errorCorrectionLevel?: string): QRCode;
     }
 
     const qrcode: QRCodeGenerator;

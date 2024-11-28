@@ -86,7 +86,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 debugLog('Processing HTML message');
                 const newMessage = {
                     id: `${Date.now()}`,
-                    content: data.data,
+                    content: data.data || '',
                     type: 'response' as const,
                     timestamp: data.timestamp,
                     isHtml: true,

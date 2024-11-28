@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
@@ -6,6 +6,17 @@ import {logger} from '../utils/logger';
 import {Message} from '../types';
 import {updateTabs} from '../utils/tabHandling';
 import {handleMessageAction} from '../utils/messageHandling';
+
+const expandMessageReferences = (content: string, messages: Message[]): string => {
+    if (!content) return '';
+    return content.replace(/\{([^}]+)}/g, (match, messageId) => {
+        const referencedMessage = messages.find(m => m.id === messageId);
+        if (referencedMessage) {
+            return expandMessageReferences(referencedMessage.content, messages);
+        }
+        return match;
+    });
+};
 
 const MessageListContainer = styled.div`
     flex: 1;
@@ -25,14 +36,14 @@ const MessageContent = styled.div`
         }
     }
 `;
-const extractMessageAction = (target: HTMLElement): {messageId: string | undefined, action: string | undefined} => {
+const extractMessageAction = (target: HTMLElement): { messageId: string | undefined, action: string | undefined } => {
     // Check for data attributes
-    const messageId = target.getAttribute('data-message-id') ?? 
-                     target.getAttribute('data-id') ?? 
-                     undefined;
-    let action = target.getAttribute('data-message-action') ?? 
-                 target.getAttribute('data-action') ?? 
-                 undefined;
+    const messageId = target.getAttribute('data-message-id') ??
+        target.getAttribute('data-id') ??
+        undefined;
+    let action = target.getAttribute('data-message-action') ??
+        target.getAttribute('data-action') ??
+        undefined;
     // Check element classes
     if (!action) {
         if (target.classList.contains('href-link')) action = 'link';
@@ -58,7 +69,7 @@ const MessageItem = styled.div<{ type: 'user' | 'system' | 'response' }>`
         default:
             return '#f8f9fa';
     }
-    }};
+}};
     color: ${({type}) => type === 'user' || type === 'system' ? '#fff' : '#212529'};
 `;
 const handleClick = (e: React.MouseEvent) => {
@@ -73,65 +84,81 @@ const handleClick = (e: React.MouseEvent) => {
 };
 
 interface MessageListProps {
-        messages?: Message[];
-    }
+    messages?: Message[];
+}
 
-    const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
-        logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
+const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
+    logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
 
-        // Log when component is mounted/unmounted
-        React.useEffect(() => {
-            logger.component('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
-            return () => {
-                logger.component('MessageList', 'Component unmounted', {timestamp: new Date().toISOString()});
-            };
-        }, []);
+    // Log when component is mounted/unmounted
+    React.useEffect(() => {
+        logger.component('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
+        return () => {
+            logger.component('MessageList', 'Component unmounted', {timestamp: new Date().toISOString()});
+        };
+    }, []);
 
-        const storeMessages = useSelector((state: RootState) => state.messages.messages);
-        // Ensure messages is always an array
-        const messages = Array.isArray(propMessages) ? propMessages :
-            Array.isArray(storeMessages) ? storeMessages : [];
+    const storeMessages = useSelector((state: RootState) => state.messages.messages);
+    // Ensure messages is always an array
+    const messages = Array.isArray(propMessages) ? propMessages :
+        Array.isArray(storeMessages) ? storeMessages : [];
+    const processMessageContent = useCallback((content: string) => {
+        return expandMessageReferences(content, messages);
+    }, [messages]);
 
-        React.useEffect(() => {
-            logger.debug('MessageList - Messages updated', {
-                messageCount: messages.length,
-                messages: messages,
-                source: propMessages ? 'props' : 'store'
+    React.useEffect(() => {
+        logger.debug('MessageList - Messages updated', {
+            messageCount: messages.length,
+            messages: messages,
+            source: propMessages ? 'props' : 'store'
+        });
+        // Process tabs after messages update
+        requestAnimationFrame(() => {
+            updateTabs();
+            // Process message references in visible tab content
+            document.querySelectorAll('.tab-content.active').forEach(tab => {
+                const content = tab.innerHTML;
+                const expandedContent = processMessageContent(content);
+                if (content !== expandedContent) {
+                    tab.innerHTML = expandedContent;
+                }
             });
-            // Process tabs after messages update
-            requestAnimationFrame(() => {
-                updateTabs();
-            });
-        }, [messages]);
+        });
+    }, [messages]);
 
-        return (
-            <MessageListContainer>
-                {messages.map((message) => {
-                    logger.debug('MessageList - Rendering message', {
-                        id: message.id,
-                        type: message.type,
-                        timestamp: message.timestamp,
-                        contentLength: message.content?.length || 0
-                    });
-                    // Log message render before returning JSX
-                    logger.debug('MessageList - Message rendered', {
-                        id: message.id,
-                        type: message.type
-                    });
+    return (
+        <MessageListContainer>
 
-                    return (
-                        <MessageItem key={`${message.id}-${message.timestamp}-${Math.random()}`} type={message.type}>
-                            <MessageContent
-                                className="message-body"
-                                onClick={handleClick}
-                                dangerouslySetInnerHTML={{__html: message.content}}
-                            />
-                        </MessageItem>
-                    );
-                })}
-            </MessageListContainer>
-        );
-    };
+            {messages.map((message) => {
+                logger.debug('MessageList - Rendering message', {
+                    id: message.id,
+                    type: message.type,
+                    timestamp: message.timestamp,
+                    contentLength: message.content?.length || 0
+                });
+                // Log message render before returning JSX
+                logger.debug('MessageList - Message rendered', {
+                    id: message.id,
+                    type: message.type
+                });
+                return (
+                    <MessageItem
+                        key={`${message.id}-${message.timestamp}`}
+                        type={message.type}
+                    >
+                        <MessageContent
+                            className="message-body"
+                            onClick={handleClick}
+                            dangerouslySetInnerHTML={{
+                                __html: processMessageContent(message.content)
+                            }}
+                        />
+                    </MessageItem>
+                );
+            })}
+        </MessageListContainer>
+    );
+};
 
 
 export default MessageList;

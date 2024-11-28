@@ -1,6 +1,7 @@
 import {LogEntry, LogLevel} from '../types';
 
 class Logger {
+    private static instance: Logger;
     private readonly LOG_LEVELS = {
         debug: 0,
         info: 1,
@@ -9,15 +10,8 @@ class Logger {
     };
     private isDevelopment = process.env.NODE_ENV === 'development';
     private groupDepth = 0;
-    private static instance: Logger;
     private logHistory: LogEntry[] = [];
     private logLevel: LogLevel = 'info';
-    private readonly logLevelSeverity: Record<LogLevel, number> = {
-        debug: 0,
-        info: 1,
-        warn: 2,
-        error: 3
-    };
 
     private constructor() {
         console.log('%cLogger initialized', 'color: #8a2be2; font-weight: bold;');
@@ -28,11 +22,6 @@ class Logger {
             Logger.instance = new Logger();
         }
         return Logger.instance;
-    }
-
-    public setLogLevel(level: LogLevel): void {
-        this.logLevel = level;
-        console.log(`%cLog level set to: ${level}`, 'color: #8a2be2; font-style: italic;');
     }
 
     public debug(message: string, data?: unknown): void {
@@ -58,26 +47,6 @@ class Logger {
             originalData: data
         };
         this.log('debug', formattedMessage, formattedData);
-    }
-
-    public getHistory(): LogEntry[] {
-        return [...this.logHistory];
-    }
-
-    public clearHistory(): void {
-        this.logHistory = [];
-        console.clear();
-        console.log('%cLog history cleared', 'color: #8a2be2; font-style: italic;');
-    }
-
-    public group(label: string): void {
-        this.groupDepth++;
-        console.group(label);
-    }
-
-    public groupEnd(): void {
-        this.groupDepth = Math.max(0, this.groupDepth - 1);
-        console.groupEnd();
     }
 
     private log(level: LogLevel, message: string, data?: unknown): void {

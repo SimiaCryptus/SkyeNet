@@ -55,7 +55,6 @@ export const store = configureStore({
 });
 
 export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
 // Add development-only warning
 if (process.env.NODE_ENV === 'development') {
     console.log('%c Redux Store Initialized in Development Mode',
