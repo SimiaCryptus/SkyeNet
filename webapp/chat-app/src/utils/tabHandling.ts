@@ -172,21 +172,15 @@ function setActiveTab(button: HTMLElement, container: HTMLElement) {
 function restoreTabState(container: TabContainer) {
     try {
         const containerId = container.id;
-        // Only use in-memory state
         const savedTab = tabStates.get(containerId)?.activeTab;
         if (savedTab) {
             const button = container.querySelector(
                 `.tab-button[data-for-tab="${savedTab}"]`
             ) as HTMLElement;
             if (button) {
-                // console.log(`${LOG_PREFIX} Restoring tab state:`, {
-                //     containerId,
-                //     savedTab
-                // });
                 setActiveTab(button, container);
             }
         } else {
-            // Set first tab as active by default
             const firstButton = container.querySelector('.tab-button') as HTMLElement;
             if (firstButton) {
                 setActiveTab(firstButton, container);

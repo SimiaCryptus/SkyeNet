@@ -126,23 +126,18 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
     }
 
     .cmd-button {
-        display: inline-block;
-        padding: 8px 15px;
-        font-size: 14px;
-        cursor: pointer;
-        text-align: center;
-        text-decoration: none;
-        outline: none;
-        background-color: var(--primary-color, ${({theme}) => theme.colors.primary});
+    background-color: ${({theme}) => theme.colors.primary};
         color: #fff;
         border: none;
         border-radius: 5px;
-        box-shadow: var(--shadow-md, ${({theme}) => theme.shadows?.medium});
+    box-shadow: ${({theme}) => theme.shadows.medium};
         transition: all ${({theme}) => theme.transitions?.default} var(--transition-timing);
+    /* Inherit base styles from App.css */
+    composes: cmd-button from global;
     }
 
     .cmd-button:hover {
-        background-color: ${({theme}) => theme.colors.primaryDark || theme.colors.primary};
+    background-color: ${({theme}) => theme.colors.primaryDark};
         transform: translateY(-2px);
         box-shadow: ${({theme}) => theme.shadows?.large};
     }

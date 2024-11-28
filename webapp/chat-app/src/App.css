@@ -9,12 +9,12 @@
 /* Improve dark mode media query placement */
 @media (prefers-color-scheme: dark) {
     :root {
-        --background-color: #1a1a1a;
-        --text-color: #ffffff;
-        --primary-color: #3498db;
-        --hover-background: rgba(52, 152, 219, 0.1);
-        --success-color: #2ecc71;
-        --hover-color: #27ae60;
+        --background-color: var(--color-dark);
+        --text-color: var(--color-light);
+        --primary-color: var(--color-primary);
+        --hover-background: var(--color-primary-alpha);
+        --success-color: var(--color-success);
+        --hover-color: var(--color-primary-dark);
     }
 
     .App {
@@ -44,6 +44,13 @@
     padding: 0.75rem 1.25rem;
     min-width: 100px;
     transition: all 0.3s ease;
+    font-family: inherit;
+    border: none;
+    background: none;
+    cursor: pointer;
+    position: relative;
+    font-weight: bold;
+    color: var(--primary-color);
 }
 
 .tab-button:focus-visible {
@@ -55,8 +62,19 @@
 .cmd-button {
     position: relative;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    outline: none;
+    color: #fff;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 5px;
 }
 
 .cmd-button:before {
@@ -115,16 +133,6 @@
 }
 
 
-.tab-button {
-    padding: 0.5rem 1rem;
-    border: none;
-    background: none;
-    cursor: pointer;
-    position: relative;
-    font-weight: bold;
-    color: #007bff;
-    transition: all 0.2s ease-in-out;
-}
 
 .tab-button:hover {
     background: #f2f2f7;
@@ -167,19 +175,6 @@
     }
 }
 
-.cmd-button {
-    display: inline-block;
-    padding: 8px 15px;
-    font-size: 14px;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    outline: none;
-    color: #fff;
-    background-color: var(--primary-color);
-    border: none;
-    border-radius: 5px;
-}
 
 .cmd-button:hover {
     background-color: var(--hover-color);
@@ -196,7 +191,7 @@
 .tab-button:focus {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
-    background-color: var(--primary-color-dark);
+    background-color: var(--color-primary-dark);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
