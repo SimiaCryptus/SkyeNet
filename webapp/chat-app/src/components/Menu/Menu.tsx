@@ -15,6 +15,7 @@ const MenuContainer = styled.div`
     padding: ${({theme}) => theme.sizing.spacing.sm};
     background-color: ${({theme}) => theme.colors.surface};
     border-bottom: 1px solid ${({theme}) => theme.colors.border};
+    max-height: 5vh;
 `;
 
 const ToolbarLeft = styled.div`

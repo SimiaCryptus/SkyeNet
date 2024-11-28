@@ -98,6 +98,8 @@ declare module 'styled-components' {
             success: string;
             warning: string;
             info: string;
+            primaryDark?: string;
+            hover?: string;
         };
     }
 }

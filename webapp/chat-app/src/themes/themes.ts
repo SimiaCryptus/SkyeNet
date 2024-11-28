@@ -52,6 +52,8 @@ interface ThemeColors {
     success: string;
     warning: string;
     info: string;
+    hover?: string;
+    primaryDark?: string;
 }
 
 interface ThemeSizing {
@@ -100,6 +102,16 @@ interface ExtendedTheme {
     sizing: ThemeSizing;
     typography: ThemeTypography;
     name: string;
+    shadows: {
+        small: string;
+        medium: string;
+        large: string;
+    };
+    transitions: {
+        default: string;
+        fast: string;
+        slow: string;
+    };
     config: {
         stickyInput: boolean;
         singleInput: boolean;
@@ -152,6 +164,16 @@ const baseTheme = {
             spacing: this.sizing.spacing,
             typography: this.typography.fontSize
         });
+    },
+    shadows: {
+        small: '0 1px 3px rgba(0, 0, 0, 0.12)',
+        medium: '0 4px 6px rgba(0, 0, 0, 0.15)',
+        large: '0 10px 20px rgba(0, 0, 0, 0.20)'
+    },
+    transitions: {
+        default: '0.3s ease',
+        fast: '0.15s ease',
+        slow: '0.5s ease'
     },
     config: {
         stickyInput: true,
@@ -254,6 +276,8 @@ export const mainTheme: ExtendedTheme = {
         success: '#34C759',
         warning: '#FF9500',
         info: '#5856D6',
+        primaryDark: '#0056b3', // Add darker shade of primary
+        hover: '#2C5282', // Add hover color
     },
     ...baseTheme,
 };
@@ -275,6 +299,7 @@ export const nightTheme: ExtendedTheme = {
         success: '#32D74B',
         warning: '#FF9F0A',
         info: '#5E5CE6',
+        primaryDark: '#0066cc',
     },
     ...baseTheme,
 };
@@ -296,6 +321,7 @@ export const forestTheme: ExtendedTheme = {
         success: '#52B788',
         warning: '#F77F00',
         info: '#4895EF',
+        primaryDark: '#1b4332',
     },
     ...baseTheme,
 };
@@ -317,6 +343,7 @@ export const ponyTheme: ExtendedTheme = {
         success: '#FF69B4',
         warning: '#FFB6C1',
         info: '#DB7093',
+        primaryDark: '#ff1493',
     },
     ...baseTheme,
 };
@@ -338,6 +365,7 @@ export const alienTheme: ExtendedTheme = {
         success: '#39FF14',
         warning: '#FFFF00',
         info: '#00FFFF',
+        primaryDark: '#2bbb0e',
     },
     ...baseTheme,
 };

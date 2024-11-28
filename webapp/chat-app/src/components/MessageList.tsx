@@ -42,6 +42,7 @@ const MessageListContainer = styled.div`
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    max-height: 85vh;
 `;
 
 const MessageContent = styled.div`
@@ -94,7 +95,6 @@ const extractMessageAction = (target: HTMLElement): { messageId: string | undefi
 const MessageItem = styled.div<{ type: 'user' | 'system' | 'response' }>`
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    max-width: 80%;
     align-self: ${({type}) => type === 'user' ? 'flex-end' : 'flex-start'};
     background-color: ${({type}) => {
         switch (type) {

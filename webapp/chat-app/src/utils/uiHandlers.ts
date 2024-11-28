@@ -1,18 +1,21 @@
 import {store} from '../store';
 import {showModal, toggleVerbose} from '../store/slices/uiSlice';
 import WebSocketService from '../services/websocket';
+import {debounce} from './tabHandling';
 
 export const setupUIHandlers = () => {
     console.log('Setting up UI event handlers...');
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (event) => {
+    // Debounce keyboard shortcuts
+    const handleKeyboardShortcut = debounce((event: KeyboardEvent) => {
         if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'V') {
             event.preventDefault();
             console.log('Keyboard shortcut triggered: Toggle verbose mode');
             store.dispatch(toggleVerbose());
         }
-    });
+    }, 250);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcut);
 
     // Modal handlers
     document.addEventListener('click', (event) => {

@@ -27,6 +27,26 @@ declare module 'styled-components' {
                 padding: string;
             };
         };
+        shadows: {
+            small: string;
+            medium: string;
+            large: string;
+        };
+        transitions: {
+            default: string;
+            fast: string;
+            slow: string;
+        };
+    shadows: {
+        small: string;
+        medium: string;
+        large: string;
+    };
+    transitions: {
+        default: string;
+        fast: string;
+        slow: string;
+    };
         typography: {
             fontFamily: string;
             fontSize: {
@@ -61,6 +81,8 @@ declare module 'styled-components' {
             success: string;
             warning: string;
             info: string;
+            hover?: string;
+            primaryDark?: string;
         };
         name: string;
         activeTab?: string;

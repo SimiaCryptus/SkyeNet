@@ -19,6 +19,7 @@ const InputContainer = styled.div`
     background-color: ${(props) => props.theme.colors.surface};
     border-top: 1px solid ${(props) => props.theme.colors.border};
     display: ${({theme}) => theme.config?.singleInput ? 'none' : 'block'};
+    max-height: 10vh;
 `;
 
 const TextArea = styled.textarea`

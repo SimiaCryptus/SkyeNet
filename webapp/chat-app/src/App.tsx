@@ -1,6 +1,9 @@
 import React from 'react';
 import {Provider} from 'react-redux';
 import {store} from './store';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import ErrorFallback from './components/ErrorBoundary/ErrorFallback';
+import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
 import './App.css';
 import websocket from './services/websocket';
 import {GlobalStyles} from './styles/GlobalStyles';
@@ -25,6 +28,15 @@ const APP_VERSION = '1.0.0';
 const LOG_PREFIX = '[App]';
 
 const App: React.FC = () => {
+    const [isLoading, setIsLoading] = React.useState(true);
+    React.useEffect(() => {
+        Promise.all([
+            Prism.highlightAll(),
+            mermaid.run()
+        ]).finally(() => {
+            setIsLoading(false);
+        });
+    }, []);
     console.group(`${LOG_PREFIX} Initializing v${APP_VERSION}`);
     console.log('Starting component render');
 
@@ -61,7 +73,8 @@ const App: React.FC = () => {
     }, []);
 
     return (
-        <Provider store={store}>
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+            <Provider store={store}>
             {(() => {
                 console.debug(`${LOG_PREFIX} Rendering Provider with store`);
                 return (
@@ -71,7 +84,8 @@ const App: React.FC = () => {
                             return (
                                 <>
                                     <GlobalStyles/>
-                                    <div className="App">
+                    <div className={`App ${isLoading ? 'loading' : ''}`}>
+                        {isLoading && <LoadingSpinner />}
                                         <Menu/>
                                         <ChatInterface
                                             sessionId={sessionId}
@@ -87,6 +101,7 @@ const App: React.FC = () => {
                 );
             })()}
         </Provider>
+        </ErrorBoundary>
     );
 };
 // Close the logging group when component is loaded

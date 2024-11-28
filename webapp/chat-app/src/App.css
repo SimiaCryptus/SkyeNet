@@ -1,16 +1,80 @@
 .App {
-    text-align: center;
     height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
 }
+/* Dark mode improvements */
+/* Improve dark mode media query placement */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: #1a1a1a;
+        --text-color: #ffffff;
+        --primary-color: #3498db;
+        --hover-background: rgba(52, 152, 219, 0.1);
+        --success-color: #2ecc71;
+        --hover-color: #27ae60;
+    }
+    
+    .App {
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+    
+    .tab-button {
+        color: var(--primary-color);
+    }
+    
+    .tab-button:hover {
+        background: var(--hover-background);
+    }
+    .cmd-button {
+        background-color: var(--success-color);
+    }
+    .cmd-button:hover {
+        background-color: var(--hover-color);
+    }
+}
+/* Improve tab button accessibility */
+.tab-button {
+    padding: 0.75rem 1.25rem;
+    min-width: 100px;
+    transition: all 0.3s ease;
+}
+.tab-button:focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+}
+/* Improve button states */
+.cmd-button {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cmd-button:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+.cmd-button:hover:before {
+    width: 300%;
+    height: 300%;
+}
+/* Loading state refinements */
 
 .App-main {
     flex: 1;
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    overflow: auto;
 }
 
 .App-header {
@@ -59,13 +123,16 @@
 
 .tab-content {
     flex: 1;
-    overflow: auto;
+    overflow: visible;
     width: 100%;
     transition: opacity 0.3s ease-in-out;
     flex-direction: column;
     padding: 1rem;
     animation: fadeIn 0.3s ease-in-out;
-    display: none;
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
 }
 
 .tab-content.active {
@@ -100,18 +167,45 @@
     text-decoration: none;
     outline: none;
     color: #fff;
-    background-color: #4CAF50;
+    background-color: var(--primary-color);
     border: none;
     border-radius: 5px;
-    box-shadow: 0 9px #999;
 }
 
 .cmd-button:hover {
-    background-color: #3e8e41;
+    background-color: var(--hover-color);
+}
+ /* Loading state styles */
+.App.loading {
+  opacity: 0.7;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+/* Improve accessibility */
+.tab-button:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+    background-color: var(--primary-color-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .cmd-button:active {
-    background-color: #3e8e41;
-    box-shadow: 0 5px #666;
-    transform: translateY(4px);
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+ /* CSS variables for consistent theming */
+:root {
+    /* Color palette */
+    --color-primary: #3498db;
+    --color-primary-dark: #2980b9;
+    --color-success: #2ecc71;
+    --color-error: #e74c3c;
+    --color-light: #ffffff;
+    --color-dark: #1a1a1a;
+    --color-primary-alpha: rgba(52, 152, 219, 0.1);
+    /* Semantic variables */
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
