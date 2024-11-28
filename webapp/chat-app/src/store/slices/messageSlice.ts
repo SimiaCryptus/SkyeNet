@@ -29,7 +29,8 @@ const sanitizeHtmlContent = (content: string): string => {
     return DOMPurify.sanitize(content, {
         ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'table', 'tr', 'td', 'th', 'thead', 'tbody',
             'button', 'input', 'label', 'select', 'option', 'textarea', 'code', 'pre', 'div', 'section'],
-        ALLOWED_ATTR: ['class', 'href', 'target', 'data-tab', 'data-for-tab', 'style', 'type', 'value', 'id', 'name'],
+        ALLOWED_ATTR: ['class', 'href', 'target', 'data-tab', 'data-for-tab', 'style', 'type', 'value', 'id', 'name', 
+            'data-message-id', 'data-id', 'data-message-action', 'data-action', 'data-ref-id', 'data-version'],
     });
 };
 
@@ -41,6 +42,7 @@ const messageSlice = createSlice({
             const messageId = action.payload.id;
             const messageVersion = action.payload.version;
             const existingVersion = state.messageVersions[messageId];
+            // Skip processing if message is older or duplicate
             if (existingVersion && existingVersion >= messageVersion) {
                 console.debug(`${LOG_PREFIX} Ignoring older/duplicate message version:`, {
                     id: messageId,
@@ -49,11 +51,20 @@ const messageSlice = createSlice({
                 });
                 return;
             }
+            // Update version tracking
+            state.messageVersions[messageId] = messageVersion;
+
+            // Store reference messages separately
+            if (messageId.startsWith('z')) {
+                state.referenceMessages[messageId] = action.payload;
+            }
+
             console.debug(`${LOG_PREFIX} Adding message:`, {
                 id: messageId,
                 version: messageVersion,
                 type: action.payload.type,
-                isHtml: action.payload.isHtml
+                isHtml: action.payload.isHtml,
+                // payload: action.payload,
             });
             state.messageVersions[messageId] = messageVersion;
             if (existingVersion) {
@@ -66,14 +77,8 @@ const messageSlice = createSlice({
                 action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                 action.payload.sanitized = true;
                 console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
-                const observer = new MutationObserver(() => {
-                    updateTabs();
-                    observer.disconnect();
-                });
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
+                // Use requestAnimationFrame for smoother updates
+                requestAnimationFrame(() => { updateTabs(); });
             }
             state.messages.push(action.payload);
             console.debug(`${LOG_PREFIX} Messages updated, total count: ${state.messages.length}`);

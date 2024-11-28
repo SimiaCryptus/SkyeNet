@@ -13,7 +13,6 @@ export class WebSocketService {
     private errorHandlers: ((error: Error) => void)[] = [];
     private isReconnecting = false;
     private connectionTimeout: NodeJS.Timeout | null = null;
-    private messageQueue: string[] = [];
 
     public getSessionId(): string {
         console.debug('[WebSocket] Getting session ID:', this.sessionId);
@@ -200,24 +199,29 @@ export class WebSocketService {
             console.debug('[WebSocket] Sending initial connect message');
         };
         this.ws.onmessage = (event) => {
-            // Only log message receipt in debug mode
             this.debugLog('Message received');
-            // Parse message data
-            const [id, version, content] = event.data.split(',');
+            // Find the first two comma positions to extract id and version
+            const firstComma = event.data.indexOf(',');
+            const secondComma = event.data.indexOf(',', firstComma + 1);
+            if (firstComma === -1 || secondComma === -1) {
+                console.warn('[WebSocket] Received malformed message:', event.data);
+                return;
+            }
+            const id = event.data.substring(0, firstComma);
+            const version = event.data.substring(firstComma + 1, secondComma);
+            const content = event.data.substring(secondComma + 1);
+
             if (!id || !version) {
                 console.warn('[WebSocket] Received malformed message:', event.data);
                 return;
             }
+            this.debugLog('Parsed message parts:', {
+                id,
+                version,
+                contentLength: content.length
+            });
 
-            // Enhanced HTML detection and handling
-            const isHtml = typeof content === 'string' &&
-                (/<[a-z][\s\S]*>/i.test(content));
-            // Ignore connect messages
-            if (content.includes('"type":"connect"')) {
-                console.debug('[WebSocket] Ignoring connect message');
-                return;
-            }
-
+            const isHtml = typeof content === 'string' && (/<[a-z][\s\S]*>/i.test(content));
             if (isHtml) {
                 console.debug('[WebSocket] HTML content detected, preserving markup');
             }
@@ -228,10 +232,15 @@ export class WebSocketService {
                 version,
                 content,
                 isHtml,
-                rawHtml: isHtml ? content : null,
+                rawHtml: content,
                 timestamp: Date.now(),
                 sanitized: false
             };
+
+            if (message.isHtml) {
+                console.log('[WebSocket] Processing HTML message');
+            }
+
             this.messageHandlers.forEach((handler) => handler(message));
         };
 

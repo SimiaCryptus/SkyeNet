@@ -1,27 +1,7 @@
+import {expandMessageReferences} from "../components/MessageList";
+
 const LOG_PREFIX = '[TabHandler]';
 import {store} from '../store';
-// Helper function to expand message references
-export const expandMessageReferences = (content: string, messages: any[]): string => {
-    if (!content || !messages?.length) return content || '';
-    let expandedContent = content;
-    let iterations = 0;
-    const MAX_ITERATIONS = 10;
-    while (iterations < MAX_ITERATIONS) {
-        const prevContent = expandedContent;
-        expandedContent = expandedContent.replace(/\{([^}]+)}/g, (match, messageId) => {
-            const referencedMessage = messages.find(m => m.id === messageId);
-            if (referencedMessage) {
-                // Prevent circular references
-                const tempMessages = messages.filter(m => m.id !== messageId);
-                return expandMessageReferences(referencedMessage.content, tempMessages);
-            }
-            return match;
-        });
-        if (prevContent === expandedContent) break;
-        iterations++;
-    }
-    return expandedContent;
-};
 
 interface TabState {
     containerId: string;
@@ -36,7 +16,7 @@ interface TabContainer extends HTMLElement {
 }
 
 // Add debounce utility to prevent multiple rapid updates
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
+export function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
     let timeout: NodeJS.Timeout;
     return function executedFunction(this: any, ...args: Parameters<T>) {
         const later = () => {
@@ -49,7 +29,6 @@ function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
 }
 
 const tabStates = new Map<string, TabState>();
-const processedTabs = new Set<string>();
 // Track active mutations to prevent infinite loops
 let isMutating = false;
 
@@ -68,6 +47,7 @@ function initializeTabContent(content: Element) {
         });
     });
 }
+
 // Define the content processor function
 function processTabContent(content: Element) {
     const messages = store.getState().messages.messages;
@@ -81,14 +61,16 @@ function processTabContent(content: Element) {
         // Re-initialize any interactive elements
         initializeTabContent(content);
     }
+    // Process nested tabs after content update
+    requestAnimationFrame(() => {
+        updateNestedTabs(content as HTMLElement);
+    });
 }
 
 
 // Move helper functions to module scope
 function saveTabState(containerId: string, activeTab: string) {
     try {
-        // Only store in memory, avoid localStorage due to quota issues
-        tabStates.set(containerId, {containerId, activeTab}); 
         // Only store in memory
         tabStates.set(containerId, {containerId, activeTab});
         console.log(`${LOG_PREFIX} Saved tab state:`, {containerId, activeTab});
@@ -98,19 +80,38 @@ function saveTabState(containerId: string, activeTab: string) {
 }
 
 function updateNestedTabs(element: HTMLElement) {
+    const MAX_RECURSION_DEPTH = 10;
+    const OPERATION_TIMEOUT = 5000;
+    const depth = 0;
+
+    if (depth >= MAX_RECURSION_DEPTH) {
+        console.warn('Max recursion depth reached in updateNestedTabs');
+        return;
+    }
+
     const nestedContainers = element.querySelectorAll('.tabs-container');
+    const timeoutId = setTimeout(() => console.warn('updateNestedTabs operation timed out'), OPERATION_TIMEOUT);
+
     nestedContainers.forEach(container => {
         if (container instanceof HTMLElement) {
-            setupTabContainer(container as TabContainer);
-            restoreTabState(container as TabContainer);
+            try {
+                setupTabContainer(container as TabContainer);
+                restoreTabState(container as TabContainer);
+            } catch (e) {
+                console.warn('Failed to process nested tab container:', e);
+            }
         }
     });
+    clearTimeout(timeoutId);
 }
 
 // Move setActiveTab to module scope
 function setActiveTab(button: HTMLElement, container: HTMLElement) {
     const forTab = button.getAttribute('data-for-tab');
     if (!forTab) return;
+    // Check if button is already active
+    if (button.classList.contains('active')) return;
+
     console.log(`${LOG_PREFIX} Setting active tab:`, {
         containerId: container.id,
         tab: forTab
@@ -126,42 +127,35 @@ function setActiveTab(button: HTMLElement, container: HTMLElement) {
         if (content.getAttribute('data-tab') === forTab) {
             content.classList.add('active');
             (content as HTMLElement).style.display = 'block';
-            // Initial content processing
-            processTabContent(content);
-            // Set up enhanced mutation observer
-             const observer = new MutationObserver((mutations, observer) => {
-                 mutations.forEach(mutation => {
-                     if (mutation.target instanceof Element) {
-                         processTabContent(mutation.target);
-                     }
-                 });
-             });
+            // Process content and update nested tabs
+            requestAnimationFrame(() => {
+                processTabContent(content);
+                updateNestedTabs(content as HTMLElement);
+            });
+            // Set up enhanced mutation observer with debounced handler
+            const debouncedProcess = debounce((element: Element) => {
+                processTabContent(element);
+            }, 100);
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach(mutation => {
+                    if (mutation.target instanceof Element) {
+                        debouncedProcess(mutation.target);
+                    }
+                });
+            });
+
             observer.observe(content, {
                 childList: true,
                 subtree: true,
-                 characterData: true,
+                characterData: true,
                 attributes: true,
                 attributeFilter: ['data-ref-id']
             });
             // Store observer reference for cleanup
             (content as any)._contentObserver = observer;
-            // Process message references in tab content
-            requestAnimationFrame(() => {
-                const messages = store.getState().messages.messages;
-                const processedContent = expandMessageReferences(content.innerHTML, messages);
-                if (content.innerHTML !== processedContent) {
-                    content.innerHTML = processedContent;
-                }
-            });
-            // Process message references in tab content
-            const messages = store.getState().messages.messages;
-            const rawContent = content.innerHTML;
-            const processedContent = expandMessageReferences(rawContent, messages);
-            if (rawContent !== processedContent) {
-                content.innerHTML = processedContent;
-            }
-            // Update nested tabs
-            updateNestedTabs(content as HTMLElement);
+            // Initial content processing with RAF
+            requestAnimationFrame(() => processTabContent(content));
+
         } else {
             content.classList.remove('active');
             (content as HTMLElement).style.display = 'none';
@@ -202,9 +196,9 @@ function restoreTabState(container: TabContainer) {
         console.warn(`${LOG_PREFIX} Failed to restore tab state:`, error);
     }
 }
+
 // Add cleanup function to reset state
 export function resetTabState() {
-    processedTabs.clear();
     tabStates.clear();
     isMutating = false;
 }
@@ -222,16 +216,13 @@ export const updateTabs = debounce(() => {
     const tabsContainers = new Set<TabContainer>();
 
     tabButtons.forEach(button => {
-        const tabsContainer = button.closest('.tabs-container') as TabContainer;
-        if (tabsContainer && !processedTabs.has(tabsContainer.id)) {
-            tabsContainers.add(tabsContainer);
-            processedTabs.add(tabsContainer.id);
-            setupTabContainer(tabsContainer);
+        const container = button.closest('.tabs-container') as TabContainer;
+        if (container) {
+            tabsContainers.add(container);
         }
     });
-
-    // Restore saved tab states
     tabsContainers.forEach(container => {
+        setupTabContainer(container);
         restoreTabState(container);
     });
     isMutating = false;

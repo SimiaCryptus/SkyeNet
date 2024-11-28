@@ -29,28 +29,7 @@ export const useWebSocket = (sessionId: string) => {
                 console.warn('[WebSocket] Received message missing required fields:', message);
                 return;
             }
-
-            if (message.isHtml) {
-                console.log('[WebSocket] Processing HTML message');
-                const htmlMessage = {
-                    id: message.id,
-                    content: message.content,
-                    type: 'response' as const,
-                    timestamp: message.timestamp,
-                    isHtml: true,
-                    rawHtml: message.rawHtml,
-                    version: message.version,
-                    sanitized: false,
-                };
-                console.log('[WebSocket] Dispatching HTML message to store:', {
-                    id: htmlMessage.id,
-                    version: htmlMessage.version,
-                    type: htmlMessage.type
-                });
-                dispatch(addMessage(htmlMessage));
-            } else {
-                console.log('[WebSocket] Received non-HTML message, skipping processing');
-            }
+            dispatch(addMessage(message));
         };
 
         const handleConnectionChange = (connected: boolean) => {

@@ -4,18 +4,35 @@ import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 import {logger} from '../utils/logger';
 import {Message} from '../types';
-import {updateTabs, resetTabState} from '../utils/tabHandling';
+import {resetTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 
-const expandMessageReferences = (content: string, messages: Message[]): string => {
+export const expandMessageReferences = (content: string, messages: Message[]): string => {
     if (!content) return '';
-    return content.replace(/\{([^}]+)}/g, (match, messageId) => {
-        const referencedMessage = messages.find(m => m.id === messageId);
-        if (referencedMessage) {
-            return expandMessageReferences(referencedMessage.content, messages);
+    // Create a temporary div to parse HTML content
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    // Process all elements with IDs that match message references
+    const processNode = (node: HTMLElement) => {
+        if (node.id && node.id.startsWith('z')) {
+            const referencedMessage = messages.find(m => m.id === node.id);
+            if (referencedMessage) {
+                logger.debug('Expanding referenced message', {id: node.id, contentLength: referencedMessage.content.length});
+                node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
+            } else {
+                logger.debug('Referenced message not found', {id: node.id});
+            }
         }
-        return match;
-    });
+        // Recursively process child elements
+        Array.from(node.children).forEach(child => {
+            if (child instanceof HTMLElement) {
+                processNode(child);
+            }
+        });
+    };
+    logger.debug('Expanding message references', {content});
+    processNode(tempDiv);
+    return tempDiv.innerHTML;
 };
 
 const MessageListContainer = styled.div`
@@ -31,9 +48,26 @@ const MessageContent = styled.div`
     .href-link, .play-button, .regen-button, .cancel-button, .text-submit-button {
         cursor: pointer;
         user-select: none;
+        display: inline-block;
+        padding: 2px 8px;
+        margin: 2px;
+        border-radius: 4px;
+        background-color: rgba(0, 0, 0, 0.1);
 
         &:hover {
             opacity: 0.8;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+    }
+
+    .referenced-message {
+        cursor: pointer;
+        padding: 4px;
+        margin: 4px 0;
+        border-left: 3px solid #ccc;
+
+        &.expanded {
+            background-color: rgba(0, 0, 0, 0.05);
         }
     }
 `;
@@ -164,27 +198,22 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         });
         // Process tabs after messages update
         requestAnimationFrame(() => {
-        try {
-            updateTabs();
-            // Process message references in visible tab content
-            document.querySelectorAll('.tab-content.active').forEach(tab => {
-                const content = tab.innerHTML;
-                const expandedContent = processMessageContent(content);
-                if (content !== expandedContent) {
-                    tab.innerHTML = expandedContent;
-                }
-            });
-        } catch (error) {
-            logger.error('Error processing tabs:', error);
-            // Reset tab state on error
-            resetTabState();
-        }
+            try {
+                updateTabs();
+            } catch (error) {
+                logger.error('Error processing tabs:', error);
+                // Reset tab state on error
+                resetTabState();
+            }
         });
     }, [messages]);
 
     return (
         <MessageListContainer>
-            {messages.map((message) => {
+            {messages
+                .filter((message) => message.id && !message.id.startsWith("z"))
+                .filter((message) => message.content && message.content.length > 0)
+                .map((message) => {
                 logger.debug('MessageList - Rendering message', {
                     id: message.id,
                     type: message.type,

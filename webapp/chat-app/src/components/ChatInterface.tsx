@@ -95,7 +95,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     timestamp: data.timestamp,
                     isHtml: true,
                     rawHtml: data.data,
-                    version: '1.0',
+                    version: data.timestamp.toString(),
                     sanitized: false
                 };
                 if (isComponentMounted) {
