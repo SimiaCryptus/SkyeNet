@@ -52,6 +52,14 @@
     font-weight: bold;
     color: var(--primary-color);
 }
+/* Active tab state */
+.tab-button.active {
+    background-color: var(--color-primary-dark);
+    color: var(--color-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+/* Focus state - now separate from active state */
 
 .tab-button:focus-visible {
     outline: 3px solid var(--primary-color);
@@ -135,7 +143,9 @@
 
 
 .tab-button:hover {
-    background: #f2f2f7;
+    background: var(--hover-background);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
 }
 
 .tab-content {
@@ -191,9 +201,6 @@
 .tab-button:focus {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
-    background-color: var(--color-primary-dark);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
 }
 
 .cmd-button:active {
