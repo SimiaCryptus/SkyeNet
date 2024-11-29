@@ -8,6 +8,7 @@ import {ThemeMenu} from "./ThemeMenu";
 import {WebSocketMenu} from "./WebSocketMenu";
 import {RootState} from "../../store/index";
 import {toggleVerbose} from "../../store/slices/uiSlice";
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const MenuContainer = styled.div`
     display: flex;
@@ -140,12 +141,16 @@ export const Menu: React.FC = () => {
                     </DropdownContent>
                 </Dropdown>
 
-                <Dropdown>
-                    <DropButton onClick={() => console.log('[Menu] Config menu clicked')}>Config</DropButton>
-                    <DropdownContent>
-                        <WebSocketMenu/>
-                    </DropdownContent>
-                </Dropdown>
+                {isDevelopment && (
+                    <Dropdown>
+                        <DropButton onClick={() => console.log('[Menu] Config menu clicked')}>
+                            Config
+                        </DropButton>
+                        <DropdownContent>
+                            <WebSocketMenu/>
+                        </DropdownContent>
+                    </Dropdown>
+                )}
 
             </ToolbarLeft>
 

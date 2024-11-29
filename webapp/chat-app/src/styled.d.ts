@@ -100,6 +100,7 @@ declare module 'styled-components' {
             info: string;
             primaryDark?: string;
             hover?: string;
+        disabled: string;
         };
     }
 }

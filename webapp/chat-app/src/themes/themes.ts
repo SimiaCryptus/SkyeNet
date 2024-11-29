@@ -54,6 +54,7 @@ interface ThemeColors {
     info: string;
     hover?: string;
     primaryDark?: string;
+    disabled: string;  // Remove optional marker to make it required
 }
 
 interface ThemeSizing {
@@ -277,6 +278,7 @@ export const mainTheme: ExtendedTheme = {
         success: '#34C759',
         warning: '#FF9500',
         info: '#5856D6',
+        disabled: '#E5E5EA', // Make sure this is defined in all themes
         primaryDark: '#0056b3', // Add darker shade of primary
         hover: '#2C5282', // Add hover color
     },
@@ -301,6 +303,7 @@ export const nightTheme: ExtendedTheme = {
         warning: '#FF9F0A',
         info: '#5E5CE6',
         primaryDark: '#0066cc',
+        disabled: '#2C2C2E', // Ensure consistent property definition
     },
     ...baseTheme,
 };
@@ -323,6 +326,7 @@ export const forestTheme: ExtendedTheme = {
         warning: '#F77F00',
         info: '#4895EF',
         primaryDark: '#1b4332',
+        disabled: '#2D3B35', // Ensure consistent property definition
     },
     ...baseTheme,
 };
@@ -345,6 +349,7 @@ export const ponyTheme: ExtendedTheme = {
         warning: '#FFB6C1',
         info: '#DB7093',
         primaryDark: '#ff1493',
+        disabled: '#F8E1E7', // Ensure consistent property definition
     },
     ...baseTheme,
 };
@@ -367,6 +372,7 @@ export const alienTheme: ExtendedTheme = {
         warning: '#FFFF00',
         info: '#00FFFF',
         primaryDark: '#2bbb0e',
+        disabled: '#1C1C1C', // Ensure consistent property definition
     },
     ...baseTheme,
 };

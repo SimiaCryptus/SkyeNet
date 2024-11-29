@@ -13,6 +13,17 @@ const loadSavedTheme = (): ThemeName => {
 };
 // Load websocket config from localStorage or use defaults
 const loadWebSocketConfig = () => {
+    // In production, always use the current host
+    if (process.env.NODE_ENV !== 'development') {
+        return {
+            url: window.location.hostname,
+            port: window.location.port || (window.location.protocol === 'https:' ? '443' : '80'),
+            protocol: window.location.protocol === 'https:' ? 'wss:' : 'ws:',
+            retryAttempts: 3,
+            timeout: 5000
+        };
+    }
+
     try {
         const savedConfig = localStorage.getItem('websocketConfig');
         if (savedConfig) {
@@ -134,6 +145,12 @@ export const configSlice = createSlice({
             state.theme.autoSwitch = !state.theme.autoSwitch;
         },
         updateWebSocketConfig: (state, action: PayloadAction<Partial<AppConfig['websocket']>>) => {
+            // Only allow WebSocket config updates in development mode
+            if (process.env.NODE_ENV !== 'development') {
+                console.warn('[ConfigSlice] WebSocket config updates are only allowed in development mode');
+                return;
+            }
+
             console.log('[ConfigSlice] Updating WebSocket config:', {
                 previous: state.websocket,
                 updates: action.payload,
