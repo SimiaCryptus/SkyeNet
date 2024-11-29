@@ -49,6 +49,7 @@ declare module 'styled-components' {
         };
         typography: {
             fontFamily: string;
+            monoFontFamily?: string;
             fontSize: {
                 xs: string;
                 sm: string;

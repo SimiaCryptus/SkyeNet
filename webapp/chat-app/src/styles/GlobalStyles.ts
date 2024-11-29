@@ -19,6 +19,15 @@ const logThemeChange = (theme: DefaultTheme) => {
 };
 
 export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
+    /* Theme CSS variables */
+    :root {
+        /* Add theme variables */
+        --theme-background: ${({theme}) => theme.colors.background};
+        --theme-text: ${({theme}) => theme.colors.text.primary};
+        --theme-surface: ${({theme}) => theme.colors.surface};
+        --theme-border: ${({theme}) => theme.colors.border};
+        --theme-primary: ${({theme}) => theme.colors.primary};
+    }
     /* Override Prism.js theme colors to match current theme */
     .token.comment,
     .token.prolog,
@@ -76,11 +85,25 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
         line-height: inherit;
     }
 
-    /* Improve transitions */
-    .theme-transition {
-        transition: all var(--transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
+    /* Message content theme transitions */
+    .message-content {
+        color: var(--theme-text);
+        background: var(--theme-background);
+        border-color: var(--theme-border);
     }
-
+    .message-content pre,
+    .message-content code {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+    }
+    
+    /* Universal code block styles using CSS variables */
+    pre code {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-color: var(--theme-border);
+    }
+  
     body {
         font-family: ${({theme}: { theme: DefaultTheme }) => {
             logStyleChange('body', 'font-family', theme.typography.fontFamily);

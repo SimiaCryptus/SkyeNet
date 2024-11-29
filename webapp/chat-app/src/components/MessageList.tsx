@@ -60,6 +60,25 @@ const MessageListContainer = styled.div`
 `;
 
 const MessageContent = styled.div`
+    /* Add theme-specific CSS variables */
+    --theme-bg: ${({theme}) => theme.colors.background};
+    --theme-text: ${({theme}) => theme.colors.text.primary};
+    --theme-surface: ${({theme}) => theme.colors.surface};
+    --theme-border: ${({theme}) => theme.colors.border};
+    --theme-primary: ${({theme}) => theme.colors.primary};
+    --theme-code-font: ${({theme}) => theme.typography.console.fontFamily};
+    /* Apply theme variables to content */
+    color: var(--theme-text);
+    background: var(--theme-bg);
+    /* Style code blocks with theme variables */
+    pre[class*="language-"],
+    code[class*="language-"] {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        font-family: var(--theme-code-font);
+    }
+    
+
     .href-link, .play-button, .regen-button, .cancel-button, .text-submit-button {
         cursor: pointer;
         user-select: none;
@@ -67,13 +86,16 @@ const MessageContent = styled.div`
         padding: 2px 8px;
         margin: 2px;
         border-radius: 4px;
-        background-color: ${({theme}) => theme.colors.surface};
-        color: ${({theme}) => theme.colors.text.primary};
+        background-color: var(--theme-surface);
+        color: var(--theme-text);
+        transition: all var(--transition-duration) var(--transition-timing), 
+                    transform 0.2s ease-in-out;
 
         &:hover {
             opacity: 0.8;
-            background-color: ${({theme}) => theme.colors.primary};
-            color: ${({theme}) => theme.colors.background};
+            background-color: var(--theme-primary);
+            color: var(--theme-bg);
+            transform: translateY(-1px);
         }
     }
 
@@ -82,6 +104,7 @@ const MessageContent = styled.div`
         padding: 4px;
         margin: 4px 0;
         border-left: 3px solid ${({theme}) => theme.colors.border};
+        transition: all 0.3s ease;
 
         &.expanded {
             background-color: ${({theme}) => theme.colors.surface};
@@ -90,11 +113,26 @@ const MessageContent = styled.div`
     /* Style code blocks according to theme */
     pre[class*="language-"] {
         background: ${({theme}) => theme.colors.surface};
-        border: 1px solid ${({theme}) => theme.colors.border};
+        margin: 1em 0;
+        padding: 1em;
+        border-radius: ${({theme}) => theme.sizing.borderRadius.md};
+        transition: all var(--transition-duration) var(--transition-timing);
+        box-shadow: ${({theme}) => theme.shadows.medium};
     }
     code[class*="language-"] {
         color: ${({theme}) => theme.colors.text.primary};
         text-shadow: none;
+        transition: all 0.3s ease;
+        font-family: ${({theme}) => theme.typography.console.fontFamily};
+    }
+    /* Style inline code differently from code blocks */
+    :not(pre) > code {
+        background: ${({theme}) => theme.colors.surface};
+        color: ${({theme}) => theme.colors.text.primary};
+        padding: 0.2em 0.4em;
+        border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
+        font-size: 0.9em;
+        transition: all 0.3s ease;
     }
 `;
 

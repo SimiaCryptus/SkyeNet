@@ -240,6 +240,7 @@ const baseTheme = {
     },
     typography: {
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        monoFontFamily: "'Fira Code', 'Consolas', monospace",
         fontSize: {
             xs: '0.75rem',
             sm: '0.875rem',
