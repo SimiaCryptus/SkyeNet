@@ -1,7 +1,7 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Message} from '../../types';
 import DOMPurify from 'dompurify';
-import {resetTabState, updateTabs} from '../../utils/tabHandling';
+import {resetTabState, updateTabs, getAllTabStates, restoreTabStates} from '../../utils/tabHandling';
 
 const LOG_PREFIX = '[MessageSlice]';
 
@@ -29,7 +29,7 @@ const sanitizeHtmlContent = (content: string): string => {
         ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'code', 'pre', 'table', 'tr', 'td', 'th', 'thead', 'tbody',
             'button', 'input', 'label', 'select', 'option', 'textarea', 'code', 'pre', 'div', 'section'],
         ALLOWED_ATTR: ['class', 'href', 'target', 'data-tab', 'data-for-tab', 'style', 'type', 'value', 'id', 'name',
-            'data-message-id', 'data-id', 'data-message-action', 'data-action', 'data-ref-id', 'data-version'],
+            'data-message-id', 'data-id', 'data-message-action', 'data-action', 'data-ref-id', 'data-version', 'role'],
     });
 };
 
@@ -57,6 +57,8 @@ const messageSlice = createSlice({
             if (messageId.startsWith('z')) {
                 state.referenceMessages[messageId] = action.payload;
             }
+            // Get current tab states before any updates
+            const currentTabStates = getAllTabStates();
 
             console.debug(`${LOG_PREFIX} Adding message:`, {
                 id: messageId,
@@ -75,6 +77,8 @@ const messageSlice = createSlice({
                         action.payload.sanitized = true;
                         console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
                         requestAnimationFrame(() => {
+                            // Restore tab states after content update
+                            restoreTabStates(currentTabStates);
                             updateTabs();
                         });
                     }
@@ -83,7 +87,6 @@ const messageSlice = createSlice({
                     return;
                 }
             }
-            resetTabState();
 
             if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
                 action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
@@ -91,6 +94,8 @@ const messageSlice = createSlice({
                 console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
                 // Use requestAnimationFrame for smoother updates
                 requestAnimationFrame(() => {
+                    // Restore tab states after content update
+                    restoreTabStates(currentTabStates);
                     updateTabs();
                 });
             }

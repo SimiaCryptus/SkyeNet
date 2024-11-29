@@ -11,7 +11,7 @@ class Logger {
     private isDevelopment = process.env.NODE_ENV === 'development';
     private groupDepth = 0;
     private logHistory: LogEntry[] = [];
-    private logLevel: LogLevel = 'info';
+    private logLevel: LogLevel = this.isDevelopment ? 'debug' : 'info';
 
     private constructor() {
         console.log('%cLogger initialized', 'color: #8a2be2; font-weight: bold;');

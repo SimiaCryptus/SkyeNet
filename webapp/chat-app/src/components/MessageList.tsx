@@ -4,7 +4,8 @@ import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 import {logger} from '../utils/logger';
 import {Message} from '../types';
-import {resetTabState, updateTabs} from '../utils/tabHandling';
+import {resetTabState, updateTabs, saveTabState, getAllTabStates, restoreTabStates, setActiveTab, tabObservers, setActiveTabState} from '../utils/tabHandling';
+import type {TabContainer, TabState} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 import Prism from 'prismjs';
 
@@ -183,6 +184,42 @@ interface MessageListProps {
 
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
+    // Store tab states on mount
+    React.useEffect(() => {
+        logger.debug('MessageList - Initial tab state setup');
+        const containers = document.querySelectorAll('.tabs-container');
+        containers.forEach(container => {
+            if (container instanceof HTMLElement) {
+                const activeTab = container.querySelector('.tab-button.active');
+                if (activeTab instanceof HTMLElement) {
+                    const forTab = activeTab.getAttribute('data-for-tab');
+                    if (forTab && container.id) {
+                        logger.debug('MessageList - Saving initial tab state:', {
+                            containerId: container.id,
+                            activeTab: forTab
+                        });
+                        saveTabState(container.id, forTab);
+                        // Also store in active tab states
+                        setActiveTabState(container.id, forTab);
+                    }
+                }
+            }
+        });
+    }, []);
+    // Store current tab states before update
+    const preserveTabStates = useCallback(() => {
+        const containers = document.querySelectorAll('.tabs-container');
+        containers.forEach(container => {
+            const activeTab = container.querySelector('.tab-button.active');
+            if (activeTab instanceof HTMLElement) {
+                const forTab = activeTab.getAttribute('data-for-tab');
+                if (forTab && container.id) {
+                    saveTabState(container.id, forTab);
+                }
+            }
+        });
+    }, []);
+
 
     // Log when component is mounted/unmounted
     React.useEffect(() => {
@@ -205,12 +242,23 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     React.useEffect(() => {
         logger.debug('MessageList - Messages updated', {
             messageCount: messages.length,
-            messages: messages,
+            messageIds: messages.map(m => m.id),
             source: propMessages ? 'props' : 'store'
         });
+        // Log current tab states before preservation
+        const currentStates = getAllTabStates();
+        logger.debug('MessageList - Current tab states before update:', {
+            states: Array.from(currentStates.entries())
+        });
+
+    // Preserve current tab states
+    preserveTabStates();
+    
+        
         // Process tabs after messages update
         requestAnimationFrame(() => {
             try {
+                logger.debug('MessageList - Updating tabs after message change');
                 updateTabs();
             } catch (error) {
                 logger.error('Error processing tabs:', error);

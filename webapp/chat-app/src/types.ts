@@ -2,6 +2,9 @@
 export type ThemeName = 'main' | 'night' | 'forest' | 'pony' | 'alien';
 // Define log levels
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+// Define TabObservers type
+export type TabObservers = Map<string, Map<string, MutationObserver>>;
+
 
 // Define console styles
 export interface ConsoleStyle {

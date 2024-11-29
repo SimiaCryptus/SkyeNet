@@ -4,6 +4,10 @@ import type Prism from 'prismjs';
 
 // Extend the Window interface to include the mermaid property
 declare global {
+    interface HTMLElement {
+        _contentObserver?: MutationObserver;
+    }
+
     interface Window {
         mermaid: MermaidAPI;
         QRCode: typeof QRCodeGenerator;
