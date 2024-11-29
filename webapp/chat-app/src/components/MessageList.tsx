@@ -1,6 +1,7 @@
 import React, {useCallback} from 'react';
 import styled from 'styled-components';
 import {useSelector} from 'react-redux';
+import {useTheme} from '../hooks/useTheme';
 import {RootState} from '../store';
 import {logger} from '../utils/logger';
 import {Message} from '../types';
@@ -66,11 +67,13 @@ const MessageContent = styled.div`
         padding: 2px 8px;
         margin: 2px;
         border-radius: 4px;
-        background-color: rgba(0, 0, 0, 0.1);
+        background-color: ${({theme}) => theme.colors.surface};
+        color: ${({theme}) => theme.colors.text.primary};
 
         &:hover {
             opacity: 0.8;
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: ${({theme}) => theme.colors.primary};
+            color: ${({theme}) => theme.colors.background};
         }
     }
 
@@ -78,11 +81,20 @@ const MessageContent = styled.div`
         cursor: pointer;
         padding: 4px;
         margin: 4px 0;
-        border-left: 3px solid #ccc;
+        border-left: 3px solid ${({theme}) => theme.colors.border};
 
         &.expanded {
-            background-color: rgba(0, 0, 0, 0.05);
+            background-color: ${({theme}) => theme.colors.surface};
         }
+    }
+    /* Style code blocks according to theme */
+    pre[class*="language-"] {
+        background: ${({theme}) => theme.colors.surface};
+        border: 1px solid ${({theme}) => theme.colors.border};
+    }
+    code[class*="language-"] {
+        color: ${({theme}) => theme.colors.text.primary};
+        text-shadow: none;
     }
 `;
 
@@ -183,6 +195,7 @@ interface MessageListProps {
 }
 
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
+    const theme = useTheme();
     logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
     // Store tab states on mount
     React.useEffect(() => {
@@ -236,7 +249,12 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
 
     const processMessageContent = useCallback((content: string) => {
         logger.debug('Processing message content', {contentLength: content.length});
-        return expandMessageReferences(content, messages);
+        const processed = expandMessageReferences(content, messages);
+        // Re-highlight code blocks after theme change
+        requestAnimationFrame(() => {
+            Prism.highlightAll();
+        });
+        return processed;
     }, [messages]);
 
     React.useEffect(() => {

@@ -19,6 +19,34 @@ const logThemeChange = (theme: DefaultTheme) => {
 };
 
 export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
+    /* Override Prism.js theme colors to match current theme */
+    .token.comment,
+    .token.prolog,
+    .token.doctype,
+    .token.cdata {
+        color: ${({theme}) => theme.colors.text.secondary};
+    }
+    .token.punctuation {
+        color: ${({theme}) => theme.colors.text.primary};
+    }
+    .token.property,
+    .token.tag,
+    .token.constant,
+    .token.symbol {
+        color: ${({theme}) => theme.colors.primary};
+    }
+    .token.boolean,
+    .token.number {
+        color: ${({theme}) => theme.colors.warning};
+    }
+    .token.selector,
+    .token.string {
+        color: ${({theme}) => theme.colors.success};
+    }
+    .token.operator,
+    .token.keyword {
+        color: ${({theme}) => theme.colors.info};
+    }
     /* Reset styles */
     * {
         margin: 0;

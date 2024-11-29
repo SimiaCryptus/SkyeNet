@@ -2,13 +2,32 @@ import React, {useEffect, useRef} from 'react';
 import {ThemeProvider as StyledThemeProvider} from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
-import {logThemeChange, themes} from './themes';
+import {logThemeChange, themes, ThemeName} from './themes';
+import Prism from 'prismjs';
 
 interface ThemeProviderProps {
     children: React.ReactNode;
 }
 
 const LOG_PREFIX = '[ThemeProvider]';
+// Define Prism themes mapping to our theme names
+const prismThemes: Record<ThemeName, string> = {
+    main: 'prism',
+    night: 'prism-dark',
+    forest: 'prism-okaidia',
+    pony: 'prism-twilight',
+    alien: 'prism-tomorrow'
+};
+// Function to load Prism theme
+const loadPrismTheme = async (themeName: ThemeName) => {
+    const prismTheme = prismThemes[themeName] || 'prism';
+    try {
+        await import(`prismjs/themes/${prismTheme}.css`);
+        console.log(`${LOG_PREFIX} Loaded Prism theme: ${prismTheme}`);
+    } catch (error) {
+        console.warn(`${LOG_PREFIX} Failed to load Prism theme: ${prismTheme}`, error);
+    }
+};
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
     const currentTheme = useSelector((state: RootState) => state.ui.theme);
@@ -28,6 +47,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
         document.body.className = `theme-${currentTheme}`;
         // Add transition class
         document.body.classList.add('theme-transition');
+        // Load and apply Prism theme
+        loadPrismTheme(currentTheme).then(() => {
+            // Re-highlight all code blocks with new theme
+            requestAnimationFrame(() => {
+                Prism.highlightAll();
+            });
+        });
         const timer = setTimeout(() => {
             document.body.classList.remove('theme-transition');
         }, 300);
