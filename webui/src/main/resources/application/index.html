@@ -1,120 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <title>WebSocket Client</title>
-  <meta charset="UTF-8">
-  <meta content='width=device-width,initial-scale=1' name='viewport'>
-  <link href="/favicon.svg" rel="icon" type="image/svg+xml"/>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-ghcolors.min.css" rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css"
-        rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css"
-        rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/match-braces/prism-match-braces.min.css"
-        rel="stylesheet"/>
-  <link href="main.css" id="theme_style" rel="stylesheet"/>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-  <script src="tabs.js" type="module"></script>
-  <script src="functions.js" type="module"></script>
-  <script src="theme.js" type="module"></script>
-  <script S src="about.js" type="module"></script>
-  <script src="chat.js" type="module"></script>
-  <script src="main.js" type="module"></script>
+    <meta charset="utf-8"/>
+    <link rel="icon" href="favicon.ico"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="theme-color" content="#000000"/>
+    <meta name="description" content="Web site created using create-react-app"/>
+    <link rel="apple-touch-icon" href="logo192.png"/>
+    <link rel="manifest" href="manifest.json"/>
+    <title>React App</title>
+    <script defer="defer" src="static/js/main.a499650c.js"></script>
+    <link href="static/css/main.351373b1.css" rel="stylesheet">
 </head>
 <body>
-<header>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/match-braces/prism-match-braces.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/show-language/prism-show-language.min.js"></script>
-  <script type="module">
-      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-
-      mermaid.initialize({startOnLoad: true});
-      window.mermaid = mermaid; // Make mermaid globally accessible
-  </script>
-
-
-  <div id="toolbar">
-    <div class="toolbar-left">
-      <a href="/"><i class="fas fa-home"></i> Home</a>
-      <div class="dropdown">
-        <a class="dropbtn">App</a>
-        <div class="dropdown-content">
-          <a id="history">Session List</a>
-          <a href="">New</a>
-        </div>
-      </div>
-      <div class="dropdown">
-        <a class="dropbtn"><i class="fas fa-cog"></i> Session</a>
-        <div class="dropdown-content">
-          <a id="settings">Settings</a>
-          <a id="files">Files</a>
-          <a id="usage">Usage</a>
-          <a id="threads">Threads</a>
-          <a id="share">Share</a>
-          <a id="cancel">Cancel</a>
-          <a id="delete">Delete</a>
-          <a id="verbose">Show Verbose</a>
-        </div>
-      </div>
-      <div class="dropdown">
-        <a class="dropbtn">Themes</a>
-        <div class="dropdown-content">
-          <a id="theme_normal">Day</a>
-          <a id="theme_night">Night</a>
-          <a id="theme_forest">Forest</a>
-          <a id="theme_pony">Bubblegum</a>
-          <a id="theme_alien">Alien</a>
-        </div>
-      </div>
-      <div class="dropdown">
-        <a class="dropbtn">About</a>
-        <div class="dropdown-content">
-          <a id="privacy">Privacy Policy</a>
-          <a id="tos">Terms of Service</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="namebar">
-    <div class="dropdown">
-      <a href="/login" id="login"><i class="fas fa-sign-in-alt"></i> Login</a>
-      <a id="username" style="visibility: hidden"></a>
-      <div class="dropdown-content">
-        <a id="user-settings" style="visibility: hidden">Settings</a>
-        <a id="user-usage" style="visibility: hidden">Usage</a>
-        <a id="logout" style="visibility: hidden"><i class="fas fa-sign-out-alt"></i> Logout</a>
-      </div>
-    </div>
-  </div>
-</header>
-
-<main id="session">
-  <form id="main-input">
-    <textarea class="chat-input" id="chat-input" placeholder="Type a message" rows="1"></textarea>
-    <button class="ws-control" type="submit"><i class="fas fa-paper-plane"></i> Send</button>
-  </form>
-  <div id="messages"></div>
-</main>
-
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <div id="modal-content"></div>
-  </div>
-</div>
-
-<footer id="footer">
-  <a href="https://github.com/SimiaCryptus/SkyeNet" target="_blank">Powered by SkyeNet</a>
-</footer>
-
+<noscript>You need to enable JavaScript to run this app.</noscript>
+<div id="root"></div>
 </body>
-
 </html>

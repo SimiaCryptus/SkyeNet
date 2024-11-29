@@ -52,8 +52,8 @@ export const WebSocketMenu: React.FC = () => {
 
 
     const [config, setConfig] = useState({
-        url: wsConfig.url,
-        port: wsConfig.port,
+        url: process.env.NODE_ENV === 'development' ? wsConfig.url : window.location.hostname,
+        port: process.env.NODE_ENV === 'development' ? wsConfig.port : window.location.port,
         protocol: wsConfig.protocol
     });
 

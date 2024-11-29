@@ -25,8 +25,8 @@ export const useModal = () => {
     const getModalUrl = (endpoint: string) => {
         console.log('[Modal] Constructing modal URL for endpoint:', endpoint);
         const protocol = window.location.protocol;
-        const host = config.url || window.location.hostname;
-        const port = config.port || window.location.port;
+        const host = (process.env.NODE_ENV === 'development' ? config.url : null) || window.location.hostname;
+        const port = (process.env.NODE_ENV === 'development' ? config.port : null) || window.location.port;
         // Handle endpoints that already have query parameters
         const separator = endpoint.includes('?') ? '&' : '?';
         const url = `${protocol}//${host}:${port}/${endpoint}${separator}sessionId=${WebSocketService.getSessionId()}`;

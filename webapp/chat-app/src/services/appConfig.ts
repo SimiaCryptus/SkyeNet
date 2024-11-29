@@ -8,14 +8,14 @@ const BASE_API_URL = process.env.REACT_APP_API_URL || window.location.origin;
 export const fetchAppConfig = async (sessionId: string) => {
     try {
         logger.info('Fetching app config for session:', sessionId);
-        const url = new URL('/api/appInfo', BASE_API_URL);
+        const url = new URL('/appInfo', BASE_API_URL);
         url.searchParams.append('session', sessionId);
         let response: Response;
         // Add error handling for failed requests
         try {
             response = await fetch(url.toString(), {
                 headers: {
-                    'Accept': 'application/json'
+                    'Accept': 'application/json, text/json'
                 }
             });
         } catch (networkError) {
@@ -28,7 +28,7 @@ export const fetchAppConfig = async (sessionId: string) => {
             return null;
         }
         const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
+        if (!contentType || (!contentType.includes('application/json') && !contentType.includes('text/json'))) {
             throw new Error(`Invalid content type: ${contentType}`);
         }
 
@@ -47,7 +47,7 @@ export const fetchAppConfig = async (sessionId: string) => {
         logger.error('Failed to fetch app config:', {
             error,
             sessionId,
-            url: BASE_API_URL ? `${BASE_API_URL}/api/appInfo` : '/api/appInfo'
+            url: BASE_API_URL ? `${BASE_API_URL}/appInfo` : '/api/appInfo'
         });
         throw error;
     }
