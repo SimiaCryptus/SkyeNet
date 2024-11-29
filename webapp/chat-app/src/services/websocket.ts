@@ -13,6 +13,9 @@ export class WebSocketService {
     private errorHandlers: ((error: Error) => void)[] = [];
     private isReconnecting = false;
     private connectionTimeout: NodeJS.Timeout | null = null;
+    private connectionStartTime = 0;
+    private messageBuffer: Message[] = [];
+    private bufferTimeout: NodeJS.Timeout | null = null;
 
     public getSessionId(): string {
         console.debug('[WebSocket] Getting session ID:', this.sessionId);
@@ -192,6 +195,7 @@ export class WebSocketService {
             console.log('[WebSocket] Connection established successfully');
             this.reconnectAttempts = 0;
             this.isReconnecting = false;
+            this.connectionStartTime = Date.now();
             this.connectionHandlers.forEach(handler => handler(true));
             if (this.connectionTimeout) {
                 clearTimeout(this.connectionTimeout);
@@ -200,6 +204,9 @@ export class WebSocketService {
         };
         this.ws.onmessage = (event) => {
             this.debugLog('Message received');
+            const currentTime = Date.now();
+            const timeSinceConnection = currentTime - this.connectionStartTime;
+            const shouldBuffer = timeSinceConnection < 10000; // First 10 seconds
             // Find the first two comma positions to extract id and version
             const firstComma = event.data.indexOf(',');
             const secondComma = event.data.indexOf(',', firstComma + 1);
@@ -241,11 +248,30 @@ export class WebSocketService {
                 console.log('[WebSocket] Processing HTML message');
             }
 
-            this.messageHandlers.forEach((handler) => handler(message));
+            if (shouldBuffer) {
+                this.messageBuffer.push(message);
+                if (this.bufferTimeout) {
+                    clearTimeout(this.bufferTimeout);
+                }
+                this.bufferTimeout = setTimeout(() => {
+                    const messages = [...this.messageBuffer];
+                    this.messageBuffer = [];
+                    messages.forEach(msg => {
+                        this.messageHandlers.forEach(handler => handler(msg));
+                    });
+                }, 1000);
+            } else {
+                this.messageHandlers.forEach((handler) => handler(message));
+            }
         };
 
         this.ws.onclose = () => {
             console.log('[WebSocket] Connection closed, stopping heartbeat');
+            if (this.bufferTimeout) {
+                clearTimeout(this.bufferTimeout);
+                this.bufferTimeout = null;
+            }
+            this.messageBuffer = [];
             this.stopHeartbeat();
             this.connectionHandlers.forEach(handler => handler(false));
             if (!this.isReconnecting) {
