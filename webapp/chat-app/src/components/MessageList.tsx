@@ -6,12 +6,22 @@ import {logger} from '../utils/logger';
 import {Message} from '../types';
 import {resetTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
+import Prism from 'prismjs';
 
 export const expandMessageReferences = (content: string, messages: Message[]): string => {
     if (!content) return '';
     // Create a temporary div to parse HTML content
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
+    // Helper to highlight code blocks in content
+    const highlightCodeBlocks = (element: HTMLElement) => {
+        const codeBlocks = element.querySelectorAll('pre code');
+        codeBlocks.forEach(block => {
+            if (block instanceof HTMLElement) {
+                Prism.highlightElement(block);
+            }
+        });
+    };
     // Process all elements with IDs that match message references
     const processNode = (node: HTMLElement) => {
         if (node.id && node.id.startsWith('z')) {
@@ -19,6 +29,7 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
             if (referencedMessage) {
                 // logger.debug('Expanding referenced message', {id: node.id, contentLength: referencedMessage.content.length});
                 node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
+                highlightCodeBlocks(node);
             } else {
                 // logger.debug('Referenced message not found', {id: node.id});
             }
@@ -32,6 +43,7 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
     };
     // logger.debug('Expanding message references', {content});
     processNode(tempDiv);
+    highlightCodeBlocks(tempDiv);
     return tempDiv.innerHTML;
 };
 

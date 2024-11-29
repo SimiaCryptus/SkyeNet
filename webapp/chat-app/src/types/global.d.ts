@@ -1,11 +1,13 @@
 import type {MermaidAPI} from 'mermaid';
 import type QRCodeGenerator from 'qrcode-generator';
+import type Prism from 'prismjs';
 
 // Extend the Window interface to include the mermaid property
 declare global {
     interface Window {
         mermaid: MermaidAPI;
         QRCode: typeof QRCodeGenerator;
+        Prism: typeof Prism;
         appConfig?: {
             singleInput: boolean;
             stickyInput: boolean;

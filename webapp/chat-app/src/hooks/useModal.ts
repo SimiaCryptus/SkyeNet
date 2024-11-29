@@ -2,18 +2,25 @@ import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from '../store';
 import WebSocketService from '../services/websocket';
 import {showModal as showModalAction} from '../store/slices/uiSlice';
-import Prism from 'prismjs';
-import 'prismjs/themes/prism.css';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-jsx';
-import 'prismjs/components/prism-tsx';
 import {useState} from "react";
+import Prism from 'prismjs';
 
 export const useModal = () => {
     const config = useSelector((state: RootState) => state.config.websocket);
     const dispatch = useDispatch();
     const [modalContent, setModalContent] = useState('');
+
+    // Helper to highlight code blocks
+    const highlightCode = () => {
+        if (typeof window !== 'undefined') {
+            requestAnimationFrame(() => {
+                const modalElement = document.querySelector('.modal-content');
+                if (modalElement) {
+                    Prism.highlightAllUnder(modalElement);
+                }
+            });
+        }
+    };
 
     const getModalUrl = (endpoint: string) => {
         console.log('[Modal] Constructing modal URL for endpoint:', endpoint);
@@ -57,10 +64,10 @@ export const useModal = () => {
             .then(content => {
                 console.log('[Modal] Content received, length:', content.length);
                 setModalContent(content);
-                if (Prism) {
-                    console.log('[Modal] Applying Prism syntax highlighting');
-                    Prism.highlightAll();
-                }
+                // Highlight code after content is set
+                requestAnimationFrame(() => {
+                    highlightCode();
+                });
             })
             .catch(error => {
                 console.error('[Modal] Failed to load content:', {

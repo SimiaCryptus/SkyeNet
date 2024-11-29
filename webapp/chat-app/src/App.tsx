@@ -12,26 +12,43 @@ import ThemeProvider from './themes/ThemeProvider';
 import {Menu} from "./components/Menu/Menu";
 import {Modal} from "./components/Modal/Modal";
 import {setupUIHandlers} from './utils/uiHandlers';
+// Import Prism core
 import Prism from 'prismjs';
+// Import base CSS
+import 'prismjs/themes/prism.css';
+// Import commonly used languages
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-markup';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-tsx';
+// Import essential plugins
 import 'prismjs/plugins/toolbar/prism-toolbar';
+import 'prismjs/plugins/toolbar/prism-toolbar.css';
 import 'prismjs/plugins/copy-to-clipboard/prism-copy-to-clipboard';
 import 'prismjs/plugins/line-numbers/prism-line-numbers';
-import 'prismjs/plugins/match-braces/prism-match-braces';
-import 'prismjs/plugins/show-language/prism-show-language';
+import 'prismjs/plugins/line-numbers/prism-line-numbers.css';
 import mermaid from 'mermaid';
 import QRCode from 'qrcode-generator';
 
 const APP_VERSION = '1.0.0';
 const LOG_PREFIX = '[App]';
+// Configure Prism
+Prism.manual = true;
+
 
 const App: React.FC = () => {
     const [isLoading, setIsLoading] = React.useState(true);
     React.useEffect(() => {
+        // Highlight code blocks after component mounts
         Promise.all([
-            Prism.highlightAll(),
+            new Promise(resolve => {
+                requestAnimationFrame(() => {
+                    Prism.highlightAllUnder(document.body);
+                    resolve(true);
+                });
+            }),
             mermaid.run()
         ]).finally(() => {
             setIsLoading(false);
