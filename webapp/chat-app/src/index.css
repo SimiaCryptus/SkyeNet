@@ -183,4 +183,6 @@ body {
 
 .verbose {
     visibility: hidden;
+    height: 0;
+    overflow: clip;
 }

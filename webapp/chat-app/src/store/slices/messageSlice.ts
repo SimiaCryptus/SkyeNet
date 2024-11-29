@@ -67,12 +67,25 @@ const messageSlice = createSlice({
             });
             state.messageVersions[messageId] = messageVersion;
             if (existingVersion) {
-                state.messages = state.messages.filter(msg => msg.id !== messageId);
+                // Update the message in place instead of removing and re-adding
+                const existingIndex = state.messages.findIndex(msg => msg.id === messageId);
+                if (existingIndex !== -1) {
+                    if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
+                        action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
+                        action.payload.sanitized = true;
+                        console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
+                        requestAnimationFrame(() => {
+                            updateTabs();
+                        });
+                    }
+                    state.messages[existingIndex] = action.payload;
+                    console.debug(`${LOG_PREFIX} Updated existing message at index ${existingIndex}`);
+                    return;
+                }
             }
             resetTabState();
 
             if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
-                action.payload.content = action.payload.rawHtml;
                 action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                 action.payload.sanitized = true;
                 console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
