@@ -27,10 +27,10 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
     const processNode = (node: HTMLElement) => {
         const messageID = node.getAttribute("message-id");
         if (messageID) {
-            if(node.getAttribute("filled") === "true") {
-                logger.debug('Skipping filled node', {id: node.id});
-                return;
-            }
+            // if(node.getAttribute("filled") === "true") {
+            //     logger.debug('Skipping filled node', {id: node.id});
+            //     return;
+            // }
             if (messageID?.startsWith('z')) {
                 const referencedMessage = messages.find(m => m.id === messageID);
                 if (referencedMessage) {
