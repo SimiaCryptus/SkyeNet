@@ -43,7 +43,6 @@ export const setActiveTabState = (containerId: string, tabId: string): void => {
     activeTabStates.set(containerId, tabId);
 };
 
-
 // Add debounce utility to prevent multiple rapid updates
 export function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
     let timeout: NodeJS.Timeout;
@@ -423,7 +422,9 @@ export const updateTabs = debounce(() => {
         // Restore state for this container if it exists
         const state = currentStates.get(container.id);
         if (state) {
-            restoreTabState(container);
+                if (state) {
+                    restoreTabState(container);
+                }
         }
     });
     // Synchronize tab button states after update
@@ -464,5 +465,6 @@ function setupTabContainer(container: TabContainer) {
             setActiveTab(firstButton as HTMLElement, container);
         }
     }
+
 
 }

@@ -263,7 +263,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         logger.debug('MessageList - Initial tab state setup');
         const containers = document.querySelectorAll('.tabs-container');
         containers.forEach(container => {
-            if (container instanceof HTMLElement) {
+                if (container instanceof HTMLElement) { // Ensure container is HTMLElement
                 const activeTab = container.querySelector('.tab-button.active');
                 if (activeTab instanceof HTMLElement) {
                     const forTab = activeTab.getAttribute('data-for-tab');
@@ -334,8 +334,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
 
     return (
         <MessageListContainer>
-            {filteredMessages
-                .map((message) => {
+                {filteredMessages.map((message) => {
                     logger.debug('MessageList - Rendering message', {
                         id: message.id,
                         type: message.type,
@@ -344,7 +343,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                     });
                     return (
                         <MessageItem
-                            key={`${message.id}-${message.timestamp}`}
+                            key={message.id} // Changed key to use only message.id
                             type={message.type}
                         >
                             <MessageContent
