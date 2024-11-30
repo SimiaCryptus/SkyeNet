@@ -2,9 +2,8 @@ import React, {useEffect, useRef} from 'react';
 import {ThemeProvider as StyledThemeProvider} from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
-import {logThemeChange, themes, ThemeName} from './themes';
+import {logThemeChange, ThemeName, themes} from './themes';
 import Prism from 'prismjs';
-import {safeStorage} from '../utils/storage';
 
 interface ThemeProviderProps {
     children: React.ReactNode;
@@ -45,11 +44,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
             return;
         }
 
-    // Create a style element for dynamic theme transitions
-    const styleEl = document.createElement('style');
-    document.head.appendChild(styleEl);
-    // Add theme CSS variables to root
-    styleEl.textContent = `
+        // Create a style element for dynamic theme transitions
+        const styleEl = document.createElement('style');
+        document.head.appendChild(styleEl);
+        // Add theme CSS variables to root
+        styleEl.textContent = `
         :root {
             --theme-background: ${themes[currentTheme].colors.background};
             --theme-text: ${themes[currentTheme].colors.text.primary};
@@ -86,8 +85,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
         }
 
         document.body.className = `theme-${currentTheme}`;
-    // Add dynamic CSS rules for message content
-    styleEl.textContent = `
+        // Add dynamic CSS rules for message content
+        styleEl.textContent = `
         .message-content.theme-${currentTheme} {
             --theme-background: ${themes[currentTheme].colors.background};
             --theme-text: ${themes[currentTheme].colors.text.primary};
@@ -102,35 +101,35 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
         bodyElements.forEach(content => {
             content.classList.add('theme-transition');
         });
-    
+
 
         // Load and apply Prism theme
         loadPrismTheme(currentTheme).then(() => {
             // Re-highlight all code blocks with new theme
             requestAnimationFrame(() => {
                 Prism.highlightAll();
-            // Apply theme variables to code blocks
-            document.querySelectorAll('pre code').forEach(block => {
-                (block as HTMLElement).style.setProperty('--theme-background', themes[currentTheme].colors.background);
-                (block as HTMLElement).style.setProperty('--theme-text', themes[currentTheme].colors.text.primary);
+                // Apply theme variables to code blocks
+                document.querySelectorAll('pre code').forEach(block => {
+                    (block as HTMLElement).style.setProperty('--theme-background', themes[currentTheme].colors.background);
+                    (block as HTMLElement).style.setProperty('--theme-text', themes[currentTheme].colors.text.primary);
                 });
-            // Update code block styles
-            const codeBlocks = document.querySelectorAll('pre code');
-            codeBlocks.forEach(block => {
-                (block as HTMLElement).classList.add('theme-transition');
-            });
+                // Update code block styles
+                const codeBlocks = document.querySelectorAll('pre code');
+                codeBlocks.forEach(block => {
+                    (block as HTMLElement).classList.add('theme-transition');
+                });
             });
         });
         const timer = setTimeout(() => {
             document.body.classList.remove('theme-transition');
-        // Remove transition classes
-        document.querySelectorAll('.theme-transition').forEach(el => {
-            el.classList.remove('theme-transition');
-            // Remove old theme classes but keep current
-            Array.from(el.classList)
-                .filter(cls => cls.startsWith('theme-') && cls !== `theme-${currentTheme}`)
-                .forEach(cls => el.classList.remove(cls));
-        });
+            // Remove transition classes
+            document.querySelectorAll('.theme-transition').forEach(el => {
+                el.classList.remove('theme-transition');
+                // Remove old theme classes but keep current
+                Array.from(el.classList)
+                    .filter(cls => cls.startsWith('theme-') && cls !== `theme-${currentTheme}`)
+                    .forEach(cls => el.classList.remove(cls));
+            });
             // Remove old theme classes from code blocks
             document.querySelectorAll('pre code').forEach(block => {
                 Array.from(block.classList)
@@ -138,10 +137,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
                     .forEach(cls => block.classList.remove(cls));
             });
         }, 300);
-    return () => {
-        clearTimeout(timer);
-        styleEl.remove();
-    };
+        return () => {
+            clearTimeout(timer);
+            styleEl.remove();
+        };
     }, [currentTheme]);
 
     const theme = themes[currentTheme] || themes.main;

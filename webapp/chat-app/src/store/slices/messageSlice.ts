@@ -1,7 +1,7 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Message} from '../../types';
 import DOMPurify from 'dompurify';
-import {resetTabState, updateTabs, getAllTabStates, restoreTabStates} from '../../utils/tabHandling';
+import {debounce, getAllTabStates, restoreTabStates, updateTabs} from '../../utils/tabHandling';
 
 const LOG_PREFIX = '[MessageSlice]';
 
@@ -12,6 +12,7 @@ interface MessageState {
     isProcessing: boolean;
     referenceMessages: Record<string, Message>;
     messageVersions: Record<string, string>; // Track message versions
+    pendingUpdates?: Message[]; // Add pendingUpdates property
 }
 
 const initialState: MessageState = {
@@ -21,6 +22,7 @@ const initialState: MessageState = {
     isProcessing: false,
     messageVersions: {},
     referenceMessages: {},
+    pendingUpdates: [], // Initialize pendingUpdates
 };
 
 const sanitizeHtmlContent = (content: string): string => {
@@ -40,6 +42,12 @@ const messageSlice = createSlice({
         addMessage: (state: MessageState, action: PayloadAction<Message>) => {
             const messageId = action.payload.id;
             const messageVersion = action.payload.version;
+            // Batch multiple message updates
+            if (state.pendingUpdates && state.pendingUpdates.length > 0) {
+                state.pendingUpdates.push(action.payload);
+                return;
+            }
+            // Process message immediately if no pending updates
             const existingVersion = state.messageVersions[messageId];
             // Skip processing if message is older or duplicate
             if (existingVersion && existingVersion >= messageVersion) {
@@ -73,6 +81,13 @@ const messageSlice = createSlice({
                 const existingIndex = state.messages.findIndex(msg => msg.id === messageId);
                 if (existingIndex !== -1) {
                     if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
+                        // Debounce tab state updates
+                        const debouncedUpdate = debounce(() => {
+                            const currentTabStates = getAllTabStates();
+                            restoreTabStates(currentTabStates);
+                            updateTabs();
+                        }, 100);
+                        debouncedUpdate();
                         action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                         action.payload.sanitized = true;
                         console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);

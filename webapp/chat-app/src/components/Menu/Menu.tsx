@@ -8,6 +8,7 @@ import {ThemeMenu} from "./ThemeMenu";
 import {WebSocketMenu} from "./WebSocketMenu";
 import {RootState} from "../../store/index";
 import {toggleVerbose} from "../../store/slices/uiSlice";
+
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 const MenuContainer = styled.div`

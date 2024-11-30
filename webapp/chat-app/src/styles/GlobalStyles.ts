@@ -28,6 +28,7 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
         --theme-border: ${({theme}) => theme.colors.border};
         --theme-primary: ${({theme}) => theme.colors.primary};
     }
+
     /* Override Prism.js theme colors to match current theme */
     .token.comment,
     .token.prolog,
@@ -35,27 +36,33 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
     .token.cdata {
         color: ${({theme}) => theme.colors.text.secondary};
     }
+
     .token.punctuation {
         color: ${({theme}) => theme.colors.text.primary};
     }
+
     .token.property,
     .token.tag,
     .token.constant,
     .token.symbol {
         color: ${({theme}) => theme.colors.primary};
     }
+
     .token.boolean,
     .token.number {
         color: ${({theme}) => theme.colors.warning};
     }
+
     .token.selector,
     .token.string {
         color: ${({theme}) => theme.colors.success};
     }
+
     .token.operator,
     .token.keyword {
         color: ${({theme}) => theme.colors.info};
     }
+
     /* Reset styles */
     * {
         margin: 0;
@@ -91,19 +98,20 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
         background: var(--theme-background);
         border-color: var(--theme-border);
     }
+
     .message-content pre,
     .message-content code {
         background: var(--theme-surface);
         color: var(--theme-text);
     }
-    
+
     /* Universal code block styles using CSS variables */
     pre code {
         background: var(--theme-surface);
         color: var(--theme-text);
         border-color: var(--theme-border);
     }
-  
+
     body {
         font-family: ${({theme}: { theme: DefaultTheme }) => {
             logStyleChange('body', 'font-family', theme.typography.fontFamily);
@@ -177,18 +185,18 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
     }
 
     .cmd-button {
-    background-color: ${({theme}) => theme.colors.primary};
+        background-color: ${({theme}) => theme.colors.primary};
         color: #fff;
         border: none;
         border-radius: 5px;
-    box-shadow: ${({theme}) => theme.shadows.medium};
+        box-shadow: ${({theme}) => theme.shadows.medium};
         transition: all ${({theme}) => theme.transitions?.default} var(--transition-timing);
-    /* Inherit base styles from App.css */
-    composes: cmd-button from global;
+        /* Inherit base styles from App.css */
+        composes: cmd-button from global;
     }
 
     .cmd-button:hover {
-    background-color: ${({theme}) => theme.colors.primaryDark};
+        background-color: ${({theme}) => theme.colors.primaryDark};
         transform: translateY(-2px);
         box-shadow: ${({theme}) => theme.shadows?.large};
     }

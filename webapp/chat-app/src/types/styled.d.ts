@@ -84,7 +84,7 @@ declare module 'styled-components' {
             info: string;
             hover?: string;
             primaryDark?: string;
-        disabled: string;  // Keep as required to match ExtendedTheme
+            disabled: string;  // Keep as required to match ExtendedTheme
         };
         name: string;
         activeTab?: string;

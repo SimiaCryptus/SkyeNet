@@ -17,6 +17,7 @@ export interface TabContainer extends HTMLElement {
     lastKnownState?: TabState;
     contentObservers?: Map<string, MutationObserver>;
 }
+
 // Track active tab observers
 export const tabObservers = new Map<string, Map<string, MutationObserver>>();
 // Add diagnostic counters
@@ -33,10 +34,12 @@ const tabStateVersions = new Map<string, number>();
 let currentStateVersion = 0;
 // Add active tab tracking
 const activeTabStates = new Map<string, string>();
+
 // Add function to get current active tab
 function getActiveTab(containerId: string): string | undefined {
     return activeTabStates.get(containerId);
 }
+
 // Add function to set active tab state
 export const setActiveTabState = (containerId: string, tabId: string): void => {
     activeTabStates.set(containerId, tabId);
@@ -61,6 +64,7 @@ const tabStates = new Map<string, TabState>();
 let isMutating = false;
 // Track tab state history
 const tabStateHistory = new Map<string, string[]>();
+
 // Add function to synchronize tab button states
 function synchronizeTabButtonStates() {
     document.querySelectorAll('.tabs-container').forEach((container: Element) => {
@@ -79,6 +83,7 @@ function synchronizeTabButtonStates() {
         }
     });
 }
+
 // Add function to track tab state history
 function trackTabStateHistory(containerId: string, activeTab: string) {
     if (!tabStateHistory.has(containerId)) {
@@ -159,6 +164,7 @@ export function saveTabState(containerId: string, activeTab: string) {
         console.warn(`${LOG_PREFIX} Failed to save tab state:`, error);
     }
 }
+
 // Export function to get all current tab states
 export const getAllTabStates = (): Map<string, TabState> => {
     return new Map(tabStates);
@@ -178,6 +184,7 @@ function updateNestedTabs(element: HTMLElement) {
     const MAX_RECURSION_DEPTH = 10;
     const OPERATION_TIMEOUT = 5000;
     const depth = 0;
+
     function processNestedTabs(element: HTMLElement, currentDepth: number) {
         if (currentDepth >= MAX_RECURSION_DEPTH) {
             console.warn('Max recursion depth reached in updateNestedTabs');
@@ -209,15 +216,27 @@ function updateNestedTabs(element: HTMLElement) {
 export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     const forTab = button.getAttribute('data-for-tab');
     if (!forTab) return;
-     const tabContainer = container as TabContainer;
+    const tabContainer = container as TabContainer;
+    // Early return if tab is already active to prevent unnecessary updates
+    if (tabContainer.activeTabState === forTab) {
+        console.debug(`${LOG_PREFIX} Tab ${forTab} already active, skipping update`);
+        return;
+    }
     // Store the active tab state
     setActiveTabState(container.id, forTab);
 
-    // Don't proceed if tab is already active
-    const currentState = tabStates.get(container.id);
-    if (currentState?.activeTab === forTab && button.classList.contains('active')) {
-        return;
-    }
+    // Batch DOM operations
+    requestAnimationFrame(() => {
+        // Update UI for this specific container
+        container.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-for-tab') === forTab);
+        });
+        container.querySelectorAll('.tab-content').forEach(content => {
+            const isActive = content.getAttribute('data-tab') === forTab;
+            content.classList.toggle('active', isActive);
+            (content as HTMLElement).style.display = isActive ? 'block' : 'none';
+        });
+    });
     // Store scroll position and state before switching
     // Store scroll position of current active tab before switching
     const currentActiveContent = container.querySelector('.tab-content.active');
@@ -226,7 +245,7 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     }
 
     // Get previous state for logging
-    const previousTab = currentState?.activeTab;
+    const previousTab = tabContainer.lastKnownState?.activeTab || tabStates.get(container.id)?.activeTab;
 
     // Save new state immediately
     saveTabState(container.id, forTab);
@@ -330,9 +349,9 @@ function restoreTabState(container: TabContainer) {
         });
         // First try to get state from container element
         // Try to get active tab from memory first
-        const savedTab = getActiveTab(containerId) || 
-                        container.lastKnownState?.activeTab || 
-                        tabStates.get(containerId)?.activeTab;
+        const savedTab = getActiveTab(containerId) ||
+            container.lastKnownState?.activeTab ||
+            tabStates.get(containerId)?.activeTab;
         if (savedTab) {
             const button = container.querySelector(
                 `.tab-button[data-for-tab="${savedTab}"]`
@@ -413,7 +432,7 @@ export const updateTabs = debounce(() => {
     });
     // Synchronize tab button states after update
     synchronizeTabButtonStates();
-    
+
     isMutating = false;
 }, 100);
 

@@ -2,9 +2,16 @@ import {useEffect, useRef, useState} from 'react';
 import {useDispatch} from 'react-redux';
 import {addMessage} from '../store/slices/messageSlice';
 import WebSocketService from '../services/websocket';
+import {debounce} from '../utils/tabHandling';
 import {Message} from "../types";
 
 export const useWebSocket = (sessionId: string) => {
+    const RECONNECT_MAX_DELAY = 30000;
+    const RECONNECT_BASE_DELAY = 1000;
+    const CONNECTION_TIMEOUT = 5000;
+    // Add connection status tracking with debounce
+    const connectionStatus = useRef({attempts: 0, lastAttempt: 0});
+    const RECONNECT_DELAY = 1000; // 1 second delay between attempts
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<Error | null>(null);
     const [isReconnecting, setIsReconnecting] = useState(false);
@@ -14,6 +21,27 @@ export const useWebSocket = (sessionId: string) => {
     const MAX_RECONNECT_ATTEMPTS = 5;
 
     useEffect(() => {
+        let connectionTimeout: NodeJS.Timeout;
+        // Implement exponential backoff for reconnection
+        const getReconnectDelay = () => {
+            return Math.min(RECONNECT_BASE_DELAY * Math.pow(2, connectionStatus.current.attempts), RECONNECT_MAX_DELAY);
+        };
+        // Debounce connection attempts
+        const attemptConnection = debounce(() => {
+            clearTimeout(connectionTimeout);
+            const now = Date.now();
+            if (now - connectionStatus.current.lastAttempt < RECONNECT_DELAY) {
+                return;
+            }
+            connectionStatus.current.lastAttempt = now;
+            connectionStatus.current.attempts++;
+            WebSocketService.connect(sessionId);
+            connectionTimeout = setTimeout(() => {
+                if (!isConnected) {
+                    handleError(new Error('Connection timeout'));
+                }
+            }, CONNECTION_TIMEOUT);
+        }, 100);
         console.log('[WebSocket] Initializing hook with sessionId:', sessionId);
         if (!sessionId) {
             console.warn('[WebSocket] No sessionId provided, skipping connection');
@@ -45,6 +73,9 @@ export const useWebSocket = (sessionId: string) => {
         const handleError = (err: Error) => {
             console.error('[WebSocket] Connection error:', err);
             setError(err);
+            if (connectionStatus.current.attempts < MAX_RECONNECT_ATTEMPTS) {
+                setTimeout(attemptConnection, getReconnectDelay());
+            }
             setIsReconnecting(true);
             console.log('[WebSocket] Attempting to reconnect...');
         };
@@ -57,6 +88,7 @@ export const useWebSocket = (sessionId: string) => {
         WebSocketService.connect(sessionId);
 
         return () => {
+            clearTimeout(connectionTimeout);
             console.log('[WebSocket] Cleaning up WebSocket connection and handlers');
             WebSocketService.removeMessageHandler(handleMessage);
             WebSocketService.removeConnectionHandler(handleConnectionChange);

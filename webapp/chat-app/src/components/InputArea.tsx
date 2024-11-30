@@ -1,4 +1,4 @@
-import React, {useState, useCallback, memo} from 'react';
+import React, {memo, useCallback, useState} from 'react';
 import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
@@ -80,7 +80,7 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
     const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         if (isSubmitting) return;
-        
+
         log('Submit attempt');
         if (message.trim()) {
             setIsSubmitting(true);
@@ -137,8 +137,8 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
                     aria-label="Message input"
                     disabled={isSubmitting}
                 />
-                <SendButton 
-                    type="submit" 
+                <SendButton
+                    type="submit"
                     disabled={isSubmitting || !message.trim()}
                     aria-label="Send message"
                 >

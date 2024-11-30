@@ -5,8 +5,7 @@ import {useTheme} from '../hooks/useTheme';
 import {RootState} from '../store';
 import {logger} from '../utils/logger';
 import {Message} from '../types';
-import {resetTabState, updateTabs, saveTabState, getAllTabStates, restoreTabStates, setActiveTab, tabObservers, setActiveTabState} from '../utils/tabHandling';
-import type {TabContainer, TabState} from '../utils/tabHandling';
+import {getAllTabStates, resetTabState, saveTabState, setActiveTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 import Prism from 'prismjs';
 
@@ -71,13 +70,14 @@ const MessageContent = styled.div`
     color: var(--theme-text);
     background: var(--theme-bg);
     /* Style code blocks with theme variables */
+
     pre[class*="language-"],
     code[class*="language-"] {
         background: var(--theme-surface);
         color: var(--theme-text);
         font-family: var(--theme-code-font);
     }
-    
+
 
     .href-link, .play-button, .regen-button, .cancel-button, .text-submit-button {
         cursor: pointer;
@@ -88,8 +88,8 @@ const MessageContent = styled.div`
         border-radius: 4px;
         background-color: var(--theme-surface);
         color: var(--theme-text);
-        transition: all var(--transition-duration) var(--transition-timing), 
-                    transform 0.2s ease-in-out;
+        transition: all var(--transition-duration) var(--transition-timing),
+        transform 0.2s ease-in-out;
 
         &:hover {
             opacity: 0.8;
@@ -110,7 +110,9 @@ const MessageContent = styled.div`
             background-color: ${({theme}) => theme.colors.surface};
         }
     }
+
     /* Style code blocks according to theme */
+
     pre[class*="language-"] {
         background: ${({theme}) => theme.colors.surface};
         margin: 1em 0;
@@ -119,13 +121,16 @@ const MessageContent = styled.div`
         transition: all var(--transition-duration) var(--transition-timing);
         box-shadow: ${({theme}) => theme.shadows.medium};
     }
+
     code[class*="language-"] {
         color: ${({theme}) => theme.colors.text.primary};
         text-shadow: none;
         transition: all 0.3s ease;
         font-family: ${({theme}) => theme.typography.console.fontFamily};
     }
+
     /* Style inline code differently from code blocks */
+
     :not(pre) > code {
         background: ${({theme}) => theme.colors.surface};
         color: ${({theme}) => theme.colors.text.primary};
@@ -233,6 +238,24 @@ interface MessageListProps {
 }
 
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
+    const storeMessages = useSelector((state: RootState) => state.messages.messages);
+    const messages = Array.isArray(propMessages) ? propMessages :
+        Array.isArray(storeMessages) ? storeMessages : [];
+
+    // Memoize message processing
+    const memoizedProcessMessageContent = React.useMemo(() => {
+        return (content: string) => {
+            if (!content) return '';
+            return expandMessageReferences(content, messages);
+        };
+    }, [messages]);
+
+    // Optimize message filtering
+    const filteredMessages = React.useMemo(() => {
+        return messages
+            .filter((message) => message.id && !message.id.startsWith("z"))
+            .filter((message) => message.content?.length > 0);
+    }, [messages]);
     const theme = useTheme();
     logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
     // Store tab states on mount
@@ -280,10 +303,6 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         };
     }, []);
 
-    const storeMessages = useSelector((state: RootState) => state.messages.messages);
-
-    const messages = Array.isArray(propMessages) ? propMessages :
-        Array.isArray(storeMessages) ? storeMessages : [];
 
     const processMessageContent = useCallback((content: string) => {
         logger.debug('Processing message content', {contentLength: content.length});
@@ -307,10 +326,10 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
             states: Array.from(currentStates.entries())
         });
 
-    // Preserve current tab states
-    preserveTabStates();
-    
-        
+        // Preserve current tab states
+        preserveTabStates();
+
+
         // Process tabs after messages update
         requestAnimationFrame(() => {
             try {
@@ -326,9 +345,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
 
     return (
         <MessageListContainer>
-            {messages
-                .filter((message) => message.id && !message.id.startsWith("z"))
-                .filter((message) => message.content && message.content.length > 0)
+            {filteredMessages
                 .map((message) => {
                     logger.debug('MessageList - Rendering message', {
                         id: message.id,
@@ -345,7 +362,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                                 className="message-body"
                                 onClick={handleClick}
                                 dangerouslySetInnerHTML={{
-                                    __html: processMessageContent(message.content)
+                                    __html: memoizedProcessMessageContent(message.content)
                                 }}
                             />
                         </MessageItem>
