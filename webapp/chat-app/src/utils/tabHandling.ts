@@ -125,10 +125,6 @@ function processTabContent(content: Element) {
         // Re-initialize any interactive elements
         initializeTabContent(content);
     }
-    // Process nested tabs after content update
-    requestAnimationFrame(() => {
-        updateNestedTabs(content as HTMLElement);
-    });
 }
 
 
@@ -402,6 +398,7 @@ export const updateTabs = debounce(() => {
         return;
     }
     isMutating = true;
+    const processed = new Set<string>();
 
     // Get current tab states
     const currentStates = getAllTabStates();
@@ -413,7 +410,8 @@ export const updateTabs = debounce(() => {
 
     tabButtons.forEach(button => {
         const container = button.closest('.tabs-container') as TabContainer;
-        if (container) {
+        if (container && !processed.has(container.id)) {
+            processed.add(container.id);
             tabsContainers.add(container);
         }
     });
@@ -431,10 +429,15 @@ export const updateTabs = debounce(() => {
     synchronizeTabButtonStates();
 
     isMutating = false;
+    processed.clear();
 }, 100);
 
 
 function setupTabContainer(container: TabContainer) {
+    if (container.hasListener) {
+        return; // Skip if already set up
+    }
+
     if (!container.id) {
         container.id = `tab-container-${Math.random().toString(36).substr(2, 9)}`;
     }

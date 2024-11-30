@@ -68,7 +68,7 @@ abstract class SocketManagerBase(
     spinner: String = SessionTask.spinner,
     private val buffer: MutableList<StringBuilder> = mutableListOf(StringBuilder(responseContents))
   ) : SessionTask(
-    operationID = operationID, buffer = buffer, spinner = spinner
+    messageID = operationID, buffer = buffer, spinner = spinner
   ) {
 
     override fun send(html: String) = this@SocketManagerBase.send(html)

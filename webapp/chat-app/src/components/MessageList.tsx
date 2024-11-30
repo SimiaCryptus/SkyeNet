@@ -25,14 +25,22 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
     };
     // Process all elements with IDs that match message references
     const processNode = (node: HTMLElement) => {
-        if (node.id && node.id.startsWith('z')) {
-            const referencedMessage = messages.find(m => m.id === node.id);
-            if (referencedMessage) {
-                // logger.debug('Expanding referenced message', {id: node.id, contentLength: referencedMessage.content.length});
-                node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
-                highlightCodeBlocks(node);
-            } else {
-                // logger.debug('Referenced message not found', {id: node.id});
+        const messageID = node.getAttribute("message-id");
+        if (messageID) {
+            if(node.getAttribute("filled") === "true") {
+                logger.debug('Skipping filled node', {id: node.id});
+                return;
+            }
+            if (messageID?.startsWith('z')) {
+                const referencedMessage = messages.find(m => m.id === messageID);
+                if (referencedMessage) {
+                    logger.debug('Expanding referenced message', {id: messageID, contentLength: referencedMessage.content.length});
+                    node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
+                    node.setAttribute("filled", "true");
+                    highlightCodeBlocks(node);
+                } else {
+                    logger.debug('Referenced message not found', {id: node.id});
+                }
             }
         }
         // Recursively process child elements

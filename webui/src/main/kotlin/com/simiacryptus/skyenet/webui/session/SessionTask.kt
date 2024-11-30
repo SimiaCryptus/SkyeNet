@@ -11,14 +11,12 @@ import java.awt.image.BufferedImage
 import java.io.File
 
 abstract class SessionTask(
-  val operationID: String,
+  val messageID: String,
   private var buffer: MutableList<StringBuilder> = mutableListOf(),
   private val spinner: String = SessionTask.spinner
 ) {
 
-  open fun isInteractive() = true
-
-  val placeholder: String get() = "<div id=\"$operationID\"></div>"
+  val placeholder: String get() = "<div message-id=\"$messageID\"></div>"
 
   private val currentText: String
     get() = buffer.filter { it.isNotBlank() }.joinToString("")
