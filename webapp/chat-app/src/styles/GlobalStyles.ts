@@ -5,19 +5,6 @@ const logStyleChange = (component: string, property: string, value: any) => {
     console.log(`[${timestamp}] GlobalStyles: ${component} - ${property}:`, value);
 };
 
-// Log when global styles are being applied
-const logThemeChange = (theme: DefaultTheme) => {
-    const timestamp = new Date().toISOString();
-    console.group(`[${timestamp}] GlobalStyles: Theme Application`);
-    console.log('Theme configuration:', {
-        background: theme.colors.background,
-        textColor: theme.colors.text.primary,
-        fontFamily: theme.typography.fontFamily,
-        fontSize: theme.typography.fontSize.md
-    });
-    console.groupEnd();
-};
-
 export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
     /* Theme CSS variables */
     :root {

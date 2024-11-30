@@ -40,15 +40,4 @@ declare global {
     }
 }
 
-interface AppConfig {
-    singleInput: boolean;
-    stickyInput: boolean;
-    loadImages: boolean;
-    showMenubar: boolean;
-    applicationName: string;
-    websocket: WebSocketConfig;
-    appInfo: any | null;
-    // ... other existing properties
-}
-
 export type {AppConfig};

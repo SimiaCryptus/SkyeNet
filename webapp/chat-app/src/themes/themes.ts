@@ -399,5 +399,3 @@ export const logThemeChange = (from: ThemeName, to: ThemeName) => {
         timestamp: new Date().toISOString()
     });
 };
-// Export logger for use in other components
-export const themeLogger = logger;

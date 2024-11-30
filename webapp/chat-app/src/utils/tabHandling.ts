@@ -18,8 +18,6 @@ export interface TabContainer extends HTMLElement {
     contentObservers?: Map<string, MutationObserver>;
 }
 
-// Track active tab observers
-export const tabObservers = new Map<string, Map<string, MutationObserver>>();
 // Add diagnostic counters
 const diagnostics = {
     saveCount: 0,
@@ -405,8 +403,6 @@ export const updateTabs = debounce(() => {
         return;
     }
     isMutating = true;
-    // Capture current versions before update
-    const previousVersions = new Map(tabStateVersions);
 
     // Get current tab states
     const currentStates = getAllTabStates();

@@ -303,17 +303,6 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         };
     }, []);
 
-
-    const processMessageContent = useCallback((content: string) => {
-        logger.debug('Processing message content', {contentLength: content.length});
-        const processed = expandMessageReferences(content, messages);
-        // Re-highlight code blocks after theme change
-        requestAnimationFrame(() => {
-            Prism.highlightAll();
-        });
-        return processed;
-    }, [messages]);
-
     React.useEffect(() => {
         logger.debug('MessageList - Messages updated', {
             messageCount: messages.length,
