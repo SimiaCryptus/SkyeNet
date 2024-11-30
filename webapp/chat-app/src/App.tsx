@@ -3,7 +3,6 @@ import {Provider} from 'react-redux';
 import {store} from './store';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import ErrorFallback from './components/ErrorBoundary/ErrorFallback';
-import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
 import './App.css';
 import websocket from './services/websocket';
 import {GlobalStyles} from './styles/GlobalStyles';
@@ -29,31 +28,14 @@ import 'prismjs/plugins/toolbar/prism-toolbar.css';
 import 'prismjs/plugins/copy-to-clipboard/prism-copy-to-clipboard';
 import 'prismjs/plugins/line-numbers/prism-line-numbers';
 import 'prismjs/plugins/line-numbers/prism-line-numbers.css';
-import mermaid from 'mermaid';
 import QRCode from 'qrcode-generator';
 
 const APP_VERSION = '1.0.0';
 const LOG_PREFIX = '[App]';
-// Configure Prism
 Prism.manual = true;
 
 
 const App: React.FC = () => {
-    const [isLoading, setIsLoading] = React.useState(true);
-    React.useEffect(() => {
-        // Highlight code blocks after component mounts
-        Promise.all([
-            new Promise(resolve => {
-                requestAnimationFrame(() => {
-                    Prism.highlightAllUnder(document.body);
-                    resolve(true);
-                });
-            }),
-            mermaid.run()
-        ]).finally(() => {
-            setIsLoading(false);
-        });
-    }, []);
     console.group(`${LOG_PREFIX} Initializing v${APP_VERSION}`);
     console.log('Starting component render');
 
@@ -64,7 +46,6 @@ const App: React.FC = () => {
         isConnected
     });
 
-    // Initialize UI handlers and message handling
     React.useEffect(() => {
         console.log(`${LOG_PREFIX} Setting up handlers`);
         setupUIHandlers();
@@ -72,13 +53,6 @@ const App: React.FC = () => {
 
     React.useEffect(() => {
         console.log(`${LOG_PREFIX} Component mounted, initializing libraries`);
-        // Initialize syntax highlighting
-        Prism.highlightAll();
-        console.log(`${LOG_PREFIX} Prism initialized`);
-        // Initialize mermaid diagrams
-        mermaid.run();
-        console.log(`${LOG_PREFIX} Mermaid initialized`);
-        // Initialize QR code generator
         const qr = QRCode(0, 'L');
         qr.addData('https://example.com');
         qr.make();
@@ -101,8 +75,7 @@ const App: React.FC = () => {
                                 return (
                                     <>
                                         <GlobalStyles/>
-                                        <div className={`App ${isLoading ? 'loading' : ''}`}>
-                                            {isLoading && <LoadingSpinner/>}
+                                        <div className={`App`}>
                                             <Menu/>
                                             <ChatInterface
                                                 sessionId={sessionId}
@@ -121,7 +94,6 @@ const App: React.FC = () => {
         </ErrorBoundary>
     );
 };
-// Close the logging group when component is loaded
 console.groupEnd();
 console.log(`${LOG_PREFIX} v${APP_VERSION} loaded successfully`);
 

@@ -1,6 +1,3 @@
-import {expandMessageReferences} from "../components/MessageList";
-import {store} from '../store';
-
 const LOG_PREFIX = '[TabHandler]';
 
 export interface TabState {
@@ -99,9 +96,9 @@ function trackTabStateHistory(containerId: string, activeTab: string) {
 // Helper function to initialize tab content
 function initializeTabContent(content: Element) {
     // Re-initialize syntax highlighting if needed
-    if ((window as any).Prism) {
-        (window as any).Prism.highlightAllUnder(content);
-    }
+    // if ((window as any).Prism) {
+    //     (window as any).Prism.highlightAllUnder(content);
+    // }
     // Re-initialize other interactive elements
     content.querySelectorAll('.referenced-message').forEach(ref => {
         ref.addEventListener('click', (e) => {
@@ -112,23 +109,6 @@ function initializeTabContent(content: Element) {
     });
 }
 
-// Define the content processor function
-function processTabContent(content: Element) {
-    const messages = store.getState().messages.messages;
-    const rawContent = content.innerHTML;
-    const processedContent = expandMessageReferences(rawContent, messages);
-    if (rawContent !== processedContent) {
-        // Preserve scroll position
-        const scrollTop = (content as HTMLElement).scrollTop;
-        content.innerHTML = processedContent;
-        (content as HTMLElement).scrollTop = scrollTop;
-        // Re-initialize any interactive elements
-        initializeTabContent(content);
-    }
-}
-
-
-// Move helper functions to module scope
 export function saveTabState(containerId: string, activeTab: string) {
     try {
         diagnostics.saveCount++;
@@ -205,20 +185,11 @@ function updateNestedTabs(element: HTMLElement) {
     clearTimeout(timeoutId);
 }
 
-// Move setActiveTab to module scope
 export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     const forTab = button.getAttribute('data-for-tab');
     if (!forTab) return;
     const tabContainer = container as TabContainer;
-    // Early return if tab is already active to prevent unnecessary updates
-    if (tabContainer.activeTabState === forTab) {
-        console.debug(`${LOG_PREFIX} Tab ${forTab} already active, skipping update`);
-        return;
-    }
-    // Store the active tab state
     setActiveTabState(container.id, forTab);
-
-    // Batch DOM operations
     requestAnimationFrame(() => {
         // Update UI for this specific container
         container.querySelectorAll('.tab-button').forEach(btn => {
@@ -230,8 +201,6 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
             (content as HTMLElement).style.display = isActive ? 'block' : 'none';
         });
     });
-    // Store scroll position and state before switching
-    // Store scroll position of current active tab before switching
     const currentActiveContent = container.querySelector('.tab-content.active');
     if (currentActiveContent instanceof HTMLElement) {
         tabScrollPositions.set(currentActiveContent.getAttribute('data-tab') || '', currentActiveContent.scrollTop);
@@ -244,7 +213,6 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     saveTabState(container.id, forTab);
     // Store state in container element for persistence
     tabContainer.lastKnownState = {containerId: container.id, activeTab: forTab};
-
 
     // Update UI for this specific container and ensure proper class handling
     const allTabButtons = container.querySelectorAll('.tab-button');
@@ -261,7 +229,6 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
         tab: forTab,
         previousTab: previousTab
     });
-    // Clean up existing observers for the container
     if (tabContainer.contentObservers) {
         tabContainer.contentObservers.forEach(observer => observer.disconnect());
     }
@@ -276,39 +243,12 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
             if (savedScrollTop !== undefined) {
                 (content as HTMLElement).scrollTop = savedScrollTop;
             }
-            // Process content and update nested tabs
             requestAnimationFrame(() => {
-                processTabContent(content);
                 updateNestedTabs(content as HTMLElement);
             });
-            // Set up enhanced mutation observer with debounced handler
-            const debouncedProcess = debounce((element: Element) => {
-                processTabContent(element);
-            }, 100);
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach(mutation => {
-                    if (mutation.target instanceof Element) {
-                        debouncedProcess(mutation.target);
-                    }
-                });
-            });
-
-            observer.observe(content, {
-                childList: true,
-                subtree: true,
-                characterData: true,
-                attributes: true,
-                attributeFilter: ['data-ref-id']
-            });
-            // Store observer reference for cleanup
-            (content as any)._contentObserver = observer;
-            // Initial content processing with RAF
-            requestAnimationFrame(() => processTabContent(content));
-
         } else {
             content.classList.remove('active');
             (content as HTMLElement).style.display = 'none';
-            // Cleanup observer when tab is hidden
             if ((content as any)._contentObserver) {
                 (content as any)._contentObserver.disconnect();
                 delete (content as any)._contentObserver;
@@ -399,33 +339,28 @@ export const updateTabs = debounce(() => {
     }
     isMutating = true;
     const processed = new Set<string>();
-
-    // Get current tab states
     const currentStates = getAllTabStates();
-
     console.log(`${LOG_PREFIX} Updating tabs...`);
 
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabsContainers = new Set<TabContainer>();
-
     tabButtons.forEach(button => {
         const container = button.closest('.tabs-container') as TabContainer;
-        if (container && !processed.has(container.id)) {
-            processed.add(container.id);
+        if (container) {
+            if (container.id) {
+                if (processed.has(container.id)) return;
+                processed.add(container.id);
+            }
             tabsContainers.add(container);
         }
     });
     tabsContainers.forEach(container => {
         setupTabContainer(container);
-        // Restore state for this container if it exists
         const state = currentStates.get(container.id);
         if (state) {
-                if (state) {
-                    restoreTabState(container);
-                }
+            restoreTabState(container);
         }
     });
-    // Synchronize tab button states after update
     synchronizeTabButtonStates();
 
     isMutating = false;
@@ -447,7 +382,9 @@ function setupTabContainer(container: TabContainer) {
     container.addEventListener('click', container.tabClickHandler);
     container.hasListener = true;
     const activeContent = container.querySelectorAll('.tab-content').values()
-        .filter(content => { content.classList.contains('active')}).toArray();
+        .filter(content => {
+            content.classList.contains('active')
+        }).toArray();
     if (activeContent.length === 0) {
         const firstButton = container.querySelector('.tab-button') as HTMLElement;
         if (firstButton) {
@@ -465,6 +402,4 @@ function setupTabContainer(container: TabContainer) {
             }
         }
     });
-
-
 }

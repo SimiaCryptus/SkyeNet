@@ -1,4 +1,4 @@
-import React, {useCallback} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {useTheme} from '../hooks/useTheme';
@@ -11,48 +11,28 @@ import Prism from 'prismjs';
 
 export const expandMessageReferences = (content: string, messages: Message[]): string => {
     if (!content) return '';
-    // Create a temporary div to parse HTML content
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
-    // Helper to highlight code blocks in content
-    const highlightCodeBlocks = (element: HTMLElement) => {
-        const codeBlocks = element.querySelectorAll('pre code');
-        codeBlocks.forEach(block => {
-            if (block instanceof HTMLElement) {
-                Prism.highlightElement(block);
-            }
-        });
-    };
-    // Process all elements with IDs that match message references
     const processNode = (node: HTMLElement) => {
         const messageID = node.getAttribute("message-id");
         if (messageID) {
-            // if(node.getAttribute("filled") === "true") {
-            //     logger.debug('Skipping filled node', {id: node.id});
-            //     return;
-            // }
             if (messageID?.startsWith('z')) {
                 const referencedMessage = messages.find(m => m.id === messageID);
                 if (referencedMessage) {
                     logger.debug('Expanding referenced message', {id: messageID, contentLength: referencedMessage.content.length});
                     node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
-                    node.setAttribute("filled", "true");
-                    highlightCodeBlocks(node);
                 } else {
                     logger.debug('Referenced message not found', {id: node.id});
                 }
             }
         }
-        // Recursively process child elements
         Array.from(node.children).forEach(child => {
             if (child instanceof HTMLElement) {
                 processNode(child);
             }
         });
     };
-    // logger.debug('Expanding message references', {content});
     processNode(tempDiv);
-    highlightCodeBlocks(tempDiv);
     return tempDiv.innerHTML;
 };
 
@@ -85,8 +65,7 @@ const MessageContent = styled.div`
         color: var(--theme-text);
         font-family: var(--theme-code-font);
     }
-
-
+    
     .href-link, .play-button, .regen-button, .cancel-button, .text-submit-button {
         cursor: pointer;
         user-select: none;
@@ -119,8 +98,6 @@ const MessageContent = styled.div`
         }
     }
 
-    /* Style code blocks according to theme */
-
     pre[class*="language-"] {
         background: ${({theme}) => theme.colors.surface};
         margin: 1em 0;
@@ -137,8 +114,6 @@ const MessageContent = styled.div`
         font-family: ${({theme}) => theme.typography.console.fontFamily};
     }
 
-    /* Style inline code differently from code blocks */
-
     :not(pre) > code {
         background: ${({theme}) => theme.colors.surface};
         color: ${({theme}) => theme.colors.text.primary};
@@ -150,14 +125,12 @@ const MessageContent = styled.div`
 `;
 
 const extractMessageAction = (target: HTMLElement): { messageId: string | undefined, action: string | undefined } => {
-    // Check for data attributes
     const messageId = target.getAttribute('data-message-id') ??
         target.getAttribute('data-id') ??
         undefined;
     let action = target.getAttribute('data-message-action') ??
         target.getAttribute('data-action') ??
         undefined;
-    // Check element classes
     if (!action) {
         if (target.classList.contains('href-link')) action = 'link';
         else if (target.classList.contains('play-button')) action = 'run';
@@ -249,29 +222,27 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     const storeMessages = useSelector((state: RootState) => state.messages.messages);
     const messages = Array.isArray(propMessages) ? propMessages :
         Array.isArray(storeMessages) ? storeMessages : [];
+    const messageListRef = useRef<HTMLDivElement>(null);
 
-    // Memoize message processing
-    const memoizedProcessMessageContent = React.useMemo(() => {
-        return (content: string) => {
-            if (!content) return '';
-            return expandMessageReferences(content, messages);
-        };
-    }, [messages]);
-
-    // Optimize message filtering
-    const filteredMessages = React.useMemo(() => {
-        return messages
-            .filter((message) => message.id && !message.id.startsWith("z"))
-            .filter((message) => message.content?.length > 0);
-    }, [messages]);
-    const theme = useTheme();
+    // Effect to handle syntax highlighting after render
+    useEffect(() => {
+        if (messageListRef.current) {
+            const codeBlocks = messageListRef.current.querySelectorAll('pre code');
+            logger.debug('Highlighting code blocks:', {count: codeBlocks.length});
+            codeBlocks.forEach(block => {
+                Prism.highlightElement(block);
+            });
+        }
+    }, [messages]); // Re-run when messages change
+    useTheme();
     logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
+
     // Store tab states on mount
     React.useEffect(() => {
         logger.debug('MessageList - Initial tab state setup');
         const containers = document.querySelectorAll('.tabs-container');
         containers.forEach(container => {
-                if (container instanceof HTMLElement) { // Ensure container is HTMLElement
+            if (container instanceof HTMLElement) { // Ensure container is HTMLElement
                 const activeTab = container.querySelector('.tab-button.active');
                 if (activeTab instanceof HTMLElement) {
                     const forTab = activeTab.getAttribute('data-for-tab');
@@ -288,7 +259,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
             }
         });
     }, []);
-    // Store current tab states before update
+
     const preserveTabStates = useCallback(() => {
         const containers = document.querySelectorAll('.tabs-container');
         containers.forEach(container => {
@@ -302,8 +273,6 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         });
     }, []);
 
-
-    // Log when component is mounted/unmounted
     React.useEffect(() => {
         logger.component('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
         return () => {
@@ -326,12 +295,12 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         // Preserve current tab states
         preserveTabStates();
 
-
         // Process tabs after messages update
         requestAnimationFrame(() => {
             try {
                 logger.debug('MessageList - Updating tabs after message change');
                 updateTabs();
+                Prism.highlightAll();
             } catch (error) {
                 logger.error('Error processing tabs:', error);
                 // Reset tab state on error
@@ -340,32 +309,31 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         });
     }, [messages]);
 
-    return (
-        <MessageListContainer>
-                {filteredMessages.map((message) => {
-                    logger.debug('MessageList - Rendering message', {
-                        id: message.id,
-                        type: message.type,
-                        timestamp: message.timestamp,
-                        contentLength: message.content?.length || 0
-                    });
-                    return (
-                        <MessageItem
-                            key={message.id} // Changed key to use only message.id
-                            type={message.type}
-                        >
-                            <MessageContent
-                                className="message-body"
-                                onClick={handleClick}
-                                dangerouslySetInnerHTML={{
-                                    __html: memoizedProcessMessageContent(message.content)
-                                }}
-                            />
-                        </MessageItem>
-                    );
-                })}
-        </MessageListContainer>
-    );
+    return <MessageListContainer ref={messageListRef}>
+        {React.useMemo(() => messages
+                .filter((message) => message.id && !message.id.startsWith("z"))
+                .filter((message) => message.content?.length > 0),
+            [messages]).map((message) => {
+                logger.debug('MessageList - Rendering message', {
+                    id: message.id,
+                    type: message.type,
+                    timestamp: message.timestamp,
+                    contentLength: message.content?.length || 0
+                });
+                return <MessageItem
+                    key={message.id} // Changed key to use only message.id
+                    type={message.type}
+                >
+                    {<MessageContent
+                        className="message-body"
+                        onClick={handleClick}
+                        dangerouslySetInnerHTML={{
+                            __html: expandMessageReferences(message.content, messages)
+                        }}
+                    />}
+                </MessageItem>;
+        })}
+    </MessageListContainer>;
 };
 
 

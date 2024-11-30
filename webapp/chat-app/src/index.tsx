@@ -5,11 +5,9 @@ import App from './App';
 import {store} from './store';
 import './index.css';
 import mermaid from 'mermaid';
-import QRCodeGenerator from 'qrcode-generator';
 
 console.log('[App] Starting application initialization...');
 console.log('[App] Redux store:', store);
-
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -22,8 +20,6 @@ const root = createRoot(rootElement);
 console.log('[App] React root created successfully');
 console.log('[App] Initializing mermaid...');
 mermaid.initialize({startOnLoad: true});
-window.mermaid = mermaid; // Make mermaid globally accessible
-window.QRCode = QRCodeGenerator; // Make QRCode globally accessible
 console.log('[App] Mermaid initialized, QRCode ready');
 
 try {

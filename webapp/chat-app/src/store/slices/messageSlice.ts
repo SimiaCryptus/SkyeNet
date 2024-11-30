@@ -2,6 +2,9 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Message} from '../../types';
 import DOMPurify from 'dompurify';
 import {debounce, getAllTabStates, restoreTabStates, updateTabs} from '../../utils/tabHandling';
+import Prism from "prismjs";
+import mermaid from "mermaid";
+import {logger} from "../../utils/logger";
 
 const LOG_PREFIX = '[MessageSlice]';
 
@@ -34,6 +37,17 @@ const sanitizeHtmlContent = (content: string): string => {
             'data-message-id', 'data-id', 'data-message-action', 'data-action', 'data-ref-id', 'data-version', 'role', 'message-id'],
     });
 };
+
+// Debounce tab state updates
+const debouncedUpdate = debounce(() => {
+    requestAnimationFrame(() => {
+        logger.debug(`${LOG_PREFIX} Debounced tab state update`);
+        restoreTabStates(getAllTabStates());
+        updateTabs();
+        Prism.highlightAll();
+        mermaid.run();
+    });
+}, 100);
 
 const messageSlice = createSlice({
     name: 'messages',
@@ -81,21 +95,10 @@ const messageSlice = createSlice({
                 const existingIndex = state.messages.findIndex(msg => msg.id === messageId);
                 if (existingIndex !== -1) {
                     if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
-                        // Debounce tab state updates
-                        const debouncedUpdate = debounce(() => {
-                            const currentTabStates = getAllTabStates();
-                            restoreTabStates(currentTabStates);
-                            updateTabs();
-                        }, 100);
                         debouncedUpdate();
                         action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                         action.payload.sanitized = true;
                         console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
-                        requestAnimationFrame(() => {
-                            // Restore tab states after content update
-                            restoreTabStates(currentTabStates);
-                            updateTabs();
-                        });
                     }
                     state.messages[existingIndex] = action.payload;
                     console.debug(`${LOG_PREFIX} Updated existing message at index ${existingIndex}`);
@@ -107,12 +110,7 @@ const messageSlice = createSlice({
                 action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
                 action.payload.sanitized = true;
                 console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
-                // Use requestAnimationFrame for smoother updates
-                requestAnimationFrame(() => {
-                    // Restore tab states after content update
-                    restoreTabStates(currentTabStates);
-                    updateTabs();
-                });
+                debouncedUpdate();
             }
             state.messages.push(action.payload);
             console.debug(`${LOG_PREFIX} Messages updated, total count: ${state.messages.length}`);
