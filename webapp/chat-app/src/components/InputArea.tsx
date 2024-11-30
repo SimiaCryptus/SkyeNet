@@ -75,6 +75,7 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
     const [message, setMessage] = useState('');
     const config = useSelector((state: RootState) => state.config);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
     const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
@@ -115,6 +116,8 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
 
     React.useEffect(() => {
         log('Component mounted', {configState: config});
+        // Focus the textarea when component mounts
+        textAreaRef.current?.focus();
         return () => {
             log('Component unmounting');
         };
@@ -125,6 +128,7 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
         <InputContainer>
             <StyledForm onSubmit={handleSubmit}>
                 <TextArea
+                    ref={textAreaRef}
                     value={message}
                     onChange={handleMessageChange}
                     onKeyPress={handleKeyPress}

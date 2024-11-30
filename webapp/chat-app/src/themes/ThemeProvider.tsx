@@ -4,12 +4,16 @@ import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 import {logThemeChange, themes, ThemeName} from './themes';
 import Prism from 'prismjs';
+import {safeStorage} from '../utils/storage';
 
 interface ThemeProviderProps {
     children: React.ReactNode;
 }
 
 const LOG_PREFIX = '[ThemeProvider]';
+// Fallback theme in case of storage errors
+const FALLBACK_THEME: ThemeName = 'main';
+
 // Define Prism themes mapping to our theme names
 const prismThemes: Record<ThemeName, string> = {
     main: 'prism',
@@ -35,6 +39,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
     const previousTheme = useRef(currentTheme);
 
     useEffect(() => {
+        // Validate theme before applying
+        if (!themes[currentTheme]) {
+            console.warn(`${LOG_PREFIX} Invalid theme "${currentTheme}", falling back to ${FALLBACK_THEME}`);
+            return;
+        }
+
     // Create a style element for dynamic theme transitions
     const styleEl = document.createElement('style');
     document.head.appendChild(styleEl);
