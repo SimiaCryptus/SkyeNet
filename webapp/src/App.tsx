@@ -14,20 +14,36 @@ import {setupUIHandlers} from './utils/uiHandlers';
 // Import Prism core
 import Prism from 'prismjs';
 // Import base CSS
-import 'prismjs/themes/prism.css';
+// import 'prismjs/themes/prism.css';
 // Import commonly used languages
+
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
+import 'prismjs/components/prism-diff';
+import 'prismjs/components/prism-markdown';
+import 'prismjs/components/prism-kotlin';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-mermaid';
+import 'prismjs/components/prism-scala';
+import 'prismjs/components/prism-python';
+
 // Import essential plugins
 import 'prismjs/plugins/toolbar/prism-toolbar';
 import 'prismjs/plugins/toolbar/prism-toolbar.css';
 import 'prismjs/plugins/copy-to-clipboard/prism-copy-to-clipboard';
 import 'prismjs/plugins/line-numbers/prism-line-numbers';
 import 'prismjs/plugins/line-numbers/prism-line-numbers.css';
+import 'prismjs/plugins/line-highlight/prism-line-highlight';
+import 'prismjs/plugins/line-highlight/prism-line-highlight.css';
+import 'prismjs/plugins/diff-highlight/prism-diff-highlight';
+import 'prismjs/plugins/diff-highlight/prism-diff-highlight.css';
+import 'prismjs/plugins/show-language/prism-show-language';
+import 'prismjs/plugins/normalize-whitespace/prism-normalize-whitespace';
+// import 'prismjs/plugins/autoloader/prism-autoloader';
 import QRCode from 'qrcode-generator';
 
 const APP_VERSION = '1.0.0';
