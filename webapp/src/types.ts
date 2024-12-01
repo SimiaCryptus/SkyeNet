@@ -41,7 +41,7 @@ export interface Message {
     id: string;
     content: string;
     type: 'user' | 'system' | 'response';
-    version: string;
+    version: number;  // Explicitly number type, no string allowed
     parentId?: string;
     timestamp: number;
     logLevel?: LogLevel;

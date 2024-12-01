@@ -1,40 +1,13 @@
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {useTheme} from '../hooks/useTheme';
 import {RootState} from '../store';
 import {logger} from '../utils/logger';
 import {Message} from '../types';
-import {getAllTabStates, resetTabState, saveTabState, setActiveTabState, updateTabs} from '../utils/tabHandling';
+import {resetTabState, saveTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 import Prism from 'prismjs';
-
-export const expandMessageReferences = (content: string, messages: Message[]): string => {
-    if (!content) return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content;
-    const processNode = (node: HTMLElement) => {
-        const messageID = node.getAttribute("message-id");
-        if (messageID) {
-            if (messageID?.startsWith('z')) {
-                const referencedMessage = messages.find(m => m.id === messageID);
-                if (referencedMessage) {
-                    logger.debug('Expanding referenced message', {id: messageID, contentLength: referencedMessage.content.length});
-                    node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
-                } else {
-                    logger.debug('Referenced message not found', {id: node.id});
-                }
-            }
-        }
-        Array.from(node.children).forEach(child => {
-            if (child instanceof HTMLElement) {
-                processNode(child);
-            }
-        });
-    };
-    processNode(tempDiv);
-    return tempDiv.innerHTML;
-};
 
 const MessageListContainer = styled.div`
     flex: 1;
@@ -65,7 +38,7 @@ const MessageContent = styled.div`
         color: var(--theme-text);
         font-family: var(--theme-code-font);
     }
-    
+
     .href-link, .play-button, .regen-button, .cancel-button, .text-submit-button {
         cursor: pointer;
         user-select: none;
@@ -218,11 +191,58 @@ interface MessageListProps {
     messages?: Message[];
 }
 
+export const expandMessageReferences = (content: string, messages: Message[]): string => {
+    if (!content) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    const processedRefs = new Set<string>(); // Track processed references to prevent infinite loops
+
+    const processNode = (node: HTMLElement) => {
+        const messageID = node.getAttribute("message-id");
+        if (messageID && !processedRefs.has(messageID)) {
+            if (messageID?.startsWith('z')) {
+                processedRefs.add(messageID); // Mark this reference as processed
+                const referencedMessage = messages.find(m => m.id === messageID);
+                if (referencedMessage) {
+                    logger.debug('Expanding referenced message', {id: messageID, contentLength: referencedMessage.content.length});
+                    node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
+                } else {
+                    logger.debug('Referenced message not found', {id: messageID});
+                    node.innerHTML = `<em>Loading reference ${messageID}...</em>`;
+                }
+            }
+        }
+        Array.from(node.children).forEach(child => {
+            if (child instanceof HTMLElement) {
+                processNode(child);
+            }
+        });
+    };
+    processNode(tempDiv);
+    return tempDiv.innerHTML;
+};
+
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
+    React.useEffect(() => {
+        logger.component('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
+        return () => {
+            logger.component('MessageList', 'Component unmounted', {timestamp: new Date().toISOString()});
+        };
+    }, []);
+
     const storeMessages = useSelector((state: RootState) => state.messages.messages);
     const messages = Array.isArray(propMessages) ? propMessages :
         Array.isArray(storeMessages) ? storeMessages : [];
     const messageListRef = useRef<HTMLDivElement>(null);
+    const finalMessages = React.useMemo(() => messages
+            .filter((message) => message.id && !message.id.startsWith("z"))
+            .filter((message) => message.content?.length > 0).map((message) => (
+                {
+                    ...message,
+                    content: expandMessageReferences(message.content, messages)
+                }
+            )),
+        [messages]);
 
     // Effect to handle syntax highlighting after render
     useEffect(() => {
@@ -233,36 +253,12 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                 Prism.highlightElement(block);
             });
         }
-    }, [messages]); // Re-run when messages change
+    }, [messages]); // Re-run when messages or references change
     useTheme();
     logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
 
-    // Store tab states on mount
     React.useEffect(() => {
-        logger.debug('MessageList - Initial tab state setup');
-        const containers = document.querySelectorAll('.tabs-container');
-        containers.forEach(container => {
-            if (container instanceof HTMLElement) { // Ensure container is HTMLElement
-                const activeTab = container.querySelector('.tab-button.active');
-                if (activeTab instanceof HTMLElement) {
-                    const forTab = activeTab.getAttribute('data-for-tab');
-                    if (forTab && container.id) {
-                        logger.debug('MessageList - Saving initial tab state:', {
-                            containerId: container.id,
-                            activeTab: forTab
-                        });
-                        saveTabState(container.id, forTab);
-                        // Also store in active tab states
-                        setActiveTabState(container.id, forTab);
-                    }
-                }
-            }
-        });
-    }, []);
-
-    const preserveTabStates = useCallback(() => {
-        const containers = document.querySelectorAll('.tabs-container');
-        containers.forEach(container => {
+        document.querySelectorAll('.tabs-container').forEach(container => {
             const activeTab = container.querySelector('.tab-button.active');
             if (activeTab instanceof HTMLElement) {
                 const forTab = activeTab.getAttribute('data-for-tab');
@@ -271,67 +267,37 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                 }
             }
         });
-    }, []);
-
-    React.useEffect(() => {
-        logger.component('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
-        return () => {
-            logger.component('MessageList', 'Component unmounted', {timestamp: new Date().toISOString()});
-        };
-    }, []);
-
-    React.useEffect(() => {
-        logger.debug('MessageList - Messages updated', {
-            messageCount: messages.length,
-            messageIds: messages.map(m => m.id),
-            source: propMessages ? 'props' : 'store'
-        });
-        // Log current tab states before preservation
-        const currentStates = getAllTabStates();
-        logger.debug('MessageList - Current tab states before update:', {
-            states: Array.from(currentStates.entries())
-        });
-
-        // Preserve current tab states
-        preserveTabStates();
-
-        // Process tabs after messages update
-        requestAnimationFrame(() => {
-            try {
-                logger.debug('MessageList - Updating tabs after message change');
-                updateTabs();
-                Prism.highlightAll();
-            } catch (error) {
-                logger.error('Error processing tabs:', error);
-                // Reset tab state on error
-                resetTabState();
-            }
-        });
-    }, [messages]);
+        try {
+            logger.debug('MessageList - Updating tabs after message change');
+            updateTabs();
+            // Prism.highlightAll();
+        } catch (error) {
+            logger.error('Error processing tabs:', error);
+            // Reset tab state on error
+            resetTabState();
+        }
+    }, [finalMessages]);
 
     return <MessageListContainer ref={messageListRef}>
-        {React.useMemo(() => messages
-                .filter((message) => message.id && !message.id.startsWith("z"))
-                .filter((message) => message.content?.length > 0),
-            [messages]).map((message) => {
-                logger.debug('MessageList - Rendering message', {
-                    id: message.id,
-                    type: message.type,
-                    timestamp: message.timestamp,
-                    contentLength: message.content?.length || 0
-                });
-                return <MessageItem
-                    key={message.id} // Changed key to use only message.id
-                    type={message.type}
-                >
-                    {<MessageContent
-                        className="message-body"
-                        onClick={handleClick}
-                        dangerouslySetInnerHTML={{
-                            __html: expandMessageReferences(message.content, messages)
-                        }}
-                    />}
-                </MessageItem>;
+        {finalMessages.map((message) => {
+            logger.debug('MessageList - Rendering message', {
+                id: message.id,
+                type: message.type,
+                timestamp: message.timestamp,
+                contentLength: message.content?.length || 0
+            });
+            return <MessageItem
+                key={message.id} // Changed key to use only message.id
+                type={message.type}
+            >
+                {<MessageContent
+                    className="message-body"
+                    onClick={handleClick}
+                    dangerouslySetInnerHTML={{
+                        __html: message.content
+                    }}
+                />}
+            </MessageItem>;
         })}
     </MessageListContainer>;
 };

@@ -95,7 +95,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     timestamp: data.timestamp,
                     isHtml: true,
                     rawHtml: data.data,
-                    version: data.timestamp.toString(),
+                    version: data.timestamp,
                     sanitized: false
                 };
                 if (isComponentMounted) {
@@ -123,7 +123,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             const messageObject = {
                 id: `${id}-${timestamp}`,
                 content: content,
-                version,
+                version: parseInt(version, 10) || timestamp,
                 type: id.startsWith('u') ? 'user' as const : 'response' as const,
                 timestamp,
             };

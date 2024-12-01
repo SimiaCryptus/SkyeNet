@@ -13,8 +13,7 @@ interface MessageState {
     pendingMessages: Message[];
     messageQueue: Message[];
     isProcessing: boolean;
-    referenceMessages: Record<string, Message>;
-    messageVersions: Record<string, string>; // Track message versions
+    messageVersions: Record<string, number>; // Track message versions
     pendingUpdates?: Message[]; // Add pendingUpdates property
 }
 
@@ -24,7 +23,6 @@ const initialState: MessageState = {
     messageQueue: [],
     isProcessing: false,
     messageVersions: {},
-    referenceMessages: {},
     pendingUpdates: [], // Initialize pendingUpdates
 };
 
@@ -73,17 +71,6 @@ const messageSlice = createSlice({
                 return;
             }
             state.messageVersions[messageId] = messageVersion;
-            if (messageId.startsWith('z')) {
-                state.referenceMessages[messageId] = action.payload;
-            }
-            console.debug(`${LOG_PREFIX} Adding message:`, {
-                id: messageId,
-                version: messageVersion,
-                type: action.payload.type,
-                isHtml: action.payload.isHtml,
-                // payload: action.payload,
-            });
-            state.messageVersions[messageId] = messageVersion;
             if (existingVersion) {
                 // Update the message in place instead of removing and re-adding
                 const existingIndex = state.messages.findIndex(msg => msg.id === messageId);
@@ -99,6 +86,13 @@ const messageSlice = createSlice({
                     return;
                 }
             }
+            console.debug(`${LOG_PREFIX} Adding message:`, {
+                id: messageId,
+                version: messageVersion,
+                type: action.payload.type,
+                isHtml: action.payload.isHtml,
+                isReference: messageId.startsWith('z')
+            });
 
             if (action.payload.isHtml && action.payload.rawHtml && !action.payload.sanitized) {
                 action.payload.content = sanitizeHtmlContent(action.payload.rawHtml);
