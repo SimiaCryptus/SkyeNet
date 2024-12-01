@@ -6,7 +6,6 @@ import {useState} from "react";
 import Prism from 'prismjs';
 
 export const useModal = () => {
-    const config = useSelector((state: RootState) => state.config.websocket);
     const dispatch = useDispatch();
     const [modalContent, setModalContent] = useState('');
 
