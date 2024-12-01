@@ -204,7 +204,7 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
                 processedRefs.add(messageID); // Mark this reference as processed
                 const referencedMessage = messages.find(m => m.id === messageID);
                 if (referencedMessage) {
-                    logger.debug('Expanding referenced message', {id: messageID, contentLength: referencedMessage.content.length});
+                    //logger.debug('Expanding referenced message', {id: messageID, contentLength: referencedMessage.content.length});
                     node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
                 } else {
                     logger.debug('Referenced message not found', {id: messageID});
@@ -234,6 +234,17 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     const messages = Array.isArray(propMessages) ? propMessages :
         Array.isArray(storeMessages) ? storeMessages : [];
     const messageListRef = useRef<HTMLDivElement>(null);
+    // Track processed reference versions to detect changes
+    const referencesVersions = React.useMemo(() => {
+        const versions: Record<string, number> = {};
+        messages.forEach(msg => {
+            if (msg.id?.startsWith('z')) {
+                versions[msg.id] = msg.version || 0;
+            }
+        });
+        return versions;
+    }, [messages]);
+
     const finalMessages = React.useMemo(() => messages
             .filter((message) => message.id && !message.id.startsWith("z"))
             .filter((message) => message.content?.length > 0).map((message) => (
@@ -242,7 +253,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                     content: expandMessageReferences(message.content, messages)
                 }
             )),
-        [messages]);
+        [messages, referencesVersions]); // Add referencesVersions as dependency
 
     // Effect to handle syntax highlighting after render
     useEffect(() => {

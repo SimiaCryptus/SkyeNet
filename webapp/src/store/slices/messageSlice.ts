@@ -54,6 +54,11 @@ const messageSlice = createSlice({
         addMessage: (state: MessageState, action: PayloadAction<Message>) => {
             const messageId = action.payload.id;
             const messageVersion = action.payload.version;
+            // Ensure version is set
+            if (!messageVersion) {
+                action.payload.version = Date.now();
+            }
+
             // Batch multiple message updates
             if (state.pendingUpdates && state.pendingUpdates.length > 0) {
                 state.pendingUpdates.push(action.payload);
@@ -61,15 +66,6 @@ const messageSlice = createSlice({
             }
             // Process message immediately if no pending updates
             const existingVersion = state.messageVersions[messageId];
-            // Skip processing if message is older or duplicate
-            if (existingVersion && existingVersion >= messageVersion) {
-                console.debug(`${LOG_PREFIX} Ignoring older/duplicate message version:`, {
-                    id: messageId,
-                    existing: existingVersion,
-                    received: messageVersion
-                });
-                return;
-            }
             state.messageVersions[messageId] = messageVersion;
             if (existingVersion) {
                 // Update the message in place instead of removing and re-adding
@@ -82,6 +78,10 @@ const messageSlice = createSlice({
                         console.debug(`${LOG_PREFIX} HTML content sanitized for message ${action.payload.id}`);
                     }
                     state.messages[existingIndex] = action.payload;
+                    // Force version update for reference messages
+                    if (messageId.startsWith('z')) {
+                        action.payload.version = Date.now();
+                    }
                     console.debug(`${LOG_PREFIX} Updated existing message at index ${existingIndex}`);
                     return;
                 }
