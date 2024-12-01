@@ -1,4 +1,5 @@
 const LOG_PREFIX = '[TabHandler]';
+import { logger } from './logger';
 
 export interface TabState {
     containerId: string;
@@ -317,7 +318,7 @@ export const updateTabs = debounce(() => {
     isMutating = true;
     const processed = new Set<string>();
     const currentStates = getAllTabStates();
-    console.log(`${LOG_PREFIX} Updating tabs...`);
+    logger.debug(`${LOG_PREFIX} Updating tabs...`);
 
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabsContainers = new Set<TabContainer>();
@@ -331,10 +332,25 @@ export const updateTabs = debounce(() => {
             tabsContainers.add(container);
         }
     });
+    // Store current active states before processing
+    const activeStates = new Map<string, string>();
+    tabsContainers.forEach(container => {
+        const currentActive = getActiveTab(container.id);
+        if (currentActive) {
+            activeStates.set(container.id, currentActive);
+        }
+    });
+
     tabsContainers.forEach(container => {
         setupTabContainer(container);
-        const state = currentStates.get(container.id);
-        if (state) {
+        // Prefer current active state over stored state
+        const activeTab = activeStates.get(container.id) || currentStates.get(container.id)?.activeTab;
+        if (activeTab) {
+            const state: TabState = {
+                containerId: container.id,
+                activeTab: activeTab
+            };
+            tabStates.set(container.id, state);
             restoreTabState(container);
         }
     });
@@ -348,7 +364,7 @@ export const updateTabs = debounce(() => {
 function setupTabContainer(container: TabContainer) {
     if (container.hasListener) return;
     if (!container.id) container.id = `tab-container-${Math.random().toString(36).substr(2, 9)}`;
-    console.log(`${LOG_PREFIX} Setting up tab container:`, container.id);
+    logger.debug(`${LOG_PREFIX} Setting up tab container:`, container.id);
     container.tabClickHandler = (event: Event) => {
         const button = (event.target as HTMLElement).closest('.tab-button');
         if (button && container.contains(button)) {
@@ -358,25 +374,28 @@ function setupTabContainer(container: TabContainer) {
     };
     container.addEventListener('click', container.tabClickHandler);
     container.hasListener = true;
-    const activeContent = container.querySelectorAll('.tab-content').values()
-        .filter(content => {
-            content.classList.contains('active')
-        }).toArray();
-    if (activeContent.length === 0) {
+    // Check for existing active state first
+    const existingActiveTab = getActiveTab(container.id);
+    if (existingActiveTab) {
+        const existingButton = container.querySelector(`.tab-button[data-for-tab="${existingActiveTab}"]`) as HTMLElement;
+        if (existingButton) {
+            setActiveTab(existingButton, container);
+            return;
+        }
+    }
+    // If no active state, check for active content
+    const activeContent = Array.from(container.querySelectorAll('.tab-content'))
+        .find(content => content.classList.contains('active'));
+    if (!activeContent) {
         const firstButton = container.querySelector('.tab-button') as HTMLElement;
         if (firstButton) {
             setActiveTab(firstButton, container);
         }
-    }
-    container.querySelectorAll('.tab-content').forEach(content => {
-        const isActive = content.classList.contains('active');
-        (content as HTMLElement).style.display = isActive ? 'block' : 'none';
-        if (isActive) {
-            const tabId = content.getAttribute('data-tab');
-            if (tabId) {
-                container.activeTabState = tabId;
-                setActiveTabState(container.id, tabId);
-            }
+    } else {
+        const tabId = activeContent.getAttribute('data-tab');
+        if (tabId) {
+            container.activeTabState = tabId;
+            setActiveTabState(container.id, tabId);
         }
-    });
+    }
 }
