@@ -1,23 +1,25 @@
 import {configureStore} from '@reduxjs/toolkit';
+import { Middleware } from '@reduxjs/toolkit';
 import configReducer from './slices/configSlice';
 import messageReducer from './slices/messageSlice';
 import uiReducer from './slices/uiSlice';
 import userReducer from './slices/userSlice';
-import {Middleware} from 'redux';
+
 // Utility function to get formatted timestamp
 const getTimestamp = () => new Date().toISOString().split('T')[1].slice(0, -1);
 
 // Custom middleware for logging actions and state changes
-const logger: Middleware = (store) => (next) => (action) => {
+const logger: Middleware = (store) => (next) => (action: unknown) => {
     const timestamp = getTimestamp();
-    console.group(`%c Redux Action: ${action.type} @ ${timestamp}`, 'color: #8833FF; font-weight: bold;');
+    const actionObj = action as any;
+    console.group(`%c Redux Action: ${actionObj.type} @ ${timestamp}`, 'color: #8833FF; font-weight: bold;');
     // Log previous state
     console.log('%c Previous State:', 'color: #9E9E9E; font-weight: bold;', store.getState());
     // Log action with different styling
     console.log('%c Action:', 'color: #00BCD4; font-weight: bold;', {
-        type: action.type,
-        payload: action.payload,
-        meta: action.meta,
+        type: actionObj.type,
+        payload: actionObj.payload,
+        meta: actionObj.meta,
     });
 
     const result = next(action);

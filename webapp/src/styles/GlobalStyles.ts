@@ -1,19 +1,16 @@
-import {createGlobalStyle, DefaultTheme} from 'styled-components';
+import {createGlobalStyle} from 'styled-components';
+import type {DefaultTheme} from 'styled-components';
+
 // Enhanced logging function with timestamp
 const logStyleChange = (component: string, property: string, value: any) => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] GlobalStyles: ${component} - ${property}:`, value);
 };
 
-export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
+const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
     /* Theme CSS variables */
     :root {
-        /* Add theme variables */
-        --theme-background: ${({theme}) => theme.colors.background};
-        --theme-text: ${({theme}) => theme.colors.text.primary};
-        --theme-surface: ${({theme}) => theme.colors.surface};
-        --theme-border: ${({theme}) => theme.colors.border};
-        --theme-primary: ${({theme}) => theme.colors.primary};
+        /* Theme variables are now set dynamically in ThemeProvider */
     }
 
     /* Override Prism.js theme colors to match current theme */
@@ -21,18 +18,18 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
     .token.prolog,
     .token.doctype,
     .token.cdata {
-        color: ${({theme}) => theme.colors.text.secondary};
+        color: var(--theme-text-secondary);
     }
 
     .token.punctuation {
-        color: ${({theme}) => theme.colors.text.primary};
+        color: var(--theme-text);
     }
 
     .token.property,
     .token.tag,
     .token.constant,
     .token.symbol {
-        color: ${({theme}) => theme.colors.primary};
+        color: var(--theme-primary);
     }
 
     .token.boolean,
@@ -100,23 +97,11 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
     }
 
     body {
-        font-family: ${({theme}: { theme: DefaultTheme }) => {
-            logStyleChange('body', 'font-family', theme.typography.fontFamily);
-            return theme.typography.fontFamily;
-        }};
-        background-color: ${({theme}: { theme: DefaultTheme }) => {
-            logStyleChange('body', 'background-color', theme.colors.background);
-            return theme.colors.background;
-        }};
-        color: ${({theme}: { theme: DefaultTheme }) => {
-            logStyleChange('body', 'color', theme.colors.text.primary);
-            return theme.colors.text.primary;
-        }};
+        font-family: var(--theme-font-family);
+        background-color: var(--theme-background);
+        color: var(--theme-text);
         line-height: 1.5;
-        font-size: ${({theme}: { theme: DefaultTheme }) => {
-            logStyleChange('body', 'font-size', theme.typography.fontSize.md);
-            return theme.typography.fontSize.md;
-        }};
+        font-size: var(--theme-font-size-md);
     }
 
     .chat-input {
@@ -193,3 +178,4 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme }>`
         box-shadow: ${({theme}) => theme.shadows.medium};
     }
 `;
+export { GlobalStyles };

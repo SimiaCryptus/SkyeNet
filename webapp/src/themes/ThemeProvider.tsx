@@ -4,6 +4,7 @@ import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 import {logThemeChange, ThemeName, themes} from './themes';
 import Prism from 'prismjs';
+import {GlobalStyles} from '../styles/GlobalStyles';
 
 interface ThemeProviderProps {
     children: React.ReactNode;
@@ -50,12 +51,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
         // Add theme CSS variables to root
         styleEl.textContent = `
         :root {
-            --theme-background: ${themes[currentTheme].colors.background};
-            --theme-text: ${themes[currentTheme].colors.text.primary};
-            --theme-surface: ${themes[currentTheme].colors.surface};
-            --theme-border: ${themes[currentTheme].colors.border};
-            --theme-primary: ${themes[currentTheme].colors.primary};
-            --theme-code-font: ${themes[currentTheme].typography.console.fontFamily};
+            --theme-text-secondary: ${themes[currentTheme].colors.text.secondary};
+            --theme-font-family: ${themes[currentTheme].typography.fontFamily};
+            --theme-font-size-md: ${themes[currentTheme].typography.fontSize.md};
         }
         /* Theme-specific message content styles */
         .message-content {
@@ -151,7 +149,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
         );
     }
 
-    return <StyledThemeProvider theme={theme}>{children}</StyledThemeProvider>;
+    return (
+        <StyledThemeProvider theme={theme}>
+            <GlobalStyles theme={theme} />{children}
+        </StyledThemeProvider>);
 };
 
 // Log available themes on module load

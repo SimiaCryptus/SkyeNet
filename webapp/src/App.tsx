@@ -5,7 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import ErrorFallback from './components/ErrorBoundary/ErrorFallback';
 import './App.css';
 import websocket from './services/websocket';
-import {GlobalStyles} from './styles/GlobalStyles';
+import { GlobalStyles } from './styles/GlobalStyles';
 import ChatInterface from './components/ChatInterface';
 import ThemeProvider from './themes/ThemeProvider';
 import {Menu} from "./components/Menu/Menu";
@@ -87,10 +87,9 @@ const App: React.FC = () => {
                     return (
                         <ThemeProvider>
                             {(() => {
-                                console.debug(`${LOG_PREFIX} Rendering ThemeProvider`);
+                                console.debug(`${LOG_PREFIX} Rendering ThemeProvider with theme`);
                                 return (
                                     <>
-                                        <GlobalStyles/>
                                         <div className={`App`}>
                                             <Menu/>
                                             <ChatInterface
