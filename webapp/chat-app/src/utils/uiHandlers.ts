@@ -5,6 +5,7 @@ import {debounce} from './tabHandling';
 
 export const setupUIHandlers = () => {
     console.log('Setting up UI event handlers...');
+
     // Debounce keyboard shortcuts
     const handleKeyboardShortcut = debounce((event: KeyboardEvent) => {
         if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'V') {
@@ -42,6 +43,7 @@ export const setupUIHandlers = () => {
             handleMessageAction(messageId, messageAction);
         }
     });
+
     console.log('UI event handlers setup complete');
 };
 

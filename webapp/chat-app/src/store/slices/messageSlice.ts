@@ -72,16 +72,10 @@ const messageSlice = createSlice({
                 });
                 return;
             }
-            // Update version tracking
             state.messageVersions[messageId] = messageVersion;
-
-            // Store reference messages separately
             if (messageId.startsWith('z')) {
                 state.referenceMessages[messageId] = action.payload;
             }
-            // Get current tab states before any updates
-            const currentTabStates = getAllTabStates();
-
             console.debug(`${LOG_PREFIX} Adding message:`, {
                 id: messageId,
                 version: messageVersion,

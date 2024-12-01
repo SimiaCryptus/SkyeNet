@@ -93,22 +93,6 @@ function trackTabStateHistory(containerId: string, activeTab: string) {
     }
 }
 
-// Helper function to initialize tab content
-function initializeTabContent(content: Element) {
-    // Re-initialize syntax highlighting if needed
-    // if ((window as any).Prism) {
-    //     (window as any).Prism.highlightAllUnder(content);
-    // }
-    // Re-initialize other interactive elements
-    content.querySelectorAll('.referenced-message').forEach(ref => {
-        ref.addEventListener('click', (e) => {
-            if (e.target === ref) {
-                ref.classList.toggle('expanded');
-            }
-        });
-    });
-}
-
 export function saveTabState(containerId: string, activeTab: string) {
     try {
         diagnostics.saveCount++;
@@ -138,11 +122,10 @@ export function saveTabState(containerId: string, activeTab: string) {
     }
 }
 
-// Export function to get all current tab states
 export const getAllTabStates = (): Map<string, TabState> => {
     return new Map(tabStates);
 }
-// Export function to restore multiple tab states
+
 export const restoreTabStates = (states: Map<string, TabState>): void => {
     states.forEach((state) => {
         tabStates.set(state.containerId, state);
@@ -257,14 +240,12 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     });
 }
 
-// Declare restoreTabState at module level
 function restoreTabState(container: TabContainer) {
     try {
         diagnostics.restoreCount++;
         const containerId = container.id;
         const containerVersion = parseInt(container.dataset.stateVersion || '0');
         const storedVersion = tabStateVersions.get(containerId) || 0;
-        // Skip restore if container has newer version
         if (containerVersion > storedVersion) {
             console.debug(`${LOG_PREFIX} Skipping restore - container has newer state:`, {
                 containerId,
@@ -280,8 +261,6 @@ function restoreTabState(container: TabContainer) {
             allStates: Array.from(tabStates.entries()),
             version: storedVersion
         });
-        // First try to get state from container element
-        // Try to get active tab from memory first
         const savedTab = getActiveTab(containerId) ||
             container.lastKnownState?.activeTab ||
             tabStates.get(containerId)?.activeTab;
@@ -321,7 +300,6 @@ function restoreTabState(container: TabContainer) {
     }
 }
 
-// Add cleanup function to reset state
 export function resetTabState() {
     tabStates.clear();
     tabStateHistory.clear();
@@ -330,7 +308,6 @@ export function resetTabState() {
     currentStateVersion = 0;
     isMutating = false;
 }
-
 
 export const updateTabs = debounce(() => {
     if (isMutating) {
