@@ -315,22 +315,11 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     console.log('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
 
     React.useEffect(() => {
-        document.querySelectorAll('.tabs-container').forEach(container => {
-            const activeTab = container.querySelector('.tab-button.active');
-            if (activeTab instanceof HTMLElement) {
-                const forTab = activeTab.getAttribute('data-for-tab');
-                if (forTab && container.id) {
-                    saveTabState(container.id, forTab);
-                }
-            }
-        });
         try {
             console.debug('MessageList - Updating tabs after message change');
             updateTabs();
-            // Prism.highlightAll();
         } catch (error) {
             console.error('Error processing tabs:', error);
-            // Reset tab state on error
             resetTabState();
         }
     }, [finalMessages]);

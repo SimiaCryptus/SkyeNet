@@ -38,13 +38,11 @@ const sanitizeHtmlContent = (content: string): string => {
 
 // Debounce tab state updates
 const debouncedUpdate = debounce(() => {
-    requestAnimationFrame(() => {
-        console.debug(`${LOG_PREFIX} Debounced tab state update`);
-        restoreTabStates(getAllTabStates());
-        updateTabs();
-        Prism.highlightAll();
-        mermaid.run();
-    });
+    console.debug(`${LOG_PREFIX} Debounced tab state update`);
+    restoreTabStates(getAllTabStates());
+    updateTabs();
+    Prism.highlightAll();
+    mermaid.run();
 }, 100);
 
 const messageSlice = createSlice({
@@ -54,17 +52,14 @@ const messageSlice = createSlice({
         addMessage: (state: MessageState, action: PayloadAction<Message>) => {
             const messageId = action.payload.id;
             const messageVersion = action.payload.version;
-            // Ensure version is set
             if (!messageVersion) {
                 action.payload.version = Date.now();
             }
 
-            // Batch multiple message updates
             if (state.pendingUpdates && state.pendingUpdates.length > 0) {
                 state.pendingUpdates.push(action.payload);
                 return;
             }
-            // Process message immediately if no pending updates
             const existingVersion = state.messageVersions[messageId];
             state.messageVersions[messageId] = messageVersion;
             if (existingVersion) {
