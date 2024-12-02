@@ -66,8 +66,8 @@ function synchronizeTabButtonStates() {
         if (container instanceof HTMLElement) {
             const activeTab = getActiveTab(container.id);
             if (activeTab) {
-                // Only select direct child tab buttons
-                container.querySelectorAll(':scope > .tab-button').forEach(button => {
+                // Update button states
+                container.querySelectorAll('.tab-button').forEach(button => {
                     if (button.getAttribute('data-for-tab') === activeTab) {
                         button.classList.add('active');
                     } else {
@@ -175,17 +175,17 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     const tabContainer = container as TabContainer;
     setActiveTabState(container.id, forTab);
     requestAnimationFrame(() => {
-        // Only select direct child tab buttons
-        container.querySelectorAll(':scope > .tab-button').forEach(btn => {
+        // Update UI for this specific container
+        container.querySelectorAll('.tab-button').forEach(btn => {
             btn.classList.toggle('active', btn.getAttribute('data-for-tab') === forTab);
         });
-        container.querySelectorAll(':scope > .tab-content').forEach(content => {
+        container.querySelectorAll('.tab-content').forEach(content => {
             const isActive = content.getAttribute('data-tab') === forTab;
             content.classList.toggle('active', isActive);
             (content as HTMLElement).style.display = isActive ? 'block' : 'none';
         });
     });
-    const currentActiveContent = container.querySelector(':scope > .tab-content.active');
+    const currentActiveContent = container.querySelector('.tab-content.active');
     if (currentActiveContent instanceof HTMLElement) {
         tabScrollPositions.set(currentActiveContent.getAttribute('data-tab') || '', currentActiveContent.scrollTop);
     }
@@ -199,7 +199,7 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     tabContainer.lastKnownState = {containerId: container.id, activeTab: forTab};
 
     // Update UI for this specific container and ensure proper class handling
-    const allTabButtons = container.querySelectorAll(':scope > .tab-button');
+    const allTabButtons = container.querySelectorAll('.tab-button');
     allTabButtons.forEach(btn => {
         if (btn.getAttribute('data-for-tab') === forTab) {
             btn.classList.add('active');
@@ -218,7 +218,7 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     }
     tabContainer.contentObservers = new Map();
 
-    container.querySelectorAll(':scope > .tab-content').forEach(content => {
+    container.querySelectorAll('.tab-content').forEach(content => {
         if (content.getAttribute('data-tab') === forTab) {
             content.classList.add('active');
             (content as HTMLElement).style.display = 'block';
@@ -267,7 +267,7 @@ function restoreTabState(container: TabContainer) {
             tabStates.get(containerId)?.activeTab;
         if (savedTab) {
             const button = container.querySelector(
-                `:scope > .tab-button[data-for-tab="${savedTab}"]`
+                `.tab-button[data-for-tab="${savedTab}"]`
             ) as HTMLElement;
             if (button) {
                 setActiveTab(button, container);
@@ -286,7 +286,7 @@ function restoreTabState(container: TabContainer) {
                 containerId,
                 failCount: diagnostics.restoreFail
             });
-            const firstButton = container.querySelector(':scope > .tab-button') as HTMLElement;
+            const firstButton = container.querySelector('.tab-button') as HTMLElement;
             if (firstButton) {
                 setActiveTab(firstButton, container);
                 const forTab = firstButton.getAttribute('data-for-tab');
@@ -396,11 +396,16 @@ function setupTabContainer(container: TabContainer) {
         if (firstButton) {
             setActiveTab(firstButton, container);
         }
-    } else {
-        const tabId = activeContent.getAttribute('data-tab');
-        if (tabId) {
-            container.activeTabState = tabId;
-            setActiveTabState(container.id, tabId);
-        }
     }
+    container.querySelectorAll('.tab-content').forEach(content => {
+        const isActive = content.classList.contains('active');
+        (content as HTMLElement).style.display = isActive ? 'block' : 'none';
+        if (isActive) {
+            const tabId = content.getAttribute('data-tab');
+            if (tabId) {
+                container.activeTabState = tabId;
+                setActiveTabState(container.id, tabId);
+            }
+        }
+    });
 }
