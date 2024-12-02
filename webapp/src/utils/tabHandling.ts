@@ -267,7 +267,7 @@ function restoreTabState(container: TabContainer) {
             tabStates.get(containerId)?.activeTab;
         if (savedTab) {
             const button = container.querySelector(
-                `.tab-button[data-for-tab="${savedTab}"]`
+                `:scope > .tab-button[data-for-tab="${savedTab}"]`
             ) as HTMLElement;
             if (button) {
                 setActiveTab(button, container);
@@ -286,7 +286,7 @@ function restoreTabState(container: TabContainer) {
                 containerId,
                 failCount: diagnostics.restoreFail
             });
-            const firstButton = container.querySelector('.tab-button') as HTMLElement;
+            const firstButton = container.querySelector(':scope > .tab-button') as HTMLElement;
             if (firstButton) {
                 setActiveTab(firstButton, container);
                 const forTab = firstButton.getAttribute('data-for-tab');
