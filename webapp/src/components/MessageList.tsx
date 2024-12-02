@@ -5,9 +5,12 @@ import {useTheme} from '../hooks/useTheme';
 import {RootState} from '../store';
 
 import {Message} from '../types';
-import {resetTabState, saveTabState, updateTabs} from '../utils/tabHandling';
+import {resetTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 import Prism from 'prismjs';
+
+const VERBOSE_LOGGING = process.env.NODE_ENV === 'development';
+const CONTAINER_ID = 'message-list-' + Math.random().toString(36).substr(2, 9);
 
 const MessageListContainer = styled.div`
     flex: 1;
@@ -41,17 +44,9 @@ const MessageListContainer = styled.div`
 `;
 
 const MessageContent = styled.div`
-    /* Add theme-specific CSS variables */
-    --theme-bg: ${({theme}) => theme.colors.background};
-    --theme-text: ${({theme}) => theme.colors.text.primary};
-    --theme-surface: ${({theme}) => theme.colors.surface};
-    --theme-border: ${({theme}) => theme.colors.border};
-    --theme-primary: ${({theme}) => theme.colors.primary};
-    --theme-code-font: ${({theme}) => theme.typography.console.fontFamily};
-    /* Apply theme variables to content */
+    /* Theme variables for consistent styling */
     color: var(--theme-text);
     background: var(--theme-bg);
-    /* Style code blocks with theme variables */
 
     pre[class*="language-"],
     code[class*="language-"] {
@@ -117,6 +112,10 @@ const MessageContent = styled.div`
         transition: all 0.3s ease;
     }
 `;
+/**
+ * Extracts message ID and action from clicked elements
+ * Supports both data attributes and class-based detection
+ */
 
 const extractMessageAction = (target: HTMLElement): { messageId: string | undefined, action: string | undefined } => {
     const messageId = target.getAttribute('data-message-id') ??
@@ -189,9 +188,10 @@ const handleClick = (e: React.MouseEvent) => {
 };
 
 export const handleMessageAction = (messageId: string, action: string) => {
-    console.debug('Processing message action', {messageId, action});
+    if (VERBOSE_LOGGING) {
+        console.debug(`${'Processing message action'}`, {messageId, action, containerId: CONTAINER_ID});
+    }
 
-    // Handle text submit actions specially
     if (action === 'text-submit') {
         const input = document.querySelector(`.reply-input[data-message-id="${messageId}"]`) as HTMLTextAreaElement;
         if (input) {
@@ -199,36 +199,41 @@ export const handleMessageAction = (messageId: string, action: string) => {
             const escapedText = encodeURIComponent(text);
             const message = `!${messageId},userTxt,${escapedText}`;
             WebSocketService.send(message);
-            console.debug('Sent text submit message', {messageId, text: text.substring(0, 100)});
+            if (VERBOSE_LOGGING) {
+                console.debug(`${'Text submitted'}`, {
+                    containerId: CONTAINER_ID,
+                    messageId,
+                    previewText: text.substring(0, 50) + (text.length > 50 ? '...' : '')
+                });
+            }
             input.value = '';
         }
         return;
     }
-    // Handle link clicks
+    /**
+     * Recursively expands referenced messages within content
+     * Prevents infinite loops using processedRefs Set
+     */
     if (action === 'link') {
         console.debug('Processing link click', {messageId});
         WebSocketService.send(`!${messageId},link`);
         return;
     }
-    // Handle run/play button clicks
     if (action === 'run') {
         console.debug('Processing run action', {messageId});
         WebSocketService.send(`!${messageId},run`);
         return;
     }
-    // Handle regenerate button clicks
     if (action === 'regen') {
         console.debug('Processing regenerate action', {messageId});
         WebSocketService.send(`!${messageId},regen`);
         return;
     }
-    // Handle cancel button clicks
     if (action === 'stop') {
         console.debug('Processing stop action', {messageId});
         WebSocketService.send(`!${messageId},stop`);
         return;
     }
-    // Handle all other actions
     console.debug('Processing generic action', {messageId, action});
     WebSocketService.send(`!${messageId},${action}`);
 };
@@ -241,7 +246,7 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
     if (!content) return '';
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
-    const processedRefs = new Set<string>(); // Track processed references to prevent infinite loops
+    const processedRefs = new Set<string>();
 
     const processNode = (node: HTMLElement) => {
         const messageID = node.getAttribute("message-id");
@@ -250,11 +255,9 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
                 processedRefs.add(messageID); // Mark this reference as processed
                 const referencedMessage = messages.find(m => m.id === messageID);
                 if (referencedMessage) {
-                    //logger.debug('Expanding referenced message', {id: messageID, contentLength: referencedMessage.content.length});
                     node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
                 } else {
                     console.debug('Referenced message not found', {id: messageID});
-                    node.innerHTML = `<em>Loading reference ${messageID}...</em>`;
                 }
             }
         }
@@ -270,9 +273,20 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
 
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     React.useEffect(() => {
-        console.log('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
+        if (VERBOSE_LOGGING) {
+            console.debug(`${'Component lifecycle'}`, {
+                event: 'mounted',
+                containerId: CONTAINER_ID,
+                timestamp: new Date().toISOString()
+            });
+        }
         return () => {
-            console.log('MessageList', 'Component unmounted', {timestamp: new Date().toISOString()});
+            if (VERBOSE_LOGGING) {
+                console.debug(`${'Component lifecycle'}`, {
+                    event: 'unmounted',
+                    containerId: CONTAINER_ID
+                });
+            }
         };
     }, []);
 
@@ -280,7 +294,6 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     const messages = Array.isArray(propMessages) ? propMessages :
         Array.isArray(storeMessages) ? storeMessages : [];
     const messageListRef = useRef<HTMLDivElement>(null);
-    // Track processed reference versions to detect changes
     const referencesVersions = React.useMemo(() => {
         const versions: Record<string, number> = {};
         messages.forEach(msg => {
@@ -301,25 +314,35 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
             )),
         [messages, referencesVersions]); // Add referencesVersions as dependency
 
-    // Effect to handle syntax highlighting after render
     useEffect(() => {
         if (messageListRef.current) {
             const codeBlocks = messageListRef.current.querySelectorAll('pre code');
-            console.debug('Highlighting code blocks:', {count: codeBlocks.length});
+            if (VERBOSE_LOGGING) {
+                console.debug(`Syntax highlighting`, {
+                    blockCount: codeBlocks.length,
+                    containerId: CONTAINER_ID
+                });
+            }
             codeBlocks.forEach(block => {
                 Prism.highlightElement(block);
             });
         }
-    }, [messages]); // Re-run when messages or references change
+    }, [messages]);
+
     useTheme();
     console.log('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
 
     React.useEffect(() => {
         try {
-            console.debug('MessageList - Updating tabs after message change');
+            if (VERBOSE_LOGGING) {
+                console.debug(`${'Tab state update'}`, {
+                    messageCount: finalMessages.length,
+                    containerId: CONTAINER_ID
+                });
+            }
             updateTabs();
         } catch (error) {
-            console.error('Error processing tabs:', error);
+            console.error(`[MessageList ${CONTAINER_ID}] ${'Failed to update tabs'}`, error);
             resetTabState();
         }
     }, [finalMessages]);
