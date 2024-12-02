@@ -81,6 +81,10 @@ class Logger {
             data || ''
         );
     }
+
+    trace(msg: string, ...args: any[]) {
+        console.trace(msg, ...args);
+    }
 }
 
 export const logger = Logger.getInstance();
