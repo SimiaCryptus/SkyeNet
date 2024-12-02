@@ -2,7 +2,7 @@
  * Controls verbosity of debug logging. When enabled, provides detailed operation tracking.
  * Disable in production to reduce console noise.
  */
-const VERBOSE_LOGGING = process.env.NODE_ENV === 'development';
+const VERBOSE_LOGGING = false && process.env.NODE_ENV === 'development';
 
 /**
  * Error tracking by category for monitoring and debugging

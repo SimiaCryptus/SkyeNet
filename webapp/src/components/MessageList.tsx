@@ -9,7 +9,7 @@ import {resetTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 import Prism from 'prismjs';
 
-const VERBOSE_LOGGING = process.env.NODE_ENV === 'development';
+const VERBOSE_LOGGING = false && process.env.NODE_ENV === 'development';
 const CONTAINER_ID = 'message-list-' + Math.random().toString(36).substr(2, 9);
 
 const MessageListContainer = styled.div`
