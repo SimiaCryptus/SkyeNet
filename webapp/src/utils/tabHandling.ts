@@ -164,11 +164,11 @@ export function setActiveTab(button: Element, container: Element) {
     const tabsContainer = container.querySelector('.tabs');
     if (tabsContainer) {
         tabsContainer.querySelectorAll('.tab-button').forEach(btn => {
-        if (btn.getAttribute('data-for-tab') === forTab) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+            if (btn.getAttribute('data-for-tab') === forTab) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
         });
     }
     container.querySelectorAll(':scope > .tab-content').forEach(content => {
@@ -292,9 +292,9 @@ export const updateTabs = debounce(() => {
                         containerId: container.id,
                         action: 'checking active button'
                     });
-            // Update active button selector
-            const tabsContainer = container.querySelector('.tabs');
-            const activeButton = tabsContainer?.querySelector('.tab-button.active');
+                    // Update active button selector
+                    const tabsContainer = container.querySelector('.tabs');
+                    const activeButton = tabsContainer?.querySelector('.tab-button.active');
                     if (activeButton) {
                         activeTab = activeButton.getAttribute('data-for-tab') || '';
                     }
@@ -304,9 +304,9 @@ export const updateTabs = debounce(() => {
                         containerId: container.id,
                         action: 'defaulting to first tab'
                     });
-            // Update first button selector
-            const tabsContainer = container.querySelector('.tabs');
-            const firstButton = tabsContainer?.querySelector('.tab-button') as HTMLElement;
+                    // Update first button selector
+                    const tabsContainer = container.querySelector('.tabs');
+                    const firstButton = tabsContainer?.querySelector('.tab-button') as HTMLElement;
                     if (firstButton) {
                         activeTab = firstButton.getAttribute('data-for-tab') || '';
                     } else {
@@ -319,19 +319,19 @@ export const updateTabs = debounce(() => {
 
                 let activeCount = 0;
                 let inactiveCount = 0;
-        // Update button iteration
-        const tabsContainer = container.querySelector('.tabs');
-        if (tabsContainer) {
-            tabsContainer.querySelectorAll('.tab-button').forEach(button => {
-                    if (button.getAttribute('data-for-tab') === activeTab) {
-                        button.classList.add('active');
-                        activeCount++;
-                    } else {
-                        button.classList.remove('active');
-                        inactiveCount++;
-                    }
-            });
-        }
+                // Update button iteration
+                const tabsContainer = container.querySelector('.tabs');
+                if (tabsContainer) {
+                    tabsContainer.querySelectorAll('.tab-button').forEach(button => {
+                        if (button.getAttribute('data-for-tab') === activeTab) {
+                            button.classList.add('active');
+                            activeCount++;
+                        } else {
+                            button.classList.remove('active');
+                            inactiveCount++;
+                        }
+                    });
+                }
                 if (VERBOSE_LOGGING) console.debug(`${`Synchronized ${activeCount + inactiveCount} buttons`}`, {
                     activeTab,
                     activeCount,

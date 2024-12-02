@@ -1,5 +1,3 @@
-
-
 // Export hooks with enhanced debug logging
 console.info('Initializing hooks module');
 console.debug('Starting hooks loading process from hooks/index.ts');

@@ -246,9 +246,9 @@ const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
         &.theme-transition-complete:after {
             opacity: 1;
             ${() => {
-                logStyleChange('body', 'transition', 'completed');
-                return '';
-            }}
+    logStyleChange('body', 'transition', 'completed');
+    return '';
+}}
         }
     }
 
@@ -274,4 +274,4 @@ const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
         box-shadow: ${({theme}) => theme.shadows.medium};
     }
 `;
-export { GlobalStyles };
+export {GlobalStyles};

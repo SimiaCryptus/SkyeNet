@@ -3,13 +3,17 @@ declare module "qrcode-generator" {
         addData(data: string): void;
 
         make(): void;
+
         createImgTag(cellSize?: number, margin?: number): string;
 
         createDataURL(cellSize?: number, margin?: number): string;
 
         createSvgTag(cellSize?: number, margin?: number): string;
+
         createASCII(cellSize?: number, margin?: number): string;
+
         getModuleCount(): number;
+
         isDark(row: number, col: number): boolean;
     }
 

@@ -1,6 +1,7 @@
 import {store} from '../store';
 
 import {setAppInfo} from '../store/slices/configSlice';
+
 const LOG_PREFIX = '[AppConfig]';
 
 const BASE_API_URL = process.env.REACT_APP_API_URL || window.location.origin;

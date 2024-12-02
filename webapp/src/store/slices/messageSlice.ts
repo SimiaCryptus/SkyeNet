@@ -6,7 +6,6 @@ import Prism from "prismjs";
 import mermaid from "mermaid";
 
 
-
 interface MessageState {
     messages: Message[];
     pendingMessages: Message[];

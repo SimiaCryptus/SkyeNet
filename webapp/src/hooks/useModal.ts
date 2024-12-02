@@ -1,5 +1,4 @@
-import {useDispatch, useSelector} from 'react-redux';
-import {RootState} from '../store';
+import {useDispatch} from 'react-redux';
 import WebSocketService from '../services/websocket';
 import {showModal as showModalAction} from '../store/slices/uiSlice';
 import {useState} from "react";
