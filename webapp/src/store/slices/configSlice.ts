@@ -3,8 +3,8 @@ import {AppConfig, ThemeName} from '../../types';
 
 // Helper function to validate theme name
 const isValidTheme = (theme: string | null): theme is ThemeName => {
-    return theme === 'main' || theme === 'night' || theme === 'forest' ||
-        theme === 'pony' || theme === 'alien';
+    return theme === 'main' || theme === 'night' || theme === 'forest' || 
+        theme === 'pony' || theme === 'alien' || theme === 'sunset';
 };
 // Load theme from localStorage with type safety
 const loadSavedTheme = (): ThemeName => {

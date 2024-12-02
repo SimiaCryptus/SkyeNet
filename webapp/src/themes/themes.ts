@@ -1,5 +1,7 @@
-// Define theme names
-export type ThemeName = 'main' | 'night' | 'forest' | 'pony' | 'alien';
+// Import and re-export ThemeName type
+import type { ThemeName } from '../types';
+export type { ThemeName };
+
 // Enhanced logger configuration
 const logger = {
     styles: {
@@ -384,6 +386,71 @@ export const themes = {
     forest: forestTheme,
     pony: ponyTheme,
     alien: alienTheme,
+    sunset: {
+        name: 'sunset',
+        colors: {
+            primary: '#FF6B6B',
+            secondary: '#FFA07A',
+            background: '#2C3E50',
+            surface: '#34495E',
+            text: {
+                primary: '#ECF0F1',
+                secondary: '#BDC3C7',
+            },
+            border: '#95A5A6',
+            error: '#E74C3C',
+            success: '#2ECC71',
+            warning: '#F1C40F',
+            info: '#3498DB',
+            primaryDark: '#E74C3C',
+            disabled: '#7F8C8D',
+        },
+        ...baseTheme,
+    },
+    ocean: {
+        name: 'ocean',
+        colors: {
+            primary: '#00B4D8',
+            secondary: '#48CAE4',
+            background: '#03045E',
+            surface: '#023E8A',
+            text: {
+                primary: '#CAF0F8',
+                secondary: '#90E0EF',
+            },
+            border: '#0077B6',
+            error: '#FF6B6B',
+            success: '#2ECC71',
+            warning: '#FFB703',
+            info: '#48CAE4',
+            primaryDark: '#0096C7',
+            disabled: '#415A77',
+            hover: '#0077B6'
+        },
+        ...baseTheme,
+    },
+    cyberpunk: {
+        name: 'cyberpunk',
+        colors: {
+            primary: '#FF00FF',
+            secondary: '#00FFFF',
+            background: '#0D0221',
+            surface: '#1A1A2E',
+            text: {
+                primary: '#FF00FF',
+                secondary: '#00FFFF',
+            },
+            border: '#FF00FF',
+            error: '#FF0000',
+            success: '#00FF00',
+            warning: '#FFD700',
+            info: '#00FFFF',
+            primaryDark: '#CC00CC',
+            disabled: '#4A4A4A',
+            hover: '#FF69B4'
+        },
+        ...baseTheme,
+    },
 };
 // Enhanced logging for available themes
 logger.log('available', 'all', {

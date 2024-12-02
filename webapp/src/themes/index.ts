@@ -1,4 +1,6 @@
-import {themes} from './themes';
+import { themes } from './themes';
+export type { ThemeName } from '../types';
+
 // Enhanced theme logging
 const themeCount = Object.keys(themes).length;
 console.group('Theme System Initialization');
@@ -12,5 +14,4 @@ console.table(Object.entries(themes).map(([name, theme]) => ({
 console.groupEnd();
 
 
-export {themes};
-export type {ThemeName} from './themes';
+export { themes };

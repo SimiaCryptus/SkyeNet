@@ -20,7 +20,10 @@ const prismThemes: Record<ThemeName, string> = {
     night: 'prism-dark',
     forest: 'prism-okaidia',
     pony: 'prism-twilight',
-    alien: 'prism-tomorrow'
+    alien: 'prism-tomorrow',
+    sunset: 'prism-twilight', // Added missing sunset theme mapping
+    ocean: 'prism-okaidia',  // Added comma
+    cyberpunk: 'prism-tomorrow'  // Added cyberpunk theme mapping
 };
 // Function to load Prism theme
 const loadPrismTheme = async (themeName: ThemeName) => {

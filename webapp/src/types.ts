@@ -1,5 +1,6 @@
 // Define theme names
-export type ThemeName = 'main' | 'night' | 'forest' | 'pony' | 'alien';
+export type ThemeName = 'main' | 'night' | 'forest' | 'pony' | 'alien' | 'sunset' | 'ocean' | 'cyberpunk';
+
 // Define log levels
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 // Define TabObservers type
