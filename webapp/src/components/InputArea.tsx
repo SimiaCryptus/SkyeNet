@@ -16,7 +16,7 @@ const log = (message: string, data?: unknown) => {
 };
 
 const InputContainer = styled.div`
-    padding: 1rem;
+    padding: 1.5rem;
     background-color: ${(props) => props.theme.colors.surface};
     border-top: 1px solid ${(props) => props.theme.colors.border};
     display: ${({theme}) => theme.config?.singleInput ? 'none' : 'block'};
@@ -24,6 +24,12 @@ const InputContainer = styled.div`
     position: sticky;
     bottom: 0;
     z-index: 10;
+    backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+    background: ${({theme}) => `linear-gradient(to top, 
+        ${theme.colors.surface}dd,
+        ${theme.colors.background}aa
+    )`};
 `;
 const StyledForm = styled.form`
     display: flex;
@@ -41,28 +47,64 @@ const TextArea = styled.textarea`
     resize: vertical;
     min-height: 40px;
     max-height: ${({theme}) => theme.sizing.console.maxHeight};
+    transition: all 0.3s ease;
+    background: ${({theme}) => theme.colors.background};
+
     &:focus {
-        outline: 2px solid ${(props) => props.theme.colors.primary};
+        outline: none;
         border-color: ${(props) => props.theme.colors.primary};
+        box-shadow: 0 0 0 2px ${({theme}) => `${theme.colors.primary}40`};
+        transform: translateY(-1px);
     }
     &:disabled {
         background-color: ${(props) => props.theme.colors.disabled};
+        cursor: not-allowed;
     }
 `;
 const SendButton = styled.button`
-    padding: 0.5rem 1rem;
-    background-color: ${(props) => props.theme.colors.primary};
+    padding: 0.75rem 1.5rem;
+    background: ${({theme}) => `linear-gradient(135deg, 
+        ${theme.colors.primary}, 
+        ${theme.colors.primaryDark}
+    )`};
     color: white;
     border: none;
     border-radius: ${(props) => props.theme.sizing.borderRadius.md};
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: ${({theme}) => theme.typography.fontWeight.medium};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+    min-width: 120px;
+
     &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
     &:hover:not(:disabled) {
-        opacity: 0.9;
+        background: ${({theme}) => `linear-gradient(135deg,
+            ${theme.colors.primaryDark},
+            ${theme.colors.primary}
+        )`};
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px ${({theme}) => theme.colors.primary + '40'};
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    &:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
+        pointer-events: none;
     }
 `;
 

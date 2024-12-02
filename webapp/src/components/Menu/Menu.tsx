@@ -18,6 +18,13 @@ const MenuContainer = styled.div`
     background-color: ${({theme}) => theme.colors.surface};
     border-bottom: 1px solid ${({theme}) => theme.colors.border};
     max-height: 5vh;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: ${({theme}) => `linear-gradient(135deg, ${theme.colors.surface}dd, ${theme.colors.background}ee)`};
+    backdrop-filter: blur(8px) saturate(180%);
 `;
 
 const ToolbarLeft = styled.div`
@@ -44,10 +51,31 @@ const DropButton = styled.a`
     padding: ${({theme}) => theme.sizing.spacing.sm};
     text-decoration: none;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    font-weight: ${({theme}) => theme.typography.fontWeight.medium};
 
     &:hover {
         background-color: ${({theme}) => theme.colors.primary};
         color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px ${({theme}) => `${theme.colors.primary}40`};
+
+        &:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
+            pointer-events: none;
+        }
     }
 `;
 

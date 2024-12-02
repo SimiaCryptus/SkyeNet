@@ -5,7 +5,6 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import ErrorFallback from './components/ErrorBoundary/ErrorFallback';
 import './App.css';
 import websocket from './services/websocket';
-import { GlobalStyles } from './styles/GlobalStyles';
 import ChatInterface from './components/ChatInterface';
 import ThemeProvider from './themes/ThemeProvider';
 import {Menu} from "./components/Menu/Menu";
@@ -16,7 +15,6 @@ import Prism from 'prismjs';
 // Import base CSS
 // import 'prismjs/themes/prism.css';
 // Import commonly used languages
-
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-markup';

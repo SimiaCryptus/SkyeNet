@@ -1,5 +1,5 @@
-import {createGlobalStyle} from 'styled-components';
 import type {DefaultTheme} from 'styled-components';
+import {createGlobalStyle} from 'styled-components';
 
 // Enhanced logging function with timestamp
 const logStyleChange = (component: string, property: string, value: any) => {
@@ -8,6 +8,27 @@ const logStyleChange = (component: string, property: string, value: any) => {
 };
 
 const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
+    /* Improved scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: ${({theme}) => theme.colors.background};
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: ${({theme}) => theme.colors.primary + '40'};
+        border-radius: 4px;
+        border: 2px solid ${({theme}) => theme.colors.background};
+
+        &:hover {
+            background: ${({theme}) => theme.colors.primary + '60'};
+        }
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
     /* Theme CSS variables */
     :root {
         /* Theme variables are now set dynamically in ThemeProvider */
@@ -47,13 +68,12 @@ const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
         color: ${({theme}) => theme.colors.info};
     }
 
+
     /* Reset styles */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
     }
 
     /* Theme variables */
@@ -97,12 +117,88 @@ const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
     }
 
     body {
-        font-family: var(--theme-font-family);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         background-color: var(--theme-background);
         color: var(--theme-text);
         line-height: 1.5;
         font-size: var(--theme-font-size-md);
+        letter-spacing: -0.011em;
+        text-rendering: optimizeLegibility;
+        overflow-x: hidden;
+        min-height: 100vh;
     }
+
+    border-radius:
+
+    12
+    px
+
+    !important
+    ;
+    padding:
+
+    1.5
+    em
+
+    !important
+    ;
+    margin:
+
+    1.5
+    em
+
+    0
+    !important
+    ;
+    overflow: auto
+
+    ;
+    box-shadow:
+
+    0
+    8
+    px
+
+    24
+    px
+
+    rgba
+    (
+    0
+    ,
+    0
+    ,
+    0
+    ,
+    0.15
+    )
+    ;
+    font-family:
+
+    'Fira Code'
+    ,
+    Consolas, Monaco, monospace
+
+    !important
+    ;
+    font-size:
+
+    0.9
+    em
+
+    !important
+    ;
+    line-height:
+
+    1.6
+    !important
+    ;
+    border:
+
+    1
+    px solid ${({theme}) => theme.colors.border + '30'}
+
+    ;
 
     .chat-input {
         background-color: ${({theme}: { theme: DefaultTheme }) => theme.colors.surface};

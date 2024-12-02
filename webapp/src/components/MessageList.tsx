@@ -16,7 +16,28 @@ const MessageListContainer = styled.div`
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    max-height: 85vh;
+    scroll-behavior: smooth;
+    background: ${({theme}) => `linear-gradient(${theme.colors.background}, ${theme.colors.surface})`};
+
+    &::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: ${({theme}) => theme.colors.surface};
+        border-radius: 4px;
+        box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: ${({theme}) => theme.colors.primary};
+        border-radius: 4px;
+        border: 2px solid ${({theme}) => theme.colors.surface};
+
+        &:hover {
+            background: ${({theme}) => theme.colors.primaryDark};
+        }
+    }
 `;
 
 const MessageContent = styled.div`
@@ -115,20 +136,45 @@ const extractMessageAction = (target: HTMLElement): { messageId: string | undefi
 };
 
 const MessageItem = styled.div<{ type: 'user' | 'system' | 'response' }>`
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+    padding: 1rem;
+    border-radius: 12px;
     align-self: ${({type}) => type === 'user' ? 'flex-end' : 'flex-start'};
+    max-width: 80%;
+    box-shadow: ${({theme}) => `${theme.shadows.medium}, 0 8px 16px rgba(0,0,0,0.1)`};
+    transition: transform 0.2s ease;
+    position: relative;
+    overflow: visible;
+
     background-color: ${({type}) => {
         switch (type) {
             case 'user':
-                return '#007bff';
+                return ({theme}) => `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`;
             case 'system':
-                return '#6c757d';
+                return ({theme}) => `linear-gradient(135deg, ${theme.colors.secondary}, ${theme.colors.info})`;
             default:
-                return '#f8f9fa';
+                return ({theme}) => theme.colors.surface;
         }
     }};
-    color: ${({type}) => type === 'user' || type === 'system' ? '#fff' : '#212529'};
+    color: ${({type, theme}) =>
+            type === 'user' || type === 'system'
+                    ? '#fff'
+                    : theme.colors.text.primary};
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: ${({theme}) => `${theme.shadows.large}, 0 12px 24px rgba(0,0,0,0.15)`};
+    }
+
+    &:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(rgba(255, 255, 255, 0.1), transparent);
+        pointer-events: none;
+    }
 `;
 
 const handleClick = (e: React.MouseEvent) => {
