@@ -4,7 +4,7 @@ import DOMPurify from 'dompurify';
 import {debounce, getAllTabStates, restoreTabStates, updateTabs} from '../../utils/tabHandling';
 import Prism from "prismjs";
 import mermaid from "mermaid";
-import {logger} from "../../utils/logger";
+
 
 const LOG_PREFIX = '[MessageSlice]';
 
@@ -39,7 +39,7 @@ const sanitizeHtmlContent = (content: string): string => {
 // Debounce tab state updates
 const debouncedUpdate = debounce(() => {
     requestAnimationFrame(() => {
-        logger.debug(`${LOG_PREFIX} Debounced tab state update`);
+        console.debug(`${LOG_PREFIX} Debounced tab state update`);
         restoreTabStates(getAllTabStates());
         updateTabs();
         Prism.highlightAll();

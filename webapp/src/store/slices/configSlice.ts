@@ -1,6 +1,6 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {AppConfig, ThemeName} from '../../types';
-import {logger} from '../../utils/logger';
+
 // Helper function to validate theme name
 const isValidTheme = (theme: string | null): theme is ThemeName => {
     return theme === 'main' || theme === 'night' || theme === 'forest' ||
@@ -85,7 +85,7 @@ export const configSlice = createSlice({
     initialState,
     reducers: {
         setAppInfo: (state, action: PayloadAction<any>) => {
-            logger.info('Setting app info:', action.payload);
+            console.info('Setting app info:', action.payload);
             if (action.payload) {
                 if (action.payload.applicationName) {
                     state.applicationName = action.payload.applicationName;

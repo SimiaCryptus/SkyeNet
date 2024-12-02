@@ -1,5 +1,5 @@
 import {store} from '../store';
-import {logger} from '../utils/logger';
+
 import {setAppInfo} from '../store/slices/configSlice';
 const LOG_PREFIX = '[AppConfig]';
 
@@ -8,7 +8,7 @@ const BASE_API_URL = process.env.REACT_APP_API_URL || window.location.origin;
 
 export const fetchAppConfig = async (sessionId: string) => {
     try {
-        logger.info(`${LOG_PREFIX} Fetching app config:`, {
+        console.info(`${LOG_PREFIX} Fetching app config:`, {
             sessionId,
             baseUrl: BASE_API_URL
         });
@@ -27,7 +27,7 @@ export const fetchAppConfig = async (sessionId: string) => {
                 credentials: 'include'
             });
         } catch (networkError) {
-            logger.warn(`${LOG_PREFIX} Network request failed:`, {
+            console.warn(`${LOG_PREFIX} Network request failed:`, {
                 error: networkError,
                 url: url.toString()
             });
@@ -47,19 +47,19 @@ export const fetchAppConfig = async (sessionId: string) => {
         }
 
         if (!response.ok) {
-            logger.warn(`${LOG_PREFIX} API error response:`, {
+            console.warn(`${LOG_PREFIX} API error response:`, {
                 status: response.status,
                 statusText: response.statusText,
                 url: url.toString()
             });
             const errorText = await response.text();
-            logger.debug(`${LOG_PREFIX} Error response body:`, errorText);
+            console.debug(`${LOG_PREFIX} Error response body:`, errorText);
             return null;
         }
 
         const contentType = response.headers.get('content-type');
         if (!contentType || (!contentType.includes('application/json') && !contentType.includes('text/json'))) {
-            logger.error(`${LOG_PREFIX} Invalid content type:`, {
+            console.error(`${LOG_PREFIX} Invalid content type:`, {
                 contentType,
                 url: url.toString()
             });
@@ -69,17 +69,17 @@ export const fetchAppConfig = async (sessionId: string) => {
 
         const data = await response.json();
         if (!data || typeof data !== 'object') {
-            logger.error(`${LOG_PREFIX} Invalid response format:`, data);
+            console.error(`${LOG_PREFIX} Invalid response format:`, data);
             throw new Error('Invalid response format');
         }
 
-        logger.info(`${LOG_PREFIX} Received valid config:`, data);
+        console.info(`${LOG_PREFIX} Received valid config:`, data);
 
         store.dispatch(setAppInfo(data));
 
         return data;
     } catch (error) {
-        logger.error(`${LOG_PREFIX} Config fetch failed:`, {
+        console.error(`${LOG_PREFIX} Config fetch failed:`, {
             error,
             sessionId,
             url: BASE_API_URL ? `${BASE_API_URL}/appInfo` : '/appInfo',

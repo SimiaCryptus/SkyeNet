@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {useTheme} from '../hooks/useTheme';
 import {RootState} from '../store';
-import {logger} from '../utils/logger';
+
 import {Message} from '../types';
 import {resetTabState, saveTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
@@ -181,7 +181,7 @@ const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const {messageId, action} = extractMessageAction(target);
     if (messageId && action) {
-        logger.debug('Message action clicked', {messageId, action});
+        console.debug('Message action clicked', {messageId, action});
         e.preventDefault();
         e.stopPropagation();
         handleMessageAction(messageId, action);
@@ -189,7 +189,7 @@ const handleClick = (e: React.MouseEvent) => {
 };
 
 export const handleMessageAction = (messageId: string, action: string) => {
-    logger.debug('Processing message action', {messageId, action});
+    console.debug('Processing message action', {messageId, action});
 
     // Handle text submit actions specially
     if (action === 'text-submit') {
@@ -199,37 +199,37 @@ export const handleMessageAction = (messageId: string, action: string) => {
             const escapedText = encodeURIComponent(text);
             const message = `!${messageId},userTxt,${escapedText}`;
             WebSocketService.send(message);
-            logger.debug('Sent text submit message', {messageId, text: text.substring(0, 100)});
+            console.debug('Sent text submit message', {messageId, text: text.substring(0, 100)});
             input.value = '';
         }
         return;
     }
     // Handle link clicks
     if (action === 'link') {
-        logger.debug('Processing link click', {messageId});
+        console.debug('Processing link click', {messageId});
         WebSocketService.send(`!${messageId},link`);
         return;
     }
     // Handle run/play button clicks
     if (action === 'run') {
-        logger.debug('Processing run action', {messageId});
+        console.debug('Processing run action', {messageId});
         WebSocketService.send(`!${messageId},run`);
         return;
     }
     // Handle regenerate button clicks
     if (action === 'regen') {
-        logger.debug('Processing regenerate action', {messageId});
+        console.debug('Processing regenerate action', {messageId});
         WebSocketService.send(`!${messageId},regen`);
         return;
     }
     // Handle cancel button clicks
     if (action === 'stop') {
-        logger.debug('Processing stop action', {messageId});
+        console.debug('Processing stop action', {messageId});
         WebSocketService.send(`!${messageId},stop`);
         return;
     }
     // Handle all other actions
-    logger.debug('Processing generic action', {messageId, action});
+    console.debug('Processing generic action', {messageId, action});
     WebSocketService.send(`!${messageId},${action}`);
 };
 
@@ -253,7 +253,7 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
                     //logger.debug('Expanding referenced message', {id: messageID, contentLength: referencedMessage.content.length});
                     node.innerHTML = expandMessageReferences(referencedMessage.content, messages);
                 } else {
-                    logger.debug('Referenced message not found', {id: messageID});
+                    console.debug('Referenced message not found', {id: messageID});
                     node.innerHTML = `<em>Loading reference ${messageID}...</em>`;
                 }
             }
@@ -270,9 +270,9 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
 
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     React.useEffect(() => {
-        logger.component('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
+        console.log('MessageList', 'Component mounted', {timestamp: new Date().toISOString()});
         return () => {
-            logger.component('MessageList', 'Component unmounted', {timestamp: new Date().toISOString()});
+            console.log('MessageList', 'Component unmounted', {timestamp: new Date().toISOString()});
         };
     }, []);
 
@@ -305,14 +305,14 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     useEffect(() => {
         if (messageListRef.current) {
             const codeBlocks = messageListRef.current.querySelectorAll('pre code');
-            logger.debug('Highlighting code blocks:', {count: codeBlocks.length});
+            console.debug('Highlighting code blocks:', {count: codeBlocks.length});
             codeBlocks.forEach(block => {
                 Prism.highlightElement(block);
             });
         }
     }, [messages]); // Re-run when messages or references change
     useTheme();
-    logger.component('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
+    console.log('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
 
     React.useEffect(() => {
         document.querySelectorAll('.tabs-container').forEach(container => {
@@ -325,11 +325,11 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
             }
         });
         try {
-            logger.debug('MessageList - Updating tabs after message change');
+            console.debug('MessageList - Updating tabs after message change');
             updateTabs();
             // Prism.highlightAll();
         } catch (error) {
-            logger.error('Error processing tabs:', error);
+            console.error('Error processing tabs:', error);
             // Reset tab state on error
             resetTabState();
         }
@@ -337,7 +337,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
 
     return <MessageListContainer ref={messageListRef}>
         {finalMessages.map((message) => {
-            logger.debug('MessageList - Rendering message', {
+            console.debug('MessageList - Rendering message', {
                 id: message.id,
                 type: message.type,
                 timestamp: message.timestamp,

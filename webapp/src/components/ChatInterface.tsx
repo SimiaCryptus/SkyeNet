@@ -8,7 +8,7 @@ import MessageList from './MessageList';
 import InputArea from './InputArea';
 import {Message} from '../types';
 import websocket from '@services/websocket';
-import {logger} from '../utils/logger';
+
 
 const LOG_PREFIX = '[ChatInterface]';
 
@@ -57,16 +57,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         if (sessionId) {
             fetchAppConfig(sessionId).then(config => {
                 if (config) {
-                    logger.info('App config loaded successfully');
+                    console.info('App config loaded successfully');
                 } else {
-                    logger.warn('Could not load app config, using defaults');
+                    console.warn('Could not load app config, using defaults');
                 }
             });
         }
         // Fetch app config when component mounts
         if (sessionId) {
             fetchAppConfig(sessionId).catch(error => {
-                logger.error('Failed to fetch app config:', error);
+                console.error('Failed to fetch app config:', error);
             });
         }
         debugLog('Setting up message handler', {

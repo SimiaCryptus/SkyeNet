@@ -1,5 +1,12 @@
 const LOG_PREFIX = '[TabHandler]';
-import { logger } from './logger';
+
+// Add error tracking
+const errors = {
+    setupErrors: 0,
+    restoreErrors: 0,
+    saveErrors: 0,
+    updateErrors: 0
+};
 
 export interface TabState {
     containerId: string;
@@ -94,6 +101,7 @@ function trackTabStateHistory(containerId: string, activeTab: string) {
     }
 }
 
+
 export function saveTabState(containerId: string, activeTab: string) {
     try {
         diagnostics.saveCount++;
@@ -105,21 +113,28 @@ export function saveTabState(containerId: string, activeTab: string) {
             containerId,
             activeTab,
             existingStates: tabStates.size,
-            currentStates: Array.from(tabStates.entries()),
             version: currentStateVersion
         });
+
         // Only store in memory
         const state = {containerId, activeTab};
         tabStates.set(containerId, state);
         // Store state on container element for quick reference
         const container = document.getElementById(containerId) as TabContainer;
-        if (container) {
-            container.lastKnownState = state;
-            container.dataset.stateVersion = currentStateVersion.toString();
+        if (!container) {
+            throw new Error(`Container not found: ${containerId}`);
         }
+        container.lastKnownState = state;
+        container.dataset.stateVersion = currentStateVersion.toString();
         trackTabStateHistory(containerId, activeTab);
     } catch (error) {
-        console.warn(`${LOG_PREFIX} Failed to save tab state:`, error);
+        errors.saveErrors++;
+        console.error(`${LOG_PREFIX} Failed to save tab state:`, {
+            error,
+            containerId,
+            activeTab,
+            totalErrors: errors.saveErrors
+        });
     }
 }
 
@@ -190,9 +205,6 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
         tabScrollPositions.set(currentActiveContent.getAttribute('data-tab') || '', currentActiveContent.scrollTop);
     }
 
-    // Get previous state for logging
-    const previousTab = tabContainer.lastKnownState?.activeTab || tabStates.get(container.id)?.activeTab;
-
     // Save new state immediately
     saveTabState(container.id, forTab);
     // Store state in container element for persistence
@@ -208,12 +220,11 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
         }
     });
 
-    console.log(`${LOG_PREFIX} Setting active tab:`, {
-        containerId: container.id,
-        tab: forTab,
-        previousTab: previousTab
-    });
-    // Disconnect existing MutationObservers
+    // console.log(`${LOG_PREFIX} Setting active tab:`, {
+    //     containerId: container.id,
+    //     tab: forTab,
+    //     previousTab: previousTab
+    // });
     if (tabContainer.contentObservers) {
         tabContainer.contentObservers.forEach(observer => observer.disconnect());
     }
@@ -256,13 +267,13 @@ function restoreTabState(container: TabContainer) {
             });
             return;
         }
-        console.debug(`${LOG_PREFIX} Attempting to restore tab state #${diagnostics.restoreCount}:`, {
-            containerId,
-            lastKnownState: container.lastKnownState,
-            storedState: tabStates.get(containerId),
-            allStates: Array.from(tabStates.entries()),
-            version: storedVersion
-        });
+        // console.debug(`${LOG_PREFIX} Attempting to restore tab state #${diagnostics.restoreCount}:`, {
+        //     containerId,
+        //     lastKnownState: container.lastKnownState,
+        //     storedState: tabStates.get(containerId),
+        //     allStates: Array.from(tabStates.entries()),
+        //     version: storedVersion
+        // });
         const savedTab = getActiveTab(containerId) ||
             container.lastKnownState?.activeTab ||
             tabStates.get(containerId)?.activeTab;
@@ -275,11 +286,11 @@ function restoreTabState(container: TabContainer) {
                 // Update container's last known state
                 container.lastKnownState = {containerId, activeTab: savedTab};
                 diagnostics.restoreSuccess++;
-                console.debug(`${LOG_PREFIX} Successfully restored tab state:`, {
-                    containerId,
-                    activeTab: savedTab,
-                    successCount: diagnostics.restoreSuccess
-                });
+                // console.debug(`${LOG_PREFIX} Successfully restored tab state:`, {
+                //     containerId,
+                //     activeTab: savedTab,
+                //     successCount: diagnostics.restoreSuccess
+                // });
             }
         } else {
             diagnostics.restoreFail++;
@@ -316,56 +327,82 @@ export const updateTabs = debounce(() => {
         console.debug(`${LOG_PREFIX} Skipping update during mutation`);
         return;
     }
-    isMutating = true;
-    const processed = new Set<string>();
-    const currentStates = getAllTabStates();
-    logger.debug(`${LOG_PREFIX} Updating tabs...`);
-
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabsContainers = new Set<TabContainer>();
-    tabButtons.forEach(button => {
-        const container = button.closest('.tabs-container') as TabContainer;
-        if (container) {
-            if (container.id) {
-                if (processed.has(container.id)) return;
-                processed.add(container.id);
+    try {
+        const currentStates = getAllTabStates();
+        const processed = new Set<string>();
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabsContainers = new Set<TabContainer>();
+        isMutating = true;
+        console.debug(`${LOG_PREFIX} Starting tab update`, {
+            containersCount: document.querySelectorAll('.tabs-container').length,
+            existingStates: currentStates.size
+        });
+        tabButtons.forEach(button => {
+            const container = button.closest('.tabs-container') as TabContainer;
+            if (container) {
+                if (container.id) {
+                    if (processed.has(container.id)) return;
+                    processed.add(container.id);
+                }
+                tabsContainers.add(container);
             }
-            tabsContainers.add(container);
-        }
-    });
-    // Store current active states before processing
-    const activeStates = new Map<string, string>();
-    tabsContainers.forEach(container => {
-        const currentActive = getActiveTab(container.id);
-        if (currentActive) {
-            activeStates.set(container.id, currentActive);
-        }
-    });
+        });
+        // Store current active states before processing
+        const activeStates = new Map<string, string>();
+        tabsContainers.forEach(container => {
+            const currentActive = getActiveTab(container.id);
+            if (currentActive) {
+                activeStates.set(container.id, currentActive);
+            }
+        });
 
-    tabsContainers.forEach(container => {
-        setupTabContainer(container);
-        // Prefer current active state over stored state
-        const activeTab = activeStates.get(container.id) || currentStates.get(container.id)?.activeTab;
-        if (activeTab) {
-            const state: TabState = {
-                containerId: container.id,
-                activeTab: activeTab
-            };
-            tabStates.set(container.id, state);
-            restoreTabState(container);
-        }
-    });
-    synchronizeTabButtonStates();
+        tabsContainers.forEach(container => {
+            setupTabContainer(container);
+            // Prefer current active state over stored state
+            const activeTab = activeStates.get(container.id) || currentStates.get(container.id)?.activeTab;
+            if (activeTab) {
+                const state: TabState = {
+                    containerId: container.id,
+                    activeTab: activeTab
+                };
+                tabStates.set(container.id, state);
+                restoreTabState(container);
+            }
+        });
+        synchronizeTabButtonStates();
 
-    isMutating = false;
-    processed.clear();
+        isMutating = false;
+        processed.clear();
+
+    } catch (error) {
+        errors.updateErrors++;
+        console.error(`${LOG_PREFIX} Error during tab update:`, {
+            error,
+            totalErrors: errors.updateErrors
+        });
+    } finally {
+        isMutating = false;
+    }
 }, 100);
 
 
 function setupTabContainer(container: TabContainer) {
-    if (container.hasListener) return;
-    if (!container.id) container.id = `tab-container-${Math.random().toString(36).substr(2, 9)}`;
-    logger.debug(`${LOG_PREFIX} Setting up tab container:`, container.id);
+    try {
+        if (container.hasListener) return;
+        if (!container.id) {
+            container.id = `tab-container-${Math.random().toString(36).substr(2, 9)}`;
+            console.debug(`${LOG_PREFIX} Generated new container ID:`, container.id);
+        }
+        console.debug(`${LOG_PREFIX} Setting up tab container:`, container.id);
+    } catch (error) {
+        errors.setupErrors++;
+        console.error(`${LOG_PREFIX} Failed to setup tab container:`, {
+            error,
+            containerId: container.id,
+            totalErrors: errors.setupErrors
+        });
+        throw error; // Re-throw to handle at higher level
+    }
     container.tabClickHandler = (event: Event) => {
         const button = (event.target as HTMLElement).closest('.tab-button');
         if (button && container.contains(button)) {
