@@ -1,5 +1,5 @@
 const LOG_PREFIX = '[TabHandler]';
-import {logger} from './logger';
+import { logger } from './logger';
 
 export interface TabState {
     containerId: string;
@@ -43,14 +43,14 @@ export const setActiveTabState = (containerId: string, tabId: string): void => {
 
 // Add debounce utility to prevent multiple rapid updates
 export function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
-    let timeout: number;
+    let timeout: NodeJS.Timeout;
     return function executedFunction(this: any, ...args: Parameters<T>) {
         const later = () => {
-            clearTimeout(timeout as unknown as number);
+            clearTimeout(timeout);
             func.apply(this, args);
         };
         clearTimeout(timeout);
-        timeout = window.setTimeout(later, wait);
+        timeout = setTimeout(later, wait);
     };
 }
 
@@ -216,10 +216,8 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
     // Disconnect existing MutationObservers
     if (tabContainer.contentObservers) {
         tabContainer.contentObservers.forEach(observer => observer.disconnect());
-        tabContainer.contentObservers.clear();
-    } else {
-        tabContainer.contentObservers = new Map();
     }
+    tabContainer.contentObservers = new Map();
 
     container.querySelectorAll('.tab-content').forEach(content => {
         if (content.getAttribute('data-tab') === forTab) {
@@ -236,14 +234,9 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
         } else {
             content.classList.remove('active');
             (content as HTMLElement).style.display = 'none';
-            // Properly manage MutationObservers with null check
-            if (tabContainer.contentObservers) {
-                const tabId = content.getAttribute('data-tab') || '';
-                const observer = tabContainer.contentObservers.get(tabId);
-                if (observer) {
-                    observer.disconnect();
-                    tabContainer.contentObservers.delete(tabId);
-                }
+            if ((content as any)._contentObserver) {
+                (content as any)._contentObserver.disconnect();
+                delete (content as any)._contentObserver;
             }
         }
     });
@@ -371,16 +364,11 @@ export const updateTabs = debounce(() => {
 
 function setupTabContainer(container: TabContainer) {
     if (container.hasListener) return;
-    if (!container.id) container.id = `tab-container-${Math.random().toString(36).slice(2, 11)}`;
+    if (!container.id) container.id = `tab-container-${Math.random().toString(36).substr(2, 9)}`;
     logger.debug(`${LOG_PREFIX} Setting up tab container:`, container.id);
     container.tabClickHandler = (event: Event) => {
         const button = (event.target as HTMLElement).closest('.tab-button');
         if (button && container.contains(button)) {
-            // Check if the button belongs directly to this container
-            const buttonParentContainer = button.closest('.tabs-container');
-            if (buttonParentContainer !== container) {
-                return; // Skip if button belongs to a nested container
-            }
             setActiveTab(button as HTMLElement, container);
             event.stopPropagation();
         }
@@ -404,16 +392,11 @@ function setupTabContainer(container: TabContainer) {
         if (firstButton) {
             setActiveTab(firstButton, container);
         }
-    }
-    container.querySelectorAll('.tab-content').forEach(content => {
-        const isActive = content.classList.contains('active');
-        (content as HTMLElement).style.display = isActive ? 'block' : 'none';
-        if (isActive) {
-            const tabId = content.getAttribute('data-tab');
-            if (tabId) {
-                container.activeTabState = tabId;
-                setActiveTabState(container.id, tabId);
-            }
+    } else {
+        const tabId = activeContent.getAttribute('data-tab');
+        if (tabId) {
+            container.activeTabState = tabId;
+            setActiveTabState(container.id, tabId);
         }
-    });
+    }
 }
