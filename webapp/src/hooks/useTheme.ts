@@ -3,6 +3,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {ThemeName} from '../types';
 import {setTheme} from '../store/slices/uiSlice';
 import {RootState} from '../store';
+import {themeStorage} from '../services/appConfig';
 
 export const useTheme = (initialTheme?: ThemeName): [ThemeName, (theme: ThemeName) => void] => {
     console.group('🎨 useTheme Hook');
@@ -13,6 +14,14 @@ export const useTheme = (initialTheme?: ThemeName): [ThemeName, (theme: ThemeNam
 
     const dispatch = useDispatch();
     const currentTheme = useSelector((state: RootState) => state.ui.theme);
+    // Load saved theme on mount
+    React.useEffect(() => {
+        const savedTheme = themeStorage.getTheme();
+        if (savedTheme && savedTheme !== currentTheme) {
+            console.log('🔄 Loading saved theme:', savedTheme);
+            dispatch(setTheme(savedTheme));
+        }
+    }, []);
     console.log('🔍 Theme from Redux:', {
         currentTheme,
         stateSnapshot: new Date().toISOString()
@@ -27,7 +36,7 @@ export const useTheme = (initialTheme?: ThemeName): [ThemeName, (theme: ThemeNam
                 timestamp: new Date().toISOString()
             });
             dispatch(setTheme(newTheme));
-            localStorage.setItem('theme', newTheme);
+            themeStorage.setTheme(newTheme);
             console.log('💾 LocalStorage updated');
             console.groupEnd();
         },
@@ -43,7 +52,8 @@ export const useTheme = (initialTheme?: ThemeName): [ThemeName, (theme: ThemeNam
             timestamp: new Date().toISOString()
         });
 
-        if (initialTheme && !currentTheme) {
+        const savedTheme = themeStorage.getTheme();
+        if (initialTheme && !currentTheme && initialTheme !== savedTheme) {
             console.log('✨ Setting initial theme:', {
                 theme: initialTheme,
                 reason: 'No current theme set'

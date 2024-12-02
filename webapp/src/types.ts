@@ -3,9 +3,6 @@ export type ThemeName = 'main' | 'night' | 'forest' | 'pony' | 'alien' | 'sunset
 
 // Define log levels
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
-// Define TabObservers type
-export type TabObservers = Map<string, Map<string, MutationObserver>>;
-
 
 // Define console styles
 export interface ConsoleStyle {
@@ -23,18 +20,6 @@ export interface ConsoleConfig {
     showLevel: boolean;
     showSource: boolean;
     styles: Record<LogLevel, ConsoleStyle>;
-}
-
-
-// Define log entry interface
-export interface LogEntry {
-    timestamp: number;
-    level: LogLevel;
-    message: string;
-    data?: unknown;
-    source?: string;
-    stackTrace?: string;
-    consoleOutput?: string;
 }
 
 // Message type

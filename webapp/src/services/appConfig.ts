@@ -1,10 +1,66 @@
 import {store} from '../store';
 
 import {setAppInfo} from '../store/slices/configSlice';
+import {ThemeName} from '../types';
 
 const LOG_PREFIX = '[AppConfig]';
 
 const BASE_API_URL = process.env.REACT_APP_API_URL || window.location.origin;
+const STORAGE_KEYS = {
+  THEME: 'theme',
+} as const;
+// Type guard for theme validation
+const isValidTheme = (theme: unknown): theme is ThemeName => {
+  const validThemes = ['main', 'night', 'forest', 'pony', 'alien', 'sunset', 'ocean', 'cyberpunk'] as const;
+  return typeof theme === 'string' && validThemes.includes(theme as ThemeName);
+};
+export const themeStorage = {
+  /**
+   * Get theme with validation and fallback
+   */
+  getTheme(): ThemeName {
+    try {
+      const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
+      if (isValidTheme(savedTheme)) {
+        console.log(`${LOG_PREFIX} Retrieved theme:`, savedTheme);
+        return savedTheme;
+      }
+      console.warn(`${LOG_PREFIX} Invalid saved theme, using default`);
+      return 'main';
+    } catch (error) {
+      console.error(`${LOG_PREFIX} Error retrieving theme:`, error);
+      return 'main';
+    }
+  },
+  /**
+   * Set theme with validation and error handling
+   */
+  setTheme(theme: ThemeName): boolean {
+    if (!isValidTheme(theme)) {
+      console.error(`${LOG_PREFIX} Invalid theme:`, theme);
+      return false;
+    }
+    try {
+      localStorage.setItem(STORAGE_KEYS.THEME, theme);
+      console.log(`${LOG_PREFIX} Theme saved:`, theme);
+      return true;
+    } catch (error) {
+      console.error(`${LOG_PREFIX} Failed to save theme:`, error);
+      return false;
+    }
+  },
+  /**
+   * Clear theme setting
+   */
+  clearTheme(): void {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.THEME);
+      console.log(`${LOG_PREFIX} Theme setting cleared`);
+    } catch (error) {
+      console.error(`${LOG_PREFIX} Failed to clear theme:`, error);
+    }
+  }
+};
 
 
 export const fetchAppConfig = async (sessionId: string) => {
