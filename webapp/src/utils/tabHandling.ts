@@ -1,5 +1,5 @@
 const LOG_PREFIX = '[TabHandler]';
-import { logger } from './logger';
+import {logger} from './logger';
 
 export interface TabState {
     containerId: string;
@@ -43,14 +43,14 @@ export const setActiveTabState = (containerId: string, tabId: string): void => {
 
 // Add debounce utility to prevent multiple rapid updates
 export function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
-    let timeout: NodeJS.Timeout;
+    let timeout: number;
     return function executedFunction(this: any, ...args: Parameters<T>) {
         const later = () => {
-            clearTimeout(timeout);
+            clearTimeout(timeout as unknown as number);
             func.apply(this, args);
         };
         clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+        timeout = window.setTimeout(later, wait);
     };
 }
 
@@ -101,13 +101,13 @@ export function saveTabState(containerId: string, activeTab: string) {
         currentStateVersion++;
         tabStateVersions.set(containerId, currentStateVersion);
 
-        // console.debug(`${LOG_PREFIX} Saving tab state #${diagnostics.saveCount}:`, {
-        //     containerId,
-        //     activeTab,
-        //     existingStates: tabStates.size,
-        //     currentStates: Array.from(tabStates.entries()),
-        //     version: currentStateVersion
-        // });
+        console.debug(`${LOG_PREFIX} Saving tab state #${diagnostics.saveCount}:`, {
+            containerId,
+            activeTab,
+            existingStates: tabStates.size,
+            currentStates: Array.from(tabStates.entries()),
+            version: currentStateVersion
+        });
         // Only store in memory
         const state = {containerId, activeTab};
         tabStates.set(containerId, state);
@@ -208,15 +208,18 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
         }
     });
 
-    // console.log(`${LOG_PREFIX} Setting active tab:`, {
-    //     containerId: container.id,
-    //     tab: forTab,
-    //     previousTab: previousTab
-    // });
+    console.log(`${LOG_PREFIX} Setting active tab:`, {
+        containerId: container.id,
+        tab: forTab,
+        previousTab: previousTab
+    });
+    // Disconnect existing MutationObservers
     if (tabContainer.contentObservers) {
         tabContainer.contentObservers.forEach(observer => observer.disconnect());
+        tabContainer.contentObservers.clear();
+    } else {
+        tabContainer.contentObservers = new Map();
     }
-    tabContainer.contentObservers = new Map();
 
     container.querySelectorAll('.tab-content').forEach(content => {
         if (content.getAttribute('data-tab') === forTab) {
@@ -233,9 +236,14 @@ export function setActiveTab(button: HTMLElement, container: HTMLElement) {
         } else {
             content.classList.remove('active');
             (content as HTMLElement).style.display = 'none';
-            if ((content as any)._contentObserver) {
-                (content as any)._contentObserver.disconnect();
-                delete (content as any)._contentObserver;
+            // Properly manage MutationObservers with null check
+            if (tabContainer.contentObservers) {
+                const tabId = content.getAttribute('data-tab') || '';
+                const observer = tabContainer.contentObservers.get(tabId);
+                if (observer) {
+                    observer.disconnect();
+                    tabContainer.contentObservers.delete(tabId);
+                }
             }
         }
     });
@@ -255,13 +263,13 @@ function restoreTabState(container: TabContainer) {
             });
             return;
         }
-        // console.debug(`${LOG_PREFIX} Attempting to restore tab state #${diagnostics.restoreCount}:`, {
-        //     containerId,
-        //     lastKnownState: container.lastKnownState,
-        //     storedState: tabStates.get(containerId),
-        //     allStates: Array.from(tabStates.entries()),
-        //     version: storedVersion
-        // });
+        console.debug(`${LOG_PREFIX} Attempting to restore tab state #${diagnostics.restoreCount}:`, {
+            containerId,
+            lastKnownState: container.lastKnownState,
+            storedState: tabStates.get(containerId),
+            allStates: Array.from(tabStates.entries()),
+            version: storedVersion
+        });
         const savedTab = getActiveTab(containerId) ||
             container.lastKnownState?.activeTab ||
             tabStates.get(containerId)?.activeTab;
@@ -274,11 +282,11 @@ function restoreTabState(container: TabContainer) {
                 // Update container's last known state
                 container.lastKnownState = {containerId, activeTab: savedTab};
                 diagnostics.restoreSuccess++;
-                // console.debug(`${LOG_PREFIX} Successfully restored tab state:`, {
-                //     containerId,
-                //     activeTab: savedTab,
-                //     successCount: diagnostics.restoreSuccess
-                // });
+                console.debug(`${LOG_PREFIX} Successfully restored tab state:`, {
+                    containerId,
+                    activeTab: savedTab,
+                    successCount: diagnostics.restoreSuccess
+                });
             }
         } else {
             diagnostics.restoreFail++;
@@ -363,7 +371,7 @@ export const updateTabs = debounce(() => {
 
 function setupTabContainer(container: TabContainer) {
     if (container.hasListener) return;
-    if (!container.id) container.id = `tab-container-${Math.random().toString(36).substr(2, 9)}`;
+    if (!container.id) container.id = `tab-container-${Math.random().toString(36).slice(2, 11)}`;
     logger.debug(`${LOG_PREFIX} Setting up tab container:`, container.id);
     container.tabClickHandler = (event: Event) => {
         const button = (event.target as HTMLElement).closest('.tab-button');
