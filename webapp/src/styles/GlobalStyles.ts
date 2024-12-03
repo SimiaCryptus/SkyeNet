@@ -228,11 +228,15 @@ const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
 
     input, textarea {
         font-family: inherit;
+       color: ${({theme}) => theme.colors.text.primary};
+       &::placeholder {
+           color: ${({theme}) => theme.colors.text.secondary};
+       }
     }
 
     /* Transitions for theme switching */
     body, button, input, textarea {
-        transition: background-color 0.3s ease, color 0.3s ease;
+       transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     }
 
     /* Log when transitions complete */
