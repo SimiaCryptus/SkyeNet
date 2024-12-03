@@ -16,6 +16,10 @@ export class WebSocketService {
     private connectionStartTime = 0;
     private messageBuffer: Message[] = [];
     private bufferTimeout: NodeJS.Timeout | null = null;
+    private aggregateBuffer: Message[] = [];
+    private aggregateTimeout: NodeJS.Timeout | null = null;
+    private readonly AGGREGATE_INTERVAL = 100; // 100ms aggregation interval
+    private readonly WARMUP_PERIOD = 10000; // 10 second warmup
 
     public getSessionId(): string {
         console.debug('[WebSocket] Getting session ID:', this.sessionId);
@@ -232,6 +236,17 @@ export class WebSocketService {
             if (isHtml) {
                 console.debug('[WebSocket] HTML content detected, preserving markup');
             }
+        const processMessages = (messages: Message[]) => {
+            if (this.aggregateTimeout) {
+                clearTimeout(this.aggregateTimeout);
+            }
+            this.aggregateTimeout = setTimeout(() => {
+                const batch = [...messages];
+                this.aggregateBuffer = [];
+                batch.forEach(msg => this.messageHandlers.forEach(handler => handler(msg)));
+            }, this.AGGREGATE_INTERVAL);
+        };
+
 
             const message: Message = {
                 id,
@@ -249,7 +264,7 @@ export class WebSocketService {
             }
 
             if (shouldBuffer) {
-                this.messageBuffer.push(message);
+            this.messageBuffer.push(message); 
                 if (this.bufferTimeout) {
                     clearTimeout(this.bufferTimeout);
                 }
@@ -261,7 +276,11 @@ export class WebSocketService {
                     });
                 }, 1000);
             } else {
-                this.messageHandlers.forEach((handler) => handler(message));
+            // After warmup period, use message aggregation
+            this.aggregateBuffer.push(message);
+            if (this.aggregateBuffer.length === 1) {
+                processMessages(this.aggregateBuffer);
+            }
             }
         };
 
@@ -270,6 +289,10 @@ export class WebSocketService {
             if (this.bufferTimeout) {
                 clearTimeout(this.bufferTimeout);
                 this.bufferTimeout = null;
+            }
+            if (this.aggregateTimeout) {
+                clearTimeout(this.aggregateTimeout);
+                this.aggregateTimeout = null;
             }
             this.messageBuffer = [];
             this.stopHeartbeat();
