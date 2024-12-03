@@ -6,7 +6,7 @@ import {useWebSocket} from '../hooks/useWebSocket';
 import {addMessage} from '../store/slices/messageSlice';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
-import {Message} from '../types';
+import {Message, MessageType} from '../types/messages';
 import websocket from '@services/websocket';
 
 
@@ -91,7 +91,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 const newMessage = {
                     id: `${Date.now()}`,
                     content: data.data || '',
-                    type: 'response' as const,
+            type: 'assistant' as MessageType, // Changed from 'response' to 'assistant'
                     timestamp: data.timestamp,
                     isHtml: true,
                     rawHtml: data.data,
@@ -124,8 +124,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 id: `${id}-${timestamp}`,
                 content: content,
                 version: parseInt(version, 10) || timestamp,
-                type: id.startsWith('u') ? 'user' as const : 'response' as const,
+        type: id.startsWith('u') ? 'user' as MessageType : 'assistant' as MessageType,
                 timestamp,
+        isHtml: false,
+        rawHtml: null,
+        sanitized: false
             };
             console.log(`${LOG_PREFIX} Dispatching message:`, messageObject);
             console.groupEnd();

@@ -13,65 +13,6 @@ export interface ConsoleStyle {
     underline?: boolean;
 }
 
-// Define console config
-export interface ConsoleConfig {
-    enabled: boolean;
-    showTimestamp: boolean;
-    showLevel: boolean;
-    showSource: boolean;
-    styles: Record<LogLevel, ConsoleStyle>;
-}
-
-// Message type
-export interface Message {
-    id: string;
-    content: string;
-    type: 'user' | 'system' | 'response';
-    version: number;  // Explicitly number type, no string allowed
-    parentId?: string;
-    timestamp: number;
-    logLevel?: LogLevel;
-    isHtml?: boolean;
-    rawHtml?: string | null;
-    sanitized?: boolean | null;
-    consoleStyle?: ConsoleStyle;
-}
-
-// AppConfig type
-export interface AppConfig {
-    singleInput: boolean;
-    stickyInput: boolean;
-    loadImages: boolean;
-    showMenubar: boolean;
-    applicationName?: string;
-    websocket: {
-        url: string;
-        port: string;
-        protocol: string;
-        retryAttempts?: number;
-        timeout?: number;
-    };
-    logging: {
-        enabled: boolean;
-        level: LogLevel;
-        maxEntries?: number;
-        persistLogs?: boolean;
-        console: ConsoleConfig;
-        captureConsole?: boolean;
-        logToFile?: boolean;
-        logFilePath?: string;
-        rotation?: {
-            enabled: boolean;
-            maxSize: number;
-            maxFiles: number;
-        };
-    };
-    theme: {
-        current: ThemeName;
-        autoSwitch: boolean;
-    };
-}
-
 // UserInfo type
 export interface UserInfo {
     name: string;

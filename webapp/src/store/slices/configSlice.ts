@@ -1,5 +1,6 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {AppConfig, ThemeName} from '../../types';
+ import { AppConfig, WebSocketConfig } from '../../types/config';
+ import { ThemeName } from '../../types/theme';
 
 // Helper function to validate theme name
 const isValidTheme = (theme: string | null): theme is ThemeName => {
@@ -58,7 +59,6 @@ const initialState: AppConfig = {
     websocket: loadWebSocketConfig(),
     logging: {
         enabled: true,
-        level: 'info',
         maxEntries: 1000,
         persistLogs: false,
         console: {
@@ -80,7 +80,7 @@ const initialState: AppConfig = {
     }
 };
 
-export const configSlice = createSlice({
+ const configSlice = createSlice({
     name: 'config',
     initialState,
     reducers: {
@@ -144,7 +144,7 @@ export const configSlice = createSlice({
             });
             state.theme.autoSwitch = !state.theme.autoSwitch;
         },
-        updateWebSocketConfig: (state, action: PayloadAction<Partial<AppConfig['websocket']>>) => {
+        updateWebSocketConfig: (state, action: PayloadAction<Partial<WebSocketConfig>>) => {
             // Only allow WebSocket config updates in development mode
             if (process.env.NODE_ENV !== 'development') {
                 console.warn('[ConfigSlice] WebSocket config updates are only allowed in development mode');

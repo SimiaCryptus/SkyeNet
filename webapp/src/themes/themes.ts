@@ -1,5 +1,10 @@
 // Import and re-export ThemeName type
-import type { ThemeName } from '../types';
+ import type { 
+   ThemeName, 
+   BaseTheme, 
+   ThemeConfig,
+   ThemeColors
+ } from '../types/theme';
 export type { ThemeName };
 
 // Enhanced logger configuration
@@ -40,24 +45,6 @@ const logTheme = (action: string, themeName: string) => {
 };
 
 
-interface ThemeColors {
-    primary: string;
-    secondary: string;
-    background: string;
-    surface: string;
-    text: {
-        primary: string;
-        secondary: string;
-    };
-    border: string;
-    error: string;
-    success: string;
-    warning: string;
-    info: string;
-    hover?: string;
-    primaryDark?: string;
-    disabled: string;  // Remove optional marker to make it required
-}
 
 interface ThemeSizing {
     spacing: {
@@ -100,7 +87,7 @@ interface ThemeTypography {
     };
 }
 
-interface ExtendedTheme {
+interface ExtendedTheme extends BaseTheme {
     colors: ThemeColors;
     sizing: ThemeSizing;
     typography: ThemeTypography;
@@ -161,7 +148,7 @@ interface ExtendedTheme {
     };
 }
 
-const baseTheme = {
+ const baseTheme: Omit<BaseTheme, 'name' | 'colors'> = {
     _init() {
         logger.log('base initialized', 'default', {
             spacing: this.sizing.spacing,
@@ -264,7 +251,7 @@ const baseTheme = {
     },
 };
 
-export const mainTheme: ExtendedTheme = {
+ export const mainTheme: BaseTheme = {
     name: 'main',
     colors: {
         primary: '#007AFF',

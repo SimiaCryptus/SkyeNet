@@ -4,10 +4,10 @@ import {useSelector} from 'react-redux';
 import {useTheme} from '../hooks/useTheme';
 import {RootState} from '../store';
 
-import {Message} from '../types';
 import {resetTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 import Prism from 'prismjs';
+import {Message, MessageType} from "../types/messages";
 
 const VERBOSE_LOGGING = false && process.env.NODE_ENV === 'development';
 const CONTAINER_ID = 'message-list-' + Math.random().toString(36).substr(2, 9);
@@ -134,7 +134,7 @@ const extractMessageAction = (target: HTMLElement): { messageId: string | undefi
     return {messageId, action};
 };
 
-const MessageItem = styled.div<{ type: 'user' | 'system' | 'response' }>`
+const MessageItem = styled.div<{ type: MessageType }>`
     padding: 1rem;
     border-radius: 12px;
     align-self: ${({type}) => type === 'user' ? 'flex-end' : 'flex-start'};
@@ -150,12 +150,20 @@ const MessageItem = styled.div<{ type: 'user' | 'system' | 'response' }>`
                 return ({theme}) => `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`;
             case 'system':
                 return ({theme}) => `linear-gradient(135deg, ${theme.colors.secondary}, ${theme.colors.info})`;
+            case 'error':
+                return ({theme}) => `linear-gradient(135deg, ${theme.colors.error}, ${theme.colors.warning})`;
+            case 'loading':
+                return ({theme}) => theme.colors.surface;
+            case 'assistant':
+                return ({theme}) => theme.colors.surface;
+            case 'reference':
+                return ({theme}) => theme.colors.surface;
             default:
                 return ({theme}) => theme.colors.surface;
         }
     }};
     color: ${({type, theme}) =>
-            type === 'user' || type === 'system'
+            type === 'user' || type === 'system' || type === 'error'
                     ? '#fff'
                     : theme.colors.text.primary};
 

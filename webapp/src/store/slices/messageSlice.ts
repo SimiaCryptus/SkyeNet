@@ -1,19 +1,11 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {Message} from '../../types';
+ import { Message, MessageState, MessageUpdate } from '../../types/messages';
 import DOMPurify from 'dompurify';
 import {debounce, getAllTabStates, restoreTabStates, updateTabs} from '../../utils/tabHandling';
 import Prism from "prismjs";
 import mermaid from "mermaid";
 
 
-interface MessageState {
-    messages: Message[];
-    pendingMessages: Message[];
-    messageQueue: Message[];
-    isProcessing: boolean;
-    messageVersions: Record<string, number>; // Track message versions
-    pendingUpdates?: Message[]; // Add pendingUpdates property
-}
 
 const initialState: MessageState = {
     messages: [],
@@ -95,7 +87,7 @@ const messageSlice = createSlice({
             state.messages.push(action.payload);
             console.debug(` Messages updated, total count: ${state.messages.length}`);
         },
-        updateMessage: (state: MessageState, action: PayloadAction<{ id: string; updates: Partial<Message> }>) => {
+        updateMessage: (state: MessageState, action: PayloadAction<MessageUpdate>) => {
             const {id, updates} = action.payload;
             console.debug(` Updating message ${id}:`, updates);
             const messageIndex = state.messages.findIndex((msg: Message) => msg.id === id);

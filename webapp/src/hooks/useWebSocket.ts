@@ -3,7 +3,7 @@ import {useDispatch} from 'react-redux';
 import {addMessage} from '../store/slices/messageSlice';
 import WebSocketService from '../services/websocket';
 import {debounce} from '../utils/tabHandling';
-import {Message} from "../types";
+import {Message} from "../types/messages";
 
 export const useWebSocket = (sessionId: string) => {
     const RECONNECT_MAX_DELAY = 30000;

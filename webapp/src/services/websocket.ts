@@ -1,5 +1,5 @@
 import {store} from '../store';
-import {Message} from "../types";
+import {Message} from "../types/messages";
 
 export class WebSocketService {
     public ws: WebSocket | null = null;

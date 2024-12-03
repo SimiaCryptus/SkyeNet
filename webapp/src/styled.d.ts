@@ -1,7 +1,8 @@
 import 'styled-components';
+ import { BaseTheme } from './types/theme';
 // Extend the styled-components DefaultTheme interface
 declare module 'styled-components' {
-    export interface DefaultTheme {
+    export interface DefaultTheme extends BaseTheme {
         activeTab?: string;
         sizing: {
             spacing: {
@@ -42,7 +43,6 @@ declare module 'styled-components' {
                 lineHeight: string;
             };
         };
-        // Add console logging related properties
         logging: {
             colors: {
                 error: string;
@@ -83,7 +83,6 @@ declare module 'styled-components' {
                 color: string;
             };
         };
-        // Add other theme properties as needed
         colors: {
             primary: string;
             secondary: string;
