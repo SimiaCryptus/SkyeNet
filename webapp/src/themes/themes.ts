@@ -229,14 +229,14 @@ interface ExtendedTheme extends BaseTheme {
         },
     },
     typography: {
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
         monoFontFamily: "'Fira Code', 'Consolas', monospace",
         fontSize: {
-            xs: '0.75rem',
-            sm: '0.875rem',
-            md: '1rem',
-            lg: '1.25rem',
-            xl: '1.5rem',
+            xs: '0.75rem',    // 12px
+            sm: '0.875rem',   // 14px
+            md: '1rem',       // 16px
+            lg: '1.125rem',   // 18px
+            xl: '1.25rem',    // 20px
         },
         fontWeight: {
             regular: 400,
@@ -244,9 +244,9 @@ interface ExtendedTheme extends BaseTheme {
             bold: 700,
         },
         console: {
-            fontFamily: "'Fira Code', 'Consolas', monospace",
+            fontFamily: "'Fira Code', Consolas, Monaco, 'Courier New', monospace",
             fontSize: '0.9rem',
-            lineHeight: '1.5',
+            lineHeight: '1.6',
         },
     },
 };

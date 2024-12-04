@@ -43,8 +43,25 @@ export class WebSocketService {
             );
             this.ws.send(message);
         } else {
-            console.warn('[WebSocket] Cannot send message - connection not open');
+            console.warn('[WebSocket] Connection not open, attempting reconnect before sending');
+            this.reconnectAndSend(message);
         }
+    }
+    private reconnectAndSend(message: string): void {
+        if (this.isReconnecting) {
+            console.warn('[WebSocket] Already attempting to reconnect');
+            return;
+        }
+        console.log('[WebSocket] Attempting to reconnect before sending message');
+        const onConnect = (connected: boolean) => {
+            if (connected) {
+                console.log('[WebSocket] Reconnected successfully, sending queued message');
+                this.removeConnectionHandler(onConnect);
+                this.send(message);
+            }
+        };
+        this.addConnectionHandler(onConnect);
+        this.connect(this.sessionId);
     }
 
     public addConnectionHandler(handler: (connected: boolean) => void): void {

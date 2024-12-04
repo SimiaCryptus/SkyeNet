@@ -104,10 +104,6 @@ export const useWebSocket = (sessionId: string) => {
         readyState: WebSocketService.ws?.readyState,
         send: (message: string) => {
             console.log('[WebSocket] Attempting to send message:', message);
-            if (!isConnected) {
-                console.warn('[WebSocket] Cannot send message - not connected');
-                return;
-            }
             return WebSocketService.send(message);
         },
         isConnected

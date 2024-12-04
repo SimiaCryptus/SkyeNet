@@ -28,11 +28,46 @@ const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
         }
     }
 
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap');
     /* Theme CSS variables */
     :root {
         /* Theme variables are now set dynamically in ThemeProvider */
+        /* Font weights */
+        --font-weight-light: 300;
+        --font-weight-regular: 400;
+        --font-weight-medium: 500;
+        --font-weight-semibold: 600;
+        --font-weight-bold: 700;
+        --font-weight-extrabold: 800;
+        /* Font families */
+    --font-primary: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-heading: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Fira Code', monospace;
+    --font-display: 'Syne', system-ui, sans-serif;
+        /* Font sizes */
+    --font-size-xs: clamp(0.75rem, 1.5vw, 0.875rem);
+    --font-size-sm: clamp(0.875rem, 1.75vw, 1rem); 
+    --font-size-md: clamp(1rem, 2vw, 1.125rem);
+    --font-size-lg: clamp(1.25rem, 2.5vw, 1.75rem);
+    --font-size-xl: clamp(1.75rem, 3.5vw, 2.5rem);
+    --font-size-2xl: clamp(2.5rem, 5vw, 3.5rem);
+        /* Line heights */
+    --line-height-tight: 1.15;
+    --line-height-normal: 1.65;
+    --line-height-relaxed: 1.85;
+        /* Letter spacing */
+    --letter-spacing-tight: -0.04em;
+    --letter-spacing-normal: -0.02em;
+    --letter-spacing-wide: 0.04em;
+    --letter-spacing-wider: 0.08em;
     }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Raleway:wght@600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap');
 
     /* Override Prism.js theme colors to match current theme */
     .token.comment,
@@ -117,15 +152,44 @@ const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
     }
 
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: var(--font-primary);
+        font-weight: var(--font-weight-regular);
         background-color: var(--theme-background);
         color: var(--theme-text);
-        line-height: 1.5;
-        font-size: var(--theme-font-size-md);
-        letter-spacing: -0.011em;
+        line-height: var(--line-height-normal);
+        font-size: var(--font-size-md);
+        letter-spacing: var(--letter-spacing-normal);
         text-rendering: optimizeLegibility;
         overflow-x: hidden;
         min-height: 100vh;
+        font-feature-settings: "liga" 1, "kern" 1;
+    }
+    /* Heading styles */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-display);
+        font-weight: var(--font-weight-extrabold);
+        letter-spacing: var(--letter-spacing-tight);
+        line-height: var(--line-height-tight);
+        margin-bottom: 0.5em;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, ${({theme}) => theme.colors.primary}, ${({theme}) => theme.colors.secondary});
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 1;
+    }
+    /* Code styles */
+    code, pre {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-feature-settings: "liga" 0;
+        font-size: 0.9em;
+        line-height: var(--line-height-relaxed);
+        letter-spacing: -0.01em;
+        font-variant-ligatures: contextual;
+        border-radius: 6px;
+        padding: 0.2em 0.4em;
     }
 
     border-radius:
