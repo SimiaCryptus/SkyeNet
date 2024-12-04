@@ -4,6 +4,16 @@
     flex-direction: column;
     transition: all 0.3s ease;
 }
+/* List styles for dark mode */
+@media (prefers-color-scheme: dark) {
+    ol li::before {
+        color: var(--primary-color);
+    }
+    ol ol li::before {
+        color: var(--hover-color);
+    }
+}
+
 
 /* Dark mode improvements */
 /* Improve dark mode media query placement */
@@ -226,12 +236,16 @@
 /* CSS variables for consistent theming */
 :root {
     /* Color palette */
-    --color-primary-rgb: 52, 152, 219;
-    --color-primary-alpha: rgba(52, 152, 219, 0.08);
+    --color-gradient-start: var(--color-primary);
+    --color-gradient-end: var(--color-secondary);
     /* Semantic variables */
     /* Shadows */
+    --shadow-text: 0 2px 4px rgba(0,0,0,0.15);
+    --shadow-heading: 0 4px 8px rgba(0,0,0,0.2);
     /* Typography */
-    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'Fira Code', Consolas, Monaco, monospace;
+    /* Gradients */
+    --gradient-heading: linear-gradient(135deg, 
+        var(--color-gradient-start), 
+        var(--color-gradient-end)
+    );
 }

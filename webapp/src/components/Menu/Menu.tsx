@@ -138,7 +138,7 @@ export const Menu: React.FC = () => {
                     <DropButton>App</DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => openModal('sessions')}>Session List</DropdownItem>
-                        <DropdownItem onClick={() => console.log('[Menu] Creating new session')}>New</DropdownItem>
+                        <DropButton href="./#new">New</DropButton>
                     </DropdownContent>
                 </Dropdown>
 
@@ -180,7 +180,6 @@ export const Menu: React.FC = () => {
                         </DropdownContent>
                     </Dropdown>
                 )}
-
             </ToolbarLeft>
 
             <Dropdown>

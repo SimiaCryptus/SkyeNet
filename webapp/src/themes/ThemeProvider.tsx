@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 import {logThemeChange, ThemeName, themes} from './themes';
 import Prism from 'prismjs';
-import {GlobalStyles} from '../styles/GlobalStyles';
+import {GlobalStyles} from "../styles/GlobalStyles";
 
 interface ThemeProviderProps {
     children: React.ReactNode;
