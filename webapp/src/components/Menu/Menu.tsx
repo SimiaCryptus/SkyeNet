@@ -188,8 +188,8 @@ export const Menu: React.FC = () => {
                     <FontAwesomeIcon icon={faSignInAlt}/> Login
                 </DropButton>
                 <DropdownContent>
-                    <DropdownItem onClick={() => handleMenuClick('user-settings')}>Settings</DropdownItem>
-                    <DropdownItem onClick={() => handleMenuClick('user-usage')}>Usage</DropdownItem>
+                    <DropdownItem onClick={() => handleMenuClick('/userSettings')}>Settings</DropdownItem>
+                    <DropdownItem onClick={() => handleMenuClick('/usage')}>Usage</DropdownItem>
                     <DropdownItem onClick={handleLogout}>
                         <FontAwesomeIcon icon={faSignOutAlt}/> Logout
                     </DropdownItem>
