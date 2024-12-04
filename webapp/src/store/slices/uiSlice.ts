@@ -49,6 +49,7 @@ interface UiState {
     theme: ThemeName;
     modalOpen: boolean;
     modalType: string | null;
+  modalContent: string;
     verboseMode: boolean;
     activeTab: string;
     lastUpdate?: number;
@@ -58,6 +59,7 @@ const initialState: UiState = {
     theme: 'main',
     modalOpen: false,
     modalType: null,
+  modalContent: '',
     verboseMode: safeStorage.setItem('verboseMode', 'false') ? false : false,
     activeTab: 'chat', // Set default tab
     lastUpdate: Date.now()
@@ -71,7 +73,7 @@ const logStateChange = (action: string, payload: any = null, prevState: any = nu
     });
 };
 
-const uiSlice = createSlice({
+ export const uiSlice = createSlice({
     name: 'ui',
     initialState,
     reducers: {
@@ -102,6 +104,7 @@ const uiSlice = createSlice({
             });
             state.modalOpen = true;
             state.modalType = action.payload;
+      state.modalContent = 'Loading...';
         },
         hideModal: (state) => {
             logStateChange('Hiding modal', null, {
@@ -110,7 +113,11 @@ const uiSlice = createSlice({
             });
             state.modalOpen = false;
             state.modalType = null;
+      state.modalContent = '';
         },
+    setModalContent: (state, action) => {
+      state.modalContent = action.payload;
+    },
         toggleVerbose: (state) => {
             const newVerboseState = !state.verboseMode;
             logStateChange('Toggling verbose mode', {
@@ -124,7 +131,7 @@ const uiSlice = createSlice({
     },
 });
 
-export const {setTheme, showModal, hideModal, toggleVerbose, setActiveTab} = uiSlice.actions;
+export const {setTheme, showModal, hideModal, toggleVerbose, setActiveTab, setModalContent} = uiSlice.actions;
 logStateChange('Initialized slice', null, null, initialState);
 
 export default uiSlice.reducer;

@@ -1,9 +1,9 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from '../../store';
 import {hideModal} from '../../store/slices/uiSlice';
-import {useModal} from '../../hooks/useModal';
+import {useEffect} from 'react';
 
 const ModalOverlay = styled.div`
     position: fixed;
@@ -25,6 +25,7 @@ const ModalContent = styled.div`
     min-width: 300px;
     max-width: 80vw;
     max-height: 80vh;
+    min-height: 200px;
     overflow: auto;
 `;
 const LOG_PREFIX = '[Modal]';
@@ -32,14 +33,14 @@ const LOG_PREFIX = '[Modal]';
 
 export const Modal: React.FC = () => {
     const dispatch = useDispatch();
-    const {modalContent} = useModal();
-    const {modalOpen, modalType} = useSelector((state: RootState) => state.ui);
+    const {modalOpen, modalType, modalContent} = useSelector((state: RootState) => state.ui);
 
     useEffect(() => {
         console.log(`${LOG_PREFIX} Modal state changed:`, {
             modalOpen,
             modalType,
-            hasContent: !!modalContent
+            hasContent: !!modalContent,
+             contentLength: modalContent?.length || 0
         });
     }, [modalOpen, modalType, modalContent]);
 
@@ -50,9 +51,9 @@ export const Modal: React.FC = () => {
 
     return (
         <ModalOverlay onClick={() => dispatch(hideModal())}>
-            <ModalContent onClick={e => e.stopPropagation()}>
+            <ModalContent className="modal-content" onClick={e => e.stopPropagation()}>
                 <h2>{modalType}</h2>
-                <div dangerouslySetInnerHTML={{__html: modalContent}}/>
+                <div dangerouslySetInnerHTML={{__html: modalContent || ''}}/>
             </ModalContent>
         </ModalOverlay>
     );

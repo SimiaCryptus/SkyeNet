@@ -148,7 +148,7 @@ export const Menu: React.FC = () => {
                     </DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => handleMenuClick('settings')}>Settings</DropdownItem>
-                        <DropdownItem onClick={() => handleMenuClick('files')}>Files</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('fileIndex/')}>Files</DropdownItem>
                         <DropdownItem onClick={() => handleMenuClick('usage')}>Usage</DropdownItem>
                         <DropdownItem onClick={() => handleMenuClick('threads')}>Threads</DropdownItem>
                         <DropdownItem onClick={() => handleMenuClick('share')}>Share</DropdownItem>
@@ -165,8 +165,8 @@ export const Menu: React.FC = () => {
                 <Dropdown>
                     <DropButton onClick={() => console.log('[Menu] About menu clicked')}>About</DropButton>
                     <DropdownContent>
-                        <DropdownItem onClick={() => handleMenuClick('privacy')}>Privacy Policy</DropdownItem>
-                        <DropdownItem onClick={() => handleMenuClick('tos')}>Terms of Service</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('/privacy.html')}>Privacy Policy</DropdownItem>
+                        <DropdownItem onClick={() => handleMenuClick('/tos.html')}>Terms of Service</DropdownItem>
                     </DropdownContent>
                 </Dropdown>
 

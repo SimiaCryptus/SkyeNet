@@ -5,7 +5,7 @@ import {ThemeName} from '../types';
 
 const LOG_PREFIX = '[AppConfig]';
 
-const BASE_API_URL = process.env.REACT_APP_API_URL || window.location.origin;
+const BASE_API_URL = process.env.REACT_APP_API_URL || (window.location.origin + window.location.pathname);
 const STORAGE_KEYS = {
   THEME: 'theme',
 } as const;
@@ -70,7 +70,7 @@ export const fetchAppConfig = async (sessionId: string) => {
             baseUrl: BASE_API_URL
         });
 
-        const url = new URL('/appInfo', BASE_API_URL);
+        const url = new URL('./appInfo', BASE_API_URL);
         url.searchParams.append('session', sessionId);
 
         let response: Response;

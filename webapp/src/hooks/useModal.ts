@@ -1,12 +1,10 @@
 import {useDispatch} from 'react-redux';
 import WebSocketService from '../services/websocket';
-import {showModal as showModalAction} from '../store/slices/uiSlice';
-import {useState} from "react";
+import {setModalContent, showModal as showModalAction} from '../store/slices/uiSlice';
 import Prism from 'prismjs';
 
 export const useModal = () => {
     const dispatch = useDispatch();
-    const [modalContent, setModalContent] = useState('');
 
     // Helper to highlight code blocks
     const highlightCode = () => {
@@ -25,9 +23,19 @@ export const useModal = () => {
         const protocol = window.location.protocol;
         const host = window.location.hostname;
         const port = window.location.port;
-        // Handle endpoints that already have query parameters
-        const separator = endpoint.includes('?') ? '&' : '?';
-        const url = `${protocol}//${host}:${port}/${endpoint}${separator}sessionId=${WebSocketService.getSessionId()}`;
+        const path = window.location.pathname;
+        let url: string;
+        if (endpoint.startsWith("/")) {
+            url = `${protocol}//${host}:${port}${endpoint}`;
+        } else {
+            url = `${protocol}//${host}:${port}${path}${endpoint}`;
+        }
+        if (endpoint.endsWith("/")) {
+            url = url + WebSocketService.getSessionId() + '/';
+        } else {
+            const separator = endpoint.includes('?') ? '&' : '?';
+            url = url + separator + 'sessionId=' + WebSocketService.getSessionId();
+        }
         console.log('[Modal] Constructed URL:', url);
         return url;
     };
@@ -41,15 +49,15 @@ export const useModal = () => {
         }
         console.log('[Modal] Setting initial loading state');
 
-        setModalContent('<div>Loading...</div>');
         dispatch(showModalAction(endpoint));
+        dispatch(setModalContent('<div class="loading">Loading...</div>'));
         console.log('[Modal] Fetching content from:', getModalUrl(endpoint));
 
         fetch(getModalUrl(endpoint), {
             mode: 'cors',
+            credentials: 'include',
             headers: {
-                'Accept': 'text/html,application/json',
-                credentials: 'include'
+                'Accept': 'text/html,application/json,*/*'
             }
         })
             .then(response => {
@@ -57,28 +65,28 @@ export const useModal = () => {
                     status: response.status,
                     statusText: response.statusText
                 });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 return response.text();
             })
             .then(content => {
                 console.log('[Modal] Content received, length:', content.length);
-                setModalContent(content);
-                // Highlight code after content is set
+                if (!content.trim()) {
+                    throw new Error('Received empty content');
+                }
                 requestAnimationFrame(() => {
+                    dispatch(setModalContent(content));
                     highlightCode();
                 });
             })
             .catch(error => {
-                console.error('[Modal] Failed to load content:', {
-                    endpoint,
-                    error: error.message,
-                    status: error.status,
-                    stack: error.stack
-                });
-                setModalContent('<div>Error loading content. Please try again later.</div>');
+                console.error('[Modal] Failed to load content:', error);
+                dispatch(setModalContent('<div class="error">Error loading content: ' + error.message + '</div>'));
                 // Keep modal open to show error
             });
     };
     console.log('[Modal] Hook initialized');
 
-    return {openModal, getModalUrl, modalContent};
+    return {openModal, getModalUrl};
 };
