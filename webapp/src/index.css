@@ -4,10 +4,11 @@ body {
     background-color: #f5f5f5;
     color: #333;
     line-height: 1.6;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s cubic-bezier(0.2, 0, 0.2, 1);
     overflow: clip;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    /* Optimize for fixed backgrounds */
+    background-attachment: fixed;
+    transform: translate3d(0,0,0);
 }
 
 .chat-input {

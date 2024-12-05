@@ -29,10 +29,8 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
         }
     }
 
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap');
+    /* Single font import with subset and display swap */
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap&subset=latin&display=swap');
     /* Theme CSS variables */
     :root {
         /* Theme variables are now set dynamically in ThemeProvider */
@@ -110,6 +108,13 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+    }
+    /* Optimize performance for animated elements */
+    .animated {
+        transform: translate3d(0,0,0);
+        backface-visibility: hidden;
+        perspective: 1000;
+        will-change: transform;
     }
     /* Enhanced list styling */
     ul, ol {
@@ -417,8 +422,8 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
     }
     /* Add hover effect for headings */
     h1:hover, h2:hover, h3:hover, h4:hover, h5:hover, h6:hover {
-        transform: translateX(4px);
-        transition: transform 0.3s ease;
+        transform: translate3d(4px,0,0);
+        transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
     }
 
     /* Improve heading accessibility */
@@ -562,7 +567,8 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
 
     /* Transitions for theme switching */
     body, button, input, textarea {
-       transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        transition: background-color 0.2s cubic-bezier(0.2, 0, 0.2, 1),
+                    color 0.2s cubic-bezier(0.2, 0, 0.2, 1);
     }
 
     /* Log when transitions complete */

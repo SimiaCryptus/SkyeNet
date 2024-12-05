@@ -14,17 +14,34 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const MenuContainer = styled.div`
     display: flex;
     justify-content: space-between;
-    padding: ${({theme}) => theme.sizing.spacing.sm};
-    background-color: ${({theme}) => theme.colors.surface};
     border-bottom: 1px solid ${({theme}) => theme.colors.border};
     max-height: 5vh;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px ${({theme}) => `${theme.colors.primary}20`};
     position: sticky;
     top: 0;
     z-index: 100;
-    background: ${({theme}) => `linear-gradient(135deg, ${theme.colors.surface}dd, ${theme.colors.background}ee)`};
-    backdrop-filter: blur(8px) saturate(180%);
+    /* Use composite properties for better performance */
+    transform: translate3d(0,0,0);
+    backface-visibility: hidden;
+    perspective: 1000;
+    background: ${({theme}) => `
+        linear-gradient(135deg, 
+            ${theme.colors.surface}f0,
+            ${theme.colors.background}f8,
+            ${theme.colors.surface}f0
+        )
+    `};
+    backdrop-filter: blur(8px);
+    /* Specific transitions instead of 'all' */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+
+
+
+    @media (max-width: 768px) {
+        padding: ${({theme}) => theme.sizing.spacing.xs};
+        gap: ${({theme}) => theme.sizing.spacing.xs};
+    }
 `;
 
 const ToolbarLeft = styled.div`
@@ -40,31 +57,72 @@ const Dropdown = styled.div`
     position: relative;
 
     &:hover {
-        background-color: ${({theme}) => theme.colors.primary};
         color: white;
 
     }
 `;
 
-const DropButton = styled.a`
+const DropButton = styled.button`
     color: ${({theme}) => theme.colors.text.primary};
     padding: ${({theme}) => theme.sizing.spacing.sm};
-    text-decoration: none;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
     border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
     font-weight: ${({theme}) => theme.typography.fontWeight.medium};
+    min-width: 140px;
+    font-size: ${({theme}) => theme.typography.fontSize.sm};
+    letter-spacing: 0.5px;
+    text-transform: capitalize;
+    background: ${({theme}) => `${theme.colors.surface}90`};
+    border: 0px solid ${({theme}) => `${theme.colors.border}40`};
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    /* Styles for when used as a link */
+    &[href] {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        border: none;
+        gap: ${({theme}) => theme.sizing.spacing.sm};
+    }
 
     &:hover {
-        background-color: ${({theme}) => theme.colors.primary};
-        color: white;
+        background: ${({theme}) => `linear-gradient(
+            135deg,
+            ${theme.colors.primary},
+            ${theme.colors.secondary}
+        )`};
+        color: ${({theme}) => theme.colors.background};
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px ${({theme}) => `${theme.colors.primary}40`};
+        box-shadow: 
+            0 4px 16px ${({theme}) => `${theme.colors.primary}40`},
+            0 0 0 1px ${({theme}) => `${theme.colors.primary}40`};
+        &::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%; 
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(
+                circle,
+                rgba(255,255,255,0.2) 0%,
+                transparent 70%
+            );
+            transform: rotate(45deg);
+            animation: shimmer 2s linear infinite;
+        }
+        @keyframes shimmer {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
         &:after {
             content: '';
@@ -77,6 +135,12 @@ const DropButton = styled.a`
             pointer-events: none;
         }
     }
+    &:active {
+        transform: translateY(0);
+    }
+    &:disabled {
+        cursor: not-allowed;
+    }
 `;
 
 const DropdownContent = styled.div`
@@ -84,13 +148,28 @@ const DropdownContent = styled.div`
     position: absolute;
     background-color: ${({theme}) => theme.colors.surface};
     min-width: 160px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 24px ${({theme}) => `${theme.colors.primary}15`};
     z-index: 1;
     top: 100%;
     left: 0;
+    border-radius: ${({theme}) => theme.sizing.borderRadius.md};
+    border: 1px solid ${({theme}) => theme.colors.border};
+    backdrop-filter: blur(12px);
+    transform-origin: top;
+    animation: dropdownSlide 0.2s ease-out;
 
     ${Dropdown}:hover & {
         display: block;
+    }
+    @keyframes dropdownSlide {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 `;
 
@@ -104,6 +183,77 @@ const DropdownItem = styled.a`
     &:hover {
         background-color: ${({theme}) => theme.colors.primary};
         color: white;
+    }
+`;
+const DropLink = styled.a`
+    color: ${({theme}) => theme.colors.text.primary};
+    padding: ${({theme}) => theme.sizing.spacing.sm};
+    cursor: pointer;
+    border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    font-weight: ${({theme}) => theme.typography.fontWeight.medium};
+    min-width: 140px;
+    font-size: ${({theme}) => theme.typography.fontSize.sm};
+    letter-spacing: 0.5px;
+    text-transform: capitalize;
+    background: ${({theme}) => `${theme.colors.surface}90`};
+    border: 0px solid ${({theme}) => `${theme.colors.border}40`};
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    /* Match button styling */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border: none;
+    gap: ${({theme}) => theme.sizing.spacing.sm};
+
+    &:hover {
+        background: ${({theme}) => `linear-gradient(
+            135deg,
+            ${theme.colors.primary},
+            ${theme.colors.secondary}
+        )`};
+        color: ${({theme}) => theme.colors.background};
+        transform: translateY(-2px);
+        box-shadow: 
+            0 4px 16px ${({theme}) => `${theme.colors.primary}40`},
+            0 0 0 1px ${({theme}) => `${theme.colors.primary}40`};
+        &::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%; 
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(
+                circle,
+                rgba(255,255,255,0.2) 0%,
+                transparent 70%
+            );
+            transform: rotate(45deg);
+            animation: shimmer 2s linear infinite;
+        }
+        &:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
+            pointer-events: none;
+        }
+    }
+    &:active {
+        transform: translateY(0);
+    }
+    &:disabled {
+        cursor: not-allowed;
     }
 `;
 
@@ -130,7 +280,7 @@ export const Menu: React.FC = () => {
     return (
         <MenuContainer>
             <ToolbarLeft>
-                <DropButton href="/" onClick={() => console.log('[Menu] Navigating to home')}>
+                <DropButton as="a" href="/" onClick={() => console.log('[Menu] Navigating to home')}>
                     <FontAwesomeIcon icon={faHome}/> Home
                 </DropButton>
 
@@ -138,7 +288,7 @@ export const Menu: React.FC = () => {
                     <DropButton>App</DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => openModal('sessions')}>Session List</DropdownItem>
-                        <DropButton href="./#new">New</DropButton>
+                        <DropdownItem as="a" href="./#new">New</DropdownItem>
                     </DropdownContent>
                 </Dropdown>
 

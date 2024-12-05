@@ -16,20 +16,77 @@ const logDebug = (message: string, ...args: any[]) => {
 const ThemeMenuContainer = styled.div`
     position: relative;
     display: inline-block;
+    padding: 0.5rem;
 `;
 
 const ThemeButton = styled.button`
     padding: ${({theme}) => theme.sizing.spacing.sm};
     color: ${({theme}) => theme.colors.text.primary};
-    background: ${({theme}) => theme.colors.surface};
-    border: 1px solid ${({theme}) => theme.colors.border};
+    background: ${({theme}) => `${theme.colors.surface}90`};
+    border: 0px solid ${({theme}) => `${theme.colors.border}40`};
     border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
-    transition: all 0.2s ease-in-out;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    font-weight: ${({theme}) => theme.typography.fontWeight.medium};
+    min-width: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: ${({theme}) => theme.typography.fontSize.sm};
+    letter-spacing: 0.5px;
+    text-transform: capitalize;
 
     &:hover {
-        background: ${({theme}) => theme.colors.primary};
+        background: ${({theme}) => `linear-gradient(
+            135deg,
+            ${theme.colors.primary},
+            ${theme.colors.secondary}
+        )`};
         color: ${({theme}) => theme.colors.background};
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 
+            0 4px 16px ${({theme}) => `${theme.colors.primary}40`},
+            0 0 0 1px ${({theme}) => `${theme.colors.primary}40`};
+        /* Enhanced hover effect */
+        &::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(
+                circle,
+                rgba(255,255,255,0.2) 0%,
+                transparent 70%
+            );
+            transform: rotate(45deg);
+            animation: shimmer 2s linear infinite;
+        }
+        @keyframes shimmer {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        &:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(255,255,255,0.2), transparent);
+            pointer-events: none;
+        }
+    }
+    &:active {
+        transform: translateY(0);
+    }
+    &:disabled {
+        background: ${({theme}) => theme.colors.disabled};
+        cursor: not-allowed;
     }
 `;
 
@@ -37,13 +94,45 @@ const ThemeList = styled.div`
     position: absolute;
     top: 100%;
     right: 0;
-    background: ${({theme}) => theme.colors.surface};
+    background: ${({theme}) => `${theme.colors.surface}f0`};
     border: 1px solid ${({theme}) => theme.colors.border};
     border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
     padding: ${({theme}) => theme.sizing.spacing.xs};
     z-index: 10;
-    min-width: 150px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    box-shadow: 
+        0 4px 16px ${({theme}) => `${theme.colors.primary}20`},
+        0 0 0 1px ${({theme}) => `${theme.colors.border}40`};
+    backdrop-filter: blur(8px);
+    transform-origin: top;
+    animation: slideIn 0.2s ease-out;
+    /* Improved glass effect */
+    background: ${({theme}) => `linear-gradient(
+        to bottom,
+        ${theme.colors.surface}f8,
+        ${theme.colors.surface}e8
+    )`};
+    /* Add glass effect */
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        backdrop-filter: blur(8px);
+        z-index: -1;
+    }
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 `;
 
 const ThemeOption = styled.button`
@@ -54,10 +143,15 @@ const ThemeOption = styled.button`
     background: none;
     border: none;
     border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
+    cursor: pointer;
+    outline: none;
 
     &:hover {
         background: ${({theme}) => theme.colors.primary};
         color: ${({theme}) => theme.colors.background};
+    }
+    &:focus-visible {
+        box-shadow: 0 0 0 2px ${({theme}) => theme.colors.primary};
     }
 `;
 
@@ -65,6 +159,41 @@ export const ThemeMenu: React.FC = () => {
     const [currentTheme, setTheme] = useTheme();
     const [isOpen, setIsOpen] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
+    const menuRef = React.useRef<HTMLDivElement>(null);
+    const firstOptionRef = React.useRef<HTMLButtonElement>(null);
+    // Focus first option when menu opens
+    React.useEffect(() => {
+        if (isOpen && firstOptionRef.current) {
+            firstOptionRef.current.focus();
+        }
+    }, [isOpen]);
+    // Handle escape key press
+    React.useEffect(() => {
+        const handleEscapeKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && isOpen) {
+                setIsOpen(false);
+            }
+        };
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscapeKey);
+        }
+        return () => {
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
+    }, [isOpen]);
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
 
     React.useEffect(() => {
         logDebug('Theme changed:', {
@@ -82,8 +211,8 @@ export const ThemeMenu: React.FC = () => {
         });
 
         setIsLoading(true);
-        setTheme(themeName);
         setIsOpen(false);
+        setTheme(themeName);
         // Add small delay to allow theme to load
         await new Promise(resolve => setTimeout(resolve, 300));
         setIsLoading(false);
@@ -105,13 +234,18 @@ export const ThemeMenu: React.FC = () => {
 
 
     return (
-        <ThemeMenuContainer>
-            <ThemeButton onClick={handleMenuToggle}>
+        <ThemeMenuContainer ref={menuRef}>
+            <ThemeButton 
+                onClick={handleMenuToggle}
+                aria-expanded={isOpen}
+                aria-haspopup="true"
+                disabled={isLoading}
+            >
                 Theme: {currentTheme}
             </ThemeButton>
             {isOpen && (
-                <ThemeList>
-                    {Object.keys(themes).map((themeName) => {
+                <ThemeList role="menu">
+                     {Object.keys(themes).map((themeName, index) => {
                         logDebug('Rendering theme option', {
                             theme: themeName,
                             isCurrentTheme: themeName === currentTheme
@@ -120,6 +254,10 @@ export const ThemeMenu: React.FC = () => {
                             <ThemeOption
                                 key={themeName}
                                 onClick={() => handleThemeChange(themeName as keyof typeof themes)}
+                                role="menuitem"
+                                aria-current={themeName === currentTheme}
+                                ref={index === 0 ? firstOptionRef : undefined}
+                                tabIndex={0}
                             >
                                 {themeName}
                             </ThemeOption>

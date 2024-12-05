@@ -20,7 +20,11 @@ const MessageListContainer = styled.div`
     flex-direction: column;
     gap: 1rem;
     scroll-behavior: smooth;
-    background: ${({theme}) => `linear-gradient(${theme.colors.background}, ${theme.colors.surface})`};
+    background-color: ${({theme}) => theme.colors.background};
+    /* Optimize composite layers */
+    transform: translate3d(0,0,0);
+    backface-visibility: hidden;
+    perspective: 1000;
 
     &::-webkit-scrollbar {
         width: 10px;
@@ -29,7 +33,6 @@ const MessageListContainer = styled.div`
     &::-webkit-scrollbar-track {
         background: ${({theme}) => theme.colors.surface};
         border-radius: 4px;
-        box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
     }
 
     &::-webkit-scrollbar-thumb {
@@ -138,17 +141,21 @@ const MessageItem = styled.div<{ type: MessageType }>`
     border-radius: 12px;
     align-self: ${({type}) => type === 'user' ? 'flex-end' : 'flex-start'};
     max-width: 80%;
-    box-shadow: ${({theme}) => `${theme.shadows.medium}, 0 8px 16px rgba(0,0,0,0.1)`};
-    transition: transform 0.2s ease;
+    box-shadow: ${({theme}) => theme.shadows.medium};
+    /* Use hardware-accelerated properties */
+    transform: translate3d(0,0,0);
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
     position: relative;
     overflow: visible;
+    backface-visibility: hidden;
+    perspective: 1000;
 
     background-color: ${({type}) => {
         switch (type) {
             case 'user':
-                return ({theme}) => `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`;
+                return ({theme}) => theme.colors.primary;
             case 'system':
-                return ({theme}) => `linear-gradient(135deg, ${theme.colors.secondary}, ${theme.colors.info})`;
+                return ({theme}) => theme.colors.secondary;
             case 'error':
                 return ({theme}) => `linear-gradient(135deg, ${theme.colors.error}, ${theme.colors.warning})`;
             case 'loading':
@@ -167,20 +174,10 @@ const MessageItem = styled.div<{ type: MessageType }>`
                     : theme.colors.text.primary};
 
     &:hover {
-        transform: translateY(-3px);
-        box-shadow: ${({theme}) => `${theme.shadows.large}, 0 12px 24px rgba(0,0,0,0.15)`};
+        transform: translate3d(0,-3px,0);
+        box-shadow: ${({theme}) => theme.shadows.large};
     }
 
-    &:after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(rgba(255, 255, 255, 0.1), transparent);
-        pointer-events: none;
-    }
 `;
 
 const handleClick = (e: React.MouseEvent) => {
