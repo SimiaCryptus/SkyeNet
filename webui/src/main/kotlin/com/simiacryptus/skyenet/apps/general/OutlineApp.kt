@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger
 open class OutlineApp(
     applicationName: String = "Outline Expansion Concept Map v1.1",
     val domainName: String,
-    settings: Settings,
+    val settings: Settings? = null,
 ) : ApplicationServer(
     applicationName = applicationName,
     path = "/idea_mapper",
@@ -74,7 +74,7 @@ open class OutlineApp(
         ui: ApplicationInterface,
         api: API
     ) {
-        val settings = getSettings<Settings>(session, user)!!
+        val settings = this.settings ?: getSettings(session, user)!!
         OutlineAgent(
             api = api,
             dataStorage = dataStorage,

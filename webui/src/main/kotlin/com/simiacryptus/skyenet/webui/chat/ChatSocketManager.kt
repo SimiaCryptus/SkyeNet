@@ -44,31 +44,25 @@ open class ChatSocketManager(
   @Synchronized
   override fun onRun(userMessage: String, socket: ChatSocket) {
     val task = newTask()
-    val api = (api as ChatClient).getChildClient().apply {
+    val api = api.getChildClient().apply {
       val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
       createFile.second?.apply {
         logStreams += this.outputStream().buffered()
         task.verbose("API log: <a href=\"file:///$this\">$this</a>")
       }
     }
-    val responseContents = renderResponse(userMessage, task)
-    task.echo(responseContents)
+    val renderRequest = renderResponse(userMessage, task)
+    task.echo(renderRequest)
     messages += ApiModel.ChatMessage(ApiModel.Role.user, userMessage.toContentList())
     val messagesCopy = messages.toList()
     try {
       val ui = ApplicationInterface(this)
       val process = { it: StringBuilder ->
-        val response = (api.chat(
-          ApiModel.ChatRequest(
-            messages = messagesCopy,
-            temperature = temperature,
-            model = model.modelName,
-          ), model
-        ).choices.first().message?.content.orEmpty())
+        val response = respond(api, messagesCopy)
         messages.dropLastWhile { it.role == ApiModel.Role.assistant }
         messages += ApiModel.ChatMessage(ApiModel.Role.assistant, response.toContentList())
         val renderResponse = renderResponse(response, task)
-        onResponse(renderResponse, responseContents)
+        onResponse(renderResponse, renderRequest)
         renderResponse
       }
       Retryable(ui, task, process)
@@ -76,6 +70,19 @@ open class ChatSocketManager(
       log.info("Error in chat", e)
       task.error(ApplicationInterface(this), e)
     }
+  }
+
+  open fun respond(
+      api: ChatClient,
+      messagesCopy: List<ApiModel.ChatMessage>
+  ): String {
+    return (api.chat(
+      ApiModel.ChatRequest(
+        messages = messagesCopy,
+        temperature = temperature,
+        model = model.modelName,
+      ), model
+    ).choices.first().message?.content.orEmpty())
   }
 
   open fun renderResponse(response: String, task: SessionTask) =
