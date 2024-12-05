@@ -59,7 +59,6 @@ const MessageContent = styled.div`
         cursor: pointer;
         user-select: none;
         display: inline-block;
-        padding: 2px 8px;
         margin: 2px;
         border-radius: 4px;
         background-color: var(--theme-surface);
