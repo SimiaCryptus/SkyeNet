@@ -43,8 +43,12 @@ dependencies {
   implementation(project(":core"))
   implementation(project(":kotlin"))
 
-  implementation("org.apache.pdfbox:pdfbox:2.0.27")
-  compileOnly("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
+  implementation("org.apache.pdfbox:pdfbox:3.0.3")
+
+  implementation("org.seleniumhq.selenium:selenium-java:4.27.0") {
+    exclude(group = "com.intellij.remoterobot", module = "remote-robot")
+  }
+  implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
   implementation("org.jsoup:jsoup:1.18.1")
 
   implementation("com.google.zxing:core:3.5.3")
