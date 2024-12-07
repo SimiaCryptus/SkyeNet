@@ -6,8 +6,7 @@ import {ThemeName} from '../types';
 const LOG_PREFIX = '[AppConfig]';
 
 const BASE_API_URL = process.env.REACT_APP_API_URL || (window.location.origin + window.location.pathname);
-// Add loading state tracking
-let isLoadingConfig = false;
+
 let loadConfigPromise: Promise<any> | null = null;
 const STORAGE_KEYS = {
     THEME: 'theme',
@@ -65,29 +64,17 @@ export const themeStorage = {
     }
 };
 
+export interface AppConfig {
+    applicationName: string;
+    singleInput: boolean;
+    showMenubar: boolean;
+}
 
 // Add config cache
 let cachedConfig: any = null;
 const CONFIG_CACHE_KEY = 'app_config_cache';
-const CONFIG_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-// Try to load cached config from localStorage
-try {
-    const cached = localStorage.getItem(CONFIG_CACHE_KEY);
-    if (cached) {
-        const {config, timestamp} = JSON.parse(cached);
-        if (Date.now() - timestamp < CONFIG_CACHE_TTL) {
-            cachedConfig = config;
-            console.info(`${LOG_PREFIX} Loaded valid config from cache`);
-        } else {
-            localStorage.removeItem(CONFIG_CACHE_KEY);
-            console.info(`${LOG_PREFIX} Removed expired config cache`);
-        }
-    }
-} catch (error) {
-    console.warn(`${LOG_PREFIX} Error loading cached config:`, error);
-}
 
-export const fetchAppConfig = async (sessionId: string) => {
+export const fetchAppConfig: (sessionId: string) => Promise<AppConfig> = async (sessionId: string) => {
     try {
         // Return cached config if available
         if (cachedConfig) {
@@ -99,8 +86,6 @@ export const fetchAppConfig = async (sessionId: string) => {
             console.info(`${LOG_PREFIX} Config fetch already in progress, reusing promise`);
             return loadConfigPromise;
         }
-        // Set loading state
-        isLoadingConfig = true;
         loadConfigPromise = (async () => {
 
         console.info(`${LOG_PREFIX} Fetching app config:`, {
@@ -188,7 +173,6 @@ export const fetchAppConfig = async (sessionId: string) => {
         return data;
         })();
         const result = await loadConfigPromise;
-        isLoadingConfig = false;
         loadConfigPromise = null;
         return result;
 
@@ -199,7 +183,6 @@ export const fetchAppConfig = async (sessionId: string) => {
             url: BASE_API_URL ? `${BASE_API_URL}/appInfo` : '/appInfo',
             env: process.env.NODE_ENV
         });
-        isLoadingConfig = false;
         loadConfigPromise = null;
         throw error;
     }

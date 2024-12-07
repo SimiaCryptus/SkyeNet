@@ -104,7 +104,6 @@ export const uiSlice = createSlice({
             });
             state.modalOpen = true;
             state.modalType = action.payload;
-            state.modalContent = 'Loading...';
         },
         hideModal: (state) => {
             logStateChange('Hiding modal', null, {

@@ -2,6 +2,9 @@ import React from 'react';
 import styled from 'styled-components';
 import {useDispatch, useSelector} from 'react-redux';
 import {useModal} from '../../hooks/useModal';
+interface MenuContainerProps {
+    $hidden?: boolean;
+}
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCog, faHome, faSignInAlt, faSignOutAlt} from '@fortawesome/free-solid-svg-icons';
 import {ThemeMenu} from "./ThemeMenu";
@@ -38,11 +41,12 @@ function newGlobalID(): string {
     return (`G-${yyyyMMdd}-${id2()}`);
 }
 
-const MenuContainer = styled.div`
+const MenuContainer = styled.div<MenuContainerProps>`
     display: flex;
     justify-content: space-between;
     border-bottom: 1px solid ${({theme}) => theme.colors.border};
     max-height: 5vh;
+    display: ${({$hidden}) => $hidden ? 'none' : 'flex'};
     box-shadow: 0 2px 8px ${({theme}) => `${theme.colors.primary}20`};
     position: sticky;
     top: 0;
@@ -295,6 +299,7 @@ const DropLink = styled.a`
 
 export const Menu: React.FC = () => {
     useSelector((state: RootState) => state.config.websocket);
+    const showMenubar = useSelector((state: RootState) => state.config.showMenubar);
     const {openModal} = useModal();
     const dispatch = useDispatch();
     const verboseMode = useSelector((state: RootState) => state.ui.verboseMode);
@@ -319,7 +324,7 @@ export const Menu: React.FC = () => {
 
 
     return (
-        <MenuContainer>
+        <MenuContainer $hidden={!showMenubar}>
             <ToolbarLeft>
                 <DropButton as="a" href="/" onClick={() => console.log('[Menu] Navigating to home')}>
                     <FontAwesomeIcon icon={faHome}/> Home

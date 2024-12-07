@@ -252,3 +252,19 @@
     var(--color-gradient-end)
     );
 }
+/* Add loading and error container styles */
+.loading-container,
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 2rem;
+    text-align: center;
+    background: var(--background-color, #fff);
+    color: var(--text-color, #333);
+}
+.error-container {
+    color: var(--error-color, #dc3545);
+}

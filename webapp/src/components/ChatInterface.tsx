@@ -57,6 +57,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const loadAppConfig = async () => {
             if (!sessionId) return;
             try {
+                console.info('Fetching app config');
                 const config = await fetchAppConfig(sessionId);
                 if (mounted && config) {
                     console.info('App config loaded successfully');

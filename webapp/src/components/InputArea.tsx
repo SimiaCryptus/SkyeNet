@@ -1,5 +1,5 @@
 import React, {memo, useCallback, useState} from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 
@@ -15,11 +15,14 @@ const log = (message: string, data?: unknown) => {
     }
 };
 
-const InputContainer = styled.div`
+interface InputContainerProps {
+    $hide?: boolean;
+}
+const InputContainer = styled.div<InputContainerProps>`
     padding: 1.5rem;
     background-color: ${(props) => props.theme.colors.surface};
     border-top: 1px solid ${(props) => props.theme.colors.border};
-    display: ${({theme}) => theme.config?.singleInput ? 'none' : 'block'};
+    display: ${({theme, $hide}) => $hide ? 'none' : 'block'};
     max-height: 10vh;
     position: sticky;
     bottom: 0;
@@ -116,8 +119,10 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
     log('Initializing component');
     const [message, setMessage] = useState('');
     const config = useSelector((state: RootState) => state.config);
+    const messages = useSelector((state: RootState) => state.messages.messages);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
+    const shouldHideInput = config.singleInput && messages.length > 0;
 
     const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
@@ -167,7 +172,7 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
 
 
     return (
-        <InputContainer>
+        <InputContainer $hide={shouldHideInput}>
             <StyledForm onSubmit={handleSubmit}>
                 <TextArea
                     ref={textAreaRef}

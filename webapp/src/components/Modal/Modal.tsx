@@ -20,12 +20,27 @@ const ModalOverlay = styled.div`
 const ModalContent = styled.div`
     background-color: ${({theme}) => theme.colors.surface};
     padding: ${({theme}) => theme.sizing.spacing.lg};
-    border-radius: 4px;
+    border-radius: ${({theme}) => theme.sizing.borderRadius.md};
     min-width: 300px;
     max-width: 80vw;
     max-height: 80vh;
     min-height: 200px;
     overflow: auto;
+    box-shadow: 0 4px 16px ${({theme}) => `${theme.colors.primary}20`};
+    h2 {
+        margin-bottom: ${({theme}) => theme.sizing.spacing.md};
+        color: ${({theme}) => theme.colors.text.primary};
+        font-weight: ${({theme}) => theme.typography.fontWeight.bold};
+    }
+    button {
+        border: 1px solid ${({theme}) => theme.colors.border};
+        border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
+        cursor: pointer;
+        &:hover {
+            background: ${({theme}) => theme.colors.primary};
+            color: ${({theme}) => theme.colors.background};
+        }
+    }
 `;
 const LOG_PREFIX = '[Modal]';
 

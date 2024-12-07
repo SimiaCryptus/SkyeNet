@@ -1,6 +1,6 @@
 import React from 'react';
-import {Provider} from 'react-redux';
-import {store} from './store';
+import {Provider, useSelector} from 'react-redux';
+import {store, RootState} from './store';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import ErrorFallback from './components/ErrorBoundary/ErrorFallback';
 import './App.css';
@@ -49,12 +49,20 @@ const LOG_PREFIX = '[App]';
 Prism.manual = true;
 
 
-const App: React.FC = () => {
+// Create a separate component for the app content
+const AppContent: React.FC = () => {
     console.group(`${LOG_PREFIX} Initializing v${APP_VERSION}`);
     console.log('Starting component render');
+    const appConfig = useSelector((state: RootState) => state.config);
 
     const sessionId = websocket.getSessionId();
     const isConnected = websocket.isConnected();
+    React.useEffect(() => {
+        if (appConfig.applicationName) {
+            document.title = appConfig.applicationName;
+            console.log(`${LOG_PREFIX} Updated page title to:`, appConfig.applicationName);
+        }
+    }, [appConfig.applicationName]);
     console.log('WebSocket state:', {
         sessionId,
         isConnected
@@ -82,35 +90,30 @@ const App: React.FC = () => {
     }, []);
 
     return (
+        <ThemeProvider>
+            <div className={`App`}>
+                <Menu/>
+                <ChatInterface
+                    sessionId={sessionId}
+                    websocket={websocket}
+                    isConnected={isConnected}
+                />
+                <Modal/>
+            </div>
+        </ThemeProvider>
+    );
+};
+// Create the main App component that provides the Redux store
+const App: React.FC = () => {
+    return (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
             <Provider store={store}>
-                {(() => {
-                    console.debug(`${LOG_PREFIX} Rendering Provider with store`);
-                    return (
-                        <ThemeProvider>
-                            {(() => {
-                                console.debug(`${LOG_PREFIX} Rendering ThemeProvider with theme`);
-                                return (
-                                    <>
-                                        <div className={`App`}>
-                                            <Menu/>
-                                            <ChatInterface
-                                                sessionId={sessionId}
-                                                websocket={websocket}
-                                                isConnected={isConnected}
-                                            />
-                                            <Modal/>
-                                        </div>
-                                    </>
-                                );
-                            })()}
-                        </ThemeProvider>
-                    );
-                })()}
+                <AppContent />
             </Provider>
         </ErrorBoundary>
     );
 };
+
 console.groupEnd();
 console.log(`${LOG_PREFIX} v${APP_VERSION} loaded successfully`);
 

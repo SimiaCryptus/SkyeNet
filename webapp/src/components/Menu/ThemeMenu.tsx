@@ -2,6 +2,8 @@ import React from 'react';
 import styled from 'styled-components';
 import {useTheme} from '../../hooks/useTheme';
 import {themes} from '../../themes/themes';
+import {useDispatch} from 'react-redux';
+import {showModal, setModalContent} from '../../store/slices/uiSlice';
 
 const LOG_PREFIX = '[ThemeMenu Component]';
 const logWithPrefix = (message: string, ...args: any[]) => {
@@ -161,6 +163,7 @@ export const ThemeMenu: React.FC = () => {
     const [isLoading, setIsLoading] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
     const firstOptionRef = React.useRef<HTMLButtonElement>(null);
+    const dispatch = useDispatch();
     // Focus first option when menu opens
     React.useEffect(() => {
         if (isOpen && firstOptionRef.current) {
@@ -180,7 +183,43 @@ export const ThemeMenu: React.FC = () => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [isOpen]);
+}, [isOpen]);
+// Add keyboard shortcut handler
+React.useEffect(() => {
+    const handleKeyboardShortcut = (event: KeyboardEvent) => {
+        if (event.altKey && event.key.toLowerCase() === 't') {
+            event.preventDefault();
+            const themeContent = `
+                <div>
+                    ${Object.keys(themes).map(themeName => `
+                        <button 
+                            onclick="window.dispatchEvent(new CustomEvent('themeChange', {detail: '${themeName}'}))"
+                            style="display: block; width: 100%; margin: 8px 0; padding: 8px; text-align: left; ${themeName === currentTheme ? 'background: #eee;' : ''}"
+                        >
+                            ${themeName}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        dispatch(showModal('Theme Selection'));
+        dispatch(setModalContent(themeContent));
+            logDebug('Theme modal opened via keyboard shortcut (Alt+T)');
+        }
+    };
+    document.addEventListener('keydown', handleKeyboardShortcut);
+    return () => {
+        document.removeEventListener('keydown', handleKeyboardShortcut);
+    };
+}, [currentTheme, dispatch]);
+React.useEffect(() => {
+    const handleThemeChangeEvent = (event: CustomEvent<string>) => {
+        handleThemeChange(event.detail as keyof typeof themes);
+    };
+    window.addEventListener('themeChange', handleThemeChangeEvent as EventListener);
+    return () => {
+        window.removeEventListener('themeChange', handleThemeChangeEvent as EventListener);
+    };
+}, []);
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
