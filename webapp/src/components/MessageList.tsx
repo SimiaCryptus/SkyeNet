@@ -17,6 +17,12 @@ const MessageListContainer = styled.div`
     flex: 1;
     overflow-y: auto;
     padding: 1rem;
+    /* Add test id */
+
+    &[data-testid] {
+        outline: none;
+    }
+
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -152,27 +158,27 @@ const MessageItem = styled.div<{ type: MessageType }>`
     perspective: inherit;
 
     background-color: ${({type}) => {
-    switch (type) {
-        case 'user':
-            return ({theme}) => theme.colors.primary;
-        case 'system':
-            return ({theme}) => theme.colors.secondary;
-        case 'error':
-            return ({theme}) => `linear-gradient(135deg, ${theme.colors.error}, ${theme.colors.warning})`;
-        case 'loading':
-            return ({theme}) => theme.colors.surface;
-        case 'assistant':
-            return ({theme}) => theme.colors.surface;
-        case 'reference':
-            return ({theme}) => theme.colors.surface;
-        default:
-            return ({theme}) => theme.colors.surface;
-    }
-}};
+        switch (type) {
+            case 'user':
+                return ({theme}) => theme.colors.primary;
+            case 'system':
+                return ({theme}) => theme.colors.secondary;
+            case 'error':
+                return ({theme}) => `linear-gradient(135deg, ${theme.colors.error}, ${theme.colors.warning})`;
+            case 'loading':
+                return ({theme}) => theme.colors.surface;
+            case 'assistant':
+                return ({theme}) => theme.colors.surface;
+            case 'reference':
+                return ({theme}) => theme.colors.surface;
+            default:
+                return ({theme}) => theme.colors.surface;
+        }
+    }};
     color: ${({type, theme}) =>
-    type === 'user' || type === 'system' || type === 'error'
-        ? '#fff'
-        : theme.colors.text.primary};
+            type === 'user' || type === 'system' || type === 'error'
+                    ? '#fff'
+                    : theme.colors.text.primary};
 
     &:hover {
         transform: translate3d(0, -3px, 0);
@@ -376,7 +382,11 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
     }, [finalMessages]);
 
     return (
-        <MessageListContainer ref={messageListRef} className={containerClassName}>
+        <MessageListContainer
+            data-testid="message-list"
+            id="message-list-container"
+            ref={messageListRef} className={containerClassName}
+        >
             {finalMessages.map((message) => {
                 console.debug('MessageList - Rendering message', {
                     id: message.id,
@@ -387,10 +397,13 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                 return <MessageItem
                     key={message.id}
                     type={message.type}
+                    data-testid={`message-${message.id}`}
+                    id={`message-${message.id}`}
                 >
                     {<MessageContent
                         className="message-body"
                         onClick={!isArchive ? handleClick : undefined}
+                        data-testid={`message-content-${message.id}`}
                         dangerouslySetInnerHTML={{
                             __html: message.content
                         }}

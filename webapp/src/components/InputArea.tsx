@@ -22,6 +22,10 @@ interface InputContainerProps {
 const InputContainer = styled.div<InputContainerProps>`
     padding: 1.5rem;
     background-color: ${(props) => props.theme.colors.surface};
+    /* Add test id */
+    &[data-testid] {
+      outline: none; 
+    }
     border-top: 1px solid ${(props) => props.theme.colors.border};
     display: ${({theme, $hide}) => $hide ? 'none' : 'block'};
     max-height: 10vh;
@@ -173,10 +177,16 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
 
 
     return (
-        <InputContainer $hide={shouldHideInput}>
+        <InputContainer 
+            $hide={shouldHideInput}
+            data-testid="input-container"
+            id="chat-input-container"
+        >
             <StyledForm onSubmit={handleSubmit}>
                 <TextArea
                     ref={textAreaRef}
+                    data-testid="message-input"
+                    id="message-input"
                     value={message}
                     onChange={handleMessageChange}
                     onKeyPress={handleKeyPress}
@@ -187,6 +197,8 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
                 />
                 <SendButton
                     type="submit"
+                    data-testid="send-button" 
+                    id="send-message-button"
                     disabled={isSubmitting || !message.trim()}
                     aria-label="Send message"
                 >

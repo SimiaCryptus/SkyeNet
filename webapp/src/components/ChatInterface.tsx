@@ -28,9 +28,13 @@ const ChatContainer = styled.div`
     display: flex;
     flex-direction: column;
     height: 100vh;
+    /* Add test id */
+    &[data-testid] {
+      outline: none;
+    }
 `;
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({
+ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                                          sessionId: propSessionId,
                                                          websocket,
                                                          isConnected,
@@ -169,11 +173,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
 
     return isArchive ? (
-        <ChatContainer>
+        <ChatContainer data-testid="chat-container" id="chat-container">
             <MessageList/>
         </ChatContainer>
     ) : (
-        <ChatContainer>
+        <ChatContainer data-testid="chat-container" id="chat-container">
             <MessageList/>
             <InputArea onSendMessage={handleSendMessage}/>
         </ChatContainer>

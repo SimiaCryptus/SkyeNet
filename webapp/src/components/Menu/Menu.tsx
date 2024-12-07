@@ -45,6 +45,12 @@ function newGlobalID(): string {
 const MenuContainer = styled.div<MenuContainerProps>`
     display: flex;
     justify-content: space-between;
+    /* Add test id */
+
+    &[data-testid] {
+        outline: none;
+    }
+
     border-bottom: 1px solid ${({theme}) => theme.colors.border};
     max-height: 5vh;
     display: ${({$hidden}) => $hidden ? 'none' : 'flex'};
@@ -325,14 +331,24 @@ export const Menu: React.FC = () => {
 
 
     return (
-        <MenuContainer $hidden={!showMenubar}>
+        <MenuContainer $hidden={!showMenubar}
+                       data-testid="main-menu"
+                       id="main-menu"
+        >
             <ToolbarLeft>
-                <DropButton as="a" href="/" onClick={() => console.log('[Menu] Navigating to home')}>
+                <DropButton as="a" href="/" onClick={() => console.log('[Menu] Navigating to home')}
+                            data-testid="home-button"
+                            id="home-button"
+                >
                     <FontAwesomeIcon icon={faHome}/> Home
                 </DropButton>
 
-                <Dropdown>
-                    <DropButton>App</DropButton>
+                <Dropdown
+                    data-testid="app-menu-button"
+                    id="app-menu-button">
+                    <DropButton
+                        data-testid="sessions-button"
+                        id="sessions-button">App</DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => openModal('sessions')}>Session List</DropdownItem>
                         <DropdownItem as="a" href={"./#" + newGlobalID()}>New</DropdownItem>

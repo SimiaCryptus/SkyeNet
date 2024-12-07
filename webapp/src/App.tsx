@@ -46,6 +46,8 @@ import 'prismjs/plugins/normalize-whitespace/prism-normalize-whitespace';
 import QRCode from 'qrcode-generator';
 import {addMessage} from "./store/slices/messageSlice";
 import {Message} from './types/messages';
+
+
 // Add function to extract archived messages
 const getArchivedMessages = () => {
     if (!isArchive) return null;
