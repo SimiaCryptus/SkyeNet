@@ -72,15 +72,19 @@ const AppContent: React.FC = () => {
     console.log('Starting component render');
     const appConfig = useSelector((state: RootState) => state.config);
     const dispatch = useDispatch();
+    // Only load archived messages once on mount
+    const [archivedMessagesLoaded, setArchivedMessagesLoaded] = React.useState(false);
+
     // Load archived messages on mount if in archive mode
     React.useEffect(() => {
-        if (isArchive) {
+        if (isArchive && !archivedMessagesLoaded) {
             const archivedMessages = getArchivedMessages();
             if (archivedMessages) {
                 archivedMessages.forEach((msg: Message) => dispatch(addMessage(msg)));
+                setArchivedMessagesLoaded(true);
             }
         }
-    }, [dispatch]);
+    }, [dispatch, archivedMessagesLoaded]);
 
     const sessionId = websocket.getSessionId();
     const isConnected = websocket.isConnected();

@@ -3,18 +3,6 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1" name="viewport"/>
-    <!-- Add data-archive attribute when saving as archive -->
-    <script>
-        if (document.documentElement.hasAttribute('data-archive')) {
-            // Serialize messages to a hidden element
-            const messages = JSON.stringify(window.__MESSAGES__ || []);
-            const messagesEl = document.createElement('script');
-            messagesEl.id = 'archived-messages';
-            messagesEl.type = 'application/json';
-            messagesEl.textContent = messages;
-            document.head.appendChild(messagesEl);
-        }
-    </script>
 </head>
 <body>
 <div id="root"></div>

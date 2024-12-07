@@ -3,8 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-// Check if we're loading from an archive
-const isArchive = document.documentElement.hasAttribute('data-archive');
 
 // Application initialization timestamp
 const startTime = performance.now();
@@ -15,37 +13,43 @@ const logStyles = {
     warning: 'color: #ff9800; font-weight: bold',
     info: 'color: #2196f3; font-weight: bold'
 };
+
+
+
+// Check if we're loading from an archive based on current document length
+const isArchive = document.documentElement.outerHTML.length > 60000;
+
 if (!isArchive) {
     console.log('%c[Chat App] Starting application...', logStyles.startup);
+} else {
+    console.log('%c[Chat App] Starting application in archive mode...', logStyles.startup);
 }
 
 
 if (typeof document !== 'undefined') {
     if (!isArchive) {
         console.log('%c[Chat App] Initializing React root element...', logStyles.info);
-    }
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    try {
-        root.render(
-            <React.StrictMode>
-                <App isArchive={isArchive}/>
-            </React.StrictMode>
-        );
-        if (!isArchive) {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        try {
+            root.render(
+                <React.StrictMode>
+                    <App isArchive={isArchive}/>
+                </React.StrictMode>
+            );
             const renderTime = (performance.now() - startTime).toFixed(2);
             console.log(
                 '%c[Chat App] Application rendered successfully in %cms',
                 logStyles.startup,
                 renderTime
             );
+        } catch (error) {
+            console.log(
+                '%c[Chat App] Failed to render application:',
+                logStyles.error,
+                '\nError:', error,
+                '\nStack:', error.stack
+            );
         }
-    } catch (error) {
-        console.log(
-            '%c[Chat App] Failed to render application:',
-            logStyles.error,
-            '\nError:', error,
-            '\nStack:', error.stack
-        );
     }
 } else {
     console.log(
@@ -53,19 +57,3 @@ if (typeof document !== 'undefined') {
         logStyles.warning
     );
 }
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals((metric) => {
-    const metricColor = metric.rating === 'good' ? logStyles.startup :
-        metric.rating === 'needs-improvement' ? logStyles.warning :
-            logStyles.error;
-    console.log(
-        `%c[Web Vital] ${metric.name}:`,
-        metricColor,
-        `\nValue: ${metric.value.toFixed(2)}`,
-        `\nRating: ${metric.rating}`,
-        `\nDelta: ${metric.delta?.toFixed(2) || 'N/A'}`
-    );
-});
