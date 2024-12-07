@@ -1,7 +1,11 @@
 import {store} from '../store';
 import {Message} from "../types/messages";
+import {debounce} from "../utils/tabHandling";
 
 export class WebSocketService {
+    private messageQueue: string[] = [];
+    private isProcessingQueue = false;
+    private readonly QUEUE_PROCESS_INTERVAL = 50; // ms
     public ws: WebSocket | null = null;
     private readonly DEBUG = process.env.NODE_ENV === 'development';
     private maxReconnectAttempts = 5;
@@ -19,7 +23,6 @@ export class WebSocketService {
     private aggregateBuffer: Message[] = [];
     private aggregateTimeout: NodeJS.Timeout | null = null;
     private readonly AGGREGATE_INTERVAL = 100; // 100ms aggregation interval
-    private readonly WARMUP_PERIOD = 10000; // 10 second warmup
 
     public getSessionId(): string {
         console.debug('[WebSocket] Getting session ID:', this.sessionId);
@@ -38,30 +41,29 @@ export class WebSocketService {
 
     send(message: string): void {
         if (this.ws?.readyState === WebSocket.OPEN) {
-            this.debugLog('Sending message:',
-                message.length > 100 ? message.substring(0, 100) + '...' : message
-            );
-            this.ws.send(message);
+            this.queueMessage(message);
         } else {
             console.warn('[WebSocket] Connection not open, attempting reconnect before sending');
             this.reconnectAndSend(message);
         }
     }
-    private reconnectAndSend(message: string): void {
-        if (this.isReconnecting) {
-            console.warn('[WebSocket] Already attempting to reconnect');
-            return;
+    private queueMessage(message: string): void {
+        this.messageQueue.push(message);
+        if (!this.isProcessingQueue) {
+            this.processMessageQueue();
         }
-        console.log('[WebSocket] Attempting to reconnect before sending message');
-        const onConnect = (connected: boolean) => {
-            if (connected) {
-                console.log('[WebSocket] Reconnected successfully, sending queued message');
-                this.removeConnectionHandler(onConnect);
-                this.send(message);
+    }
+    private async processMessageQueue(): Promise<void> {
+        if (this.isProcessingQueue || this.messageQueue.length === 0) return;
+        this.isProcessingQueue = true;
+        while (this.messageQueue.length > 0) {
+            const message = this.messageQueue.shift();
+            if (message && this.ws?.readyState === WebSocket.OPEN) {
+                this.ws.send(message);
+                await new Promise(resolve => setTimeout(resolve, this.QUEUE_PROCESS_INTERVAL));
             }
-        };
-        this.addConnectionHandler(onConnect);
-        this.connect(this.sessionId);
+        }
+        this.isProcessingQueue = false;
     }
 
     public addConnectionHandler(handler: (connected: boolean) => void): void {
@@ -148,6 +150,23 @@ export class WebSocketService {
         }
     }
 
+    private reconnectAndSend(message: string): void {
+        if (this.isReconnecting) {
+            console.warn('[WebSocket] Already attempting to reconnect');
+            return;
+        }
+        console.log('[WebSocket] Attempting to reconnect before sending message');
+        const onConnect = (connected: boolean) => {
+            if (connected) {
+                console.log('[WebSocket] Reconnected successfully, sending queued message');
+                this.removeConnectionHandler(onConnect);
+                this.send(message);
+            }
+        };
+        this.addConnectionHandler(onConnect);
+        this.connect(this.sessionId);
+    }
+
     private debugLog(message: string, ...args: any[]) {
         if (this.DEBUG) {
             console.debug(`[WebSocket] ${message}`, ...args);
@@ -211,6 +230,12 @@ export class WebSocketService {
             return;
         }
         this.debugLog('Setting up event handlers');
+        // Debounce message processing
+        const debouncedProcessMessages = debounce((messages: Message[]) => {
+            const batch = [...messages];
+            this.aggregateBuffer = [];
+            batch.forEach(msg => this.messageHandlers.forEach(handler => handler(msg)));
+        }, this.AGGREGATE_INTERVAL);
 
         this.ws.onopen = () => {
             console.log('[WebSocket] Connection established successfully');
@@ -227,17 +252,27 @@ export class WebSocketService {
             this.debugLog('Message received');
             const currentTime = Date.now();
             const timeSinceConnection = currentTime - this.connectionStartTime;
+            const data = event.data;
+            const length = data.length;
+            let firstComma = -1;
+            let secondComma = -1;
+            for (let i = 0; i < length; i++) {
+                if (data[i] === ',' && firstComma === -1) {
+                    firstComma = i;
+                } else if (data[i] === ',' && secondComma === -1) {
+                    secondComma = i;
+                    break;
+                }
+            }
             const shouldBuffer = timeSinceConnection < 10000; // First 10 seconds
             // Find the first two comma positions to extract id and version
-            const firstComma = event.data.indexOf(',');
-            const secondComma = event.data.indexOf(',', firstComma + 1);
             if (firstComma === -1 || secondComma === -1) {
                 console.warn('[WebSocket] Received malformed message:', event.data);
                 return;
             }
-            const id = event.data.substring(0, firstComma);
-            const version = event.data.substring(firstComma + 1, secondComma);
-            const content = event.data.substring(secondComma + 1);
+            const id = data.slice(0, firstComma);
+            const version = data.slice(firstComma + 1, secondComma);
+            const content = data.slice(secondComma + 1);
 
             if (!id || !version) {
                 console.warn('[WebSocket] Received malformed message:', event.data);
@@ -253,16 +288,6 @@ export class WebSocketService {
             if (isHtml) {
                 console.debug('[WebSocket] HTML content detected, preserving markup');
             }
-        const processMessages = (messages: Message[]) => {
-            if (this.aggregateTimeout) {
-                clearTimeout(this.aggregateTimeout);
-            }
-            this.aggregateTimeout = setTimeout(() => {
-                const batch = [...messages];
-                this.aggregateBuffer = [];
-                batch.forEach(msg => this.messageHandlers.forEach(handler => handler(msg)));
-            }, this.AGGREGATE_INTERVAL);
-        };
 
 
             const message: Message = {
@@ -281,23 +306,21 @@ export class WebSocketService {
             }
 
             if (shouldBuffer) {
-            this.messageBuffer.push(message); 
+                this.messageBuffer.push(message);
                 if (this.bufferTimeout) {
                     clearTimeout(this.bufferTimeout);
                 }
                 this.bufferTimeout = setTimeout(() => {
                     const messages = [...this.messageBuffer];
                     this.messageBuffer = [];
-                    messages.forEach(msg => {
-                        this.messageHandlers.forEach(handler => handler(msg));
-                    });
+                    debouncedProcessMessages(messages);
                 }, 1000);
             } else {
-            // After warmup period, use message aggregation
-            this.aggregateBuffer.push(message);
-            if (this.aggregateBuffer.length === 1) {
-                processMessages(this.aggregateBuffer);
-            }
+                // After warmup period, use message aggregation
+                this.aggregateBuffer.push(message);
+                if (this.aggregateBuffer.length === 1) {
+                    debouncedProcessMessages(this.aggregateBuffer);
+                }
             }
         };
 

@@ -1,4 +1,4 @@
-import { ThemeName } from './theme';
+import {ThemeName} from './theme';
 import {ConsoleStyle} from "../types";
 
 export interface WebSocketConfig {

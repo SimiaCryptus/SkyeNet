@@ -49,7 +49,7 @@ interface UiState {
     theme: ThemeName;
     modalOpen: boolean;
     modalType: string | null;
-  modalContent: string;
+    modalContent: string;
     verboseMode: boolean;
     activeTab: string;
     lastUpdate?: number;
@@ -59,8 +59,8 @@ const initialState: UiState = {
     theme: 'main',
     modalOpen: false,
     modalType: null,
-  modalContent: '',
-    verboseMode: safeStorage.setItem('verboseMode', 'false') ? false : false,
+    modalContent: '',
+    verboseMode: localStorage.getItem('verboseMode') === 'true',
     activeTab: 'chat', // Set default tab
     lastUpdate: Date.now()
 };
@@ -73,7 +73,7 @@ const logStateChange = (action: string, payload: any = null, prevState: any = nu
     });
 };
 
- export const uiSlice = createSlice({
+export const uiSlice = createSlice({
     name: 'ui',
     initialState,
     reducers: {
@@ -104,7 +104,7 @@ const logStateChange = (action: string, payload: any = null, prevState: any = nu
             });
             state.modalOpen = true;
             state.modalType = action.payload;
-      state.modalContent = 'Loading...';
+            state.modalContent = 'Loading...';
         },
         hideModal: (state) => {
             logStateChange('Hiding modal', null, {
@@ -113,11 +113,11 @@ const logStateChange = (action: string, payload: any = null, prevState: any = nu
             });
             state.modalOpen = false;
             state.modalType = null;
-      state.modalContent = '';
+            state.modalContent = '';
         },
-    setModalContent: (state, action) => {
-      state.modalContent = action.payload;
-    },
+        setModalContent: (state, action) => {
+            state.modalContent = action.payload;
+        },
         toggleVerbose: (state) => {
             const newVerboseState = !state.verboseMode;
             logStateChange('Toggling verbose mode', {
@@ -126,6 +126,10 @@ const logStateChange = (action: string, payload: any = null, prevState: any = nu
                 previousState: state.verboseMode
             });
             safeStorage.setItem('verboseMode', newVerboseState.toString());
+            // Add class to body to allow global CSS targeting
+            if (typeof document !== 'undefined') {
+                document.body.classList.toggle('verbose-mode', newVerboseState);
+            }
             state.verboseMode = !state.verboseMode;
         }
     },

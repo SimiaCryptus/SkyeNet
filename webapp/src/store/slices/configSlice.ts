@@ -1,10 +1,10 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
- import { AppConfig, WebSocketConfig } from '../../types/config';
- import { ThemeName } from '../../types/theme';
+import {AppConfig, WebSocketConfig} from '../../types/config';
+import {ThemeName} from '../../types/theme';
 
 // Helper function to validate theme name
 const isValidTheme = (theme: string | null): theme is ThemeName => {
-    return theme === 'main' || theme === 'night' || theme === 'forest' || 
+    return theme === 'main' || theme === 'night' || theme === 'forest' ||
         theme === 'pony' || theme === 'alien' || theme === 'sunset';
 };
 // Load theme from localStorage with type safety
@@ -80,7 +80,7 @@ const initialState: AppConfig = {
     }
 };
 
- const configSlice = createSlice({
+const configSlice = createSlice({
     name: 'config',
     initialState,
     reducers: {

@@ -84,12 +84,12 @@ export function saveTabState(containerId: string, activeTab: string) {
         diagnostics.saveCount++;
         currentStateVersion++;
         tabStateVersions.set(containerId, currentStateVersion);
-        console.trace(`Saving tab state #${diagnostics.saveCount}:`, {
-            containerId,
-            activeTab,
-            existingStates: tabStates.size,
-            version: currentStateVersion
-        });
+        // console.trace(`Saving tab state #${diagnostics.saveCount}:`, {
+        //     containerId,
+        //     activeTab,
+        //     existingStates: tabStates.size,
+        //     version: currentStateVersion
+        // });
         const state = {containerId, activeTab};
         tabStates.set(containerId, state);
         trackTabStateHistory(containerId, activeTab);
@@ -195,13 +195,13 @@ function restoreTabState(container: Element) {
     try {
         diagnostics.restoreCount++;
         const containerId = container.id;
-        const storedVersion = tabStateVersions.get(containerId) || 0;
-        console.debug(`Attempting to restore tab state #${diagnostics.restoreCount}:`, {
-            containerId,
-            storedState: tabStates.get(containerId),
-            allStates: Array.from(tabStates.entries()),
-            version: storedVersion
-        });
+        // const storedVersion = tabStateVersions.get(containerId) || 0;
+        // console.debug(`Attempting to restore tab state #${diagnostics.restoreCount}:`, {
+        //     containerId,
+        //     storedState: tabStates.get(containerId),
+        //     allStates: Array.from(tabStates.entries()),
+        //     version: storedVersion
+        // });
         const savedTab = getActiveTab(containerId) ||
             tabStates.get(containerId)?.activeTab;
         if (savedTab) {
@@ -211,11 +211,11 @@ function restoreTabState(container: Element) {
             if (button) {
                 setActiveTab(button, container);
                 diagnostics.restoreSuccess++;
-                console.debug(`Successfully restored tab state:`, {
-                    containerId,
-                    activeTab: savedTab,
-                    successCount: diagnostics.restoreSuccess
-                });
+                // console.debug(`Successfully restored tab state:`, {
+                //     containerId,
+                //     activeTab: savedTab,
+                //     successCount: diagnostics.restoreSuccess
+                // });
             } else {
                 diagnostics.restoreFail++;
                 console.warn(`No matching tab button found for tab:`, {
@@ -228,11 +228,11 @@ function restoreTabState(container: Element) {
             diagnostics.restoreFail++;
             const firstButton = container.querySelector('.tab-button') as HTMLElement;
             if (firstButton) {
-                console.warn(`No saved state found for container:`, {
-                    containerId,
-                    failCount: diagnostics.restoreFail,
-                    firstButton: firstButton
-                });
+                // console.warn(`No saved state found for container:`, {
+                //     containerId,
+                //     failCount: diagnostics.restoreFail,
+                //     firstButton: firstButton
+                // });
                 setActiveTab(firstButton, container);
             }
         }
@@ -279,19 +279,19 @@ export const updateTabs = debounce(() => {
                 tabStates.set(container.id, state);
                 restoreTabState(container);
             } else {
-                console.warn(`No active tab found for container`, {
-                    containerId: container.id
-                });
+                // console.warn(`No active tab found for container`, {
+                //     containerId: container.id
+                // });
             }
         });
         document.querySelectorAll('.tabs-container').forEach((container: Element) => {
             if (container instanceof HTMLElement) {
                 let activeTab: string | undefined = getActiveTab(container.id);
                 if (!activeTab) {
-                    console.warn(`No active tab found`, {
-                        containerId: container.id,
-                        action: 'checking active button'
-                    });
+                    // console.warn(`No active tab found`, {
+                    //     containerId: container.id,
+                    //     action: 'checking active button'
+                    // });
                     // Update active button selector
                     const tabsContainer = container.querySelector('.tabs');
                     const activeButton = tabsContainer?.querySelector('.tab-button.active');
@@ -300,10 +300,10 @@ export const updateTabs = debounce(() => {
                     }
                 }
                 if (!activeTab) {
-                    console.warn(`No active button found`, {
-                        containerId: container.id,
-                        action: 'defaulting to first tab'
-                    });
+                    // console.warn(`No active button found`, {
+                    //     containerId: container.id,
+                    //     action: 'defaulting to first tab'
+                    // });
                     // Update first button selector
                     const tabsContainer = container.querySelector('.tabs');
                     const firstButton = tabsContainer?.querySelector('.tab-button') as HTMLElement;

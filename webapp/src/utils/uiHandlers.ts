@@ -6,7 +6,7 @@ import {debounce} from './tabHandling';
 export const setupUIHandlers = () => {
     console.log('Setting up UI event handlers...');
 
-    // Debounce keyboard shortcuts
+    // Create debounced handler outside event listener
     const handleKeyboardShortcut = debounce((event: KeyboardEvent) => {
         if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'V') {
             event.preventDefault();
@@ -17,6 +17,10 @@ export const setupUIHandlers = () => {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyboardShortcut);
+    // Cleanup function to remove event listeners
+    return () => {
+        document.removeEventListener('keydown', handleKeyboardShortcut);
+    };
 
     // Modal handlers
     document.addEventListener('click', (event) => {

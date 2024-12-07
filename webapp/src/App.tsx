@@ -62,7 +62,11 @@ const App: React.FC = () => {
 
     React.useEffect(() => {
         console.log(`${LOG_PREFIX} Setting up handlers`);
-        setupUIHandlers();
+        const cleanup = setupUIHandlers();
+        return () => {
+            console.log(`${LOG_PREFIX} Cleaning up UI handlers`);
+            cleanup();
+        };
     }, []);
 
     React.useEffect(() => {

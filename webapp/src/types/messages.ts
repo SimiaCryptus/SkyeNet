@@ -2,14 +2,14 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 
 // Explicitly export MessageType
-export type MessageType = 
-  | 'user' 
-  | 'assistant' 
-  | 'system' 
-  | 'error' 
-  | 'loading' 
-  | 'reference' 
-  | 'response';
+export type MessageType =
+    | 'user'
+    | 'assistant'
+    | 'system'
+    | 'error'
+    | 'loading'
+    | 'reference'
+    | 'response';
 
 export interface Message {
     id: string;

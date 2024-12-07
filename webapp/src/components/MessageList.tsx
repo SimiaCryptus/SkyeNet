@@ -1,14 +1,13 @@
 import React, {useEffect, useRef} from 'react';
-import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {useTheme} from '../hooks/useTheme';
 import {RootState} from '../store';
+import styled from 'styled-components';
 
-import {resetTabState, updateTabs} from '../utils/tabHandling';
+import {debounce, resetTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 import Prism from 'prismjs';
 import {Message, MessageType} from "../types/messages";
-
 const VERBOSE_LOGGING = false && process.env.NODE_ENV === 'development';
 const CONTAINER_ID = 'message-list-' + Math.random().toString(36).substr(2, 9);
 
@@ -22,9 +21,9 @@ const MessageListContainer = styled.div`
     scroll-behavior: smooth;
     background-color: ${({theme}) => theme.colors.background};
     /* Optimize composite layers */
-    transform: translate3d(0,0,0);
+    transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
-    perspective: 1000;
+    perspective: inherit;
 
     &::-webkit-scrollbar {
         width: 10px;
@@ -143,12 +142,12 @@ const MessageItem = styled.div<{ type: MessageType }>`
     max-width: 80%;
     box-shadow: ${({theme}) => theme.shadows.medium};
     /* Use hardware-accelerated properties */
-    transform: translate3d(0,0,0);
+    transform: translate3d(0, 0, 0);
     transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
     position: relative;
     overflow: visible;
     backface-visibility: hidden;
-    perspective: 1000;
+    perspective: inherit;
 
     background-color: ${({type}) => {
         switch (type) {
@@ -174,7 +173,7 @@ const MessageItem = styled.div<{ type: MessageType }>`
                     : theme.colors.text.primary};
 
     &:hover {
-        transform: translate3d(0,-3px,0);
+        transform: translate3d(0, -3px, 0);
         box-shadow: ${({theme}) => theme.shadows.large};
     }
 
@@ -276,27 +275,25 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
 };
 
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
-    React.useEffect(() => {
-        if (VERBOSE_LOGGING) {
-            console.debug(`${'Component lifecycle'}`, {
-                event: 'mounted',
-                containerId: CONTAINER_ID,
-                timestamp: new Date().toISOString()
-            });
-        }
-        return () => {
-            if (VERBOSE_LOGGING) {
-                console.debug(`${'Component lifecycle'}`, {
-                    event: 'unmounted',
-                    containerId: CONTAINER_ID
-                });
-            }
-        };
+    // Memoize processMessages function
+    const processMessages = React.useCallback((msgs: Message[]) => {
+        return msgs
+            .filter((message) => message.id && !message.id.startsWith("z"))
+            .filter((message) => message.content?.length > 0);
     }, []);
 
-    const storeMessages = useSelector((state: RootState) => state.messages.messages);
-    const messages = Array.isArray(propMessages) ? propMessages :
-        Array.isArray(storeMessages) ? storeMessages : [];
+    const verboseMode = useSelector((state: RootState) => state.ui.verboseMode);
+    // Add selector memoization
+    const storeMessages = useSelector((state: RootState) => state.messages.messages, 
+        (prev, next) => prev?.length === next?.length && 
+        prev?.every((msg, i) => msg.id === next[i].id && msg.version === next[i].version)
+    );
+    // Optimize messages memo
+    const messages = React.useMemo(() => {
+        if (Array.isArray(propMessages)) return propMessages;
+        if (Array.isArray(storeMessages)) return storeMessages;
+        return [];
+    }, [propMessages, storeMessages]);
     const messageListRef = useRef<HTMLDivElement>(null);
     const referencesVersions = React.useMemo(() => {
         const versions: Record<string, number> = {};
@@ -308,47 +305,70 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         return versions;
     }, [messages]);
 
-    const finalMessages = React.useMemo(() => messages
-            .filter((message) => message.id && !message.id.startsWith("z"))
-            .filter((message) => message.content?.length > 0).map((message) => (
-                {
-                    ...message,
-                    content: expandMessageReferences(message.content, messages)
+    const finalMessages = React.useMemo(() => {
+            const filteredMessages = processMessages(messages);
+            return filteredMessages.map((message) => {
+                let content = expandMessageReferences(message.content, messages);
+                // Wrap verbose content in styled component
+                if (content.includes('class="verbose"')) {
+                    content = content.replace(
+                        /(<[^>]*class="[^"]*verbose[^"]*"[^>]*>)([\s\S]*?)(<\/[^>]*>)/g,
+                `<span class="verbose-wrapper${verboseMode ? ' verbose-visible' : ''}"">$2</span>`
+                    );
                 }
-            )),
-        [messages, referencesVersions]); // Add referencesVersions as dependency
+                return {
+                    ...message,
+                    content
+                };
+            });
+        },
+        [messages, referencesVersions, verboseMode]); // Add referencesVersions as dependency
 
     useEffect(() => {
+        let mounted = true;
         if (messageListRef.current) {
-            const codeBlocks = messageListRef.current.querySelectorAll('pre code');
-            if (VERBOSE_LOGGING) {
-                console.debug(`Syntax highlighting`, {
-                    blockCount: codeBlocks.length,
-                    containerId: CONTAINER_ID
+            // Use intersection observer for visible elements only
+            const observer = new IntersectionObserver((entries) => {
+                if (!mounted) return;
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const element = entry.target;
+                        if (element.tagName === 'CODE') {
+                            requestIdleCallback(() => {
+                                Prism.highlightElement(element);
+                            });
+                        }
+                        observer.unobserve(element);
+                    }
                 });
-            }
-            codeBlocks.forEach(block => {
-                Prism.highlightElement(block);
             });
+            // Observe code blocks and verbose wrappers
+            messageListRef.current.querySelectorAll('pre code').forEach(block => {
+                observer.observe(block);
+            });
+            return () => {
+                mounted = false;
+                observer.disconnect();
+            };
         }
-    }, [messages]);
+    }, [messages, verboseMode]);
+    const debouncedUpdateTabs = React.useCallback(
+        debounce(() => {
+            try {
+                updateTabs();
+            } catch (error) {
+                console.error(`[MessageList ${CONTAINER_ID}] Failed to update tabs`, error);
+                resetTabState();
+            }
+        }, 250),
+        []
+    );
 
     useTheme();
     console.log('MessageList', 'Rendering component', {hasPropMessages: !!propMessages});
 
     React.useEffect(() => {
-        try {
-            if (VERBOSE_LOGGING) {
-                console.debug(`${'Tab state update'}`, {
-                    messageCount: finalMessages.length,
-                    containerId: CONTAINER_ID
-                });
-            }
-            updateTabs();
-        } catch (error) {
-            console.error(`[MessageList ${CONTAINER_ID}] ${'Failed to update tabs'}`, error);
-            resetTabState();
-        }
+        debouncedUpdateTabs();
     }, [finalMessages]);
 
     return <MessageListContainer ref={messageListRef}>

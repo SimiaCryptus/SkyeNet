@@ -53,22 +53,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const ws = useWebSocket(sessionId);
 
     useEffect(() => {
-        // Fetch app config when component mounts
-        if (sessionId) {
-            fetchAppConfig(sessionId).then(config => {
-                if (config) {
+        let mounted = true;
+        const loadAppConfig = async () => {
+            if (!sessionId) return;
+            try {
+                const config = await fetchAppConfig(sessionId);
+                if (mounted && config) {
                     console.info('App config loaded successfully');
                 } else {
                     console.warn('Could not load app config, using defaults');
                 }
-            });
-        }
-        // Fetch app config when component mounts
-        if (sessionId) {
-            fetchAppConfig(sessionId).catch(error => {
+            } catch (error) {
                 console.error('Failed to fetch app config:', error);
-            });
-        }
+            }
+        };
+        loadAppConfig();
+        return () => {
+            mounted = false;
+        };
+    }, [sessionId]); // Only depend on sessionId
+
+    useEffect(() => {
         debugLog('Setting up message handler', {
             sessionId,
             isConnected,
@@ -91,7 +96,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 const newMessage = {
                     id: `${Date.now()}`,
                     content: data.data || '',
-            type: 'assistant' as MessageType, // Changed from 'response' to 'assistant'
+                    type: 'assistant' as MessageType, // Changed from 'response' to 'assistant'
                     timestamp: data.timestamp,
                     isHtml: true,
                     rawHtml: data.data,
@@ -124,11 +129,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 id: `${id}-${timestamp}`,
                 content: content,
                 version: parseInt(version, 10) || timestamp,
-        type: id.startsWith('u') ? 'user' as MessageType : 'assistant' as MessageType,
+                type: id.startsWith('u') ? 'user' as MessageType : 'assistant' as MessageType,
                 timestamp,
-        isHtml: false,
-        rawHtml: null,
-        sanitized: false
+                isHtml: false,
+                rawHtml: null,
+                sanitized: false
             };
             console.log(`${LOG_PREFIX} Dispatching message:`, messageObject);
             console.groupEnd();
@@ -145,7 +150,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             });
             websocket.removeMessageHandler(handleMessage);
         };
-    }, [dispatch, ws]);
+    }, [DEBUG, dispatch, isConnected, sessionId, websocket, ws.readyState]);
 
     const handleSendMessage = (msg: string) => {
         console.log(`${LOG_PREFIX} Sending message`, {

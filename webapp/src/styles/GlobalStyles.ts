@@ -459,77 +459,34 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
         padding: 0.2em 0.4em;
     }
 
-    border-radius:
 
-    12
-    px
 
-    !important
-    ;
-    padding:
 
-    1.5
-    em
 
-    !important
-    ;
-    margin:
 
-    1.5
-    em
 
-    0
-    !important
-    ;
-    overflow: auto
 
-    ;
-    box-shadow:
 
-    0
-    8
-    px
 
-    24
-    px
 
-    rgba
-    (
-    0
-    ,
-    0
-    ,
-    0
-    ,
-    0.15
-    )
-    ;
-    font-family:
+    pre {
+        border-radius: 12px !important;
+        padding: 1.5em !important;
+        margin: 1.5em 0 !important;
+        overflow: auto;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        font-family: 'Fira Code', Consolas, Monaco, monospace !important;
+        font-size: 0.9em !important;
+        line-height: 1.6 !important;
+        border: 1px solid ${({theme}) => theme.colors.border + '30'};
+    }
 
-    'Fira Code'
-    ,
-    Consolas, Monaco, monospace
 
-    !important
-    ;
-    font-size:
 
-    0.9
-    em
 
-    !important
-    ;
-    line-height:
 
-    1.6
-    !important
-    ;
-    border:
 
-    1
-    px solid ${({theme}) => theme.colors.border + '30'}
 
-    ;
 
     .chat-input {
         background-color: ${({theme}: { theme: DefaultTheme }) => theme.colors.surface};
@@ -608,5 +565,12 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
     .cmd-button:active {
         transform: translateY(0);
         box-shadow: ${({theme}) => theme.shadows.medium};
+    }
+    .verbose-wrapper {
+        display: none;
+        transition: all 0.3s ease;
+    }
+    .verbose-wrapper.verbose-visible {
+        display: inline !important;
     }
 `;

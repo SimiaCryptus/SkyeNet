@@ -1,9 +1,8 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import styled from 'styled-components';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from '../../store';
 import {hideModal} from '../../store/slices/uiSlice';
-import {useEffect} from 'react';
 
 const ModalOverlay = styled.div`
     position: fixed;
@@ -40,7 +39,7 @@ export const Modal: React.FC = () => {
             modalOpen,
             modalType,
             hasContent: !!modalContent,
-             contentLength: modalContent?.length || 0
+            contentLength: modalContent?.length || 0
         });
     }, [modalOpen, modalType, modalContent]);
 

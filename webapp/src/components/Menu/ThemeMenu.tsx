@@ -235,7 +235,7 @@ export const ThemeMenu: React.FC = () => {
 
     return (
         <ThemeMenuContainer ref={menuRef}>
-            <ThemeButton 
+            <ThemeButton
                 onClick={handleMenuToggle}
                 aria-expanded={isOpen}
                 aria-haspopup="true"
@@ -245,7 +245,7 @@ export const ThemeMenu: React.FC = () => {
             </ThemeButton>
             {isOpen && (
                 <ThemeList role="menu">
-                     {Object.keys(themes).map((themeName, index) => {
+                    {Object.keys(themes).map((themeName, index) => {
                         logDebug('Rendering theme option', {
                             theme: themeName,
                             isCurrentTheme: themeName === currentTheme

@@ -55,6 +55,7 @@ dependencies {
   implementation("com.google.zxing:javase:3.5.3")
 
   compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
+  testImplementation(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
 
   compileOnly("org.openapitools:openapi-generator:7.3.0") {
     exclude(group = "org.slf4j")
@@ -95,10 +96,18 @@ dependencies {
 
 
   implementation(group = "com.google.guava", name = "guava", version = "32.1.3-jre")
+
+  implementation("com.google.api-client:google-api-client:2.2.0")
+  implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
+  implementation("com.google.apis:google-api-services-oauth2:v2-rev20200213-2.0.0")
+  implementation("com.google.http-client:google-http-client-gson:1.43.3")
+
+
 //    implementation(group = "com.google.apis", name = "google-api-services-customsearch", version = "v1-rev20230702-2.0.0")
-  compileOnly(group = "com.google.api-client", name = "google-api-client", version = "1.35.2" /*"1.35.2"*/)
-  compileOnly(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
-  compileOnly(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
+//  compileOnly(group = "com.google.api-client", name = "google-api-client", version = "1.35.2")
+//  compileOnly(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
+//  compileOnly(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
+
   implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
   implementation(group = "commons-codec", name = "commons-codec", version = "1.16.0")
 

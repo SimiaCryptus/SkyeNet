@@ -1,15 +1,42 @@
 import React from 'react';
 import styled from 'styled-components';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {useModal} from '../../hooks/useModal';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCog, faHome, faSignInAlt, faSignOutAlt} from '@fortawesome/free-solid-svg-icons';
 import {ThemeMenu} from "./ThemeMenu";
 import {WebSocketMenu} from "./WebSocketMenu";
 import {RootState} from "../../store/index";
-import {toggleVerbose} from "../../store/slices/uiSlice";
+import {toggleVerbose} from '../../store/slices/uiSlice';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
+
+function long64(): string {
+    const buffer = new ArrayBuffer(8);
+    const view = new DataView(buffer);
+    view.setBigInt64(0, BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)));
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+        .replace(/=/g, '')
+        .replace(/\//g, '.')
+        .replace(/\+/g, '-');
+}
+
+function id2() {
+    return Array.from(long64())
+        .filter((it) => {
+            if (it >= 'a' && it <= 'z') return true;
+            if (it >= 'A' && it <= 'Z') return true;
+            if (it >= '0' && it <= '9') return true;
+            return false;
+        })
+        .slice(0, 4)
+        .join('');
+}
+
+function newGlobalID(): string {
+    const yyyyMMdd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    return (`G-${yyyyMMdd}-${id2()}`);
+}
 
 const MenuContainer = styled.div`
     display: flex;
@@ -21,9 +48,8 @@ const MenuContainer = styled.div`
     top: 0;
     z-index: 100;
     /* Use composite properties for better performance */
-    transform: translate3d(0,0,0);
+    transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
-    perspective: 1000;
     background: ${({theme}) => `
         linear-gradient(135deg, 
             ${theme.colors.surface}f0,
@@ -34,8 +60,6 @@ const MenuContainer = styled.div`
     backdrop-filter: blur(8px);
     /* Specific transitions instead of 'all' */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-
 
 
     @media (max-width: 768px) {
@@ -85,6 +109,7 @@ const DropButton = styled.button`
     justify-content: center;
     text-decoration: none;
     /* Styles for when used as a link */
+
     &[href] {
         appearance: none;
         -webkit-appearance: none;
@@ -101,27 +126,32 @@ const DropButton = styled.button`
         )`};
         color: ${({theme}) => theme.colors.background};
         transform: translateY(-2px);
-        box-shadow: 
-            0 4px 16px ${({theme}) => `${theme.colors.primary}40`},
-            0 0 0 1px ${({theme}) => `${theme.colors.primary}40`};
+        box-shadow: 0 4px 16px ${({theme}) => `${theme.colors.primary}40`},
+        0 0 0 1px ${({theme}) => `${theme.colors.primary}40`};
+
         &::before {
             content: '';
             position: absolute;
             top: -50%;
-            left: -50%; 
+            left: -50%;
             width: 200%;
             height: 200%;
             background: radial-gradient(
-                circle,
-                rgba(255,255,255,0.2) 0%,
-                transparent 70%
+                    circle,
+                    rgba(255, 255, 255, 0.2) 0%,
+                    transparent 70%
             );
             transform: rotate(45deg);
             animation: shimmer 2s linear infinite;
         }
+
         @keyframes shimmer {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         &:after {
@@ -135,9 +165,11 @@ const DropButton = styled.button`
             pointer-events: none;
         }
     }
+
     &:active {
         transform: translateY(0);
     }
+
     &:disabled {
         cursor: not-allowed;
     }
@@ -161,6 +193,7 @@ const DropdownContent = styled.div`
     ${Dropdown}:hover & {
         display: block;
     }
+
     @keyframes dropdownSlide {
         from {
             opacity: 0;
@@ -220,24 +253,25 @@ const DropLink = styled.a`
         )`};
         color: ${({theme}) => theme.colors.background};
         transform: translateY(-2px);
-        box-shadow: 
-            0 4px 16px ${({theme}) => `${theme.colors.primary}40`},
-            0 0 0 1px ${({theme}) => `${theme.colors.primary}40`};
+        box-shadow: 0 4px 16px ${({theme}) => `${theme.colors.primary}40`},
+        0 0 0 1px ${({theme}) => `${theme.colors.primary}40`};
+
         &::before {
             content: '';
             position: absolute;
             top: -50%;
-            left: -50%; 
+            left: -50%;
             width: 200%;
             height: 200%;
             background: radial-gradient(
-                circle,
-                rgba(255,255,255,0.2) 0%,
-                transparent 70%
+                    circle,
+                    rgba(255, 255, 255, 0.2) 0%,
+                    transparent 70%
             );
             transform: rotate(45deg);
             animation: shimmer 2s linear infinite;
         }
+
         &:after {
             content: '';
             position: absolute;
@@ -249,9 +283,11 @@ const DropLink = styled.a`
             pointer-events: none;
         }
     }
+
     &:active {
         transform: translateY(0);
     }
+
     &:disabled {
         cursor: not-allowed;
     }
@@ -260,7 +296,12 @@ const DropLink = styled.a`
 export const Menu: React.FC = () => {
     useSelector((state: RootState) => state.config.websocket);
     const {openModal} = useModal();
+    const dispatch = useDispatch();
     const verboseMode = useSelector((state: RootState) => state.ui.verboseMode);
+    const handleVerboseToggle = () => {
+        console.log('[Menu] Toggling verbose mode:', !verboseMode);
+        dispatch(toggleVerbose());
+    };
 
     const handleMenuClick = (modalType: string) => {
         console.log('[Menu] Opening modal:', modalType);
@@ -288,7 +329,7 @@ export const Menu: React.FC = () => {
                     <DropButton>App</DropButton>
                     <DropdownContent>
                         <DropdownItem onClick={() => openModal('sessions')}>Session List</DropdownItem>
-                        <DropdownItem as="a" href="./#new">New</DropdownItem>
+                        <DropdownItem as="a" href={"./#" + newGlobalID()}>New</DropdownItem>
                     </DropdownContent>
                 </Dropdown>
 
@@ -304,7 +345,7 @@ export const Menu: React.FC = () => {
                         <DropdownItem onClick={() => handleMenuClick('share')}>Share</DropdownItem>
                         <DropdownItem onClick={() => handleMenuClick('cancel')}>Cancel</DropdownItem>
                         <DropdownItem onClick={() => handleMenuClick('delete')}>Delete</DropdownItem>
-                        <DropdownItem onClick={() => toggleVerbose()}>
+                        <DropdownItem onClick={handleVerboseToggle}>
                             {verboseMode ? 'Hide Verbose' : 'Show Verbose'}
                         </DropdownItem>
                     </DropdownContent>

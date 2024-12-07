@@ -4,11 +4,13 @@
     flex-direction: column;
     transition: all 0.3s ease;
 }
+
 /* List styles for dark mode */
 @media (prefers-color-scheme: dark) {
     ol li::before {
         color: var(--primary-color);
     }
+
     ol ol li::before {
         color: var(--hover-color);
     }
@@ -69,7 +71,7 @@
     white-space: nowrap;
     user-select: none;
     backdrop-filter: blur(8px);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Active tab state */
@@ -82,8 +84,9 @@
     z-index: 1;
     font-weight: var(--font-weight-bold);
     letter-spacing: var(--letter-spacing-wider);
-    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
 .tab-button:hover {
     transform: translateY(-.5em);
     background-color: var(--color-primary-alpha);
@@ -240,12 +243,12 @@
     --color-gradient-end: var(--color-secondary);
     /* Semantic variables */
     /* Shadows */
-    --shadow-text: 0 2px 4px rgba(0,0,0,0.15);
-    --shadow-heading: 0 4px 8px rgba(0,0,0,0.2);
+    --shadow-text: 0 2px 4px rgba(0, 0, 0, 0.15);
+    --shadow-heading: 0 4px 8px rgba(0, 0, 0, 0.2);
     /* Typography */
     /* Gradients */
-    --gradient-heading: linear-gradient(135deg, 
-        var(--color-gradient-start), 
-        var(--color-gradient-end)
+    --gradient-heading: linear-gradient(135deg,
+    var(--color-gradient-start),
+    var(--color-gradient-end)
     );
 }

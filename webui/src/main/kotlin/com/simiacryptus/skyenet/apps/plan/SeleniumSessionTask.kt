@@ -3,7 +3,10 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.WebFetchAndTransformTask.Companion.scrubHtml
 import com.simiacryptus.skyenet.core.util.Selenium
+import com.simiacryptus.skyenet.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.util.Selenium2S3
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import io.github.bonigarcia.wdm.WebDriverManager
@@ -115,17 +118,43 @@ class SeleniumSessionTask(
   )
 
   override fun promptSegment(): String {
-    val activeSessionsInfo = activeSessions.entries.joinToString("\n") { (id, session) ->
-      "  ** Session $id: ${session.getCurrentUrl()}"
+    val activeSessionsInfo = activeSessions.entries.joinToString("\n") { (id, session: Selenium) ->
+      buildString {
+        append("  ** Session $id:\n")
+        append("     URL: ${session.getCurrentUrl()}\n")
+        try {
+          append("     Title: ${session.executeScript("return document.title;")}\n")
+          val logs = session.getLogs()
+          if (logs.isNotEmpty()) {
+            append("     Recent Logs:\n")
+            logs.takeLast(3).forEach { log ->
+              append("       - $log\n")
+            }
+          }
+        } catch (e: Exception) {
+          append("     Error getting session details: ${e.message}\n")
+        }
+      }
     }
     return """
 SeleniumSession - Create and manage a stateful Selenium browser session
   * Specify the URL to navigate to
-  * Provide JavaScript commands to execute in sequence
+  * Provide JavaScript commands to execute in sequence through Selenium's executeScript method
   * Can be used for web scraping, testing, or automation
   * Session persists between commands for stateful interactions
   * Optionally specify sessionId to reuse an existing session
   * Set closeSession=true to close the session after execution
+Example JavaScript Commands:
+  * "return document.title;" - Get page title
+  * "return document.querySelector('.my-class').textContent;" - Get element text
+  * "return Array.from(document.querySelectorAll('a')).map(a => a.href);" - Get all links
+  * "document.querySelector('#my-button').click();" - Click an element
+  * "window.scrollTo(0, document.body.scrollHeight);" - Scroll to bottom
+  * "return document.documentElement.outerHTML;" - Get entire page HTML
+  * "return new Promise(r => setTimeout(() => r(document.title), 1000));" - Async operation
+Note: Commands are executed in the browser context and must be valid JavaScript.
+      Use proper error handling and waits for dynamic content.
+
 Active Sessions:
 $activeSessionsInfo
 """.trimMargin()
@@ -198,7 +227,7 @@ $activeSessionsInfo
 
       val result = formatResults(planTask, selenium, results)
 
-      task.add(result)
+      task.add(renderMarkdown(result))
       resultFn(result)
     } finally {
       // Close session if it's temporary or explicitly requested to be closed
@@ -239,15 +268,17 @@ $activeSessionsInfo
       appendLine("```javascript")
       appendLine(planTask.commands[index])
       appendLine("```")
-      appendLine("Result:")
-      appendLine("```")
-      appendLine(result.take(5000)) // Limit result size
-      appendLine("```")
+      if(result != "null") {
+        appendLine("Result:")
+        appendLine("```")
+        appendLine(result.take(5000)) // Limit result size
+        appendLine("```")
+      }
     }
     try {
       appendLine("\nFinal Page Source:")
       appendLine("```html")
-      appendLine(selenium.getPageSource().take(10000)) // Limit page source size
+      appendLine(scrubHtml(selenium.getPageSource()).take(10000)) // Limit page source size
       appendLine("```")
     } catch (e: Exception) {
       appendLine("\nError getting page source: ${e.message}")

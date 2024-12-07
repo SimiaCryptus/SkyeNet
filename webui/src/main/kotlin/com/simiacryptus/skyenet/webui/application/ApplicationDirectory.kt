@@ -65,7 +65,8 @@ abstract class ApplicationDirectory(
       val encryptedData =
         javaClass.classLoader!!.getResourceAsStream("client_secret_google_oauth.json.kms")?.readAllBytes()
           ?: throw RuntimeException("Unable to load resource: ${"client_secret_google_oauth.json.kms"}")
-      ApplicationServices.cloud!!.decrypt(encryptedData).byteInputStream()
+      val decrypt = ApplicationServices.cloud?.decrypt(encryptedData)
+      decrypt?.byteInputStream()
     }
   )
 
