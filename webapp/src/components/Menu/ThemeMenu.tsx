@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import {useTheme} from '../../hooks/useTheme';
 import {themes} from '../../themes/themes';
 import {useDispatch} from 'react-redux';
-import {showModal, setModalContent} from '../../store/slices/uiSlice';
+import {setModalContent, showModal} from '../../store/slices/uiSlice';
 
 const LOG_PREFIX = '[ThemeMenu Component]';
 const logWithPrefix = (message: string, ...args: any[]) => {
@@ -102,9 +102,8 @@ const ThemeList = styled.div`
     padding: ${({theme}) => theme.sizing.spacing.xs};
     z-index: 10;
     min-width: 200px;
-    box-shadow: 
-        0 4px 16px ${({theme}) => `${theme.colors.primary}20`},
-        0 0 0 1px ${({theme}) => `${theme.colors.border}40`};
+    box-shadow: 0 4px 16px ${({theme}) => `${theme.colors.primary}20`},
+    0 0 0 1px ${({theme}) => `${theme.colors.border}40`};
     backdrop-filter: blur(8px);
     transform-origin: top;
     animation: slideIn 0.2s ease-out;
@@ -115,6 +114,7 @@ const ThemeList = styled.div`
         ${theme.colors.surface}e8
     )`};
     /* Add glass effect */
+
     &::before {
         content: '';
         position: absolute;
@@ -125,6 +125,7 @@ const ThemeList = styled.div`
         backdrop-filter: blur(8px);
         z-index: -1;
     }
+
     @keyframes slideIn {
         from {
             opacity: 0;
@@ -183,13 +184,13 @@ export const ThemeMenu: React.FC = () => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-}, [isOpen]);
+    }, [isOpen]);
 // Add keyboard shortcut handler
-React.useEffect(() => {
-    const handleKeyboardShortcut = (event: KeyboardEvent) => {
-        if (event.altKey && event.key.toLowerCase() === 't') {
-            event.preventDefault();
-            const themeContent = `
+    React.useEffect(() => {
+        const handleKeyboardShortcut = (event: KeyboardEvent) => {
+            if (event.altKey && event.key.toLowerCase() === 't') {
+                event.preventDefault();
+                const themeContent = `
                 <div>
                     ${Object.keys(themes).map(themeName => `
                         <button 
@@ -201,25 +202,25 @@ React.useEffect(() => {
                     `).join('')}
                 </div>
             `;
-        dispatch(showModal('Theme Selection'));
-        dispatch(setModalContent(themeContent));
-            logDebug('Theme modal opened via keyboard shortcut (Alt+T)');
-        }
-    };
-    document.addEventListener('keydown', handleKeyboardShortcut);
-    return () => {
-        document.removeEventListener('keydown', handleKeyboardShortcut);
-    };
-}, [currentTheme, dispatch]);
-React.useEffect(() => {
-    const handleThemeChangeEvent = (event: CustomEvent<string>) => {
-        handleThemeChange(event.detail as keyof typeof themes);
-    };
-    window.addEventListener('themeChange', handleThemeChangeEvent as EventListener);
-    return () => {
-        window.removeEventListener('themeChange', handleThemeChangeEvent as EventListener);
-    };
-}, []);
+                dispatch(showModal('Theme Selection'));
+                dispatch(setModalContent(themeContent));
+                logDebug('Theme modal opened via keyboard shortcut (Alt+T)');
+            }
+        };
+        document.addEventListener('keydown', handleKeyboardShortcut);
+        return () => {
+            document.removeEventListener('keydown', handleKeyboardShortcut);
+        };
+    }, [currentTheme, dispatch]);
+    React.useEffect(() => {
+        const handleThemeChangeEvent = (event: CustomEvent<string>) => {
+            handleThemeChange(event.detail as keyof typeof themes);
+        };
+        window.addEventListener('themeChange', handleThemeChangeEvent as EventListener);
+        return () => {
+            window.removeEventListener('themeChange', handleThemeChangeEvent as EventListener);
+        };
+    }, []);
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {

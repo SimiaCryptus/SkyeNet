@@ -1,5 +1,5 @@
 import React, {memo, useCallback, useState} from 'react';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
 
@@ -18,6 +18,7 @@ const log = (message: string, data?: unknown) => {
 interface InputContainerProps {
     $hide?: boolean;
 }
+
 const InputContainer = styled.div<InputContainerProps>`
     padding: 1.5rem;
     background-color: ${(props) => props.theme.colors.surface};

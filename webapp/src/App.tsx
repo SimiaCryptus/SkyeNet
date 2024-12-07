@@ -1,6 +1,7 @@
 import React from 'react';
-import {Provider, useSelector} from 'react-redux';
-import {store, RootState} from './store';
+import {Provider, useDispatch, useSelector} from 'react-redux';
+import {RootState, store} from './store';
+import {isArchive} from './services/appConfig';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import ErrorFallback from './components/ErrorBoundary/ErrorFallback';
 import './App.css';
@@ -43,6 +44,20 @@ import 'prismjs/plugins/show-language/prism-show-language';
 import 'prismjs/plugins/normalize-whitespace/prism-normalize-whitespace';
 // import 'prismjs/plugins/autoloader/prism-autoloader';
 import QRCode from 'qrcode-generator';
+import {addMessage} from "./store/slices/messageSlice";
+import {Message} from './types/messages';
+// Add function to extract archived messages
+const getArchivedMessages = () => {
+    if (!isArchive) return null;
+    try {
+        const messagesEl = document.getElementById('archived-messages');
+        if (!messagesEl) return null;
+        return JSON.parse(messagesEl.textContent || '[]');
+    } catch (err) {
+        console.error('Failed to parse archived messages:', err);
+        return null;
+    }
+};
 
 const APP_VERSION = '1.0.0';
 const LOG_PREFIX = '[App]';
@@ -51,13 +66,30 @@ Prism.manual = true;
 
 // Create a separate component for the app content
 const AppContent: React.FC = () => {
-    console.group(`${LOG_PREFIX} Initializing v${APP_VERSION}`);
+    if (!isArchive) {
+        console.group(`${LOG_PREFIX} Initializing v${APP_VERSION}`);
+    }
     console.log('Starting component render');
     const appConfig = useSelector((state: RootState) => state.config);
+    const dispatch = useDispatch();
+    // Load archived messages on mount if in archive mode
+    React.useEffect(() => {
+        if (isArchive) {
+            const archivedMessages = getArchivedMessages();
+            if (archivedMessages) {
+                archivedMessages.forEach((msg: Message) => dispatch(addMessage(msg)));
+            }
+        }
+    }, [dispatch]);
 
     const sessionId = websocket.getSessionId();
     const isConnected = websocket.isConnected();
     React.useEffect(() => {
+        // Skip websocket setup if loading from archive
+        if (appConfig.isArchive) {
+            return;
+        }
+
         if (appConfig.applicationName) {
             document.title = appConfig.applicationName;
             console.log(`${LOG_PREFIX} Updated page title to:`, appConfig.applicationName);
@@ -108,7 +140,7 @@ const App: React.FC = () => {
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
             <Provider store={store}>
-                <AppContent />
+                <AppContent/>
             </Provider>
         </ErrorBoundary>
     );

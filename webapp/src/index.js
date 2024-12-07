@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+// Check if we're loading from an archive
+const isArchive = document.documentElement.hasAttribute('data-archive');
+
 // Application initialization timestamp
 const startTime = performance.now();
 // Configure console styling
@@ -12,24 +15,30 @@ const logStyles = {
     warning: 'color: #ff9800; font-weight: bold',
     info: 'color: #2196f3; font-weight: bold'
 };
-console.log('%c[Chat App] Starting application...', logStyles.startup);
+if (!isArchive) {
+    console.log('%c[Chat App] Starting application...', logStyles.startup);
+}
 
 
 if (typeof document !== 'undefined') {
-    console.log('%c[Chat App] Initializing React root element...', logStyles.info);
+    if (!isArchive) {
+        console.log('%c[Chat App] Initializing React root element...', logStyles.info);
+    }
     const root = ReactDOM.createRoot(document.getElementById('root'));
     try {
         root.render(
             <React.StrictMode>
-                <App/>
+                <App isArchive={isArchive}/>
             </React.StrictMode>
         );
-        const renderTime = (performance.now() - startTime).toFixed(2);
-        console.log(
-            '%c[Chat App] Application rendered successfully in %cms',
-            logStyles.startup,
-            renderTime
-        );
+        if (!isArchive) {
+            const renderTime = (performance.now() - startTime).toFixed(2);
+            console.log(
+                '%c[Chat App] Application rendered successfully in %cms',
+                logStyles.startup,
+                renderTime
+            );
+        }
     } catch (error) {
         console.log(
             '%c[Chat App] Failed to render application:',

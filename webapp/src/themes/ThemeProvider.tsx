@@ -51,7 +51,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
         }
         const styleEl = styleElRef.current;
         requestAnimationFrame(() => {
-        styleEl.textContent = `
+            styleEl.textContent = `
         :root {
         }
         /* Theme-specific message content styles */

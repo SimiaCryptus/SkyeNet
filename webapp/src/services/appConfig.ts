@@ -4,6 +4,8 @@ import {setAppInfo} from '../store/slices/configSlice';
 import {ThemeName} from '../types';
 
 const LOG_PREFIX = '[AppConfig]';
+// Add archive detection and export
+export const isArchive = document.documentElement.hasAttribute('data-archive');
 
 const BASE_API_URL = process.env.REACT_APP_API_URL || (window.location.origin + window.location.pathname);
 
@@ -76,6 +78,18 @@ const CONFIG_CACHE_KEY = 'app_config_cache';
 
 export const fetchAppConfig: (sessionId: string) => Promise<AppConfig> = async (sessionId: string) => {
     try {
+        // If in archive mode, return minimal config
+        if (isArchive) {
+            const archiveConfig = {
+                applicationName: 'Chat Archive',
+                singleInput: false,
+                showMenubar: true,
+                isArchive: true
+            };
+            store.dispatch(setAppInfo(archiveConfig));
+            return archiveConfig;
+        }
+
         // Return cached config if available
         if (cachedConfig) {
             console.info(`${LOG_PREFIX} Using cached config`);
@@ -88,89 +102,89 @@ export const fetchAppConfig: (sessionId: string) => Promise<AppConfig> = async (
         }
         loadConfigPromise = (async () => {
 
-        console.info(`${LOG_PREFIX} Fetching app config:`, {
-            sessionId,
-            baseUrl: BASE_API_URL
-        });
-
-        const url = new URL('./appInfo', BASE_API_URL);
-        url.searchParams.append('session', sessionId);
-
-        let response: Response;
-
-        try {
-            response = await fetch(url.toString(), {
-                headers: {
-                    'Accept': 'application/json, text/json',
-                    'Cache-Control': 'no-cache'
-                },
-                credentials: 'include'
+            console.info(`${LOG_PREFIX} Fetching app config:`, {
+                sessionId,
+                baseUrl: BASE_API_URL
             });
-        } catch (networkError) {
-            console.warn(`${LOG_PREFIX} Network request failed:`, {
-                error: networkError,
-                url: url.toString()
-            });
-            // Return default config for development
-            if (process.env.NODE_ENV === 'development') {
-                const defaultConfig = {
-                    applicationName: 'Chat App (Offline)',
-                    singleInput: false,
-                    stickyInput: true,
-                    loadImages: true,
-                    showMenubar: true
-                };
-                cachedConfig = defaultConfig;
-                store.dispatch(setAppInfo(defaultConfig));
-                // Cache the config
-                localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({
-                    config: defaultConfig,
-                    timestamp: Date.now()
-                }));
-                return defaultConfig;
+
+            const url = new URL('./appInfo', BASE_API_URL);
+            url.searchParams.append('session', sessionId);
+
+            let response: Response;
+
+            try {
+                response = await fetch(url.toString(), {
+                    headers: {
+                        'Accept': 'application/json, text/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    credentials: 'include'
+                });
+            } catch (networkError) {
+                console.warn(`${LOG_PREFIX} Network request failed:`, {
+                    error: networkError,
+                    url: url.toString()
+                });
+                // Return default config for development
+                if (process.env.NODE_ENV === 'development') {
+                    const defaultConfig = {
+                        applicationName: 'Chat App (Offline)',
+                        singleInput: false,
+                        stickyInput: true,
+                        loadImages: true,
+                        showMenubar: true
+                    };
+                    cachedConfig = defaultConfig;
+                    store.dispatch(setAppInfo(defaultConfig));
+                    // Cache the config
+                    localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({
+                        config: defaultConfig,
+                        timestamp: Date.now()
+                    }));
+                    return defaultConfig;
+                }
+                return null;
             }
-            return null;
-        }
 
-        if (!response.ok) {
-            console.warn(`${LOG_PREFIX} API error response:`, {
-                status: response.status,
-                statusText: response.statusText,
-                url: url.toString()
-            });
-            const errorText = await response.text();
-            console.debug(`${LOG_PREFIX} Error response body:`, errorText);
-            return null;
-        }
+            if (!response.ok) {
+                console.warn(`${LOG_PREFIX} API error response:`, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: url.toString()
+                });
+                const errorText = await response.text();
+                console.debug(`${LOG_PREFIX} Error response body:`, errorText);
+                return null;
+            }
 
-        const contentType = response.headers.get('content-type');
-        if (!contentType || (!contentType.includes('application/json') && !contentType.includes('text/json'))) {
-            console.error(`${LOG_PREFIX} Invalid content type:`, {
-                contentType,
-                url: url.toString()
-            });
-            throw new Error(`Invalid content type received: ${contentType}`);
-        }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || (!contentType.includes('application/json') && !contentType.includes('text/json'))) {
+                console.error(`${LOG_PREFIX} Invalid content type:`, {
+                    contentType,
+                    url: url.toString()
+                });
+                throw new Error(`Invalid content type received: ${contentType}`);
+            }
 
 
-        const data = await response.json();
-        if (!data || typeof data !== 'object') {
-            console.error(`${LOG_PREFIX} Invalid response format:`, data);
-            throw new Error('Invalid response format');
-        }
+            const data = await response.json();
+            if (!data || typeof data !== 'object') {
+                console.error(`${LOG_PREFIX} Invalid response format:`, data);
+                throw new Error('Invalid response format');
+            }
 
-        console.info(`${LOG_PREFIX} Received valid config:`, data);
-        // Cache the config
-        cachedConfig = data;
-        // Store in localStorage with timestamp
-        localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({
-            config: data,
-            timestamp: Date.now()
-        }));
+            console.info(`${LOG_PREFIX} Received valid config:`, data);
+            // Cache the config
+            cachedConfig = data;
+            // Store in localStorage with timestamp
+            localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({
+                config: data,
+                timestamp: Date.now()
+            }));
 
-        store.dispatch(setAppInfo(data));
+            store.dispatch(setAppInfo(data));
 
-        return data;
+            return data;
         })();
         const result = await loadConfigPromise;
         loadConfigPromise = null;

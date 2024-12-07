@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch} from 'react-redux';
 import styled from 'styled-components';
-import {fetchAppConfig} from '../services/appConfig';
+import {fetchAppConfig, isArchive} from '../services/appConfig';
 import {useWebSocket} from '../hooks/useWebSocket';
 import {addMessage} from '../store/slices/messageSlice';
 import MessageList from './MessageList';
@@ -42,17 +42,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
     };
     const [messages, setMessages] = React.useState<Message[]>([]);
+    const [sessionId] = useState(() => propSessionId || window.location.hash.slice(1) || 'new');
+    const dispatch = useDispatch();
+    const ws = useWebSocket(sessionId);
     console.log(`${LOG_PREFIX} Rendering with props:`, {
         propSessionId,
         isConnected,
         hashedSessionId: window.location.hash
     });
 
-    const [sessionId] = useState(() => propSessionId || window.location.hash.slice(1) || 'new');
-    const dispatch = useDispatch();
-    const ws = useWebSocket(sessionId);
 
     useEffect(() => {
+        // Skip effect in archive mode
+        if (isArchive) return;
+
         let mounted = true;
         const loadAppConfig = async () => {
             if (!sessionId) return;
@@ -75,6 +78,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }, [sessionId]); // Only depend on sessionId
 
     useEffect(() => {
+        // Skip effect in archive mode
+        if (isArchive) return;
+
         debugLog('Setting up message handler', {
             sessionId,
             isConnected,
@@ -162,7 +168,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ws.send(msg);
     };
 
-    return (
+    return isArchive ? (
+        <ChatContainer>
+            <MessageList/>
+        </ChatContainer>
+    ) : (
         <ChatContainer>
             <MessageList/>
             <InputArea onSendMessage={handleSendMessage}/>

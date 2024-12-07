@@ -40,6 +40,7 @@ export interface AppConfig {
     loadImages: boolean;
     showMenubar: boolean;
     applicationName: string;
+    isArchive?: boolean;
     websocket: WebSocketConfig;
     logging: LoggingConfig;
     theme: ThemeConfig;

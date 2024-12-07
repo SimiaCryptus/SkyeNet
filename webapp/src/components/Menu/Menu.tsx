@@ -2,15 +2,16 @@ import React from 'react';
 import styled from 'styled-components';
 import {useDispatch, useSelector} from 'react-redux';
 import {useModal} from '../../hooks/useModal';
-interface MenuContainerProps {
-    $hidden?: boolean;
-}
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCog, faHome, faSignInAlt, faSignOutAlt} from '@fortawesome/free-solid-svg-icons';
 import {ThemeMenu} from "./ThemeMenu";
 import {WebSocketMenu} from "./WebSocketMenu";
 import {RootState} from "../../store/index";
 import {toggleVerbose} from '../../store/slices/uiSlice';
+
+interface MenuContainerProps {
+    $hidden?: boolean;
+}
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 

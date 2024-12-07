@@ -3,10 +3,10 @@ import {Message} from "../types/messages";
 import {debounce} from "../utils/tabHandling";
 
 export class WebSocketService {
+    public ws: WebSocket | null = null;
     private messageQueue: string[] = [];
     private isProcessingQueue = false;
     private readonly QUEUE_PROCESS_INTERVAL = 50; // ms
-    public ws: WebSocket | null = null;
     private readonly DEBUG = process.env.NODE_ENV === 'development';
     private maxReconnectAttempts = 5;
     private reconnectAttempts = 0;
@@ -46,24 +46,6 @@ export class WebSocketService {
             console.warn('[WebSocket] Connection not open, attempting reconnect before sending');
             this.reconnectAndSend(message);
         }
-    }
-    private queueMessage(message: string): void {
-        this.messageQueue.push(message);
-        if (!this.isProcessingQueue) {
-            this.processMessageQueue();
-        }
-    }
-    private async processMessageQueue(): Promise<void> {
-        if (this.isProcessingQueue || this.messageQueue.length === 0) return;
-        this.isProcessingQueue = true;
-        while (this.messageQueue.length > 0) {
-            const message = this.messageQueue.shift();
-            if (message && this.ws?.readyState === WebSocket.OPEN) {
-                this.ws.send(message);
-                await new Promise(resolve => setTimeout(resolve, this.QUEUE_PROCESS_INTERVAL));
-            }
-        }
-        this.isProcessingQueue = false;
     }
 
     public addConnectionHandler(handler: (connected: boolean) => void): void {
@@ -148,6 +130,26 @@ export class WebSocketService {
             this.ws = null;
             console.log('[WebSocket] Disconnected successfully');
         }
+    }
+
+    private queueMessage(message: string): void {
+        this.messageQueue.push(message);
+        if (!this.isProcessingQueue) {
+            this.processMessageQueue();
+        }
+    }
+
+    private async processMessageQueue(): Promise<void> {
+        if (this.isProcessingQueue || this.messageQueue.length === 0) return;
+        this.isProcessingQueue = true;
+        while (this.messageQueue.length > 0) {
+            const message = this.messageQueue.shift();
+            if (message && this.ws?.readyState === WebSocket.OPEN) {
+                this.ws.send(message);
+                await new Promise(resolve => setTimeout(resolve, this.QUEUE_PROCESS_INTERVAL));
+            }
+        }
+        this.isProcessingQueue = false;
     }
 
     private reconnectAndSend(message: string): void {

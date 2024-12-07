@@ -2,12 +2,14 @@ import React, {useEffect, useRef} from 'react';
 import {useSelector} from 'react-redux';
 import {useTheme} from '../hooks/useTheme';
 import {RootState} from '../store';
+import {isArchive} from '../services/appConfig';
 import styled from 'styled-components';
 
 import {debounce, resetTabState, updateTabs} from '../utils/tabHandling';
 import WebSocketService from "../services/websocket";
 import Prism from 'prismjs';
 import {Message, MessageType} from "../types/messages";
+
 const VERBOSE_LOGGING = false && process.env.NODE_ENV === 'development';
 const CONTAINER_ID = 'message-list-' + Math.random().toString(36).substr(2, 9);
 
@@ -150,27 +152,27 @@ const MessageItem = styled.div<{ type: MessageType }>`
     perspective: inherit;
 
     background-color: ${({type}) => {
-        switch (type) {
-            case 'user':
-                return ({theme}) => theme.colors.primary;
-            case 'system':
-                return ({theme}) => theme.colors.secondary;
-            case 'error':
-                return ({theme}) => `linear-gradient(135deg, ${theme.colors.error}, ${theme.colors.warning})`;
-            case 'loading':
-                return ({theme}) => theme.colors.surface;
-            case 'assistant':
-                return ({theme}) => theme.colors.surface;
-            case 'reference':
-                return ({theme}) => theme.colors.surface;
-            default:
-                return ({theme}) => theme.colors.surface;
-        }
-    }};
+    switch (type) {
+        case 'user':
+            return ({theme}) => theme.colors.primary;
+        case 'system':
+            return ({theme}) => theme.colors.secondary;
+        case 'error':
+            return ({theme}) => `linear-gradient(135deg, ${theme.colors.error}, ${theme.colors.warning})`;
+        case 'loading':
+            return ({theme}) => theme.colors.surface;
+        case 'assistant':
+            return ({theme}) => theme.colors.surface;
+        case 'reference':
+            return ({theme}) => theme.colors.surface;
+        default:
+            return ({theme}) => theme.colors.surface;
+    }
+}};
     color: ${({type, theme}) =>
-            type === 'user' || type === 'system' || type === 'error'
-                    ? '#fff'
-                    : theme.colors.text.primary};
+    type === 'user' || type === 'system' || type === 'error'
+        ? '#fff'
+        : theme.colors.text.primary};
 
     &:hover {
         transform: translate3d(0, -3px, 0);
@@ -275,6 +277,8 @@ export const expandMessageReferences = (content: string, messages: Message[]): s
 };
 
 const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
+    // Add archive mode class to container in archive mode
+    const containerClassName = `message-list-container${isArchive ? ' archive-mode' : ''}`;
     // Memoize processMessages function
     const processMessages = React.useCallback((msgs: Message[]) => {
         return msgs
@@ -284,9 +288,9 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
 
     const verboseMode = useSelector((state: RootState) => state.ui.verboseMode);
     // Add selector memoization
-    const storeMessages = useSelector((state: RootState) => state.messages.messages, 
-        (prev, next) => prev?.length === next?.length && 
-        prev?.every((msg, i) => msg.id === next[i].id && msg.version === next[i].version)
+    const storeMessages = useSelector((state: RootState) => state.messages.messages,
+        (prev, next) => prev?.length === next?.length &&
+            prev?.every((msg, i) => msg.id === next[i].id && msg.version === next[i].version)
     );
     // Optimize messages memo
     const messages = React.useMemo(() => {
@@ -313,7 +317,7 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
                 if (content.includes('class="verbose"')) {
                     content = content.replace(
                         /(<[^>]*class="[^"]*verbose[^"]*"[^>]*>)([\s\S]*?)(<\/[^>]*>)/g,
-                `<span class="verbose-wrapper${verboseMode ? ' verbose-visible' : ''}"">$2</span>`
+                        `<span class="verbose-wrapper${verboseMode ? ' verbose-visible' : ''}"">$2</span>`
                     );
                 }
                 return {
@@ -371,28 +375,30 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
         debouncedUpdateTabs();
     }, [finalMessages]);
 
-    return <MessageListContainer ref={messageListRef}>
-        {finalMessages.map((message) => {
-            console.debug('MessageList - Rendering message', {
-                id: message.id,
-                type: message.type,
-                timestamp: message.timestamp,
-                contentLength: message.content?.length || 0
-            });
-            return <MessageItem
-                key={message.id} // Changed key to use only message.id
-                type={message.type}
-            >
-                {<MessageContent
-                    className="message-body"
-                    onClick={handleClick}
-                    dangerouslySetInnerHTML={{
-                        __html: message.content
-                    }}
-                />}
-            </MessageItem>;
-        })}
-    </MessageListContainer>;
+    return (
+        <MessageListContainer ref={messageListRef} className={containerClassName}>
+            {finalMessages.map((message) => {
+                console.debug('MessageList - Rendering message', {
+                    id: message.id,
+                    type: message.type,
+                    timestamp: message.timestamp,
+                    contentLength: message.content?.length || 0
+                });
+                return <MessageItem
+                    key={message.id}
+                    type={message.type}
+                >
+                    {<MessageContent
+                        className="message-body"
+                        onClick={!isArchive ? handleClick : undefined}
+                        dangerouslySetInnerHTML={{
+                            __html: message.content
+                        }}
+                    />}
+                </MessageItem>;
+            })}
+        </MessageListContainer>
+    );
 };
 
 

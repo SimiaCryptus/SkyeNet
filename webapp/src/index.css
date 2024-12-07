@@ -182,5 +182,26 @@ body {
     }
 }
 
+/* Archive mode styles */
+.archive-mode .interactive-element {
+    pointer-events: none;
+    opacity: 0.7;
+}
 
-/* Add styles for when verbose mode is active */
+.archive-mode .websocket-dependent {
+    display: none;
+}
+
+.archive-mode .input-area {
+    display: none;
+}
+
+/* Add a banner for archive mode */
+.archive-mode::before {
+    content: "This is an archived version of the chat";
+    display: block;
+    text-align: center;
+    padding: 8px;
+    background: #ffeb3b;
+    color: #000;
+}
