@@ -2,6 +2,42 @@ import React, {memo, useCallback, useState} from 'react';
 import styled from 'styled-components';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import Prism from 'prismjs';
+import { 
+    FaBold, 
+    FaItalic, 
+    FaCode, 
+    FaListUl, 
+    FaQuoteRight, 
+    FaLink, 
+    FaHeading,
+    FaTable,
+    FaCheckSquare,
+    FaImage,
+    FaEye,
+    FaEdit
+} from 'react-icons/fa';
+// Add preview container styles
+const PreviewContainer = styled.div`
+    padding: 0.5rem;
+    border: 1px solid ${props => props.theme.colors.border};
+    border-radius: 0 0 ${props => props.theme.sizing.borderRadius.md} ${props => props.theme.sizing.borderRadius.md};
+    background: ${props => props.theme.colors.background};
+    min-height: 120px;
+    max-height: ${({theme}) => theme.sizing.console.maxHeight};
+    overflow-y: auto;
+    pre {
+        background: ${props => props.theme.colors.surface};
+        padding: 1rem;
+        border-radius: ${props => props.theme.sizing.borderRadius.sm};
+        overflow-x: auto;
+    }
+    code {
+        font-family: monospace;
+    }
+`;
 
 // Debug logging utility
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -28,7 +64,6 @@ const InputContainer = styled.div<InputContainerProps>`
     }
     border-top: 1px solid ${(props) => props.theme.colors.border};
     display: ${({theme, $hide}) => $hide ? 'none' : 'block'};
-    max-height: 10vh;
     position: sticky;
     bottom: 0;
     z-index: 10;
@@ -44,6 +79,41 @@ const StyledForm = styled.form`
     gap: 1rem;
     align-items: flex-start;
 `;
+const EditorToolbar = styled.div`
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    flex-wrap: wrap;
+    background: ${({theme}) => theme.colors.surface};
+    border: 1px solid ${({theme}) => theme.colors.border};
+    border-bottom: none;
+    border-radius: ${({theme}) => theme.sizing.borderRadius.md} 
+                  ${({theme}) => theme.sizing.borderRadius.md} 0 0;
+    /* Toolbar sections */
+    .toolbar-section {
+        display: flex;
+        gap: 0.25rem;
+        padding: 0 0.5rem;
+        border-right: 1px solid ${({theme}) => theme.colors.border};
+        &:last-child {
+            border-right: none;
+        }
+    }
+`;
+const ToolbarButton = styled.button`
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    border-radius: ${({theme}) => theme.sizing.borderRadius.sm};
+    cursor: pointer;
+    color: ${({theme}) => theme.colors.text};
+    &:hover {
+        background: ${({theme}) => theme.colors.hover};
+    }
+    &.active {
+        color: ${({theme}) => theme.colors.primary};
+    }
+`;
 
 
 const TextArea = styled.textarea`
@@ -55,6 +125,7 @@ const TextArea = styled.textarea`
     resize: vertical;
     min-height: 40px;
     max-height: ${({theme}) => theme.sizing.console.maxHeight};
+    border-radius: 0 0 ${(props) => props.theme.sizing.borderRadius.md} ${(props) => props.theme.sizing.borderRadius.md};
     transition: all 0.3s ease;
     background: ${({theme}) => theme.colors.background};
 
@@ -123,11 +194,44 @@ interface InputAreaProps {
 const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
     log('Initializing component');
     const [message, setMessage] = useState('');
+    const [isPreviewMode, setIsPreviewMode] = useState(false);
     const config = useSelector((state: RootState) => state.config);
     const messages = useSelector((state: RootState) => state.messages.messages);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
     const shouldHideInput = config.singleInput && messages.length > 0;
+    // Add syntax highlighting effect
+    React.useEffect(() => {
+        if (isPreviewMode) {
+            Prism.highlightAll();
+        }
+    }, [isPreviewMode, message]);
+    const insertMarkdown = useCallback((syntax: string) => {
+        const textarea = textAreaRef.current;
+        if (textarea) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            const newText = syntax.replace('$1', selectedText || 'text');
+            setMessage(prev => prev.substring(0, start) + newText + prev.substring(end));
+            // Set cursor position inside the inserted markdown
+            setTimeout(() => {
+                const newCursorPos = start + newText.indexOf(selectedText || 'text');
+                textarea.focus();
+                textarea.setSelectionRange(newCursorPos, newCursorPos + (selectedText || 'text').length);
+            }, 0);
+        }
+    }, []);
+    const insertTable = useCallback(() => {
+        const tableTemplate = `
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+`.trim() + '\n';
+        insertMarkdown(tableTemplate);
+    }, [insertMarkdown]);
+
 
     const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
@@ -183,18 +287,133 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
             id="chat-input-container"
         >
             <StyledForm onSubmit={handleSubmit}>
-                <TextArea
-                    ref={textAreaRef}
-                    data-testid="message-input"
-                    id="message-input"
-                    value={message}
-                    onChange={handleMessageChange}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
-                    rows={3}
-                    aria-label="Message input"
-                    disabled={isSubmitting}
-                />
+                <div style={{ width: '100%' }}>
+                    <EditorToolbar>
+                        <div className="toolbar-section">
+                            <ToolbarButton
+                                type="button"
+                                onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                title={isPreviewMode ? "Edit" : "Preview"}
+                                className={isPreviewMode ? 'active' : ''}
+                            >
+                                {isPreviewMode ? <FaEdit /> : <FaEye />}
+                            </ToolbarButton>
+                        </div>
+                        <div className="toolbar-section">
+                            <ToolbarButton 
+                                type="button"
+                                onClick={() => insertMarkdown('# $1')}
+                                title="Heading"
+                            >
+                                <FaHeading />
+                            </ToolbarButton>
+                        <ToolbarButton 
+                            type="button"
+                            onClick={() => insertMarkdown('**$1**')}
+                            title="Bold"
+                        >
+                            <FaBold />
+                        </ToolbarButton>
+                        <ToolbarButton 
+                            type="button"
+                            onClick={() => insertMarkdown('*$1*')}
+                            title="Italic"
+                        >
+                            <FaItalic />
+                        </ToolbarButton>
+                        </div>
+                        <div className="toolbar-section">
+                        <ToolbarButton 
+                            type="button"
+                            onClick={() => insertMarkdown('`$1`')}
+                            title="Inline Code"
+                        >
+                            <FaCode />
+                        </ToolbarButton>
+                        <ToolbarButton 
+                            type="button"
+                            onClick={() => insertMarkdown('```\n$1\n```')}
+                            title="Code Block"
+                        >
+                            <FaCode style={{ marginRight: '2px' }} /><FaCode />
+                        </ToolbarButton>
+                        </div>
+                        <div className="toolbar-section">
+                            <ToolbarButton 
+                                type="button"
+                                onClick={() => insertMarkdown('- $1')}
+                                title="Bullet List"
+                            >
+                                <FaListUl />
+                            </ToolbarButton>
+                            <ToolbarButton 
+                                type="button"
+                                onClick={() => insertMarkdown('> $1')}
+                                title="Quote"
+                            >
+                                <FaQuoteRight />
+                            </ToolbarButton>
+                            <ToolbarButton 
+                                type="button"
+                                onClick={() => insertMarkdown('- [ ] $1')}
+                                title="Task List"
+                            >
+                                <FaCheckSquare />
+                            </ToolbarButton>
+                        </div>
+                        <div className="toolbar-section">
+                            <ToolbarButton 
+                                type="button"
+                                onClick={() => insertMarkdown('[$1](url)')}
+                                title="Link"
+                            >
+                                <FaLink />
+                            </ToolbarButton>
+                            <ToolbarButton 
+                                type="button"
+                                onClick={() => insertMarkdown('![$1](image-url)')}
+                                title="Image"
+                            >
+                                <FaImage />
+                            </ToolbarButton>
+                            <ToolbarButton 
+                                type="button"
+                                onClick={insertTable}
+                                title="Table"
+                            >
+                                <FaTable />
+                            </ToolbarButton>
+                        </div>
+                    </EditorToolbar>
+                {isPreviewMode ? (
+                    <PreviewContainer>
+                        <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                                code({node, className, children, ...props}) {
+                                    return <pre className={className}>
+                                            <code {...props}>{children}</code>
+                                        </pre>;
+                                }
+                            }}
+                        >
+                            {message}
+                        </ReactMarkdown>
+                    </PreviewContainer>
+                ) : (
+                    <TextArea
+                        ref={textAreaRef}
+                        data-testid="message-input"
+                        id="message-input"
+                        value={message}
+                        onChange={handleMessageChange}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Type a message... (Markdown supported)"
+                        rows={3}
+                        aria-label="Message input"
+                        disabled={isSubmitting}
+                    />
+                )}
                 <SendButton
                     type="submit"
                     data-testid="send-button" 
@@ -204,6 +423,7 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
                 >
                     Send
                 </SendButton>
+                </div>
             </StyledForm>
         </InputContainer>
     );
