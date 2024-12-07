@@ -297,6 +297,39 @@ export const GlobalStyles = createGlobalStyle<{ theme: DefaultTheme; }>`
         outline: 2px solid ${({theme}) => theme.colors.primary};
         outline-offset: 2px;
     }
+    /* Loading Spinner Styles */
+    .spinner-border {
+        display: inline-block;
+        width: 2rem;
+        height: 2rem;
+        vertical-align: text-bottom;
+        border: 0.25em solid ${({theme}) => theme.colors.primary};
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-border 0.75s linear infinite;
+    }
+    @keyframes spinner-border {
+        to { transform: rotate(360deg); }
+    }
+    /* Screen reader only text */
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+    /* Loading container styles */
+    [role="status"] {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 4rem;
+    }
 
     /* Improve button accessibility */
     button {

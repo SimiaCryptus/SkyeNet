@@ -224,6 +224,29 @@
     pointer-events: none;
     transition: all 0.3s ease;
 }
+/* Enhanced Loading States */
+.loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+.spinner-border.large {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+}
+.spinner-border.small {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
+}
+/* Loading state with text */
+.loading-container .loading-text {
+    margin-left: 1rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
 
 /* Improve accessibility */
 .tab-button:focus {

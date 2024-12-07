@@ -58,7 +58,7 @@ open class OutlineApp(
         val temperature: Double = 0.3,
         val minTokensForExpansion: Int = 16,
         val showProjector: Boolean = true,
-        val writeFinalEssay: Boolean = false,
+        val writeFinalEssay: Boolean = true,
         val budget: Double = 2.0,
     )
 
