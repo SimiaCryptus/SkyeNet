@@ -319,13 +319,17 @@ const MessageList: React.FC<MessageListProps> = ({messages: propMessages}) => {
             const filteredMessages = processMessages(messages);
             return filteredMessages.map((message) => {
                 let content = expandMessageReferences(message.content, messages);
-                // Wrap verbose content in styled component
-                if (content.includes('class="verbose"')) {
-                    content = content.replace(
-                        /(<[^>]*class="[^"]*verbose[^"]*"[^>]*>)([\s\S]*?)(<\/[^>]*>)/g,
-                        `<span class="verbose-wrapper${verboseMode ? ' verbose-visible' : ''}"">$2</span>`
-                    );
-                }
+                // Handle verbose content using DOM manipulation
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                const verboseElements = tempDiv.querySelectorAll('[class*="verbose"]');
+                verboseElements.forEach(element => {
+                    const wrapper = document.createElement('span');
+                    wrapper.className = `verbose-wrapper${verboseMode ? ' verbose-visible' : ''}`;
+                    element.parentNode?.insertBefore(wrapper, element);
+                    wrapper.appendChild(element);
+                });
+                content = tempDiv.innerHTML;
                 return {
                     ...message,
                     content
