@@ -160,10 +160,11 @@ export function setActiveTab(button: Element, container: Element) {
     })
     setActiveTabState(container.id, forTab);
     saveTabState(container.id, forTab);
-    // Update to handle nested tab buttons correctly
-    const tabsContainer = container.querySelector('.tabs');
+    // First try to find direct .tabs child, then look for anchor-wrapped tabs
+    const tabsContainer = container.querySelector(':scope > .tabs') || 
+                         container.querySelector(':scope > a > .tabs');
     if (tabsContainer) {
-        tabsContainer.querySelectorAll('.tab-button').forEach(btn => {
+        tabsContainer.querySelectorAll(':scope > .tab-button').forEach(btn => {
             if (btn.getAttribute('data-for-tab') === forTab) {
                 btn.classList.add('active');
             } else {
@@ -171,7 +172,12 @@ export function setActiveTab(button: Element, container: Element) {
             }
         });
     }
-    container.querySelectorAll(':scope > .tab-content').forEach(content => {
+    // Query both direct children and anchor-wrapped tab content
+    const tabContents = [
+        ...container.querySelectorAll(':scope > .tab-content'),
+        ...container.querySelectorAll(':scope > a > .tab-content')
+    ];
+    tabContents.forEach(content => {
         if (content.getAttribute('data-tab') === forTab) {
             content.classList.add('active');
             (content as HTMLElement).style.display = 'block';
@@ -205,9 +211,10 @@ function restoreTabState(container: Element) {
         const savedTab = getActiveTab(containerId) ||
             tabStates.get(containerId)?.activeTab;
         if (savedTab) {
-            // Update button selector to handle nested structure
-            const tabsContainer = container.querySelector('.tabs');
-            const button = tabsContainer?.querySelector(`.tab-button[data-for-tab="${savedTab}"]`) as HTMLElement;
+            // First try direct child tabs, then anchor-wrapped tabs
+            const tabsContainer = container.querySelector(':scope > .tabs') || 
+                                container.querySelector(':scope > a > .tabs');
+            const button = tabsContainer?.querySelector(`:scope > .tab-button[data-for-tab="${savedTab}"]`) as HTMLElement;
             if (button) {
                 setActiveTab(button, container);
                 diagnostics.restoreSuccess++;
@@ -258,7 +265,7 @@ export const updateTabs = debounce(() => {
     try {
         const currentStates = getAllTabStates();
         const processed = new Set<string>();
-        const tabsContainers = document.querySelectorAll('.tabs-container').values().toArray();
+        const tabsContainers = Array.from(document.querySelectorAll('.tabs-container'));
         isMutating = true;
         console.debug(`Starting tab update`, {
             containersCount: document.querySelectorAll('.tabs-container').length,
@@ -266,11 +273,15 @@ export const updateTabs = debounce(() => {
             tabsContainers: tabsContainers.map(c => c.id)
         });
         tabsContainers.forEach(container => {
+            if (processed.has(container.id)) {
+                return;
+            }
+            processed.add(container.id);
+
             setupTabContainer(container);
-            const activeTab = getActiveTab(container.id)
-                || currentStates.get(container.id)?.activeTab
-                || container.querySelector(':scope > .tab-button.active')?.getAttribute('data-for-tab')
-            ;
+            const activeTab = getActiveTab(container.id) || 
+                            currentStates.get(container.id)?.activeTab ||
+                            container.querySelector(':scope > .tabs > .tab-button.active')?.getAttribute('data-for-tab');
             if (activeTab) {
                 const state: TabState = {
                     containerId: container.id,
@@ -279,13 +290,26 @@ export const updateTabs = debounce(() => {
                 tabStates.set(container.id, state);
                 restoreTabState(container);
             } else {
-                // console.warn(`No active tab found for container`, {
-                //     containerId: container.id
-                // });
+                // Try to activate first tab if none active
+                const firstButton = container.querySelector(':scope > .tabs > .tab-button');
+                if (firstButton instanceof HTMLElement) {
+                    const firstTabId = firstButton.getAttribute('data-for-tab');
+                    if (firstTabId) {
+                        setActiveTab(firstButton, container);
+                    }
+                }
+                 console.warn(`No active tab found for container`, {
+                     containerId: container.id
+                });
             }
         });
         document.querySelectorAll('.tabs-container').forEach((container: Element) => {
             if (container instanceof HTMLElement) {
+                if (processed.has(container.id)) {
+                    return; 
+                }
+                processed.add(container.id);
+
                 let activeTab: string | undefined = getActiveTab(container.id);
                 if (!activeTab) {
                     // console.warn(`No active tab found`, {
@@ -293,8 +317,8 @@ export const updateTabs = debounce(() => {
                     //     action: 'checking active button'
                     // });
                     // Update active button selector
-                    const tabsContainer = container.querySelector('.tabs');
-                    const activeButton = tabsContainer?.querySelector('.tab-button.active');
+                    const tabsContainer = container.querySelector(':scope > .tabs, :scope > a > .tabs');
+                    const activeButton = tabsContainer?.querySelector(':scope > .tab-button.active');
                     if (activeButton) {
                         activeTab = activeButton.getAttribute('data-for-tab') || '';
                     }
@@ -305,10 +329,11 @@ export const updateTabs = debounce(() => {
                     //     action: 'defaulting to first tab'
                     // });
                     // Update first button selector
-                    const tabsContainer = container.querySelector('.tabs');
-                    const firstButton = tabsContainer?.querySelector('.tab-button') as HTMLElement;
+                    const tabsContainer = container.querySelector(':scope > .tabs, :scope > a > .tabs');
+                    const firstButton = tabsContainer?.querySelector(':scope > .tab-button') as HTMLElement;
                     if (firstButton) {
                         activeTab = firstButton.getAttribute('data-for-tab') || '';
+                        setActiveTab(firstButton, container);
                     } else {
                         console.warn(`No tab buttons found`, {
                             containerId: container.id,
@@ -319,16 +344,32 @@ export const updateTabs = debounce(() => {
 
                 let activeCount = 0;
                 let inactiveCount = 0;
-                // Update button iteration
-                const tabsContainer = container.querySelector('.tabs');
+                // Handle both direct and anchor-wrapped tabs
+                const tabsContainer = container.querySelector(':scope > .tabs') || 
+                                    container.querySelector(':scope > a > .tabs');
                 if (tabsContainer) {
-                    tabsContainer.querySelectorAll('.tab-button').forEach(button => {
+                    tabsContainer.querySelectorAll(':scope > .tab-button').forEach(button => {
                         if (button.getAttribute('data-for-tab') === activeTab) {
                             button.classList.add('active');
                             activeCount++;
                         } else {
                             button.classList.remove('active');
                             inactiveCount++;
+                        }
+                    });
+                    // Also update tab content visibility
+                    // Query both direct children and anchor-wrapped tab content
+                    const tabContents = [
+                        ...container.querySelectorAll(':scope > .tab-content'),
+                        ...container.querySelectorAll(':scope > a > .tab-content')
+                    ];
+                    tabContents.forEach(content => {
+                        if (content.getAttribute('data-tab') === activeTab) {
+                            content.classList.add('active');
+                            (content as HTMLElement).style.display = 'block';
+                        } else {
+                            content.classList.remove('active');
+                            (content as HTMLElement).style.display = 'none';
                         }
                     });
                 }
@@ -369,9 +410,10 @@ function setupTabContainer(container: Element) {
         })
         container.addEventListener('click', (event: Event) => {
             const button = (event.target as HTMLElement).closest('.tab-button');
-            if (button && container.contains(button)) {
+            if (button && (container.contains(button) || container.querySelector('a')?.contains(button))) {
                 setActiveTab(button, container);
                 event.stopPropagation();
+                event.preventDefault(); // Prevent anchor tag navigation
             }
         });
     } catch (error) {
