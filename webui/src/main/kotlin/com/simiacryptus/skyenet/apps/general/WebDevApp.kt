@@ -230,7 +230,7 @@ class WebDevAgent(
       },
       atomicRef = AtomicReference(),
       semaphore = Semaphore(0),
-      heading = userMessage
+      heading = renderMarkdown(userMessage)
     ).call()
 
 

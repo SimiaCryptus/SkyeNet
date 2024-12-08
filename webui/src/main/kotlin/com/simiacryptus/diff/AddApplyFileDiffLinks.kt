@@ -352,16 +352,16 @@ private fun SocketManagerBase.renderDiffBlock(
   val fixTask = ui.newTask(root = false)
   val verifyFwdTabs = if (!newCode.isValid) displayMapInTabs(
     mapOf(
-      "Code" to prevCodeTask.placeholder,
-      "Preview" to newCodeTask.placeholder,
       "Echo" to patchTask.placeholder,
       "Fix" to fixTask.placeholder,
+      "Code" to prevCodeTask.placeholder,
+      "Preview" to newCodeTask.placeholder,
     )
   ) else displayMapInTabs(
     mapOf(
+      "Echo" to patchTask.placeholder,
       "Code" to prevCodeTask.placeholder,
       "Preview" to newCodeTask.placeholder,
-      "Echo" to patchTask.placeholder,
     )
   )
 
@@ -374,9 +374,9 @@ private fun SocketManagerBase.renderDiffBlock(
   val patch2TaskSB = patch2Task.add("")
   val verifyRevTabs = displayMapInTabs(
     mapOf(
+      "Echo" to patch2Task.placeholder,
       "Code" to prevCode2Task.placeholder,
       "Preview" to newCode2Task.placeholder,
-      "Echo" to patch2Task.placeholder,
     )
   )
 

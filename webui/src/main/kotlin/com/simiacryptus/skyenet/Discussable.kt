@@ -195,7 +195,7 @@ ${textInput(design, tabContent, history, task, feedbackSB, feedbackTask = this)}
   override fun call(): T {
     try {
       //log.info("Calling Discussable with heading: $heading")
-      task.echo(heading)
+      if(heading.isNotBlank()) task.echo(heading)
       val idx = tabs.size
       val newTask = ui.newTask(false)
       val header = newTask.header("Processing...")
