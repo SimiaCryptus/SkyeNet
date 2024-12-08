@@ -58,7 +58,7 @@ abstract class SessionTask(
     tag: String = "div",
     @Description("Additional css class(es) to apply to the message")
     additionalClasses: String = ""
-  ) = append("""<$tag class="${(setOf(additionalClasses.split(" ")) + setOf("response-message")).joinToString(" ")}">$message</$tag>""", showSpinner)
+  ) = append("""<$tag class="${(additionalClasses.split(" ").toSet() + setOf("response-message")).joinToString(" ")}">$message</$tag>""", showSpinner)
 
   @Description("Adds a hideable message to the task output.")
   fun hideable(
