@@ -102,7 +102,7 @@ Note: This task is for running simple and safe commands. Avoid executing command
  ${acceptButton(response)}
  </div>
  ${super.reviseMsg(task, request, response, formText) { formHandle!! }}
-                    """.trimMargin(), className = "reply-message"
+                    """.trimMargin(), additionalClasses = "reply-message"
         )
         formText.append(formHandle.toString())
         formHandle.toString()

@@ -233,7 +233,7 @@ open class AutoPlanChatApp(
               task.verbose("API log: <a href=\"file:///$this\">$this</a>")
             }
           }
-          val tabbedDisplay = TabbedDisplay(task)
+          val tabbedDisplay = TabbedDisplay(task, additionalClasses = "iteration")
           ui.newTask(false).apply {
             tabbedDisplay["Inputs"] = placeholder
             header("Project Info")

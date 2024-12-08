@@ -61,7 +61,6 @@ function getActiveTab(containerId: string): string | undefined {
     return tabStates.get(containerId)?.activeTab;
 }
 
-// Add function to set active tab state
 export const setActiveTabState = (containerId: string, tabId: string): void => {
     tabStates.set(containerId, {containerId, activeTab: tabId});
 };
@@ -84,12 +83,6 @@ export function saveTabState(containerId: string, activeTab: string) {
         diagnostics.saveCount++;
         currentStateVersion++;
         tabStateVersions.set(containerId, currentStateVersion);
-        // console.trace(`Saving tab state #${diagnostics.saveCount}:`, {
-        //     containerId,
-        //     activeTab,
-        //     existingStates: tabStates.size,
-        //     version: currentStateVersion
-        // });
         const state = {containerId, activeTab};
         tabStates.set(containerId, state);
         trackTabStateHistory(containerId, activeTab);
@@ -152,99 +145,168 @@ export function setActiveTab(button: Element, container: Element) {
     const previousTab = getActiveTab(container.id);
     const forTab = button.getAttribute('data-for-tab');
     if (!forTab) return;
-    if (VERBOSE_LOGGING) console.trace(`Changing tab ${previousTab} -> ${forTab}`, {
+    console.debug('[TabSystem] Tab Change Initiated', {
+        operation: 'setActiveTab',
         tab: forTab,
         previousTab: previousTab,
         button: button,
-        containerId: container.id
-    })
+        containerId: container.id,
+        timestamp: new Date().toISOString(),
+        stack: new Error().stack,
+        buttonClasses: button.classList.toString(),
+        containerChildren: container.children.length,
+        navigationTiming: performance.getEntriesByType('navigation')[0],
+        documentReadyState: document.readyState
+    });
+
     setActiveTabState(container.id, forTab);
     saveTabState(container.id, forTab);
-    // First try to find direct .tabs child, then look for anchor-wrapped tabs
-    const tabsContainer = container.querySelector(':scope > .tabs') || 
-                         container.querySelector(':scope > a > .tabs');
-    if (tabsContainer) {
-        tabsContainer.querySelectorAll(':scope > .tab-button').forEach(btn => {
-            if (btn.getAttribute('data-for-tab') === forTab) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
+
+    container.querySelectorAll(':scope > .tabs > .tab-button').forEach(btn => {
+        const prevState = btn.classList.contains('active');
+        if (btn.getAttribute('data-for-tab') === forTab) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+        console.debug('[TabSystem] Button State Change', {
+            operation: 'updateButtonState',
+            buttonId: btn.id,
+            forTab: btn.getAttribute('data-for-tab'),
+            previousState: prevState,
+            newState: btn.classList.contains('active'),
+            timestamp: new Date().toISOString()
         });
-    }
-    // Query both direct children and anchor-wrapped tab content
-    const tabContents = [
-        ...container.querySelectorAll(':scope > .tab-content'),
-        ...container.querySelectorAll(':scope > a > .tab-content')
-    ];
-    tabContents.forEach(content => {
+    });
+
+    container.querySelectorAll(':scope > .tab-content').forEach(content => {
+        const prevDisplay = (content as HTMLElement).style.display;
         if (content.getAttribute('data-tab') === forTab) {
             content.classList.add('active');
             (content as HTMLElement).style.display = 'block';
+            console.debug('[TabSystem] Tab Content State Change', {
+                operation: 'activateContent',
+                tab: forTab,
+                containerId: container.id,
+                contentId: content.id,
+                timestamp: new Date().toISOString(),
+                previousDisplay: prevDisplay,
+                newDisplay: 'block',
+                contentChildren: content.children.length,
+                contentSize: {
+                    width: (content as HTMLElement).offsetWidth,
+                    height: (content as HTMLElement).offsetHeight
+                },
+                visibilityState: document.visibilityState
+            });
             updateNestedTabs(content as HTMLElement);
         } else {
             content.classList.remove('active');
             (content as HTMLElement).style.display = 'none';
+            console.debug('[TabSystem] Tab Content Deactivated', {
+                operation: 'deactivateContent',
+                tab: content.getAttribute('data-tab'),
+                containerId: container.id,
+                contentId: content.id,
+                previousDisplay: prevDisplay,
+                newDisplay: 'none',
+                timestamp: new Date().toISOString()
+            });
             if ((content as any)._contentObserver) {
+                console.debug('[TabSystem] Disconnecting Content Observer', {
+                    operation: 'disconnectObserver',
+                    tab: content.getAttribute('data-tab'),
+                    containerId: container.id,
+                    contentId: content.id,
+                    timestamp: new Date().toISOString(),
+                    observerStatus: 'disconnecting'
+                });
                 (content as any)._contentObserver.disconnect();
                 delete (content as any)._contentObserver;
             }
         }
     });
-    if (VERBOSE_LOGGING) console.trace(`${'Updated active tab'}`, {
+    console.debug('[TabSystem] Tab Change Completed', {
+        operation: 'setActiveTab',
         containerId: container.id,
-        activeTab: forTab
-    })
+        activeTab: forTab,
+        previousTab: previousTab,
+        timestamp: new Date().toISOString(),
+        performance: {
+            timing: performance.now(),
+            navigation: performance.getEntriesByType('navigation')[0],
+            resourceTiming: performance.getEntriesByType('resource'),
+        },
+        documentState: {
+            readyState: document.readyState,
+            visibilityState: document.visibilityState,
+            activeElement: document.activeElement?.tagName
+        },
+        browserInfo: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language
+        }
+    });
 }
 
 function restoreTabState(container: Element) {
     try {
         diagnostics.restoreCount++;
         const containerId = container.id;
-        // const storedVersion = tabStateVersions.get(containerId) || 0;
-        // console.debug(`Attempting to restore tab state #${diagnostics.restoreCount}:`, {
-        //     containerId,
-        //     storedState: tabStates.get(containerId),
-        //     allStates: Array.from(tabStates.entries()),
-        //     version: storedVersion
-        // });
+        console.debug(`[TabSystem] Restoring Tab State`, {
+            operation: 'restoreTabState',
+            containerId: containerId,
+            timestamp: new Date().toISOString(),
+            diagnostics: { ...diagnostics }
+        });
+
         const savedTab = getActiveTab(containerId) ||
             tabStates.get(containerId)?.activeTab;
         if (savedTab) {
-            // First try direct child tabs, then anchor-wrapped tabs
-            const tabsContainer = container.querySelector(':scope > .tabs') || 
-                                container.querySelector(':scope > a > .tabs');
+            const tabsContainer = container.querySelector(':scope > .tabs');
             const button = tabsContainer?.querySelector(`:scope > .tab-button[data-for-tab="${savedTab}"]`) as HTMLElement;
             if (button) {
+                console.debug(`[TabSystem] Found Saved Tab`, {
+                    operation: 'restoreTabState',
+                    containerId: containerId,
+                    savedTab: savedTab,
+                    buttonFound: true,
+                    stack: new Error().stack
+                });
                 setActiveTab(button, container);
                 diagnostics.restoreSuccess++;
-                // console.debug(`Successfully restored tab state:`, {
-                //     containerId,
-                //     activeTab: savedTab,
-                //     successCount: diagnostics.restoreSuccess
-                // });
             } else {
                 diagnostics.restoreFail++;
-                console.warn(`No matching tab button found for tab:`, {
+                console.warn(`[TabSystem] Tab Restore Failed - No Matching Button`, {
+                    operation: 'restoreTabState',
                     containerId,
                     savedTab,
-                    failCount: diagnostics.restoreFail
+                    failCount: diagnostics.restoreFail,
+                    stack: new Error().stack
                 });
             }
         } else {
             diagnostics.restoreFail++;
+            console.debug(`[TabSystem] No Saved Tab Found - Using First Button`, {
+                operation: 'restoreTabState',
+                containerId: containerId,
+                fallback: 'firstButton',
+                diagnostics: { ...diagnostics }
+            });
             const firstButton = container.querySelector('.tab-button') as HTMLElement;
             if (firstButton) {
-                // console.warn(`No saved state found for container:`, {
-                //     containerId,
-                //     failCount: diagnostics.restoreFail,
-                //     firstButton: firstButton
-                // });
                 setActiveTab(firstButton, container);
             }
         }
     } catch (error) {
-        console.warn(`Failed to restore tab state:`, error);
+        console.error(`[TabSystem] Critical Restore Failure`, {
+            operation: 'restoreTabState',
+            error: error,
+            stack: error instanceof Error ? error.stack : new Error().stack,
+            diagnostics: { ...diagnostics },
+            timestamp: new Date().toISOString()
+        });
         diagnostics.restoreFail++;
     }
 }
@@ -279,9 +341,9 @@ export const updateTabs = debounce(() => {
             processed.add(container.id);
 
             setupTabContainer(container);
-            const activeTab = getActiveTab(container.id) || 
-                            currentStates.get(container.id)?.activeTab ||
-                            container.querySelector(':scope > .tabs > .tab-button.active')?.getAttribute('data-for-tab');
+            const activeTab = getActiveTab(container.id) ||
+                currentStates.get(container.id)?.activeTab ||
+                container.querySelector(':scope > .tabs > .tab-button.active')?.getAttribute('data-for-tab');
             if (activeTab) {
                 const state: TabState = {
                     containerId: container.id,
@@ -290,50 +352,31 @@ export const updateTabs = debounce(() => {
                 tabStates.set(container.id, state);
                 restoreTabState(container);
             } else {
-                // Try to activate first tab if none active
                 const firstButton = container.querySelector(':scope > .tabs > .tab-button');
                 if (firstButton instanceof HTMLElement) {
                     const firstTabId = firstButton.getAttribute('data-for-tab');
                     if (firstTabId) {
                         setActiveTab(firstButton, container);
                     }
+                } else {
+                    console.warn(`No active tab found for container`, {
+                        containerId: container.id
+                    });
                 }
-                 console.warn(`No active tab found for container`, {
-                     containerId: container.id
-                });
             }
         });
         document.querySelectorAll('.tabs-container').forEach((container: Element) => {
             if (container instanceof HTMLElement) {
                 if (processed.has(container.id)) {
-                    return; 
+                    return;
                 }
                 processed.add(container.id);
 
                 let activeTab: string | undefined = getActiveTab(container.id);
                 if (!activeTab) {
-                    // console.warn(`No active tab found`, {
-                    //     containerId: container.id,
-                    //     action: 'checking active button'
-                    // });
-                    // Update active button selector
-                    const tabsContainer = container.querySelector(':scope > .tabs, :scope > a > .tabs');
-                    const activeButton = tabsContainer?.querySelector(':scope > .tab-button.active');
+                    const activeButton = container.querySelector(':scope > .tabs > .tab-button.active');
                     if (activeButton) {
                         activeTab = activeButton.getAttribute('data-for-tab') || '';
-                    }
-                }
-                if (!activeTab) {
-                    // console.warn(`No active button found`, {
-                    //     containerId: container.id,
-                    //     action: 'defaulting to first tab'
-                    // });
-                    // Update first button selector
-                    const tabsContainer = container.querySelector(':scope > .tabs, :scope > a > .tabs');
-                    const firstButton = tabsContainer?.querySelector(':scope > .tab-button') as HTMLElement;
-                    if (firstButton) {
-                        activeTab = firstButton.getAttribute('data-for-tab') || '';
-                        setActiveTab(firstButton, container);
                     } else {
                         console.warn(`No tab buttons found`, {
                             containerId: container.id,
@@ -342,37 +385,32 @@ export const updateTabs = debounce(() => {
                     }
                 }
 
+                console.debug(`Updating tabs`, {
+                    containerId: container.id,
+                    activeTab: activeTab
+                });
+
                 let activeCount = 0;
                 let inactiveCount = 0;
                 // Handle both direct and anchor-wrapped tabs
-                const tabsContainer = container.querySelector(':scope > .tabs') || 
-                                    container.querySelector(':scope > a > .tabs');
-                if (tabsContainer) {
-                    tabsContainer.querySelectorAll(':scope > .tab-button').forEach(button => {
-                        if (button.getAttribute('data-for-tab') === activeTab) {
-                            button.classList.add('active');
-                            activeCount++;
-                        } else {
-                            button.classList.remove('active');
-                            inactiveCount++;
-                        }
-                    });
-                    // Also update tab content visibility
-                    // Query both direct children and anchor-wrapped tab content
-                    const tabContents = [
-                        ...container.querySelectorAll(':scope > .tab-content'),
-                        ...container.querySelectorAll(':scope > a > .tab-content')
-                    ];
-                    tabContents.forEach(content => {
-                        if (content.getAttribute('data-tab') === activeTab) {
-                            content.classList.add('active');
-                            (content as HTMLElement).style.display = 'block';
-                        } else {
-                            content.classList.remove('active');
-                            (content as HTMLElement).style.display = 'none';
-                        }
-                    });
-                }
+                container.querySelectorAll(':scope > .tabs > .tab-button').forEach(button => {
+                    if (button.getAttribute('data-for-tab') === activeTab) {
+                        button.classList.add('active');
+                        activeCount++;
+                    } else {
+                        button.classList.remove('active');
+                        inactiveCount++;
+                    }
+                });
+                container.querySelectorAll(':scope > .tab-content').forEach(content => {
+                    if (content.getAttribute('data-tab') === activeTab) {
+                        content.classList.add('active');
+                        (content as HTMLElement).style.display = 'block';
+                    } else {
+                        content.classList.remove('active');
+                        (content as HTMLElement).style.display = 'none';
+                    }
+                });
                 if (VERBOSE_LOGGING) console.debug(`${`Synchronized ${activeCount + inactiveCount} buttons`}`, {
                     activeTab,
                     activeCount,
@@ -410,7 +448,7 @@ function setupTabContainer(container: Element) {
         })
         container.addEventListener('click', (event: Event) => {
             const button = (event.target as HTMLElement).closest('.tab-button');
-            if (button && (container.contains(button) || container.querySelector('a')?.contains(button))) {
+            if (button && (container.contains(button))) {
                 setActiveTab(button, container);
                 event.stopPropagation();
                 event.preventDefault(); // Prevent anchor tag navigation
