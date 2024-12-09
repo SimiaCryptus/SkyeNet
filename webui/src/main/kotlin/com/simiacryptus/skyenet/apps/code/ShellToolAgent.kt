@@ -89,7 +89,7 @@ abstract class ShellToolAgent<T : Interpreter>(
       |${createToolButton(task, request, response, formText) { formHandle!! }}
       |</div>  
       |${super.reviseMsg(task, request, response, formText) { formHandle!! }}
-      """.trimMargin(), className = "reply-message"
+      """.trimMargin(), additionalClasses = "reply-message"
     )
     formText.append(formHandle.toString())
     formHandle.toString()
@@ -460,7 +460,7 @@ abstract class ShellToolAgent<T : Interpreter>(
           }
         }
       }
-      """.trimMargin(), className = "reply-message"
+      """.trimMargin(), additionalClasses = "reply-message"
     )
     formText.append(formHandle.toString())
     formHandle.toString()

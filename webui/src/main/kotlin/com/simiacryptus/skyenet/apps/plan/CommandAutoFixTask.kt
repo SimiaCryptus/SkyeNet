@@ -84,7 +84,6 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
           .apply { mkdirs() }
         val outputResult = CmdPatchApp(
           root = agent.root,
-          session = agent.session,
           settings = PatchApp.Settings(
             executable = executable,
             arguments = commandWithDir.command.drop(1).joinToString(" "),
@@ -93,7 +92,7 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
             additionalInstructions = "",
             autoFix = agent.planSettings.autoFix
           ),
-          api = api as ChatClient,
+          api = api,
           files = agent.files,
           model = agent.planSettings.getTaskSettings(TaskType.valueOf(planTask.task_type!!)).model
             ?: agent.planSettings.defaultModel,

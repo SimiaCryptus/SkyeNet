@@ -108,7 +108,7 @@ class PlanCoordinator(
           MarkdownUtil.renderMarkdown(
             "## Task Dependency Graph\n${TRIPLE_TILDE}mermaid\n${buildMermaidGraph(planProcessingState.subTasks)}\n$TRIPLE_TILDE",
             ui = ui
-          )
+          ), additionalClasses = "flow-chart"
         ),
         subTasks = planProcessingState.subTasks,
         diagramTask = diagramTask,
@@ -154,7 +154,7 @@ class PlanCoordinator(
         sessionTask.verbose("API log: <a href=\"file:///$this\">$this</a>")
       }
     }
-    val taskTabs = object : TabbedDisplay(sessionTask) {
+    val taskTabs = object : TabbedDisplay(sessionTask, additionalClasses = "task-tabs") {
       override fun renderTabButtons(): String {
         diagramBuffer?.set(
           MarkdownUtil.renderMarkdown(
@@ -182,7 +182,7 @@ class PlanCoordinator(
               AbstractTask.TaskState.Pending -> " style='opacity: 30%;'"
               else -> ""
             }
-            append("<label class='tab-button' data-for-tab='${idx}'$style><input type='checkbox' $isChecked disabled /> $taskId</label><br/>\n")
+            append("<label class='tab-button' data-for-tab='${idx}'$style><input type='checkbox' $isChecked disabled />$taskId</label>\n")
           }
           append("</div>")
         }

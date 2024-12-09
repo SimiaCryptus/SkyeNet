@@ -33,10 +33,11 @@ open class Planner {
       }
     }
     val toInput = inputFn(codeFiles, files, root)
+    task.echo(userMessage)
     return if (planSettings.allowBlocking)
       Discussable(
         task = task,
-        heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
+        heading = "",
         userMessage = { userMessage },
         initialResponse = {
           newPlan(
@@ -75,18 +76,19 @@ open class Planner {
           planText = it.text
         )
       }
-    else newPlan(
-      api,
-      planSettings,
-      toInput(userMessage)
-    ).let {
-      TaskBreakdownWithPrompt(
-        prompt = userMessage,
-        plan = PlanUtil.filterPlan { it.obj } ?: emptyMap(),
-        planText = it.text
-      )
-    }
-  }
+    else {
+      newPlan(
+        api,
+        planSettings,
+        toInput(userMessage)
+      ).let {
+        TaskBreakdownWithPrompt(
+          prompt = userMessage,
+          plan = PlanUtil.filterPlan { it.obj } ?: emptyMap(),
+          planText = it.text
+        )
+      }
+    }  }
 
   open fun newPlan(
     api: API,
