@@ -1,211 +1,159 @@
-Here's a detailed README.md for the chat application:
+# Chat Web Application
 
-# Chat Application
-
-A modern, feature-rich chat application built with React, TypeScript, and Redux Toolkit. This application provides real-time messaging, theme customization, and
-a responsive design with enterprise-grade features.
-
-## Key Features
-
-### Real-Time Communication
-
-* WebSocket-based messaging with automatic reconnection
-* Message versioning and deduplication
-* HTML content sanitization
-* Configurable retry attempts and timeouts
-
-### Rich UI Features
-
-* Multiple theme options (Main, Night, Forest, Pony, Alien)
-* Responsive layout with styled-components
-* Modal system for dialogs
-* Tab-based content organization
-
-### Developer Experience
-
-* TypeScript type safety
-* Redux DevTools integration
-* Hot module replacement
+A modern, feature-rich chat web application built with React, TypeScript, and WebSocket communication.
 
 ## Features
 
-## Technology Stack
+### Core Functionality
+- Real-time chat messaging using WebSocket connections
+- Support for HTML and Markdown message formatting
+- Message history and threading
+- Reference message linking
+- Code syntax highlighting with Prism.js
+- Mermaid diagram support
+- QR code generation
 
-### Core
+### UI/UX
+- Multiple theme support with smooth transitions
+- Responsive design with mobile optimization
+- Accessible components following ARIA guidelines
+- Rich text editor with Markdown toolbar
+- Message preview mode
+- Loading states and error handling
+- Archive mode for offline viewing
 
-* React 18
-* TypeScript 4.9
-* Redux Toolkit
-* Styled Components
+### Themes
+- 8 built-in themes:
+  - Main (Light)
+  - Night (Dark)
+  - Forest
+  - Pony
+  - Alien
+  - Sunset
+  - Ocean
+  - Cyberpunk
+- Theme persistence in localStorage
+- Auto theme switching support
 
-### UI Components
-
-* Font Awesome icons
-* QR Code generator
-
-### Security & Data
-
-* WebSocket protocol
-* Local storage persistence
+### Technical Features
+- TypeScript for type safety
+- Redux state management with slices
+- Styled Components for CSS-in-JS
+- WebSocket connection management with auto-reconnect
+- Message queuing and batching
+- Performance optimizations
+- Comprehensive error handling
+- Detailed logging system
+- Unit test setup
 
 ## Project Structure
 
 ```
-  src/
-  ├── components/          # Reusable UI components
-  │   ├── Menu/           # Navigation menu components
-  │   ├── Modal/          # Modal dialog components
-  │   └── MessageList/    # Message display components
-  ├── hooks/              # Custom React hooks
-  ├── services/           # External services (WebSocket, API)
-  ├── store/              # Redux store and slices
-  │   └── slices/         # Redux slice definitions
-  ├── styles/             # Global styles
-  ├── themes/             # Theme definitions
-  ├── utils/              # Utility functions
-  ├── types/              # TypeScript type definitions
-  └── App.tsx            # Root component
+webapp/
+├── src/
+│   ├── components/      # React components
+│   ├── hooks/          # Custom React hooks
+│   ├── services/       # Core services (WebSocket, config)
+│   ├── store/          # Redux store and slices
+│   ├── styles/         # Global styles
+│   ├── themes/         # Theme definitions
+│   ├── types/          # TypeScript type definitions
+│   └── utils/          # Utility functions
 ```
 
 ## Key Components
 
-### Menu System
+### Chat Interface
+- `ChatInterface.tsx`: Main chat container component
+- `MessageList.tsx`: Renders chat messages with formatting
+- `InputArea.tsx`: Message input with Markdown editor
 
-* Main navigation menu with dropdowns
-* Theme selector with live preview
-* WebSocket configuration interface
-* Session management controls
+### Theme System
+- `ThemeProvider.tsx`: Theme context and switching
+- `ThemeMenu.tsx`: Theme selection UI
+- `themes.ts`: Theme definitions and utilities
 
-### Message Components
+### State Management
+- Redux store with slices for:
+  - Messages
+  - UI state
+  - Configuration
+  - User data
 
-* Real-time message list with automatic updates
-* Rich text input with submit handling
-* Message action buttons (run, regenerate, cancel)
-* HTML content rendering with sanitization
+## Setup & Development
 
-## State Management
+### Prerequisites
+- Node.js 14+
+- npm or yarn
 
-The application uses Redux Toolkit with the following slices:
-
-* **Config**: Application configuration state
-* **Messages**: Chat message handling
-* **UI**: Theme and modal management
-* **User**: Authentication and preferences
-
-Each slice includes:
-
-* Persistence where appropriate
-
-## Themes
-
-The application supports multiple themes:
-
-* **Main**: Light theme with blue accents
-* **Night**: Dark theme with blue highlights
-* **Forest**: Dark green nature-inspired theme
-* **Pony**: Pink playful theme
-* **Alien**: High contrast green/black theme
-
-Each theme includes:
-
-* Consistent color palette
-* Typography settings
-* Spacing/sizing variables
-
-## WebSocket Integration
-
-Real-time messaging is handled through a WebSocket service with:
-
-* Automatic reconnection
-* Message queueing
-* Connection state management
-
-## Security Features
-
-* Content Security Policy
-* XSS prevention
-
-## Development Tools
-
-* Redux DevTools integration
-* React Developer Tools support
-
-## Getting Started
-
-1. Clone the repository:
-
+### Installation
 ```bash
-git clone <repository-url>
-```
-
-2. Install dependencies:
-
-```bash
-cd chat-app
+# Install dependencies
 npm install
-```
 
-3. Start the development server:
-
-```bash
+# Start development server
 npm start
-```
 
-4. Build for production:
+# Run tests
+npm test
 
-```bash
+# Build for production
 npm run build
 ```
 
-## Environment Variables
+### Environment Variables
+- `REACT_APP_API_URL`: Backend API URL (optional)
+- `NODE_ENV`: Environment mode ('development' or 'production')
 
-Create a `.env` file with:
+## WebSocket Communication
 
-```
-REACT_APP_WS_URL=ws://localhost:8083
-REACT_APP_API_URL=http://localhost:3000
-REACT_APP_ENV=development
-```
+The app uses a WebSocket connection for real-time messaging with features like:
 
-## Configuration
-
-The application can be configured through the Redux store:
-
-* WebSocket settings
-* Logging preferences
-* Theme configuration
-
-## Testing
-
-### Unit Tests
-
-```bash
-npm test
-```
-
-### End-to-End Tests
-
-```bash
-npm run test:e2e
-```
-
-### Type Checking
-
-```bash
-npm run type-check
-```
+- Automatic reconnection with exponential backoff
+- Message queuing
+- Connection state management
+- Error handling
+- Message batching for performance
 
 ## Styling
 
-The application uses styled-components with:
+The project uses Styled Components with:
 
-* CSS animations
-* Flexbox layouts
-* CSS variables
+- Global styles
+- Theme-based styling
+- CSS variables
+- Responsive design
+- Smooth transitions
+- Accessibility features
 
-# Getting Started with Create React App
+## Testing
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+- Jest test setup
+- React Testing Library
+- Console output formatting
+- Error boundary testing
+
+## Browser Support
+
+- Modern browsers (Chrome, Firefox, Safari, Edge)
+- Fallback handling for older browsers
+- Responsive design for mobile devices
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
+
+## Acknowledgments
+
+- React team for the core framework
+- Styled Components for the styling system
+- Redux team for state management
+- PrismJS for code highlighting
+- Mermaid for diagrams
 
 ## Available Scripts
 
