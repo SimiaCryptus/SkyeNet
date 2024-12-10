@@ -22,6 +22,7 @@ open class ImageActor(
   temperature: Double = 0.3,
   val width: Int = 1024,
   val height: Int = 1024,
+  var openAI: OpenAIClient? = null,
 ) : BaseActor<List<String>, ImageResponse>(
   prompt = prompt,
   name = name,
@@ -78,7 +79,7 @@ open class ImageActor(
         api = api
       ).choices.first().message?.content ?: throw RuntimeException("No response")
     }
-    return ImageResponseImpl(text, api = this.openAI!!)
+    return ImageResponseImpl(text, api = this.openAI ?: throw RuntimeException("No API"))
   }
 
   override fun withModel(model: ChatModel): ImageActor = ImageActor(
@@ -89,9 +90,9 @@ open class ImageActor(
     temperature = temperature,
     width = width,
     height = height,
+    openAI = openAI
   )
 
-  var openAI: OpenAIClient? = null
   fun setImageAPI(openAI: OpenAIClient): ImageActor {
     this.openAI = openAI
     return this

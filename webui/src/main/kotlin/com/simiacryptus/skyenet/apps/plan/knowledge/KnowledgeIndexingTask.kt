@@ -52,7 +52,7 @@ class KnowledgeIndexingTask(
         api2: OpenAIClient,
         planSettings: PlanSettings
     ) {
-        val filePaths = planTask?.file_paths ?: return
+      val filePaths = taskConfig?.file_paths ?: return
         val files = filePaths.map { File(it) }.filter { it.exists() }
         
         if (files.isEmpty()) {
@@ -64,9 +64,9 @@ class KnowledgeIndexingTask(
 
         val threadPool = Executors.newFixedThreadPool(8)
         try {
-            val parsingModel = when (planTask.parsing_type.lowercase()) {
-                "code" -> CodeParsingModel(planSettings.defaultModel, planTask.chunk_size)
-                else -> DocumentParsingModel(planSettings.defaultModel, planTask.chunk_size)
+          val parsingModel = when (taskConfig.parsing_type.lowercase()) {
+            "code" -> CodeParsingModel(planSettings.defaultModel, taskConfig.chunk_size)
+            else -> DocumentParsingModel(planSettings.defaultModel, taskConfig.chunk_size)
             }
 
             val progressState = ProgressState()

@@ -171,7 +171,7 @@ open class CodingAgent<T : Interpreter>(
       |${if (!canPlay) "" else playButton(task, request, response, formText) { formHandle!! }}
       |</div>
       |${reviseMsg(task, request, response, formText) { formHandle!! }}
-      """.trimMargin(), className = "reply-message"
+      """.trimMargin(), additionalClasses = "reply-message"
     )
     formText.append(formHandle.toString())
     formHandle.toString()

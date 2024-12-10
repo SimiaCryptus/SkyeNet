@@ -6,6 +6,7 @@ import java.util.*
 open class TabbedDisplay(
   val task: SessionTask,
   val tabs: MutableList<Pair<String, StringBuilder>> = mutableListOf(),
+  val additionalClasses: String = ""
 ) {
   var selectedTab: Int = 0
 
@@ -17,7 +18,7 @@ open class TabbedDisplay(
   val tabId = UUID.randomUUID()
   private fun render() = if (tabs.isEmpty()) "<div/>" else {
     """
-  <div class="tabs-container" id="$tabId">
+  <div class="${(additionalClasses.split(" ").toSet() + setOf("tabs-container")).filter { it.isNotEmpty() }.joinToString(" ")}" id="$tabId">
   ${renderTabButtons()}
   ${
       tabs.toTypedArray().withIndex().joinToString("\n")
@@ -32,8 +33,7 @@ open class TabbedDisplay(
     task.add(render())!!
   }
 
-  protected open fun renderTabButtons() = """
-<div class="tabs">${
+  protected open fun renderTabButtons() = """<div class="tabs">${
     tabs.toTypedArray().withIndex().joinToString("\n") { (idx, pair) ->
       if (idx == selectedTab) {
         """<button class="tab-button active" data-for-tab="$idx">${pair.first}</button>"""
@@ -41,15 +41,13 @@ open class TabbedDisplay(
         """<button class="tab-button" data-for-tab="$idx">${pair.first}</button>"""
       }
     }
-  }</div>
-"""
+  }</div>"""
 
-  protected open fun renderContentTab(t: Pair<String, StringBuilder>, idx: Int) = """
-<div class="tab-content ${
-    when {
-      idx == selectedTab -> "active"
-      else -> ""
-    }
+  protected open fun renderContentTab(t: Pair<String, StringBuilder>, idx: Int) = """<div class="${
+    (additionalClasses.split(" ") + setOf("tab-content") + when {
+      idx == selectedTab -> setOf("active")
+      else -> emptySet()
+    }).filter { it.isNotEmpty() }.joinToString(" ")
   }" data-tab="$idx">${t.second}</div>"""
 
 

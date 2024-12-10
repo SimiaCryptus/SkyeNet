@@ -57,9 +57,9 @@ GoogleSearch - Search Google for web results
 
   private fun performGoogleSearch(planSettings: PlanSettings): String {
     val client = HttpClient.newBuilder().build()
-    val encodedQuery = URLEncoder.encode(planTask?.search_query, "UTF-8")
+    val encodedQuery = URLEncoder.encode(taskConfig?.search_query, "UTF-8")
     val uriBuilder =
-      "https://www.googleapis.com/customsearch/v1?key=${planSettings.googleApiKey}&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${planTask?.num_results}"
+      "https://www.googleapis.com/customsearch/v1?key=${planSettings.googleApiKey}&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${taskConfig?.num_results}"
     val request = HttpRequest.newBuilder().uri(URI.create(uriBuilder)).GET().build()
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
     if (response.statusCode() != 200) {

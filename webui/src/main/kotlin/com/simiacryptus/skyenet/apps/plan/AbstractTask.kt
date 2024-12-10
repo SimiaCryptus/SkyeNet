@@ -11,7 +11,7 @@ import java.nio.file.Path
 
 abstract class AbstractTask<T : TaskConfigBase>(
   val planSettings: PlanSettings,
-  val planTask: T?
+  val taskConfig: T?
 ) {
   var state: TaskState? = TaskState.Pending
   protected val codeFiles = mutableMapOf<Path, String>()
@@ -27,7 +27,7 @@ abstract class AbstractTask<T : TaskConfigBase>(
   }
 
   open fun getPriorCode(planProcessingState: PlanProcessingState) =
-    planTask?.task_dependencies?.joinToString("\n\n\n") { dependency ->
+    taskConfig?.task_dependencies?.joinToString("\n\n\n") { dependency ->
       """
         |# $dependency
         |

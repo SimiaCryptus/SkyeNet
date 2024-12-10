@@ -5,7 +5,9 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.apps.general.CommandPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -62,7 +64,7 @@ abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskConfigBase>(
         autoFix = agent.planSettings.autoFix
       ),
       api = api as ChatClient,
-      model = agent.planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
+      model = agent.planSettings.getTaskSettings(TaskType.valueOf(taskConfig?.task_type!!)).model
         ?: agent.planSettings.defaultModel,
       files = agent.files,
       command = analysisResult

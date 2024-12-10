@@ -113,30 +113,30 @@ class CommandSessionTask(
         api2: OpenAIClient,
         planSettings: PlanSettings
     ) {
-        requireNotNull(planTask) { "CommandSessionTaskData is required" }
+      requireNotNull(taskConfig) { "CommandSessionTaskData is required" }
         var process: Process? = null
         try {
             cleanupInactiveSessions()
-            if (activeSessions.size >= MAX_SESSIONS && planTask.sessionId == null) {
+          if (activeSessions.size >= MAX_SESSIONS && taskConfig.sessionId == null) {
                 throw IllegalStateException("Maximum number of concurrent sessions ($MAX_SESSIONS) reached")
             }
 
-            process = planTask.sessionId?.let { id -> activeSessions[id] }
-                ?: ProcessBuilder(planTask.command)
+          process = taskConfig.sessionId?.let { id -> activeSessions[id] }
+            ?: ProcessBuilder(taskConfig.command)
                     .redirectErrorStream(true)
                     .start()
                     .also { newProcess ->
-                        planTask.sessionId?.let { id -> activeSessions[id] = newProcess }
+                      taskConfig.sessionId?.let { id -> activeSessions[id] = newProcess }
                     }
 
             val reader = BufferedReader(InputStreamReader(process?.inputStream))
             val writer = PrintWriter(process?.outputStream, true)
 
-            val results = planTask.inputs.map { input ->
+          val results = taskConfig.inputs.map { input ->
                 try {
                     writer.println(input)
                     val output = StringBuilder()
-                    val endTime = System.currentTimeMillis() + planTask.timeout
+                  val endTime = System.currentTimeMillis() + taskConfig.timeout
                     while (System.currentTimeMillis() < endTime) {
                         if (reader.ready()) {
                             val line = reader.readLine()
@@ -152,19 +152,19 @@ class CommandSessionTask(
                 }
             }
 
-            val result = formatResults(planTask, results)
+          val result = formatResults(taskConfig, results)
             task.add(result)
             resultFn(result)
 
         } finally {
-            if ((planTask.sessionId == null || planTask.closeSession) && process != null) {
+          if ((taskConfig.sessionId == null || taskConfig.closeSession) && process != null) {
                 try {
                     process.destroy()
                     if (!process.waitFor(5, TimeUnit.SECONDS)) {
                         process.destroyForcibly()
                     }
-                    if (planTask.sessionId != null) {
-                        activeSessions.remove(planTask.sessionId)
+                  if (taskConfig.sessionId != null) {
+                    activeSessions.remove(taskConfig.sessionId)
                     }
                 } catch (e: Exception) {
                     log.error("Error closing process", e)

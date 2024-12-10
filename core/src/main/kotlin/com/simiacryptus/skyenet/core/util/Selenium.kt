@@ -15,15 +15,10 @@ interface Selenium : AutoCloseable {
     saveRoot: String
   )
 
-  abstract fun setScriptTimeout(timeout: Long)
-  abstract fun getBrowserInfo(): String
+  fun setScriptTimeout(timeout: Long)
+  fun getBrowserInfo(): String
   fun forceQuit()
-  abstract fun isAlive(): Boolean
-//
-//  open fun setCookies(
-//    driver: WebDriver,
-//    cookies: Array<out Cookie>?,
-//    domain: String? = null
-//  )
+  fun isAlive(): Boolean
+  fun getLogs() : String
 
 }
