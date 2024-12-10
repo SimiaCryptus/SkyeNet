@@ -11,14 +11,12 @@ import java.awt.image.BufferedImage
 import java.io.File
 
 abstract class SessionTask(
-  val operationID: String,
+  val messageID: String,
   private var buffer: MutableList<StringBuilder> = mutableListOf(),
   private val spinner: String = SessionTask.spinner
 ) {
 
-  open fun isInteractive() = true
-
-  val placeholder: String get() = "<div id=\"$operationID\"></div>"
+  val placeholder: String get() = "<div message-id=\"$messageID\"></div>"
 
   private val currentText: String
     get() = buffer.filter { it.isNotBlank() }.joinToString("")
@@ -58,9 +56,9 @@ abstract class SessionTask(
     showSpinner: Boolean = true,
     @Description("The html tag to wrap the message in (default: div)")
     tag: String = "div",
-    @Description("The css class to apply to the message (default: response-message)")
-    className: String = "response-message"
-  ) = append("""<$tag class="$className">$message</$tag>""", showSpinner)
+    @Description("Additional css class(es) to apply to the message")
+    additionalClasses: String = ""
+  ) = append("""<$tag class="${(additionalClasses.split(" ").toSet() + setOf("response-message")).joinToString(" ")}">$message</$tag>""", showSpinner)
 
   @Description("Adds a hideable message to the task output.")
   fun hideable(
@@ -71,8 +69,8 @@ abstract class SessionTask(
     showSpinner: Boolean = true,
     @Description("The html tag to wrap the message in (default: div)")
     tag: String = "div",
-    @Description("The css class to apply to the message (default: response-message)")
-    className: String = "response-message"
+    @Description("Additional css class(es) to apply to the message")
+    additionalClasses: String = ""
   ): StringBuilder? {
     var windowBuffer: StringBuilder? = null
     val closeButton = """<span class="close">${
@@ -81,7 +79,7 @@ abstract class SessionTask(
         send()
       }
     }</span>"""
-    windowBuffer = append("""<$tag class="$className">$closeButton$message</$tag>""", showSpinner)
+    windowBuffer = append("""<$tag class="${(additionalClasses.split(" ").toSet() + setOf("response-message")).joinToString(" ")}">$closeButton$message</$tag>""", showSpinner)
     return windowBuffer
   }
 
@@ -103,8 +101,8 @@ abstract class SessionTask(
     showSpinner: Boolean = true,
     @Description("The html tag to wrap the message in (default: div)")
     tag: String = "div",
-    classname: String = "response-header"
-  ) = add(message, showSpinner, tag, classname)
+    additionalClasses: String = ""
+  ) = add(message, showSpinner, tag, additionalClasses)
 
   @Description("Adds a verbose message to the task output; verbose messages are hidden by default.")
   fun verbose(
@@ -179,9 +177,9 @@ abstract class SessionTask(
     message: String = "",
     @Description("The html tag to wrap the message in (default: div)")
     tag: String = "div",
-    @Description("The css class to apply to the message (default: response-message)")
-    className: String = "response-message"
-  ) = append(if (message.isNotBlank()) """<$tag class="$className">$message</$tag>""" else "", false)
+    @Description("Additional css class(es) to apply to the message")
+    additionalClasses: String = ""
+  ) = append(if (message.isNotBlank()) """<$tag class="${(additionalClasses.split(" ").toSet() + setOf("response-message")).joinToString(" ")}">$message</$tag>""" else "", false)
 
   @Description("Displays an image to the task output.")
   fun image(

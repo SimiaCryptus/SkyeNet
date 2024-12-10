@@ -21,6 +21,8 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.HttpClients
+import org.openqa.selenium.chrome.ChromeDriver
+import org.openqa.selenium.chrome.ChromeOptions
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.util.Base64
@@ -39,6 +41,23 @@ class SessionShareServlet(
     val imageBytes = outputStream.toByteArray()
     val base64Image = Base64.getEncoder().encodeToString(imageBytes)
     return "data:image/png;base64,$base64Image"
+  }
+  val defaultFactory: (pool: java.util.concurrent.ThreadPoolExecutor, cookies: Array<out jakarta.servlet.http.Cookie>?) -> com.simiacryptus.skyenet.core.util.Selenium = { pool, cookies ->
+    val chromeOptions = ChromeOptions().apply {
+      addArguments("--headless")
+      addArguments("--disable-gpu")
+      addArguments("--no-sandbox")
+      addArguments("--disable-dev-shm-usage")
+    }
+    try {
+      Selenium2S3(
+        pool = pool,
+        cookies = cookies,
+        driver = ChromeDriver(chromeOptions)
+      )
+    } catch (e: Exception) {
+      throw IllegalStateException("Failed to initialize Selenium", e)
+    }
   }
 
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
@@ -112,7 +131,7 @@ class SessionShareServlet(
             log.info("Generating shareId: $shareId")
             sessionSettings["shareId"] = shareId
             infoFile.writeText(JsonUtil.toJson(sessionSettings))
-            val selenium2S3: Selenium = ApplicationServices.seleniumFactory?.invoke(pool, cookies) ?: throw IllegalStateException("Selenium not configured")
+            val selenium2S3: Selenium = defaultFactory(pool, cookies)
             if (selenium2S3 is Selenium2S3) {
               selenium2S3.loadImages = req.getParameter("loadImages")?.toBoolean() ?: false
             }

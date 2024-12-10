@@ -32,7 +32,7 @@ abstract class AbstractFileTask<T : FileTaskConfigBase>(
   )
 
   protected fun getInputFileCode(): String =
-    ((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf()))
+    ((taskConfig?.input_files ?: listOf()) + (taskConfig?.output_files ?: listOf()))
       .flatMap { pattern: String ->
         val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
         Files.walk(root).asSequence()

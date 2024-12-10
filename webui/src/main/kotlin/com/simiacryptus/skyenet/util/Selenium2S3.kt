@@ -14,6 +14,7 @@ import org.openqa.selenium.*
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeDriverService
 import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.logging.LogType
 import org.openqa.selenium.remote.RemoteWebDriver
 import java.io.File
 import java.net.URI
@@ -28,7 +29,8 @@ import java.util.concurrent.TimeUnit
 
 open class Selenium2S3(
   val pool: ThreadPoolExecutor = Executors.newCachedThreadPool() as ThreadPoolExecutor,
-  private val cookies: Array<out jakarta.servlet.http.Cookie>?,
+  private val cookies: Array<out jakarta.servlet.http.Cookie>? = null,
+  val driver: RemoteWebDriver = chromeDriver()
 ) : Selenium {
   override fun navigate(url: String) {
     (driver as WebDriver).navigate().to(url)
@@ -46,14 +48,6 @@ open class Selenium2S3(
     (driver as WebDriver).quit()
   }
   var loadImages: Boolean = false
-  open val driver: RemoteWebDriver by lazy {
-    chromeDriver(loadImages = loadImages).apply {
-      setCookies(
-        this,
-        cookies
-      )
-    }
-  }
 
   private val httpClient by lazy {
     HttpAsyncClientBuilder.create()
@@ -132,6 +126,10 @@ open class Selenium2S3(
 
   override fun isAlive(): Boolean {
     return driver.sessionId != null
+  }
+
+  override fun getLogs(): String {
+    return driver.manage().logs().get(LogType.BROWSER).all.joinToString("\n")
   }
 
   protected open fun process(

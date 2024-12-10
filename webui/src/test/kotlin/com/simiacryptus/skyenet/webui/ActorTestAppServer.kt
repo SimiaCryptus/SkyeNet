@@ -11,7 +11,7 @@ import com.simiacryptus.skyenet.apps.parse.ParsingModel
 import com.simiacryptus.skyenet.apps.parse.ParsingModel.DocumentData
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
-import com.simiacryptus.skyenet.apps.plan.TaskSettings
+import com.simiacryptus.skyenet.apps.plan.TaskSettingsBase
 import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.ImageActor
@@ -103,13 +103,13 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
             language = if (isWindows) "powershell" else "bash",
           ).apply {
             setTaskSettings(
-              TaskType.TaskPlanning, TaskSettings(
+              TaskType.TaskPlanning, TaskSettingsBase(
                 enabled = true,
                 model = OpenAIModels.GPT4o,
               )
             )
             setTaskSettings(
-              TaskType.RunShellCommand, TaskSettings(
+              TaskType.RunShellCommand, TaskSettingsBase(
                 enabled = false,
                 model = OpenAIModels.GPT4o,
               )

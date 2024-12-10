@@ -1,0 +1,299 @@
+.App {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+/* List styles for dark mode */
+@media (prefers-color-scheme: dark) {
+    ol li::before {
+        color: var(--primary-color);
+    }
+
+    ol ol li::before {
+        color: var(--hover-color);
+    }
+}
+
+
+/* Dark mode improvements */
+/* Improve dark mode media query placement */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: var(--color-dark);
+        --text-color: var(--color-light);
+        --primary-color: var(--color-primary);
+        --hover-background: var(--color-primary-alpha);
+        --success-color: var(--color-success);
+        --hover-color: var(--color-primary-dark);
+    }
+
+    .App {
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+
+    .tab-button {
+        color: var(--primary-color);
+    }
+
+    .tab-button:hover {
+        background: var(--hover-background);
+    }
+
+    .cmd-button {
+        background-color: var(--success-color);
+    }
+
+    .cmd-button:hover {
+        background-color: var(--hover-color);
+    }
+}
+
+/* Improve tab button accessibility */
+.tab-button {
+    padding: 0.85rem 1.5rem;
+    min-width: 100px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: var(--font-display);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    font-weight: var(--font-weight-semibold);
+    color: var(--primary-color);
+    font-size: var(--font-size-md);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+    border-radius: 8px;
+    margin: 0 0.25rem;
+    white-space: nowrap;
+    user-select: none;
+    backdrop-filter: blur(8px);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Active tab state */
+.tab-button.active {
+    background-color: var(--color-primary-alpha);
+    color: var(--color-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wider);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tab-button:hover {
+    transform: translateY(-.5em);
+    background-color: var(--color-primary-alpha);
+    transition: all .5s cubic-bezier(0.1, 0, 0.5, 1);
+}
+
+/* Focus state - now separate from active state */
+
+.tab-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb), 0.2);
+}
+
+/* Improve button states */
+.cmd-button {
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    outline: none;
+    color: #fff;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 5px;
+}
+
+.cmd-button:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.cmd-button:hover:before {
+    width: 300%;
+    height: 300%;
+}
+
+/* Loading state refinements */
+
+.App-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.App-header {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.App-logo {
+    height: 40vmin;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .App-logo {
+        animation: App-logo-spin infinite 20s linear;
+    }
+}
+
+.App-header {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.tab-content {
+    flex: 1;
+    overflow: visible;
+    width: 100%;
+    transition: opacity 0.3s ease-in-out;
+    flex-direction: column;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-in-out;
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+}
+
+.tab-content.active {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+}
+
+.tab-content-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+
+.cmd-button:hover {
+    background-color: var(--hover-color);
+}
+
+/* Loading state styles */
+.App.loading {
+    opacity: 0.7;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+/* Enhanced Loading States */
+.loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.spinner-border.large {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+}
+
+.spinner-border.small {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
+}
+
+/* Loading state with text */
+.loading-container .loading-text {
+    margin-left: 1rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+/* Improve accessibility */
+.tab-button:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.cmd-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* CSS variables for consistent theming */
+:root {
+    /* Color palette */
+    --color-gradient-start: var(--color-primary);
+    --color-gradient-end: var(--color-secondary);
+    /* Semantic variables */
+    /* Shadows */
+    --shadow-text: 0 2px 4px rgba(0, 0, 0, 0.15);
+    --shadow-heading: 0 4px 8px rgba(0, 0, 0, 0.2);
+    /* Typography */
+    /* Gradients */
+    --gradient-heading: linear-gradient(135deg,
+    var(--color-gradient-start),
+    var(--color-gradient-end)
+    );
+}
+
+/* Add loading and error container styles */
+.loading-container,
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 2rem;
+    text-align: center;
+    background: var(--background-color, #fff);
+    color: var(--text-color, #333);
+}
+
+.error-container {
+    color: var(--error-color, #dc3545);
+}

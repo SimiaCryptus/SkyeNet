@@ -64,9 +64,9 @@ GitHubSearch - Search GitHub for code, commits, issues, repositories, topics, or
 
   private fun performGitHubSearch(planSettings: PlanSettings): String {
     val client = HttpClient.newBuilder().build()
-    val uriBuilder = StringBuilder("https://api.github.com/search/${planTask?.search_type}?q=${planTask?.search_query}&per_page=${planTask?.per_page}")
-    planTask?.sort?.let { uriBuilder.append("&sort=$it") }
-    planTask?.order?.let { uriBuilder.append("&order=$it") }
+    val uriBuilder = StringBuilder("https://api.github.com/search/${taskConfig?.search_type}?q=${taskConfig?.search_query}&per_page=${taskConfig?.per_page}")
+    taskConfig?.sort?.let { uriBuilder.append("&sort=$it") }
+    taskConfig?.order?.let { uriBuilder.append("&order=$it") }
     val request = HttpRequest.newBuilder()
       .uri(URI.create(uriBuilder.toString()))
       .header("Accept", "application/vnd.github+json")
@@ -94,7 +94,7 @@ GitHubSearch - Search GitHub for code, commits, issues, repositories, topics, or
       appendLine()
       val items = searchResults["items"] as List<Map<String, Any>>
       items.take(10).forEach { item ->
-        when (planTask?.search_type) {
+        when (taskConfig?.search_type) {
           "repositories" -> formatRepositoryResult(item)
           "code" -> formatCodeResult(item)
           "commits" -> formatCommitResult(item)

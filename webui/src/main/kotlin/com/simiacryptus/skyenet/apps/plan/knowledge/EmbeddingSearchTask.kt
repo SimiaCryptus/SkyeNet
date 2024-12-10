@@ -9,7 +9,10 @@ import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.EmbeddingModels
 import com.simiacryptus.jopenai.opt.DistanceType
 import com.simiacryptus.skyenet.apps.parse.DocumentRecord
-import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.AbstractTask
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.TaskConfigBase
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
@@ -70,7 +73,7 @@ EmbeddingSearch - Search for similar embeddings in index files and provide top r
   }
 
   private fun performEmbeddingSearch(api: OpenAIClient): List<EmbeddingSearchResult> {
-    val positiveEmbeddings = planTask?.positive_queries?.map { query ->
+    val positiveEmbeddings = taskConfig?.positive_queries?.map { query ->
       api.createEmbedding(
         ApiModel.EmbeddingRequest(
           input = query,
@@ -78,7 +81,7 @@ EmbeddingSearch - Search for similar embeddings in index files and provide top r
         )
       ).data[0].embedding
     } ?: emptyList()
-    val negativeEmbeddings = planTask?.negative_queries?.map { query ->
+    val negativeEmbeddings = taskConfig?.negative_queries?.map { query ->
       api.createEmbedding(
         ApiModel.EmbeddingRequest(
           input = query,
@@ -89,13 +92,13 @@ EmbeddingSearch - Search for similar embeddings in index files and provide top r
     if (positiveEmbeddings.isEmpty()) {
       throw IllegalArgumentException("At least one positive query is required")
     }
-    val distanceType = planTask?.distance_type ?: DistanceType.Cosine
+    val distanceType = taskConfig?.distance_type ?: DistanceType.Cosine
     val filtered = Files.walk(root).asSequence()
       .filter { path ->
         path.toString().endsWith(".index.data")
       }.toList().toTypedArray()
-    val minLength = planTask?.min_length ?: 0
-    val requiredRegexes = planTask?.required_regexes?.map { Pattern.compile(it) } ?: emptyList()
+    val minLength = taskConfig?.min_length ?: 0
+    val requiredRegexes = taskConfig?.required_regexes?.map { Pattern.compile(it) } ?: emptyList()
     fun String.matchesAllRegexes(): Boolean {
       return requiredRegexes.all { regex -> regex.matcher(this).find() }
     }
@@ -130,7 +133,7 @@ EmbeddingSearch - Search for similar embeddings in index files and provide top r
       .toList()
     return searchResults
       .sortedBy { it.distance }
-      .take(planTask?.count ?: 5)
+      .take(taskConfig?.count ?: 5)
   }
 
   private fun formatSearchResults(results: List<EmbeddingSearchResult>): String {

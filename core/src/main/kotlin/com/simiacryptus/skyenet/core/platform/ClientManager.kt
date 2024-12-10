@@ -151,9 +151,9 @@ open class ClientManager {
       val userApi =
         if (userSettings.apiKeys.isNotEmpty()) {
           OpenAIClient(
-            key = userSettings.apiKeys,
-            apiBase = userSettings.apiBase,
-            workPool = getPool(session, user),
+              key = userSettings.apiKeys,
+              apiBase = userSettings.apiBase,
+              workPool = getPool(session, user),
           ).apply {
             this.session = session
             this.user = user
@@ -168,8 +168,8 @@ open class ClientManager {
     if (!canUseGlobalKey) throw RuntimeException("No API key")
     return (if (ClientUtil.keyMap.isNotEmpty()) {
       OpenAIClient(
-        key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
-        workPool = getPool(session, user),
+          key = ClientUtil.keyMap.mapKeys { APIProvider.valueOf(it.key) },
+          workPool = getPool(session, user),
       ).apply {
         this.session = session
         this.user = user

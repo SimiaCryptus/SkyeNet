@@ -92,11 +92,11 @@ class InquiryTask(
     val inquiryResult = if (planSettings.allowBlocking) Discussable(
       task = task,
       userMessage = {
-        "Expand ${this.planTask?.task_description ?: ""}\nQuestions: ${
-          planTask?.inquiry_questions?.joinToString(
+        "Expand ${this.taskConfig?.task_description ?: ""}\nQuestions: ${
+          taskConfig?.inquiry_questions?.joinToString(
             "\n"
           )
-        }\nGoal: ${planTask?.inquiry_goal}\n${JsonUtil.toJson(data = this)}"
+        }\nGoal: ${taskConfig?.inquiry_goal}\n${JsonUtil.toJson(data = this)}"
       },
       heading = "",
       initialResponse = { it: String -> inquiryActor.answer(toInput(it), api = api) },
@@ -105,9 +105,9 @@ class InquiryTask(
       },
       ui = agent.ui,
       reviseResponse = { usermessages: List<Pair<String, Role>> ->
-        val inStr = "Expand ${this.planTask?.task_description ?: ""}\nQuestions: ${
-          planTask?.inquiry_questions?.joinToString("\n")
-        }\nGoal: ${planTask?.inquiry_goal}\n${JsonUtil.toJson(data = this)}"
+        val inStr = "Expand ${this.taskConfig?.task_description ?: ""}\nQuestions: ${
+          taskConfig?.inquiry_questions?.joinToString("\n")
+        }\nGoal: ${taskConfig?.inquiry_goal}\n${JsonUtil.toJson(data = this)}"
         val messages = usermessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
           .toTypedArray<ApiModel.ChatMessage>()
         inquiryActor.respond(
@@ -120,11 +120,11 @@ class InquiryTask(
       semaphore = Semaphore(0),
     ).call() else inquiryActor.answer(
       toInput(
-        "Expand ${this.planTask?.task_description ?: ""}\nQuestions: ${
-          planTask?.inquiry_questions?.joinToString(
+        "Expand ${this.taskConfig?.task_description ?: ""}\nQuestions: ${
+          taskConfig?.inquiry_questions?.joinToString(
             "\n"
           )
-        }\nGoal: ${planTask?.inquiry_goal}\n${JsonUtil.toJson(data = this)}"
+        }\nGoal: ${taskConfig?.inquiry_goal}\n${JsonUtil.toJson(data = this)}"
       ),
       api = api
     ).apply {
@@ -134,7 +134,7 @@ class InquiryTask(
   }
 
   private fun getInputFileCode(): String =
-    ((planTask?.input_files ?: listOf()))
+    ((taskConfig?.input_files ?: listOf()))
       .flatMap { pattern: String ->
         val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
         Files.walk(root).asSequence()

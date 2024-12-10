@@ -12,19 +12,15 @@ import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModifica
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 
-data class TaskSettings(
-  var enabled: Boolean = false,
-  var model: ChatModel? = null
-)
-
 open class PlanSettings(
   var defaultModel: ChatModel,
   var parsingModel: ChatModel,
   val command: List<String> = listOf(if (isWindows) "powershell" else "bash"),
   var temperature: Double = 0.2,
   val budget: Double = 2.0,
-  val taskSettings: MutableMap<String, TaskSettings> = TaskType.values().associateWith { taskType ->
-    TaskSettings(
+  val taskSettings: MutableMap<String, TaskSettingsBase> = TaskType.values().associateWith { taskType ->
+    TaskSettingsBase(
+      taskType.name,
       when (taskType) {
         TaskType.FileModification, TaskType.Inquiry -> true
         else -> false
@@ -33,7 +29,6 @@ open class PlanSettings(
   }.mapKeys { it.key.name }.toMutableMap(),
   var autoFix: Boolean = false,
   var allowBlocking: Boolean = true,
-  var commandAutoFixCommands: List<String>? = listOf(),
   val env: Map<String, String>? = mapOf(),
   val workingDir: String? = ".",
   val language: String? = if (isWindows) "powershell" else "bash",
@@ -42,10 +37,10 @@ open class PlanSettings(
   var googleSearchEngineId: String? = null,
 ) {
 
-  fun getTaskSettings(taskType: TaskType<*>): TaskSettings =
-    taskSettings[taskType.name] ?: TaskSettings()
+  fun getTaskSettings(taskType: TaskType<*, *>): TaskSettingsBase =
+    taskSettings[taskType.name] ?: TaskSettingsBase(taskType.name)
 
-  fun setTaskSettings(taskType: TaskType<*>, settings: TaskSettings) {
+  fun setTaskSettings(taskType: TaskType<*, *>, settings: TaskSettingsBase) {
     taskSettings[taskType.name] = settings
   }
 
@@ -55,10 +50,9 @@ open class PlanSettings(
     command: List<String> = this.command,
     temperature: Double = this.temperature,
     budget: Double = this.budget,
-    taskSettings: MutableMap<String, TaskSettings> = this.taskSettings,
+    taskSettings: MutableMap<String, TaskSettingsBase> = this.taskSettings,
     autoFix: Boolean = this.autoFix,
     allowBlocking: Boolean = this.allowBlocking,
-    commandAutoFixCommands: List<String>? = this.commandAutoFixCommands,
     env: Map<String, String>? = this.env,
     workingDir: String? = this.workingDir,
     language: String? = this.language,
@@ -71,7 +65,6 @@ open class PlanSettings(
     taskSettings = taskSettings,
     autoFix = autoFix,
     allowBlocking = allowBlocking,
-    commandAutoFixCommands = commandAutoFixCommands,
     env = env,
     workingDir = workingDir,
     language = language,
