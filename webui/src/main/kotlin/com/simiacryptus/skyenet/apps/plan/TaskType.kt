@@ -49,7 +49,7 @@ class TaskType<out T : TaskConfigBase, out U : TaskSettingsBase>(
     val PerformanceAnalysis = TaskType("PerformanceAnalysis", PerformanceAnalysisTaskConfigData::class.java, TaskSettingsBase::class.java)
     val RefactorTask = TaskType("RefactorTask", RefactorTaskConfigData::class.java, TaskSettingsBase::class.java)
     val RunShellCommand = TaskType("RunShellCommand", RunShellCommandTaskConfigData::class.java, TaskSettingsBase::class.java)
-    val CommandAutoFix = TaskType("CommandAutoFix", CommandAutoFixTaskConfigData::class.java, TaskSettingsBase::class.java)
+    val CommandAutoFix = TaskType("CommandAutoFix", CommandAutoFixTaskConfigData::class.java, CommandAutoFixTask.CommandAutoFixTaskSettings::class.java)
     val ForeachTask = TaskType("ForeachTask", ForeachTaskConfigData::class.java, TaskSettingsBase::class.java)
     val GitHubSearch = TaskType("GitHubSearch", GitHubSearchTask.GitHubSearchTaskConfigData::class.java, TaskSettingsBase::class.java)
     val GoogleSearch = TaskType("GoogleSearch", GoogleSearchTaskConfigData::class.java, TaskSettingsBase::class.java)

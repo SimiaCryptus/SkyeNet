@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.apps.plan
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
@@ -18,6 +19,14 @@ class CommandAutoFixTask(
   planSettings: PlanSettings,
   planTask: CommandAutoFixTaskConfigData?
 ) : AbstractTask<CommandAutoFixTaskConfigData>(planSettings, planTask) {
+  class CommandAutoFixTaskSettings(
+    task_type: String,
+    enabled: Boolean = false,
+    model: ChatModel? = null,
+    @Description("List of command executables that can be used for auto-fixing")
+    var commandAutoFixCommands: List<String>? = listOf()
+  ) : TaskSettingsBase(task_type, enabled, model)
+
 
   class CommandAutoFixTaskConfigData(
     @Description("The commands to be executed with their respective working directories")
@@ -40,6 +49,7 @@ class CommandAutoFixTask(
   )
 
   override fun promptSegment(): String {
+    val settings = planSettings.getTaskSettings(TaskType.CommandAutoFix) as CommandAutoFixTaskSettings
     return """
 CommandAutoFix - Run a command and automatically fix any issues that arise
 ** Specify the commands to be executed along with their working directories
@@ -47,7 +57,7 @@ CommandAutoFix - Run a command and automatically fix any issues that arise
 ** Provide the commands and their arguments in the 'commands' field
 ** Each command should be a list of strings
 ** Available commands:
-${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}" }}
+${settings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}" }}
         """.trim()
   }
 
@@ -69,7 +79,7 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
       val task = agent.ui.newTask(false).apply { it.append(placeholder) }
       this.taskConfig?.commands?.forEachIndexed { index, commandWithDir ->
         val alias = commandWithDir.command.firstOrNull()
-        val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
+        val commandAutoFixCommands = taskConfig.commands.map { it.command.firstOrNull() }
         val cmds = commandAutoFixCommands
           ?.map { File(it) }?.associateBy { it.name }
           ?.filterKeys { it.startsWith(alias ?: "") }
