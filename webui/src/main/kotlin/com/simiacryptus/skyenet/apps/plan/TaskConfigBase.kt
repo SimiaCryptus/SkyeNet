@@ -9,7 +9,7 @@ import com.simiacryptus.jopenai.describe.Description
 
 @JsonTypeIdResolver(TaskConfigBase.PlanTaskTypeIdResolver::class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, property = "task_type")
-abstract class TaskConfigBase(
+open class TaskConfigBase(
   @Description("An enumeration indicating the type of task to be executed. Must be a single value from the TaskType enum.")
   val task_type: String? = null,
   @Description("A detailed description of the specific task to be performed, including its role in the overall plan and its dependencies on other tasks.")

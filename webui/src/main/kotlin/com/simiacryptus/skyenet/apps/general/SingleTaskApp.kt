@@ -83,7 +83,7 @@ open class SingleTaskApp(
       val describer = planSettings.describer()
       val taskConfig = ParsedActor(
         name = "SingleTaskChooser",
-        resultClass = TaskConfigBase::class.java,
+        resultClass = taskType.taskDataClass,
         prompt = """
 Given the following input, choose ONE task to execute. Do not create a full plan, just select the most appropriate task types for the given input.
 Available task types:

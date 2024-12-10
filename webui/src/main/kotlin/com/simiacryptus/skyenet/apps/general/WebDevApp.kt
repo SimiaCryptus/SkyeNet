@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ApiModel.Role
@@ -36,6 +37,7 @@ open class WebDevApp(
   applicationName: String = "Web Dev Assistant v1.2",
   open val symbols: Map<String, Any> = mapOf(),
   val temperature: Double = 0.1,
+  val api2: OpenAIClient,
 ) : ApplicationServer(
   applicationName = applicationName,
   path = "/webdev",
@@ -59,6 +61,7 @@ open class WebDevApp(
       model = settings.model,
       parsingModel = settings.parsingModel,
       root = root,
+      api2 = api2,
     ).start(
       userMessage = userMessage,
     )
@@ -79,6 +82,7 @@ open class WebDevApp(
 
 class WebDevAgent(
   val api: API,
+  val api2: OpenAIClient,
   dataStorage: StorageInterface,
   session: Session,
   user: User?,
@@ -174,7 +178,9 @@ class WebDevAgent(
             """.trimMargin(),
       textModel = model,
       imageModel = ImageModels.DallE3,
-    ),
+    ).apply {
+      setImageAPI(api2)
+    },
   ),
   val root: File,
 ) : ActorSystem<WebDevAgent.ActorTypes>(actorMap.map { it.key.name to it.value }.toMap(), dataStorage, user, session) {

@@ -71,7 +71,9 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
           )
         )
       ),
-      ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = OpenAIModels.GPT4oMini))),
+      ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = OpenAIModels.GPT4oMini).apply {
+        openAI = OpenAIClient()
+      })),
       ChildWebApp(
         "/test_coding_scala",
         CodingActorTestApp(CodingActor(ScalaLocalInterpreter::class, model = OpenAIModels.GPT4oMini))
@@ -95,21 +97,20 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
             temperature = 0.2,
             budget = 2.0,
             autoFix = true,
-            commandAutoFixCommands = listOf(
-              "C:\\Program Files\\nodejs\\npx.cmd", "C:\\Program Files\\nodejs\\npm.cmd"
-            ),
             env = mapOf(),
             workingDir = ".",
             language = if (isWindows) "powershell" else "bash",
           ).apply {
             setTaskSettings(
               TaskType.TaskPlanning, TaskSettingsBase(
+                TaskType.TaskPlanning.name,
                 enabled = true,
                 model = OpenAIModels.GPT4o,
               )
             )
             setTaskSettings(
               TaskType.RunShellCommand, TaskSettingsBase(
+                TaskType.RunShellCommand.name,
                 enabled = false,
                 model = OpenAIModels.GPT4o,
               )

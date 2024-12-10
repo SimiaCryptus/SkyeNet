@@ -13,3 +13,4 @@ settings.gradle.kts
 *.data
 *.parsed.json
 package-lock.json
+.kotlin/
