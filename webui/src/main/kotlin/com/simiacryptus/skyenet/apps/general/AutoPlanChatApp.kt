@@ -348,7 +348,7 @@ open class AutoPlanChatApp(
       agent = coordinator.copy(
         planSettings = coordinator.planSettings.copy(
           taskSettings = coordinator.planSettings.taskSettings.toList().toTypedArray().toMap().toMutableMap().apply {
-            this["TaskPlanning"] = TaskSettings(enabled = false, model = null)
+            this["TaskPlanning"] = TaskSettingsBase(task_type = TaskType.TaskPlanning.name ,enabled = false, model = null)
           }
         )
       ),
@@ -427,7 +427,7 @@ open class AutoPlanChatApp(
         null
       } else {
         TaskType.getImpl(coordinator.planSettings, task)
-      })?.planTask
+      })?.taskConfig
     }
     if (tasks.isNullOrEmpty()) {
       log.info("No tasks selected from: ${tasks?.map { it.first }}")

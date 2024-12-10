@@ -67,7 +67,7 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
     var retryable: Retryable? = null
     retryable = Retryable(agent.ui, task = task) {
       val task = agent.ui.newTask(false).apply { it.append(placeholder) }
-      this.planTask?.commands?.forEachIndexed { index, commandWithDir ->
+      this.taskConfig?.commands?.forEachIndexed { index, commandWithDir ->
         val alias = commandWithDir.command.firstOrNull()
         val commandAutoFixCommands = agent.planSettings.commandAutoFixCommands
         val cmds = commandAutoFixCommands
@@ -94,7 +94,7 @@ ${planSettings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).na
           ),
           api = api,
           files = agent.files,
-          model = agent.planSettings.getTaskSettings(TaskType.valueOf(planTask.task_type!!)).model
+          model = agent.planSettings.getTaskSettings(TaskType.valueOf(taskConfig.task_type!!)).model
             ?: agent.planSettings.defaultModel,
         ).run(
           ui = agent.ui,

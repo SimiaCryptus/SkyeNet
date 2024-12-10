@@ -50,8 +50,8 @@ open class WebFetchAndTransformTask(
     api2: OpenAIClient,
     planSettings: PlanSettings
   ) {
-    val fetchedContent = fetchAndStripHtml(planTask?.url ?: "")
-    val transformedContent = transformContent(fetchedContent, planTask?.transformationGoal ?: "", api, planSettings)
+    val fetchedContent = fetchAndStripHtml(taskConfig?.url ?: "")
+    val transformedContent = transformContent(fetchedContent, taskConfig?.transformationGoal ?: "", api, planSettings)
     task.add(MarkdownUtil.renderMarkdown(transformedContent, ui = agent.ui))
     resultFn(transformedContent)
   }

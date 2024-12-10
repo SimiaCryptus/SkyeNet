@@ -56,7 +56,7 @@ PerformanceAnalysis - Analyze code for performance issues and suggest improvemen
   }
 
   fun getFiles(): List<String> {
-    return planTask?.files_to_analyze ?: emptyList()
+    return taskConfig?.files_to_analyze ?: emptyList()
   }
 
 

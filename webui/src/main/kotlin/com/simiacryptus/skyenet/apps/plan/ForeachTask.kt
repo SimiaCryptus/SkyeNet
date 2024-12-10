@@ -48,8 +48,8 @@ ForeachTask - Execute a task for each item in a list
   ) {
     val userMessage = messages.joinToString("\n")
     val items =
-      planTask?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
-    val subTasks = planTask.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")
+      taskConfig?.foreach_items ?: throw RuntimeException("No items specified for ForeachTask")
+    val subTasks = taskConfig.foreach_subplan ?: throw RuntimeException("No subTasks specified for ForeachTask")
     val subPlanTask = agent.ui.newTask(false)
     task.add(subPlanTask.placeholder)
 

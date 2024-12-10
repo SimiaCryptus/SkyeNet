@@ -5,7 +5,9 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
@@ -38,19 +40,26 @@ class FileModificationTask(
     SimpleActor(
       name = "FileModification",
       prompt = """
- Generate patches for existing files or create new files based on the given requirements and context.
- For existing files:
- Ensure modifications are efficient, maintain readability, and adhere to coding standards.
- Carefully review the existing code and project structure to ensure changes are consistent and do not introduce bugs.
- Consider the impact of modifications on other parts of the codebase.
+ Generate precise code modifications and new files based on requirements:
+ For modifying existing files:
+ - Write efficient, readable, and maintainable code changes
+ - Ensure modifications integrate smoothly with existing code
+ - Follow project coding standards and patterns
+ - Consider dependencies and potential side effects
+ - Provide clear context and rationale for changes
                 
- For new files:
- Provide a clear relative file path based on the content and purpose of the file.
- Ensure the code is well-structured, follows best practices, and meets the specified functionality.
- Carefully consider how the new file fits into the existing project structure and architecture.
- Avoid creating files that duplicate functionality or introduce inconsistencies.
+ For creating new files:
+ - Choose appropriate file locations and names
+ - Structure code according to project conventions
+ - Include necessary imports and dependencies
+ - Add comprehensive documentation
+ - Ensure no duplication of existing functionality
                 
- Provide a summary of the changes made.
+ Provide a clear summary explaining:
+ - What changes were made and why
+ - Any important implementation details
+ - Potential impacts on other code
+ - Required follow-up actions
                 
  Response format:
  For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
@@ -103,12 +112,12 @@ class FileModificationTask(
     api2: OpenAIClient,
     planSettings: PlanSettings
   ) {
-    val defaultFile = if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
+    val defaultFile = if (((taskConfig?.input_files ?: listOf()) + (taskConfig?.output_files ?: listOf())).isEmpty()) {
       task.complete("CONFIGURATION ERROR: No input files specified")
       resultFn("CONFIGURATION ERROR: No input files specified")
       return
-    } else if(((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).distinct().size == 1) {
-      ((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).first()
+    } else if (((taskConfig?.input_files ?: listOf()) + (taskConfig?.output_files ?: listOf())).distinct().size == 1) {
+      ((taskConfig?.input_files ?: listOf()) + (taskConfig?.output_files ?: listOf())).first()
     } else {
       null
     }
@@ -119,7 +128,7 @@ class FileModificationTask(
       val codeResult = fileModificationActor.answer(
         (messages + listOf(
           getInputFileCode(),
-          this.planTask?.task_description ?: "",
+          this.taskConfig?.task_description ?: "",
         )).filter { it.isNotBlank() }, api
       )
       resultFn(codeResult)

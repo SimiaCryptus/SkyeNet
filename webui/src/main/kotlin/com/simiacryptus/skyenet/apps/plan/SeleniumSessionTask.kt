@@ -5,7 +5,6 @@ import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.WebFetchAndTransformTask.Companion.scrubHtml
 import com.simiacryptus.skyenet.core.util.Selenium
-import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.util.Selenium2S3
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -187,31 +186,31 @@ $activeSessionsInfo
           throw IllegalStateException("Failed to initialize Selenium", e)
         }
       }
-    requireNotNull(planTask) { "SeleniumSessionTaskData is required" }
+    requireNotNull(taskConfig) { "SeleniumSessionTaskData is required" }
     var selenium: Selenium? = null
     try {
       // Cleanup inactive sessions before potentially creating new one
       cleanupInactiveSessions()
       // Check session limit
-      if (activeSessions.size >= MAX_SESSIONS && planTask.sessionId == null) {
+      if (activeSessions.size >= MAX_SESSIONS && taskConfig.sessionId == null) {
         throw IllegalStateException("Maximum number of concurrent sessions ($MAX_SESSIONS) reached")
       }
-      selenium = planTask.sessionId?.let { id -> activeSessions[id] }
+      selenium = taskConfig.sessionId?.let { id -> activeSessions[id] }
         ?: seleniumFactory(agent.pool, null).also { newSession ->
-          planTask.sessionId?.let { id -> activeSessions[id] = newSession }
+          taskConfig.sessionId?.let { id -> activeSessions[id] = newSession }
         }
-      log.info("Starting Selenium session ${planTask.sessionId ?: "temporary"} for URL: ${planTask.url} with timeout ${planTask.timeout}ms")
+      log.info("Starting Selenium session ${taskConfig.sessionId ?: "temporary"} for URL: ${taskConfig.url} with timeout ${taskConfig.timeout}ms")
 
-      selenium.setScriptTimeout(planTask.timeout)
+      selenium.setScriptTimeout(taskConfig.timeout)
 
       // Navigate to initial URL
       // Navigate if URL is provided, regardless of whether it's a new or existing session
-      if (planTask.url.isNotBlank()) {
-        selenium.navigate(planTask.url)
+      if (taskConfig.url.isNotBlank()) {
+        selenium.navigate(taskConfig.url)
       }
 
       // Execute each command in sequence
-      val results = planTask.commands.map { command ->
+      val results = taskConfig.commands.map { command ->
         try {
           log.debug("Executing command: $command")
           val startTime = System.currentTimeMillis()
@@ -225,24 +224,24 @@ $activeSessionsInfo
         }
       }
 
-      val result = formatResults(planTask, selenium, results)
+      val result = formatResults(taskConfig, selenium, results)
 
       task.add(renderMarkdown(result))
       resultFn(result)
     } finally {
       // Close session if it's temporary or explicitly requested to be closed
-      if ((planTask.sessionId == null || planTask.closeSession) && selenium != null) {
+      if ((taskConfig.sessionId == null || taskConfig.closeSession) && selenium != null) {
         log.info("Closing temporary session")
         try {
           selenium.quit()
-          if (planTask.sessionId != null) {
-            activeSessions.remove(planTask.sessionId)
+          if (taskConfig.sessionId != null) {
+            activeSessions.remove(taskConfig.sessionId)
           }
         } catch (e: Exception) {
           log.error("Error closing temporary session", e)
           selenium.forceQuit()
-          if (planTask.sessionId != null) {
-            activeSessions.remove(planTask.sessionId)
+          if (taskConfig.sessionId != null) {
+            activeSessions.remove(taskConfig.sessionId)
           }
         }
       }

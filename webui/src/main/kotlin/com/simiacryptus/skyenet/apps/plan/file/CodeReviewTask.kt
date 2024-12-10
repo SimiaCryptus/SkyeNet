@@ -44,8 +44,8 @@ class CodeReviewTask(
     """.trimIndent()
 
   override fun getAnalysisInstruction(): String {
-    val filesToReview = planTask?.filesToReview?.joinToString(", ") ?: "all provided files"
-    val focusAreas = planTask?.focusAreas?.joinToString(", ")
+    val filesToReview = taskConfig?.filesToReview?.joinToString(", ") ?: "all provided files"
+    val focusAreas = taskConfig?.focusAreas?.joinToString(", ")
     return "Review the following code files: $filesToReview" +
         if (focusAreas != null) ". Focus on these areas: $focusAreas" else ""
   }

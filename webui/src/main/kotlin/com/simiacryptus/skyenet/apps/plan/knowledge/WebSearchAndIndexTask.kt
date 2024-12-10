@@ -19,14 +19,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.Executors
-import kotlin.collections.forEachIndexed
-import kotlin.collections.map
-import kotlin.collections.mapNotNull
-import kotlin.jvm.java
-import kotlin.text.appendLine
-import kotlin.text.replace
-import kotlin.text.take
-import kotlin.text.trimMargin
 
 class WebSearchAndIndexTask(
   planSettings: PlanSettings,
@@ -72,7 +64,7 @@ class WebSearchAndIndexTask(
 
     val summary = buildString {
       appendLine("# Web Search and Index Results")
-      appendLine("## Search Query: ${planTask?.search_query}")
+      appendLine("## Search Query: ${taskConfig?.search_query}")
       appendLine("## Downloaded and Indexed Files:")
       indexedFiles.forEachIndexed { index, file ->
         appendLine("${index + 1}. ${file.name}")
@@ -84,9 +76,9 @@ class WebSearchAndIndexTask(
 
   private fun performGoogleSearch(planSettings: PlanSettings): List<Map<String, Any>> {
     val client = HttpClient.newBuilder().build()
-    val encodedQuery = URLEncoder.encode(planTask?.search_query, "UTF-8")
+    val encodedQuery = URLEncoder.encode(taskConfig?.search_query, "UTF-8")
     val uriBuilder =
-      "https://www.googleapis.com/customsearch/v1?key=${planSettings.googleApiKey}&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${planTask?.num_results}"
+      "https://www.googleapis.com/customsearch/v1?key=${planSettings.googleApiKey}&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${taskConfig?.num_results}"
 
     val request = HttpRequest.newBuilder()
       .uri(URI.create(uriBuilder))
@@ -103,7 +95,7 @@ class WebSearchAndIndexTask(
   }
 
   private fun downloadAndSaveContent(searchResults: List<Map<String, Any>>): List<File> {
-    val outputDir = File(planTask?.output_directory ?: "web_content")
+    val outputDir = File(taskConfig?.output_directory ?: "web_content")
     outputDir.mkdirs()
 
     val client = HttpClient.newBuilder().build()

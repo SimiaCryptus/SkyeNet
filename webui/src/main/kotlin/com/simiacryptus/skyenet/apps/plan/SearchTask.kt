@@ -59,13 +59,13 @@ Search - Search for patterns in files and provide results with context
   }
 
   private fun performSearch(): List<SearchResult> {
-    val pattern = if (planTask?.is_regex == true) {
-      Pattern.compile(planTask.search_pattern)
+    val pattern = if (taskConfig?.is_regex == true) {
+      Pattern.compile(taskConfig.search_pattern)
     } else {
-      Pattern.compile(Pattern.quote(planTask?.search_pattern))
+      Pattern.compile(Pattern.quote(taskConfig?.search_pattern))
     }
 
-    return (planTask?.input_files ?: listOf())
+    return (taskConfig?.input_files ?: listOf())
       .flatMap { filePattern ->
         val matcher = FileSystems.getDefault().getPathMatcher("glob:$filePattern")
         Files.walk(root).asSequence()
@@ -82,7 +82,7 @@ Search - Search for patterns in files and provide results with context
                   file = relativePath,
                   lineNumber = index + 1,
                   matchedLine = line,
-                  context = getContext(lines, index, planTask?.context_lines ?: 2)
+                  context = getContext(lines, index, taskConfig?.context_lines ?: 2)
                 )
               } else null
             }.filterNotNull()

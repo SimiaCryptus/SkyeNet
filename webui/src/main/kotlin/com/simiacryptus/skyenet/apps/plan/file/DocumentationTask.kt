@@ -5,7 +5,9 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.Retryable
-import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.apps.plan.file.DocumentationTask.DocumentationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
@@ -74,7 +76,7 @@ class DocumentationTask(
     api2: OpenAIClient,
     planSettings: PlanSettings
   ) {
-    if (((planTask?.input_files ?: listOf()) + (planTask?.output_files ?: listOf())).isEmpty()) {
+    if (((taskConfig?.input_files ?: listOf()) + (taskConfig?.output_files ?: listOf())).isEmpty()) {
       task.complete("No input or output files specified")
       return
     }
@@ -83,12 +85,12 @@ class DocumentationTask(
       semaphore.release()
     }
     val process = { sb: StringBuilder ->
-      val itemsToDocument = planTask?.topics ?: emptyList()
+      val itemsToDocument = taskConfig?.topics ?: emptyList()
       val docResult = documentationGeneratorActor.answer(
         messages + listOf<String>(
           getInputFileCode(),
           "Items to document: ${itemsToDocument.joinToString(", ")}",
-          "Output files: ${planTask?.output_files?.joinToString(", ") ?: ""}"
+          "Output files: ${taskConfig?.output_files?.joinToString(", ") ?: ""}"
         ).filter { it.isNotBlank() }, api
       )
       resultFn(docResult)

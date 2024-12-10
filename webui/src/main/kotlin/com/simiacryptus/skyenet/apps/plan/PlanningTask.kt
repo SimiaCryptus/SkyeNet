@@ -71,7 +71,7 @@ class PlanningTask(
       createSubPlanDiscussable(newTask, userMessage, ::toInput, api, agent.ui, planSettings).call().obj
     } else {
       val design = planSettings.planningActor().answer(
-        toInput("Expand ${planTask?.task_description ?: ""}"),
+        toInput("Expand ${taskConfig?.task_description ?: ""}"),
         api = api
       )
       render(
@@ -96,7 +96,7 @@ class PlanningTask(
     planSettings: PlanSettings
   ) = Discussable(
     task = task,
-    userMessage = { "Expand ${planTask?.task_description ?: ""}" },
+    userMessage = { "Expand ${taskConfig?.task_description ?: ""}" },
     heading = "",
     initialResponse = { it: String -> planSettings.planningActor().answer(toInput(it), api = api) },
     outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
@@ -114,7 +114,7 @@ class PlanningTask(
       planSettings.planningActor().respond(
         messages = usermessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
           .toTypedArray<ApiModel.ChatMessage>(),
-        input = toInput("Expand ${planTask?.task_description ?: ""}\n${JsonUtil.toJson(this)}"),
+        input = toInput("Expand ${taskConfig?.task_description ?: ""}\n${JsonUtil.toJson(this)}"),
         api = api
       )
     },
@@ -134,7 +134,7 @@ class PlanningTask(
     coordinator.copy(
       planSettings = coordinator.planSettings.copy(
         taskSettings = coordinator.planSettings.taskSettings.toList().toTypedArray().toMap().toMutableMap().apply {
-          this["TaskPlanning"] = TaskSettings(enabled = false, model = null)
+          this["TaskPlanning"] = TaskSettingsBase(enabled = false, model = null, task_type = TaskType.TaskPlanning.name)
         }
       )
     ).executePlan(
