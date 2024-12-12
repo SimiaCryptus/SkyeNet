@@ -21,7 +21,7 @@ class GoogleSearchTask(
 ) : AbstractTask<GoogleSearchTask.GoogleSearchTaskConfigData>(planSettings, planTask) {
   class GoogleSearchTaskConfigData(
     @Description("The search query to use for Google search")
-    val search_query: String,
+    val search_query: String = "",
     @Description("The number of results to return (max 10)")
     val num_results: Int = 5,
     task_description: String? = null,

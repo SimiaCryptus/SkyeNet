@@ -93,7 +93,7 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
           planSettings = PlanSettings(
             defaultModel = OpenAIModels.GPT4o,
             parsingModel = OpenAIModels.GPT4oMini,
-            command = listOf("task"),
+            shellCmd = listOf("task"),
             temperature = 0.2,
             budget = 2.0,
             autoFix = true,

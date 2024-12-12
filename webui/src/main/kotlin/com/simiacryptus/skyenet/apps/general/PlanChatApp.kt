@@ -79,7 +79,7 @@ open class PlanChatApp(
         val planSettings = (getSettings(session, user, PlanSettings::class.java) ?: PlanSettings(
           defaultModel = model,
           parsingModel = parsingModel,
-          command = planSettings.command,
+          shellCmd = planSettings.shellCmd,
           temperature = planSettings.temperature,
           workingDir = planSettings.workingDir,
           env = planSettings.env,

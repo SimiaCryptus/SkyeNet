@@ -15,7 +15,7 @@ import com.simiacryptus.skyenet.core.actors.ParsedActor
 open class PlanSettings(
   var defaultModel: ChatModel,
   var parsingModel: ChatModel,
-  val command: List<String> = listOf(if (isWindows) "powershell" else "bash"),
+  val shellCmd: List<String> = listOf(if (isWindows) "powershell" else "bash"),
   var temperature: Double = 0.2,
   val budget: Double = 2.0,
   val taskSettings: MutableMap<String, TaskSettingsBase> = TaskType.values().associateWith { taskType ->
@@ -47,7 +47,7 @@ open class PlanSettings(
   fun copy(
     model: ChatModel = this.defaultModel,
     parsingModel: ChatModel = this.parsingModel,
-    command: List<String> = this.command,
+    command: List<String> = this.shellCmd,
     temperature: Double = this.temperature,
     budget: Double = this.budget,
     taskSettings: MutableMap<String, TaskSettingsBase> = this.taskSettings,
@@ -59,7 +59,7 @@ open class PlanSettings(
   ) = PlanSettings(
     defaultModel = model,
     parsingModel = parsingModel,
-    command = command,
+    shellCmd = command,
     temperature = temperature,
     budget = budget,
     taskSettings = taskSettings,

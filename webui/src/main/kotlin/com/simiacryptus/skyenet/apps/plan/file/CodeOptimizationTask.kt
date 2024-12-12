@@ -12,8 +12,6 @@ class CodeOptimizationTask(
 ) : AbstractAnalysisTask<CodeOptimizationTaskConfigData>(planSettings, planTask) {
 
   class CodeOptimizationTaskConfigData(
-    @Description("Files to be optimized")
-    val filesToOptimize: List<String>? = null,
     @Description("Specific areas of focus for the optimization")
     val optimizationFocus: List<String>? = null,
     task_description: String? = null,

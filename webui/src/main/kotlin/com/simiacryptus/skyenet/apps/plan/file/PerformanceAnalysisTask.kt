@@ -11,8 +11,6 @@ class PerformanceAnalysisTask(
   planTask: PerformanceAnalysisTaskConfigData?
 ) : AbstractAnalysisTask<PerformanceAnalysisTaskConfigData>(planSettings, planTask) {
   class PerformanceAnalysisTaskConfigData(
-    @Description("Files to be analyzed for performance issues")
-    val files_to_analyze: List<String>? = null,
     @Description("Specific areas of focus for the analysis (e.g., time complexity, memory usage, I/O operations)")
     val analysis_focus: List<String>? = null,
     task_description: String? = null,
@@ -56,7 +54,7 @@ PerformanceAnalysis - Analyze code for performance issues and suggest improvemen
   }
 
   fun getFiles(): List<String> {
-    return taskConfig?.files_to_analyze ?: emptyList()
+    return taskConfig?.input_files ?: emptyList()
   }
 
 

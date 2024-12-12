@@ -12,8 +12,6 @@ class TestGenerationTask(
 ) : AbstractAnalysisTask<TestGenerationTaskConfigData>(planSettings, planTask) {
 
   class TestGenerationTaskConfigData(
-    @Description("List of files for which tests should be generated")
-    val filesToTest: List<String>? = null,
     @Description("List of input files or tasks to be examined when generating tests")
     val inputReferences: List<String>? = null,
     task_description: String? = null,

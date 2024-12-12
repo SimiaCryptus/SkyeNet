@@ -11,8 +11,6 @@ class RefactorTask(
   planTask: RefactorTaskConfigData?
 ) : AbstractAnalysisTask<RefactorTaskConfigData>(planSettings, planTask) {
   class RefactorTaskConfigData(
-    @Description("List of files to be refactored")
-    val filesToRefactor: List<String>? = null,
     @Description("Specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)")
     val refactoringFocus: List<String>? = null,
     task_description: String? = null,

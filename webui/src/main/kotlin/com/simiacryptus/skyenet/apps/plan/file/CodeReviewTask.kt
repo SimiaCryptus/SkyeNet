@@ -11,8 +11,6 @@ class CodeReviewTask(
   planTask: CodeReviewTaskConfigData?
 ) : AbstractAnalysisTask<CodeReviewTaskConfigData>(planSettings, planTask) {
   class CodeReviewTaskConfigData(
-    @Description("List of files to be reviewed")
-    val filesToReview: List<String>? = null,
     @Description("Specific areas of focus for the review (optional)")
     val focusAreas: List<String>? = null,
     task_description: String? = null,
@@ -44,7 +42,7 @@ class CodeReviewTask(
     """.trimIndent()
 
   override fun getAnalysisInstruction(): String {
-    val filesToReview = taskConfig?.filesToReview?.joinToString(", ") ?: "all provided files"
+    val filesToReview = taskConfig?.input_files?.joinToString(", ") ?: "all provided files"
     val focusAreas = taskConfig?.focusAreas?.joinToString(", ")
     return "Review the following code files: $filesToReview" +
         if (focusAreas != null) ". Focus on these areas: $focusAreas" else ""

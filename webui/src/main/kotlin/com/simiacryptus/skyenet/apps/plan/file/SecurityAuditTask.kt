@@ -13,8 +13,6 @@ class SecurityAuditTask(
 
 
   class SecurityAuditTaskConfigData(
-    @Description("List of files to be audited")
-    val filesToAudit: List<String>? = null,
     @Description("Specific areas of focus for the security audit")
     val focusAreas: List<String>? = null,
     task_description: String? = null,

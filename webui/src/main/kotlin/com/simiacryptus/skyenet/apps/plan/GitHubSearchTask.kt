@@ -19,9 +19,9 @@ class GitHubSearchTask(
 ) : AbstractTask<GitHubSearchTask.GitHubSearchTaskConfigData>(planSettings, planTask) {
   class GitHubSearchTaskConfigData(
     @Description("The search query to use for GitHub search")
-    val search_query: String,
+    val search_query: String = "",
     @Description("The type of GitHub search to perform (code, commits, issues, repositories, topics, users)")
-    val search_type: String,
+    val search_type: String = "repositories",
     @Description("The number of results to return (max 100)")
     val per_page: Int = 30,
     @Description("Sort order for results")
@@ -64,11 +64,18 @@ GitHubSearch - Search GitHub for code, commits, issues, repositories, topics, or
 
   private fun performGitHubSearch(planSettings: PlanSettings): String {
     val client = HttpClient.newBuilder().build()
-    val uriBuilder = StringBuilder("https://api.github.com/search/${taskConfig?.search_type}?q=${taskConfig?.search_query}&per_page=${taskConfig?.per_page}")
-    taskConfig?.sort?.let { uriBuilder.append("&sort=$it") }
-    taskConfig?.order?.let { uriBuilder.append("&order=$it") }
+    val uriBuilder = URI("https://api.github.com")
+      .resolve("/search/${taskConfig?.search_type}")
+      .toURL()
+      .toString()
+    val queryParams = mutableListOf<String>()
+    queryParams.add("q=${java.net.URLEncoder.encode(taskConfig?.search_query ?: "", "UTF-8")}")
+    queryParams.add("per_page=${taskConfig?.per_page}")
+    taskConfig?.sort?.let { queryParams.add("sort=${java.net.URLEncoder.encode(it, "UTF-8")}") }
+    taskConfig?.order?.let { queryParams.add("order=${java.net.URLEncoder.encode(it, "UTF-8")}") }
+    val finalUrl = "$uriBuilder?${queryParams.joinToString("&")}"
     val request = HttpRequest.newBuilder()
-      .uri(URI.create(uriBuilder.toString()))
+      .uri(URI.create(finalUrl))
       .header("Accept", "application/vnd.github+json")
       .header("Authorization", "Bearer ${planSettings.githubToken}")
       .header("X-GitHub-Api-Version", "2022-11-28")

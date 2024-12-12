@@ -48,7 +48,7 @@ Note: This task is for running simple and safe commands. Avoid executing command
           planSettings.workingDir
         ).absolutePath),
         "language" to (planSettings.language ?: "bash"),
-        "command" to (planTask?.command ?: planSettings.command),
+        "command" to (planSettings.shellCmd),
       ),
       model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model
         ?: planSettings.defaultModel,
