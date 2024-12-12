@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.plan.file
+package com.simiacryptus.skyenet.apps.plan.tools.file
 
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.ChatClient
@@ -8,7 +8,7 @@ import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.TaskType
-import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.session.SessionTask

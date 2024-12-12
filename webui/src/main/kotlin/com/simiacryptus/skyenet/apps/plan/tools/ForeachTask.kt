@@ -1,11 +1,9 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.tools
 
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.ForeachTask.ForeachTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
-import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 
@@ -15,13 +13,13 @@ class ForeachTask(
 ) : AbstractTask<ForeachTaskConfigData>(planSettings, planTask) {
 
   class ForeachTaskConfigData(
-      @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")
+    @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")
     val foreach_items: List<String>? = null,
-      @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
+    @Description("A map of sub-task IDs to PlanTask objects to be executed for each item. (Only applicable for ForeachTask tasks) Allows for complex task dependencies and information flow within iterations.")
     val foreach_subplan: Map<String, TaskConfigBase>? = null,
-      task_description: String? = null,
-      task_dependencies: List<String>? = null,
-      state: TaskState? = null,
+    task_description: String? = null,
+    task_dependencies: List<String>? = null,
+    state: TaskState? = null,
   ) : TaskConfigBase(
     task_type = TaskType.ForeachTask.name,
     task_description = task_description,
@@ -61,11 +59,11 @@ ForeachTask - Execute a task for each item in a list
       val itemPlanProcessingState = PlanProcessingState(itemSubTasks)
       agent.executePlan(
         task = subPlanTask,
-        diagramBuffer = subPlanTask.add(diagram(agent.ui, itemPlanProcessingState.subTasks)),
+        diagramBuffer = subPlanTask.add(PlanUtil.diagram(agent.ui, itemPlanProcessingState.subTasks)),
         subTasks = itemSubTasks,
         diagramTask = subPlanTask,
         planProcessingState = itemPlanProcessingState,
-        taskIdProcessingQueue = executionOrder(itemSubTasks).toMutableList(),
+        taskIdProcessingQueue = PlanUtil.executionOrder(itemSubTasks).toMutableList(),
         pool = agent.pool,
         userMessage = "$userMessage\nProcessing item $index: $item",
         plan = itemSubTasks,

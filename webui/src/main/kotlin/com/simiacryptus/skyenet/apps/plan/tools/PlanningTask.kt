@@ -1,18 +1,13 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.tools
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
-import com.simiacryptus.jopenai.models.ApiModel.Role
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Discussable
-import com.simiacryptus.skyenet.apps.plan.PlanUtil.diagram
-import com.simiacryptus.skyenet.apps.plan.PlanUtil.executionOrder
-import com.simiacryptus.skyenet.apps.plan.PlanUtil.filterPlan
-import com.simiacryptus.skyenet.apps.plan.PlanUtil.render
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -74,9 +69,9 @@ class PlanningTask(
         toInput("Expand ${taskConfig?.task_description ?: ""}"),
         api = api
       )
-      render(
+      PlanUtil.render(
         withPrompt = TaskBreakdownWithPrompt(
-          plan = filterPlan { design.obj.tasksByID } ?: emptyMap(),
+          plan = PlanUtil.filterPlan { design.obj.tasksByID } ?: emptyMap(),
           planText = design.text,
           prompt = userMessage
         ),
@@ -84,7 +79,7 @@ class PlanningTask(
       )
       design.obj
     }
-    executeSubTasks(agent, userMessage, filterPlan { subPlan.tasksByID } ?: emptyMap(), task, api, api2)
+    executeSubTasks(agent, userMessage, PlanUtil.filterPlan { subPlan.tasksByID } ?: emptyMap(), task, api, api2)
   }
 
   private fun createSubPlanDiscussable(
@@ -100,9 +95,9 @@ class PlanningTask(
     heading = "",
     initialResponse = { it: String -> planSettings.planningActor().answer(toInput(it), api = api) },
     outputFn = { design: ParsedResponse<TaskBreakdownResult> ->
-      render(
+      PlanUtil.render(
         withPrompt = TaskBreakdownWithPrompt(
-          plan = filterPlan { design.obj.tasksByID } ?: emptyMap(),
+          plan = PlanUtil.filterPlan { design.obj.tasksByID } ?: emptyMap(),
           planText = design.text,
           prompt = userMessage
         ),
@@ -110,7 +105,7 @@ class PlanningTask(
       )
     },
     ui = ui,
-    reviseResponse = { usermessages: List<Pair<String, Role>> ->
+    reviseResponse = { usermessages: List<Pair<String, ApiModel.Role>> ->
       planSettings.planningActor().respond(
         messages = usermessages.map { ApiModel.ChatMessage(it.second, it.first.toContentList()) }
           .toTypedArray<ApiModel.ChatMessage>(),
@@ -139,11 +134,11 @@ class PlanningTask(
       )
     ).executePlan(
       task = subPlanTask,
-      diagramBuffer = subPlanTask.add(diagram(coordinator.ui, planProcessingState.subTasks)),
+      diagramBuffer = subPlanTask.add(PlanUtil.diagram(coordinator.ui, planProcessingState.subTasks)),
       subTasks = subPlan,
       diagramTask = subPlanTask,
       planProcessingState = planProcessingState,
-      taskIdProcessingQueue = executionOrder(subPlan).toMutableList(),
+      taskIdProcessingQueue = PlanUtil.executionOrder(subPlan).toMutableList(),
       pool = coordinator.pool,
       userMessage = userMessage,
       plan = subPlan,

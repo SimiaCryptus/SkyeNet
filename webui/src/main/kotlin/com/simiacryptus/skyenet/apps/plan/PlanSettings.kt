@@ -2,13 +2,14 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask.CommandAutoFixTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.PlanningTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.PlanningTask.TaskBreakdownResult
+import com.simiacryptus.skyenet.apps.plan.tools.PlanningTask.PlanningTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.PlanningTask.TaskBreakdownResult
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
-import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.file.FileModificationTask.FileModificationTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 

@@ -1,9 +1,9 @@
-package com.simiacryptus.skyenet.apps.plan.file
+package com.simiacryptus.skyenet.apps.plan.tools.file
 
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.TaskType
-import com.simiacryptus.skyenet.apps.plan.file.SecurityAuditTask.SecurityAuditTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.file.SecurityAuditTask.SecurityAuditTaskConfigData
 import org.slf4j.LoggerFactory
 
 class SecurityAuditTask(

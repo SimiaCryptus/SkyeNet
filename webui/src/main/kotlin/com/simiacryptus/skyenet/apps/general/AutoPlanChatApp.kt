@@ -7,7 +7,7 @@ import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.TabbedDisplay
 import com.simiacryptus.skyenet.apps.plan.*
-import com.simiacryptus.skyenet.apps.plan.file.FileModificationTask.FileModificationTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.User

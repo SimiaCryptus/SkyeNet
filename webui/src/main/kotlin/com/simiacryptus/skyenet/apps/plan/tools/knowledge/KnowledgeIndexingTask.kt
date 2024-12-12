@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.plan.knowledge
+package com.simiacryptus.skyenet.apps.plan.tools.knowledge
 
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient

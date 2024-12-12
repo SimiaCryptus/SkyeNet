@@ -1,9 +1,10 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.tools
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -18,7 +19,7 @@ class SearchTask(
 ) : AbstractTask<SearchTask.SearchTaskConfigData>(planSettings, planTask) {
   class SearchTaskConfigData(
     @Description("The search pattern (substring or regex) to look for in the files")
-    val search_pattern: String,
+    val search_pattern: String = "",
     @Description("Whether the search pattern is a regex (true) or a substring (false)")
     val is_regex: Boolean = false,
     @Description("The number of context lines to include before and after each match")

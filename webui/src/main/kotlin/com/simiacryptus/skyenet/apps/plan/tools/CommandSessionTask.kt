@@ -1,8 +1,9 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.tools
 
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
@@ -12,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 class CommandSessionTask(
-    planSettings: PlanSettings,
-    planTask: CommandSessionTaskConfigData?
+  planSettings: PlanSettings,
+  planTask: CommandSessionTaskConfigData?
 ) : AbstractTask<CommandSessionTask.CommandSessionTaskConfigData>(planSettings, planTask) {
     companion object {
         private val log = LoggerFactory.getLogger(CommandSessionTask::class.java)
@@ -68,19 +69,19 @@ class CommandSessionTask(
     }
 
     class CommandSessionTaskConfigData(
-        @Description("The command to start the interactive session")
+      @Description("The command to start the interactive session")
         val command: List<String>,
-        @Description("Commands to send to the interactive session")
+      @Description("Commands to send to the interactive session")
         val inputs: List<String> = listOf(),
-        @Description("Session ID for reusing existing sessions")
+      @Description("Session ID for reusing existing sessions")
         val sessionId: String? = null,
-        @Description("Timeout in milliseconds for commands")
+      @Description("Timeout in milliseconds for commands")
         val timeout: Long = TIMEOUT_MS,
-        @Description("Whether to close the session after execution")
+      @Description("Whether to close the session after execution")
         val closeSession: Boolean = false,
-        task_description: String? = null,
-        task_dependencies: List<String>? = null,
-        state: TaskState? = null,
+      task_description: String? = null,
+      task_dependencies: List<String>? = null,
+      state: TaskState? = null,
     ) : TaskConfigBase(
         task_type = TaskType.CommandSession.name,
         task_description = task_description,
@@ -105,13 +106,13 @@ class CommandSessionTask(
     }
 
     override fun run(
-        agent: PlanCoordinator,
-        messages: List<String>,
-        task: SessionTask,
-        api: ChatClient,
-        resultFn: (String) -> Unit,
-        api2: OpenAIClient,
-        planSettings: PlanSettings
+      agent: PlanCoordinator,
+      messages: List<String>,
+      task: SessionTask,
+      api: ChatClient,
+      resultFn: (String) -> Unit,
+      api2: OpenAIClient,
+      planSettings: PlanSettings
     ) {
       requireNotNull(taskConfig) { "CommandSessionTaskData is required" }
         var process: Process? = null

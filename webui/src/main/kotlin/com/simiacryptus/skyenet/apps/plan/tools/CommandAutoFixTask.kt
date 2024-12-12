@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.tools
 
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
@@ -7,7 +7,7 @@ import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.general.CmdPatchApp
 import com.simiacryptus.skyenet.apps.general.PatchApp
-import com.simiacryptus.skyenet.apps.plan.CommandAutoFixTask.CommandAutoFixTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -146,7 +146,7 @@ ${settings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}"
           ) {
             onComplete()
           }
-          if(autoRetries-- > 0) retryable?.retry()
+          if (autoRetries-- > 0) retryable?.retry()
           s
         })
       task.placeholder

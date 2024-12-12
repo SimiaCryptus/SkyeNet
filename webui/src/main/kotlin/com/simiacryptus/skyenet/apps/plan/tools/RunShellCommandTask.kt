@@ -1,11 +1,11 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.tools
 
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.apps.code.CodingAgent
-import com.simiacryptus.skyenet.apps.plan.RunShellCommandTask.RunShellCommandTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.interpreter.ProcessInterpreter
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -121,9 +121,9 @@ Note: This task is for running simple and safe commands. Avoid executing command
                         |${response.code}
                         |$TRIPLE_TILDE
                         |
-                        |${TRIPLE_TILDE}
+                        |$TRIPLE_TILDE
                         |${response.renderedResponse}
-                        |${TRIPLE_TILDE}
+                        |$TRIPLE_TILDE
                         |
                         """.trimMargin()
           }.apply { resultFn(this) }

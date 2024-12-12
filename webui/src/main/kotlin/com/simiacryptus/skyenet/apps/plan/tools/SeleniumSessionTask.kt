@@ -1,11 +1,11 @@
-package com.simiacryptus.skyenet.apps.plan
+package com.simiacryptus.skyenet.apps.plan.tools
 
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
-import com.simiacryptus.skyenet.apps.plan.WebFetchAndTransformTask.Companion.scrubHtml
+import com.simiacryptus.skyenet.apps.plan.*
 import com.simiacryptus.skyenet.core.util.Selenium
-import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
+import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.util.Selenium2S3
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import io.github.bonigarcia.wdm.WebDriverManager
@@ -168,7 +168,7 @@ $activeSessionsInfo
     api2: OpenAIClient,
     planSettings: PlanSettings
   ) {
-    val seleniumFactory: (pool: java.util.concurrent.ThreadPoolExecutor, cookies: Array<out jakarta.servlet.http.Cookie>?) -> com.simiacryptus.skyenet.core.util.Selenium =
+    val seleniumFactory: (pool: java.util.concurrent.ThreadPoolExecutor, cookies: Array<out jakarta.servlet.http.Cookie>?) -> Selenium =
       { pool, cookies ->
         val chromeOptions = ChromeOptions().apply {
           addArguments("--headless")
@@ -226,7 +226,7 @@ $activeSessionsInfo
 
       val result = formatResults(taskConfig, selenium, results)
 
-      task.add(renderMarkdown(result))
+      task.add(MarkdownUtil.renderMarkdown(result))
       resultFn(result)
     } finally {
       // Close session if it's temporary or explicitly requested to be closed

@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.plan.file
+package com.simiacryptus.skyenet.apps.plan.tools.file
 
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient

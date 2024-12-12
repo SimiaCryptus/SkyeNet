@@ -1,11 +1,11 @@
-package com.simiacryptus.skyenet.apps.plan.file
+package com.simiacryptus.skyenet.apps.plan.tools.file
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.AbstractTask
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.TaskConfigBase
-import com.simiacryptus.skyenet.apps.plan.file.AbstractFileTask.FileTaskConfigBase
+import com.simiacryptus.skyenet.apps.plan.tools.file.AbstractFileTask.FileTaskConfigBase
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import kotlin.streams.asSequence

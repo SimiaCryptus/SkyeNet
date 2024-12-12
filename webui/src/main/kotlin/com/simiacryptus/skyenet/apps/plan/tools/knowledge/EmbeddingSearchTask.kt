@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.plan.knowledge
+package com.simiacryptus.skyenet.apps.plan.tools.knowledge
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper

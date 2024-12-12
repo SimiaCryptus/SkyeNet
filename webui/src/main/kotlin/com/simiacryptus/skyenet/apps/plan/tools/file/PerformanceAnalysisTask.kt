@@ -1,9 +1,9 @@
-package com.simiacryptus.skyenet.apps.plan.file
+package com.simiacryptus.skyenet.apps.plan.tools.file
 
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.TaskType
-import com.simiacryptus.skyenet.apps.plan.file.PerformanceAnalysisTask.PerformanceAnalysisTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.file.PerformanceAnalysisTask.PerformanceAnalysisTaskConfigData
 import org.slf4j.LoggerFactory
 
 class PerformanceAnalysisTask(

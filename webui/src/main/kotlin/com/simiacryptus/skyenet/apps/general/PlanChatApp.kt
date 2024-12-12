@@ -5,7 +5,7 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.apps.plan.*
-import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.file.InquiryTask.InquiryTaskConfigData
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.util.MarkdownUtil
