@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 class ForeachTask(
   planSettings: PlanSettings,
   planTask: ForeachTaskConfigData?
-) : AbstractTask<ForeachTaskConfigData>(planSettings, planTask) {
+) : AbstractTask<ForeachTask.ForeachTaskConfigData>(planSettings, planTask) {
 
   class ForeachTaskConfigData(
     @Description("A list of items over which the ForEach task will iterate. (Only applicable for ForeachTask tasks) Can be used to process outputs from previous tasks.")

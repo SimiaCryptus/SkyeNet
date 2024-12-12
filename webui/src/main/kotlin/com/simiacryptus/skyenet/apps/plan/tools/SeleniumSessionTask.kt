@@ -4,6 +4,7 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.tools.WebFetchAndTransformTask.Companion.scrubHtml
 import com.simiacryptus.skyenet.core.util.Selenium
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.util.Selenium2S3

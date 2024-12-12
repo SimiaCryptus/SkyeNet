@@ -17,7 +17,7 @@ import kotlin.reflect.KClass
 class RunShellCommandTask(
   planSettings: PlanSettings,
   planTask: RunShellCommandTaskConfigData?
-) : AbstractTask<RunShellCommandTaskConfigData>(planSettings, planTask) {
+) : AbstractTask<RunShellCommandTask.RunShellCommandTaskConfigData>(planSettings, planTask) {
 
   class RunShellCommandTaskConfigData(
     @Description("The shell command to be executed")
