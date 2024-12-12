@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class CommandAutoFixTask(
   planSettings: PlanSettings,
   planTask: CommandAutoFixTaskConfigData?
-) : AbstractTask<CommandAutoFixTaskConfigData>(planSettings, planTask) {
+) : AbstractTask<CommandAutoFixTask.CommandAutoFixTaskConfigData>(planSettings, planTask) {
   class CommandAutoFixTaskSettings(
     task_type: String,
     enabled: Boolean = false,

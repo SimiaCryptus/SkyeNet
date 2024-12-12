@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory
 class PlanningTask(
   planSettings: PlanSettings,
   planTask: PlanningTaskConfigData?
-) : AbstractTask<PlanningTaskConfigData>(planSettings, planTask) {
+) : AbstractTask<PlanningTask.PlanningTaskConfigData>(planSettings, planTask) {
 
   class PlanningTaskConfigData(
     task_description: String? = null,
