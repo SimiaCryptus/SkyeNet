@@ -164,26 +164,26 @@ open class MetaAgentAgent(
 
   @Language("kotlin")
   val standardImports = """
-        |import com.simiacryptus.jopenai.API
-        |import com.simiacryptus.jopenai.models.ChatModels
-        |import com.simiacryptus.skyenet.core.actors.BaseActor
-        |import com.simiacryptus.skyenet.core.actors.ActorSystem
-        |import com.simiacryptus.skyenet.core.actors.CodingActor
-        |import com.simiacryptus.skyenet.core.actors.ParsedActor
-        |import com.simiacryptus.skyenet.core.actors.ImageActor
-        |import com.simiacryptus.skyenet.core.platform.file.DataStorage
-        |import com.simiacryptus.skyenet.core.platform.Session
-        |import com.simiacryptus.skyenet.core.platform.StorageInterface
-        |import com.simiacryptus.skyenet.core.actors.PoolSystem
-        |import com.simiacryptus.skyenet.core.platform.User
-        |import com.simiacryptus.skyenet.webui.application.ApplicationServer
-        |import com.simiacryptus.skyenet.webui.session.*
-        |import com.simiacryptus.skyenet.webui.application.ApplicationInterface
-        |import java.awt.image.BufferedImage
-        |import org.slf4j.LoggerFactory
-        |import java.io.File
-        |import javax.imageio.ImageIO
-        """.trimMargin()
+    import com.simiacryptus.jopenai.API
+    import com.simiacryptus.jopenai.models.ChatModels
+    import com.simiacryptus.skyenet.core.actors.BaseActor
+    import com.simiacryptus.skyenet.core.actors.ActorSystem
+    import com.simiacryptus.skyenet.core.actors.CodingActor
+    import com.simiacryptus.skyenet.core.actors.ParsedActor
+    import com.simiacryptus.skyenet.core.actors.ImageActor
+    import com.simiacryptus.skyenet.core.platform.file.DataStorage
+    import com.simiacryptus.skyenet.core.platform.Session
+    import com.simiacryptus.skyenet.core.platform.StorageInterface
+    import com.simiacryptus.skyenet.core.actors.PoolSystem
+    import com.simiacryptus.skyenet.core.platform.User
+    import com.simiacryptus.skyenet.webui.application.ApplicationServer
+    import com.simiacryptus.skyenet.webui.session.*
+    import com.simiacryptus.skyenet.webui.application.ApplicationInterface
+    import java.awt.image.BufferedImage
+    import org.slf4j.LoggerFactory
+    import java.io.File
+    import javax.imageio.ImageIO
+    """.trimIndent()
 
   fun buildAgent(userMessage: String) {
     val design = initialDesign(userMessage)
@@ -211,93 +211,93 @@ open class MetaAgentAgent(
       val actorInits = design.obj.actors?.joinToString("\n") { actImpls[it.name] ?: "" } ?: ""
 
       @Language("kotlin") val appCode = """
-                |$standardImports
-                |
-                |$imports
-                |
-                |open class ${classBaseName}App(
-                |    applicationName: String = "${design.obj.name}",
-                |    path: String = "/${design.obj.path ?: ""}",
-                |) : ApplicationServer(
-                |    applicationName = applicationName,
-                |    path = path,
-                |) {
-                |
-                |    data class Settings(
-                |        val model: ChatModels = OpenAIModels.GPT4oMini,
-                |        val temperature: Double = 0.1,
-                |    )
-                |    override val settingsClass: Class<*> get() = Settings::class.java
-                |    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(session: Session): T? = Settings() as T
-                |
-                |    override fun userMessage(
-                |        session: Session,
-                |        user: User?,
-                |        userMessage: String,
-                |        ui: ApplicationInterface,
-                |        api: API
-                |    ) {
-                |        try {
-                |            val settings = getSettings<Settings>(session, user)
-                |            ${classBaseName}Agent(
-                |                user = user,
-                |                session = session,
-                |                dataStorage = dataStorage,
-                |                api = api,
-                |                ui = ui,
-                |                model = settings?.model ?: OpenAIModels.GPT4oMini,
-                |                temperature = settings?.temperature ?: 0.3,
-                |            ).${design.obj.name?.camelCase()}(userMessage)
-                |        } catch (e: Throwable) {
-                |            log.warn("Error", e)
-                |        }
-                |    }
-                |
-                |    companion object {
-                |        private val log = LoggerFactory.getLogger(${classBaseName}App::class.java)
-                |    }
-                |
-                |}
-                """.trimMargin()
+                $standardImports
+                
+                $imports
+                
+                open class ${classBaseName}App(
+                    applicationName: String = "${design.obj.name}",
+                    path: String = "/${design.obj.path ?: ""}",
+                ) : ApplicationServer(
+                    applicationName = applicationName,
+                    path = path,
+                ) {
+                
+                    data class Settings(
+                        val model: ChatModels = OpenAIModels.GPT4oMini,
+                        val temperature: Double = 0.1,
+                    )
+                    override val settingsClass: Class<*> get() = Settings::class.java
+                    @Suppress("UNCHECKED_CAST") override fun <T:Any> initSettings(session: Session): T? = Settings() as T
+                
+                    override fun userMessage(
+                        session: Session,
+                        user: User?,
+                        userMessage: String,
+                        ui: ApplicationInterface,
+                        api: API
+                    ) {
+                        try {
+                            val settings = getSettings<Settings>(session, user)
+                            ${classBaseName}Agent(
+                                user = user,
+                                session = session,
+                                dataStorage = dataStorage,
+                                api = api,
+                                ui = ui,
+                                model = settings?.model ?: OpenAIModels.GPT4oMini,
+                                temperature = settings?.temperature ?: 0.3,
+                            ).${design.obj.name?.camelCase()}(userMessage)
+                        } catch (e: Throwable) {
+                            log.warn("Error", e)
+                        }
+                    }
+                
+                    companion object {
+                        private val log = LoggerFactory.getLogger(${classBaseName}App::class.java)
+                    }
+                
+                }
+                """.trimIndent()
 
       @Language("kotlin") val agentCode = """
-        |$standardImports
-        |
-        |open class ${classBaseName}Agent(
-        |    user: User?,
-        |    session: Session,
-        |    dataStorage: StorageInterface,
-        |    val ui: ApplicationInterface,
-        |    val api: API,
-        |    model: ChatModels = OpenAIModels.GPT4oMini,
-        |    temperature: Double = 0.3,
-        |) : PoolSystem(dataStorage, user, session) {
-        |
-        |    ${actorInits.indent("    ")}
-        |
-        |    ${mainImpl.trimIndent().stripImports().indent("    ")}
-        |
-        |    ${flowImpl.values.joinToString("\n\n") { flowStep -> flowStep.trimIndent() }.stripImports().indent("    ")}
-        |
-        |    companion object {
-        |        private val log = org.slf4j.LoggerFactory.getLogger(${classBaseName}Agent::class.java)
-        |
-        |    }
-        |}
-        """.trimMargin()
+        $standardImports
+        
+        open class ${classBaseName}Agent(
+            user: User?,
+            session: Session,
+            dataStorage: StorageInterface,
+            val ui: ApplicationInterface,
+            val api: API,
+            model: ChatModels = OpenAIModels.GPT4oMini,
+            temperature: Double = 0.3,
+        ) : PoolSystem(dataStorage, user, session) {
+        
+            ${actorInits.indent("    ")}
+        
+            ${mainImpl.trimIndent().stripImports().indent("    ")}
+        
+            ${flowImpl.values.joinToString("\n\n") { flowStep -> flowStep.trimIndent() }.stripImports().indent("    ")}
+        
+            companion object {
+                private val log = org.slf4j.LoggerFactory.getLogger(${classBaseName}Agent::class.java)
+        
+            }
+        }
+        """.trimIndent()
 
       //language=MARKDOWN
       val code = """
-                |```kotlin
-                |${
+                ```kotlin
+                ${
         """
-                |$appCode
-                |
-                |$agentCode
-                """.trimMargin().sortCode()
+                $appCode
+                
+                $agentCode
+                """.trimIndent().sortCode()
       }
-                |```
-                """.trimMargin()
+                ```
+                """.trimIndent()
 
       //language=HTML
       task.complete(renderMarkdown(code, ui = ui))
@@ -336,12 +336,7 @@ open class MetaAgentAgent(
       outputFn = { design: ParsedResponse<AgentFlowDesign> ->
         try {
           renderMarkdown(
-            """
-                        |$design
-                        |```json
-                        |${JsonUtil.toJson(design.obj)}
-                        |```
-                        """.trimMargin(), ui = ui
+            "$design\n```json\n${JsonUtil.toJson(design.obj)}\n```", ui = ui
           )
         } catch (e: Throwable) {
           renderMarkdown(e.message ?: e.toString(), ui = ui)
@@ -365,12 +360,7 @@ open class MetaAgentAgent(
       outputFn = { design: ParsedResponse<AgentActorDesign> ->
         try {
           renderMarkdown(
-            """
-                        |$design
-                        |```json
-                        |${JsonUtil.toJson(design.obj)}
-                        |```
-                    """.trimMargin(), ui = ui
+            "$design\n```json\n${JsonUtil.toJson(design.obj)}\n```", ui = ui
           )
         } catch (e: Throwable) {
           renderMarkdown(e.message ?: e.toString(), ui = ui)
@@ -421,11 +411,7 @@ open class MetaAgentAgent(
       val mainFunction = execWrap { flowStepDesigner.answer(codeRequest, api = api).code }
       task.verbose(
         renderMarkdown(
-          """
-                  |```kotlin
-                  |$mainFunction
-                  |```
-                  """.trimMargin(), ui = ui
+          "```kotlin\n$mainFunction\n```", ui = ui
         ), tag = "div"
       )
       task.complete()
@@ -488,6 +474,7 @@ open class MetaAgentAgent(
     var code = ""
     val onComplete = java.util.concurrent.Semaphore(0)
     Retryable(ui, task) {
+      val TT = "```"
       try {
         val response = execWrap {
           when (type.lowercase()) {
@@ -501,27 +488,20 @@ open class MetaAgentAgent(
         code = response.code
         onComplete.release()
         renderMarkdown(
-          """
-                |```kotlin
-                |$code
-                |```
-                """.trimMargin(), ui = ui
+          "${TT}kotlin\n$code\n```", ui = ui
         )
       } catch (e: CodingActor.FailedToImplementException) {
         task.error(ui, e)
         code = e.code ?: ""
         renderMarkdown(
           """
-                    |```kotlin
-                    |$code
-                    |```
-                    |${
-            ui.hrefLink("Accept", classname = "href-link cmd-button") {
-              autoEvaluate = false
-              onComplete.release()
-            }
-          }
-                    """.trimMargin(), ui = ui
+            ${TT}kotlin
+            """.trimIndent() + code + """
+            $TT
+            """.trimIndent() + ui.hrefLink("Accept", classname = "href-link cmd-button") {
+            autoEvaluate = false
+            onComplete.release()
+          }, ui = ui
         )
       }
     }
@@ -581,27 +561,16 @@ open class MetaAgentAgent(
             }
             onComplete.release()
             renderMarkdown(
-              """
-                            |```kotlin
-                            |$code
-                            |```
-                            """.trimMargin(), ui = ui
+              "```kotlin\n$code\n```", ui = ui
             )
           } catch (e: CodingActor.FailedToImplementException) {
             message.error(ui, e)
             code = e.code ?: ""
             renderMarkdown(
-              """
-                            |```kotlin
-                            |$code
-                            |```
-                            |${
-                ui.hrefLink("Accept", classname = "href-link cmd-button") {
-                  autoEvaluate = false
-                  onComplete.release()
-                }
-              }
-                            """.trimMargin(), ui = ui
+              "```kotlin" + code + "```" + ui.hrefLink("Accept", classname = "href-link cmd-button") {
+                autoEvaluate = false
+                onComplete.release()
+              }, ui = ui
             )
           }
         }

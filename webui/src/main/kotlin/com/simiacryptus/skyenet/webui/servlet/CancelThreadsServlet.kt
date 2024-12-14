@@ -21,22 +21,21 @@ class CancelThreadsServlet(
     if (req.parameterMap.containsKey("sessionId")) {
       val session = Session(req.getParameter("sessionId"))
       //language=HTML
-      resp.writer.write(
-        """
-        |<html>
-        |<head>
-        |    <title>Cancel Session</title>
-        |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-        |</head>
-        |<body>
-        |<form action="${req.contextPath}/cancel" method="post">
-        |    <input type="hidden" name="sessionId" value="$session"/>
-        |    CONFIRM: <input type='text' name="confirm" placeholder="Type 'confirm' to cancel" />
-        |    <input type="submit" value="Cancel"/>
-        |</form>
-        |</body>
-        |</html>
-        """.trimMargin()
+      resp.writer.write("""
+        <html>
+        <head>
+            <title>Cancel Session</title>
+            <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+        </head>
+        <body>
+        <form action="""".trimIndent() + req.contextPath + """/cancel" method="post">
+            <input type="hidden" name="sessionId" value="""".trimIndent() + session + """"/>
+            CONFIRM: <input type='text' name="confirm" placeholder="Type 'confirm' to cancel" />
+            <input type="submit" value="Cancel"/>
+        </form>
+        </body>
+        </html>
+        """.trimIndent()
       )
     } else {
       resp.status = HttpServletResponse.SC_BAD_REQUEST

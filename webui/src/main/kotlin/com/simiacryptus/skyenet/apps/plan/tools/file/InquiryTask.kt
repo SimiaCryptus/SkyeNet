@@ -9,6 +9,7 @@ import com.simiacryptus.jopenai.models.ApiModel.Role
 import com.simiacryptus.jopenai.util.ClientUtil.toContentList
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.apps.plan.*
+import com.simiacryptus.skyenet.apps.plan.tools.file.AbstractFileTask.Companion.TRIPLE_TILDE
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.session.SessionTask
@@ -42,14 +43,14 @@ class InquiryTask(
   )
 
   override fun promptSegment() = if (planSettings.allowBlocking) """
-    |Inquiry - Answer questions by reading in files and providing a summary that can be discussed with and approved by the user
-    |    ** Specify the questions and the goal of the inquiry
-    |    ** List input files to be examined when answering the questions
-    """.trimMargin() else """
-    |Inquiry - Answer questions by reading in files and providing a report
-    |    ** Specify the questions and the goal of the inquiry
-    |    ** List input files to be examined when answering the questions
-    """.trimMargin()
+    Inquiry - Answer questions by reading in files and providing a summary that can be discussed with and approved by the user
+        ** Specify the questions and the goal of the inquiry
+        ** List input files to be examined when answering the questions
+    """.trimIndent() else """
+    Inquiry - Answer questions by reading in files and providing a report
+        ** Specify the questions and the goal of the inquiry
+        ** List input files to be examined when answering the questions
+    """.trimIndent()
 
   private val inquiryActor by lazy {
     SimpleActor(
@@ -63,10 +64,10 @@ class InquiryTask(
                 
                 When generating insights, consider the existing project context and focus on information that is directly relevant and applicable.
                 Focus on generating insights and information that support the task types available in the system (${
-        planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")
-      }).
+                  planSettings.taskSettings.filter { it.value.enabled }.keys.joinToString(", ")
+                }).
                 This will ensure that the inquiries are tailored to assist in the planning and execution of tasks within the system's framework.
-                """.trimMargin(),
+                """.trimIndent(),
       model = planSettings.getTaskSettings(TaskType.valueOf(planTask?.task_type!!)).model ?: planSettings.defaultModel,
       temperature = planSettings.temperature,
     )
@@ -152,13 +153,7 @@ class InquiryTask(
       .joinToString("\n\n") { relativePath ->
         val file = root.resolve(relativePath).toFile()
         try {
-          """
-                |# $relativePath
-                |
-                |${AbstractFileTask.TRIPLE_TILDE}
-                |${codeFiles[file.toPath()] ?: file.readText()}
-                |${AbstractFileTask.TRIPLE_TILDE}
-                """.trimMargin()
+          "# $relativePath\n\n$TRIPLE_TILDE\n${codeFiles[file.toPath()] ?: file.readText()}\n$TRIPLE_TILDE"
         } catch (e: Throwable) {
           log.warn("Error reading file: $relativePath", e)
           ""

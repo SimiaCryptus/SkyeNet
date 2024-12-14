@@ -98,22 +98,23 @@ class SessionShareServlet(
         resp.status = HttpServletResponse.SC_OK
         //language=HTML
         resp.writer.write(
-          """<html>
-                    |<head>
-                    |    <title>Save Session</title>
-                    |    <style>
-                    |    </style>
-                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-                    |</head>
-                    |<body>
-                    |    <h1>Sharing URL</h1>
-                    |    <p><a href="shareURL" target='_blank'>shareURL</a></p>
-                    |    <body>
-                    |    <h1>Sharing URL</h1>
-                    |    <p><a href="$shareURL" target='_blank'>$shareURL</a></p>
-                    |    <img src="$qrCodeDataURL" alt="QR Code for $shareURL">
-                    |</body>
-                    |""".trimMargin()
+          """
+            <html>
+            <head>
+                <title>Save Session</title>
+                <style>
+                </style>
+                <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+            </head>
+            <body>
+                <h1>Sharing URL</h1>
+                <p><a href="shareURL" target='_blank'>shareURL</a></p>
+                <body>
+                <h1>Sharing URL</h1>
+                <p><a href="$shareURL" target='_blank'>$shareURL</a></p>
+                <img src="$qrCodeDataURL" alt="QR Code for $shareURL">
+            </body>
+          """.trimIndent()
         )
       }
 
@@ -152,23 +153,22 @@ class SessionShareServlet(
         //language=HTML
         shareURL = url(appName, shareId)
         qrCodeDataURL = generateQRCodeDataURL(shareURL)
-        resp.writer.write(
-          """
-                    |<html>
-                    |<head>
-                    |    <title>Saving Session</title>
-                    |    <style>
-                    |    </style>
-                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-                    |</head>
-                    |<body>
-                    |    <h1>Saving Session... This page will soon be ready!</h1>
-                    |    <p><a href="$shareURL" target='_blank'>$shareURL</a></p>
-                    |    <img src="$qrCodeDataURL" alt="QR Code for $shareURL">
-                    |    <p>To monitor progress, you can use the session threads page</p>
-                    |</body>
-                    |</html>
-                    """.trimMargin()
+        resp.writer.write("""
+          <html>
+          <head>
+              <title>Saving Session</title>
+              <style>
+              </style>
+              <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+          </head>
+          <body>
+              <h1>Saving Session... This page will soon be ready!</h1>
+              <p><a href="$shareURL" target='_blank'>$shareURL</a></p>
+              <img src="$qrCodeDataURL" alt="QR Code for $shareURL">
+              <p>To monitor progress, you can use the session threads page</p>
+          </body>
+          </html>
+          """.trimIndent()
         )
       }
     }

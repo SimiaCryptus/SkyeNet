@@ -94,15 +94,14 @@ class CommandSessionTask(
             "  ** Session $id"
         }
         return """
-     CommandSession - Create and manage a stateful interactive command session
-     ** Specify the command to start an interactive session
-     ** Provide inputs to send to the session
-     ** Session persists between commands for stateful interactions
-     ** Optionally specify sessionId to reuse an existing session
-     ** Set closeSession=true to close the session after execution
-     Active Sessions:
-     $activeSessionsInfo
-   """.trimMargin()
+           CommandSession - Create and manage a stateful interactive command session
+           ** Specify the command to start an interactive session
+           ** Provide inputs to send to the session
+           ** Session persists between commands for stateful interactions
+           ** Optionally specify sessionId to reuse an existing session
+           ** Set closeSession=true to close the session after execution
+           Active Sessions:
+           """.trimIndent() + "\n" + activeSessionsInfo
     }
 
     override fun run(

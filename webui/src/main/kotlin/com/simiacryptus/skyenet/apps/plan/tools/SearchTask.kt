@@ -37,12 +37,12 @@ class SearchTask(
   )
 
   override fun promptSegment() = """
-Search - Search for patterns in files and provide results with context
-    ** Specify the search pattern (substring or regex)
-    ** Specify whether the pattern is a regex or a substring
-    ** Specify the number of context lines to include
-    ** List input files or file patterns to be searched
-    """.trimMargin()
+    Search - Search for patterns in files and provide results with context
+      ** Specify the search pattern (substring or regex)
+      ** Specify whether the pattern is a regex or a substring
+      ** Specify the number of context lines to include
+      ** List input files or file patterns to be searched
+    """.trimIndent()
 
   override fun run(
     agent: PlanCoordinator,

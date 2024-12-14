@@ -49,12 +49,12 @@ open class DocumentParsingModel(
   )
 
   open val promptSuffix = """
-        |Parse the text into a hierarchical structure:
-        |1. Separate the content into sections, paragraphs, statements, etc.
-        |2. All source content should be included in the output, with paraphrasing, corrections, and context as needed
-        |3. Each content leaf node text should be simple and self-contained
-        |4. Assign relevant tags to each node to improve searchability and categorization.
-        """.trimMargin()
+    Parse the text into a hierarchical structure:
+    1. Separate the content into sections, paragraphs, statements, etc.
+    2. All source content should be included in the output, with paraphrasing, corrections, and context as needed
+    3. Each content leaf node text should be simple and self-contained
+    4. Assign relevant tags to each node to improve searchability and categorization.
+    """.trimIndent()
 
   open val exampleInstance = DocumentData()
 

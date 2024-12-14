@@ -11,7 +11,8 @@ import com.simiacryptus.skyenet.core.actors.CodingActor.CodeResult
 import com.simiacryptus.skyenet.core.actors.CodingActor.Companion.sortCode
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
-import com.simiacryptus.skyenet.core.platform.*
+import com.simiacryptus.skyenet.core.platform.ApplicationServices
+import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface
 import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
@@ -35,11 +36,7 @@ import java.io.File
 import kotlin.reflect.KClass
 
 private val String.escapeQuotedString: String
-  get() = replace("\\", "\\\\")
-    .replace("\"", "\\\"")
-    .replace("\n", "\\n")
-    .replace("\r", "\\r")
-    .replace("$", "\\$")
+  get() = replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("$", "\\$")
 
 abstract class ShellToolAgent<T : Interpreter>(
   api: API,
@@ -54,27 +51,12 @@ abstract class ShellToolAgent<T : Interpreter>(
   model: ChatModel,
   actorMap: Map<ActorTypes, CodingActor> = mapOf(
     ActorTypes.CodingActor to CodingActor(
-      interpreter,
-      symbols = symbols,
-      temperature = temperature,
-      details = details,
-      model = model
+      interpreter, symbols = symbols, temperature = temperature, details = details, model = model
     )
   ),
   mainTask: SessionTask = ui.newTask(),
 ) : CodingAgent<T>(
-  api,
-  dataStorage,
-  session,
-  user,
-  ui,
-  interpreter,
-  symbols,
-  temperature,
-  details,
-  model,
-  mainTask,
-  actorMap
+  api, dataStorage, session, user, ui, interpreter, symbols, temperature, details, model, mainTask, actorMap
 ) {
 
 
@@ -82,14 +64,17 @@ abstract class ShellToolAgent<T : Interpreter>(
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
     formHandle = task.add(
-      """
-      |<div style="display: flex;flex-direction: column;">
-      |${if (!canPlay) "" else playButton(task, request, response, formText) { formHandle!! }}
-      |${super.regenButton(task, request, formText) { formHandle!! }}
-      |${createToolButton(task, request, response, formText) { formHandle!! }}
-      |</div>  
-      |${super.reviseMsg(task, request, response, formText) { formHandle!! }}
-      """.trimMargin(), additionalClasses = "reply-message"
+      "<div style=\"display: flex;flex-direction: column;\">\n" + (if (!canPlay) "" else playButton(
+        task,
+        request,
+        response,
+        formText
+      ) { formHandle!! }) + "\n" + super.regenButton(task, request, formText) { formHandle!! } + "\n" + createToolButton(
+        task,
+        request,
+        response,
+        formText
+      ) { formHandle!! } + "\n</div>  \n" + super.reviseMsg(task, request, response, formText) { formHandle!! }, additionalClasses = "reply-message"
     )
     formText.append(formHandle.toString())
     formHandle.toString()
@@ -99,11 +84,7 @@ abstract class ShellToolAgent<T : Interpreter>(
   private var lastResult: String? = null
 
   private fun createToolButton(
-    task: SessionTask,
-    request: CodingActor.CodeRequest,
-    response: CodeResult,
-    formText: StringBuilder,
-    formHandle: () -> StringBuilder
+    task: SessionTask, request: CodingActor.CodeRequest, response: CodeResult, formText: StringBuilder, formHandle: () -> StringBuilder
   ) = ui.hrefLink("\uD83D\uDCE4", "href-link regen-button") {
     val task = ui.newTask()
     responseAction(task, "Exporting...", formHandle(), formText) {
@@ -157,18 +138,15 @@ abstract class ShellToolAgent<T : Interpreter>(
         )
         displayCodeFeedback(
           task, parsedActor(), request.copy(
-            messages = messages,
-            codePrefix = codePrefix
+            messages = messages, codePrefix = codePrefix
           )
         ) { parsedCode ->
           displayCodeFeedback(
             task, servletActor(), request.copy(
               messages = listOf(
                 (codePrefix + "\n\n" + parsedCode) to ApiModel.Role.assistant,
-                "Reprocess this code prototype into a servlet. " +
-                    "The last line should instantiate the new servlet class and return it via the returnBuffer collection." to ApiModel.Role.user
-              ),
-              codePrefix = schemaCode
+                "Reprocess this code prototype into a servlet. " + "The last line should instantiate the new servlet class and return it via the returnBuffer collection." to ApiModel.Role.user
+              ), codePrefix = schemaCode
             )
           ) { servletHandler ->
             val servletImpl = (schemaCode + "\n\n" + servletHandler).sortCode()
@@ -191,8 +169,7 @@ abstract class ShellToolAgent<T : Interpreter>(
                     "html2",
                     "-o",
                     File(
-                      dataStorage.getSessionDir(user, session),
-                      "openapi/html2"
+                      dataStorage.getSessionDir(user, session), "openapi/html2"
                     ).apply { mkdirs() }.absolutePath,
                   )
                 )
@@ -205,38 +182,29 @@ abstract class ShellToolAgent<T : Interpreter>(
               |${e.warnings.joinToString("\n") { "WARN:" + it.toString() }}
             """.trimIndent()
                 task.hideable(
-                  ui,
-                  renderMarkdown(
-                    "```\n${error.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n```",
-                    ui = ui
+                  ui, renderMarkdown(
+                    "```\n${error}\n```", ui = ui
                   )
                 )
                 openAPI = openAPIParsedActor().answer(
                   listOf(
-                    servletImpl,
-                    JsonUtil.toJson(openAPI),
-                    error
+                    servletImpl, JsonUtil.toJson(openAPI), error
                   ), api
                 ).obj.let { openApi ->
                   val paths = HashMap(openApi.paths)
                   openApi.copy(paths = paths.mapKeys { toolsPrefix + it.key.removePrefix(toolsPrefix) })
                 }
                 task.hideable(
-                  ui,
-                  renderMarkdown(
-                    "```json\n${JsonUtil.toJson(openAPI)/*.indent("  ")*/}\n```",
-                    ui = ui
+                  ui, renderMarkdown(
+                    "```json\n${JsonUtil.toJson(openAPI)}\n```", ui = ui
                   )
                 )
               }
             }
             if (ApplicationServices.authorizationManager.isAuthorized(
-                ShellToolAgent.javaClass,
-                user,
-                AuthorizationInterface.OperationType.Admin
+                ShellToolAgent.javaClass, user, AuthorizationInterface.OperationType.Admin
               )
-            ) {
-              /*
+            ) {/*
                                           ToolServlet.addTool(
                                               ToolServlet.Tool(
                                                   path = openAPI.paths?.entries?.first()?.key?.removePrefix(toolsPrefix) ?: "unknown",
@@ -270,32 +238,22 @@ abstract class ShellToolAgent<T : Interpreter>(
   }
 
   private fun servletActor() = object : CodingActor(
-    interpreterClass = KotlinInterpreter::class,
-    symbols = actor.symbols + mapOf(
+    interpreterClass = KotlinInterpreter::class, symbols = actor.symbols + mapOf(
       "returnBuffer" to ServletBuffer(),
       "json" to JsonUtil,
       "req" to Request(null, null),
       "resp" to Response(null, null),
-    ),
-    describer = object : AbbrevWhitelistYamlDescriber(
-      "com.simiacryptus",
-      "com.github.simiacryptus"
+    ), describer = object : AbbrevWhitelistYamlDescriber(
+      "com.simiacryptus", "com.github.simiacryptus"
     ) {
       override fun describe(
-        rawType: Class<in Nothing>,
-        stackMax: Int,
-        describedTypes: MutableSet<String>
+        rawType: Class<in Nothing>, stackMax: Int, describedTypes: MutableSet<String>
       ): String = when (rawType) {
         Request::class.java -> describe(HttpServletRequest::class.java)
         Response::class.java -> describe(HttpServletResponse::class.java)
         else -> super.describe(rawType, stackMax, describedTypes)
       }
-    },
-    details = actor.details,
-    model = actor.model,
-    fallbackModel = actor.fallbackModel,
-    temperature = actor.temperature,
-    runtimeSymbols = actor.runtimeSymbols
+    }, details = actor.details, model = actor.model, fallbackModel = actor.fallbackModel, temperature = actor.temperature, runtimeSymbols = actor.runtimeSymbols
   ) {
     override val prompt: String
       get() = super.prompt
@@ -342,36 +300,24 @@ abstract class ShellToolAgent<T : Interpreter>(
     onComplete: (String) -> Unit
   ) {
     task.hideable(
-      ui,
-      renderMarkdown("```kotlin\n${response.code.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n```", ui = ui)
+      ui, renderMarkdown("```kotlin\n${response.code.let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}\n```", ui = ui)
     )
     val formText = StringBuilder()
     var formHandle: StringBuilder? = null
-    formHandle = task.add(
-      """
-      |<div style="display: flex;flex-direction: column;">
-      |${
-        super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button") {
+    formHandle =
+      task.add(
+        "\n          <div style=\"display: flex;flex-direction: column;\">\n          " + super.ui.hrefLink("\uD83D\uDC4D", "href-link play-button") {
           super.responseAction(task, "Accepted...", formHandle!!, formText) {
             onComplete(response.code)
           }
-        }
-      }
-      |${
-        if (!super.canPlay) "" else
-          ui.hrefLink("▶", "href-link play-button") {
-            execute(ui.newTask(), response)
-          }
-      }
-      |${
-        super.ui.hrefLink("♻", "href-link regen-button") {
+        } + "\n          " + (if (!super.canPlay) "" else ui.hrefLink("▶", "href-link play-button") {
+          execute(ui.newTask(), response)
+        }) + "\n          " + super.ui.hrefLink("♻", "href-link regen-button") {
           super.responseAction(task, "Regenerating...", formHandle!!, formText) {
             //val task = super.ui.newTask()
-            val codeRequest =
-              request.copy(messages = request.messages.dropLastWhile { it.second == ApiModel.Role.assistant })
+            val codeRequest = request.copy(messages = request.messages.dropLastWhile { it.second == ApiModel.Role.assistant })
             try {
-              val lastUserMessage =
-                codeRequest.messages.last { it.second == ApiModel.Role.user }.first.trim()
+              val lastUserMessage = codeRequest.messages.last { it.second == ApiModel.Role.user }.first.trim()
               val codeResponse: CodeResult = if (lastUserMessage.startsWith("```")) {
                 actor.CodeResultImpl(
                   messages = actor.chatMessages(codeRequest),
@@ -384,11 +330,7 @@ abstract class ShellToolAgent<T : Interpreter>(
               }
               super.displayCode(task, codeResponse)
               displayCodeFeedback(
-                task,
-                actor,
-                super.append(codeRequest, codeResponse),
-                codeResponse,
-                onComplete
+                task, actor, super.append(codeRequest, codeResponse), codeResponse, onComplete
               )
             } catch (e: Throwable) {
               log.warn("Error", e)
@@ -404,25 +346,18 @@ abstract class ShellToolAgent<T : Interpreter>(
               })
             }
           }
-        }
-      }
-      |</div>  
-      |${
-        super.ui.textInput { feedback ->
+        } + "</div>  " + super.ui.textInput { feedback ->
           super.responseAction(task, "Revising...", formHandle!!, formText) {
             //val task = super.ui.newTask()
             try {
               task.echo(renderMarkdown(feedback, ui = ui))
               val codeRequest = CodingActor.CodeRequest(
-                messages = request.messages +
-                    listOf(
-                      response.code to ApiModel.Role.assistant,
-                      feedback to ApiModel.Role.user,
-                    ).filter { it.first.isNotBlank() }.map { it.first to it.second }
-              )
+                messages = request.messages + listOf(
+                  response.code to ApiModel.Role.assistant,
+                  feedback to ApiModel.Role.user,
+                ).filter { it.first.isNotBlank() }.map { it.first to it.second })
               try {
-                val lastUserMessage =
-                  codeRequest.messages.last { it.second == ApiModel.Role.user }.first.trim()
+                val lastUserMessage = codeRequest.messages.last { it.second == ApiModel.Role.user }.first.trim()
                 val codeResponse: CodeResult = if (lastUserMessage.startsWith("```")) {
                   actor.CodeResultImpl(
                     messages = actor.chatMessages(codeRequest),
@@ -434,11 +369,7 @@ abstract class ShellToolAgent<T : Interpreter>(
                   actor.answer(codeRequest, api = super.api)
                 }
                 displayCodeFeedback(
-                  task,
-                  actor,
-                  super.append(codeRequest, codeResponse),
-                  codeResponse,
-                  onComplete
+                  task, actor, super.append(codeRequest, codeResponse), codeResponse, onComplete
                 )
               } catch (e: Throwable) {
                 log.warn("Error", e)
@@ -458,10 +389,8 @@ abstract class ShellToolAgent<T : Interpreter>(
               task.error(ui, e)
             }
           }
-        }
-      }
-      """.trimMargin(), additionalClasses = "reply-message"
-    )
+        }, additionalClasses = "reply-message"
+      )
     formText.append(formHandle.toString())
     formHandle.toString()
     task.complete()
@@ -471,17 +400,14 @@ abstract class ShellToolAgent<T : Interpreter>(
   class ServletBuffer : ArrayList<HttpServlet>()
 
   private fun buildTestPage(
-    openAPI: OpenAPI,
-    servletImpl: String,
-    task: SessionTask
+    openAPI: OpenAPI, servletImpl: String, task: SessionTask
   ) {
     var testPage = SimpleActor(
       prompt = "Given the definition for a servlet handler, create a test page that can be used to test the servlet",
       model = model,
     ).answer(
       listOf(
-        JsonUtil.toJson(openAPI),
-        servletImpl
+        JsonUtil.toJson(openAPI), servletImpl
       ), api
     )
     // if ```html unwrap
@@ -490,8 +416,7 @@ abstract class ShellToolAgent<T : Interpreter>(
     task.complete(
       "<a href='${
         task.saveFile(
-          "test.html",
-          testPage.toByteArray(Charsets.UTF_8)
+          "test.html", testPage.toByteArray(Charsets.UTF_8)
         )
       }'>Test Page</a> for  ${openAPI.paths?.entries?.first()?.key ?: "unknown"} Saved"
     )

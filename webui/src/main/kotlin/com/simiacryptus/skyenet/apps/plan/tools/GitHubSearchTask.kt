@@ -40,13 +40,13 @@ class GitHubSearchTask(
   )
 
   override fun promptSegment() = """
-GitHubSearch - Search GitHub for code, commits, issues, repositories, topics, or users
-** Specify the search query
-** Specify the type of search (code, commits, issues, repositories, topics, users)
-** Specify the number of results to return (max 100)
-** Optionally specify sort order (e.g. stars, forks, updated)
-** Optionally specify sort direction (asc or desc)
-""".trimMargin()
+    GitHubSearch - Search GitHub for code, commits, issues, repositories, topics, or users
+    ** Specify the search query
+    ** Specify the type of search (code, commits, issues, repositories, topics, users)
+    ** Specify the number of results to return (max 100)
+    ** Optionally specify sort order (e.g. stars, forks, updated)
+    ** Optionally specify sort direction (asc or desc)
+    """.trimIndent()
 
   override fun run(
     agent: PlanCoordinator,

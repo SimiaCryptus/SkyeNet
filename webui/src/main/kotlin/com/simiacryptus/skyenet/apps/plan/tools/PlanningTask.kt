@@ -35,19 +35,17 @@ class PlanningTask(
     val tasksByID: Map<String, TaskConfigBase>? = null,
   )
 
-  override fun promptSegment(): String {
-    return """
-        |Task Planning:
-        |  * Perform high-level planning and organization of tasks.
-        |  * Decompose the overall goal into smaller, actionable tasks based on current information, ensuring proper information flow between tasks.
-        |  * Specify prior tasks and the overall goal of the task, emphasizing dependencies to ensure each task is connected with its upstream and downstream tasks.
-        |  * Dynamically break down tasks as new information becomes available.
-        |  * Carefully consider task dependencies to ensure efficient information transfer and coordination between tasks.
-        |  * Design the task structure to maximize parallel execution where possible, while respecting necessary dependencies.
-        |  * **Note**: A planning task should refine the plan based on new information, optimizing task relationships and dependencies, and should not initiate execution.
-        |  * Ensure that each task utilizes the outputs or side effects of its upstream tasks, and provides outputs or side effects for its downstream tasks.
-        """.trimMargin()
-  }
+  override fun promptSegment() = """
+    Task Planning:
+      * Perform high-level planning and organization of tasks.
+      * Decompose the overall goal into smaller, actionable tasks based on current information, ensuring proper information flow between tasks.
+      * Specify prior tasks and the overall goal of the task, emphasizing dependencies to ensure each task is connected with its upstream and downstream tasks.
+      * Dynamically break down tasks as new information becomes available.
+      * Carefully consider task dependencies to ensure efficient information transfer and coordination between tasks.
+      * Design the task structure to maximize parallel execution where possible, while respecting necessary dependencies.
+      * **Note**: A planning task should refine the plan based on new information, optimizing task relationships and dependencies, and should not initiate execution.
+      * Ensure that each task utilizes the outputs or side effects of its upstream tasks, and provides outputs or side effects for its downstream tasks.
+    """.trimIndent()
 
   override fun run(
     agent: PlanCoordinator,

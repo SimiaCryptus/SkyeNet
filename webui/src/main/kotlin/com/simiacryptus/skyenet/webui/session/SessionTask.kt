@@ -126,47 +126,23 @@ abstract class SessionTask(
   ) = hideable(
     ui,
     when {
-      e is ValidatedObject.ValidationError -> renderMarkdown(
-        """
-        |**Data Validation Error** 
-        |
-        |${e.message}
-        |
-        |Stack Trace:
-        |```text
-        |${e.stackTraceTxt/*.indent("  ")*/}
-        |```
-        |
-        |""".trimMargin(), ui = ui
-      )
+      e is ValidatedObject.ValidationError -> renderMarkdown("""
+        **Data Validation Error** 
+        
+        """.trimIndent() + e.message + """
+        
+        Stack Trace:
+        ```text
+        """.trimIndent() + e.stackTraceTxt + """
+        ```
+      """, ui = ui)
 
       e is CodingActor.FailedToImplementException -> renderMarkdown(
-        """
-        |**Failed to Implement** 
-        |
-        |${e.message}
-        |
-        |Prefix:
-        |```${e.language?.lowercase() ?: ""}
-        |${/*escapeHtml4*/(e.prefix/*?.indent("  ")*/ ?: "")}
-        |```
-        |
-        |Implementation Attempt:
-        |```${e.language?.lowercase() ?: ""}
-        |${/*escapeHtml4*/(e.code/*?.indent("  ")*/ ?: "")}
-        |```
-        |
-        |""".trimMargin(), ui = ui
+        "**Failed to Implement** \n\n${e.message}\n\nPrefix:\n```${e.language?.lowercase() ?: ""}\n${e.prefix}\n```\n\nImplementation Attempt:\n```${e.language?.lowercase() ?: ""}\n${e.code}\n```\n\n", ui = ui
       )
 
       else -> renderMarkdown(
-        """
-        |**Error `${e.javaClass.name}`**
-        |
-        |```text
-        |${e.stackTraceToString().let { /*escapeHtml4*/(it)/*.indent("  ")*/ }}
-        |```
-        |""".trimMargin(), ui = ui
+        "**Error `${e.javaClass.name}`**\n\n```text\n${e.stackTraceToString()}\n```\n", ui = ui
       )
     }, showSpinner, tag, "error"
   )

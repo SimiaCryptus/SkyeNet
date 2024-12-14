@@ -24,12 +24,9 @@ class CommandPatchApp(
   override fun codeSummary(paths: List<Path>): String = paths
     .filter { it.toFile().exists() }
     .joinToString("\n\n") { path ->
-      """
-                |# ${settings.workingDirectory?.toPath()?.relativize(path)}
-                |$tripleTilde${path.toString().split('.').lastOrNull()}
-                |${path.toFile().readText(Charsets.UTF_8)}
-                |$tripleTilde
-            """.trimMargin()
+      "# ${settings.workingDirectory?.toPath()?.relativize(path)}\n$tripleTilde${path.toString().split('.').lastOrNull()}\n${
+        path.toFile().readText(Charsets.UTF_8)
+      }\n$tripleTilde"
     }
 
   override fun output(task: SessionTask) = OutputResult(

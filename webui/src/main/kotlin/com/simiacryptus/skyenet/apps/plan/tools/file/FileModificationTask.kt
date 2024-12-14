@@ -40,68 +40,66 @@ class FileModificationTask(
     SimpleActor(
       name = "FileModification",
       prompt = """
- Generate precise code modifications and new files based on requirements:
- For modifying existing files:
- - Write efficient, readable, and maintainable code changes
- - Ensure modifications integrate smoothly with existing code
- - Follow project coding standards and patterns
- - Consider dependencies and potential side effects
- - Provide clear context and rationale for changes
-                
- For creating new files:
- - Choose appropriate file locations and names
- - Structure code according to project conventions
- - Include necessary imports and dependencies
- - Add comprehensive documentation
- - Ensure no duplication of existing functionality
-                
- Provide a clear summary explaining:
- - What changes were made and why
- - Any important implementation details
- - Potential impacts on other code
- - Required follow-up actions
-                
- Response format:
- For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
- For new files: Use $TRIPLE_TILDE code blocks with a header specifying the new file path.
- The diff format should use + for line additions, - for line deletions.
- Include 2 lines of context before and after every change in diffs.
- Separate code blocks with a single blank line.
- For new files, specify the language for syntax highlighting after the opening triple backticks.
-                
- Example:
-                
- Here are the modifications:
-                
- ### src/utils/existingFile.js
- ${TRIPLE_TILDE}diff
-  // Existing utility functions
-  function existingFunction() {
-  return 'old result';
-  return 'new result';
-                | }
- $TRIPLE_TILDE
-                
- ### src/utils/newFile.js
- ${TRIPLE_TILDE}js
- // New utility functions
- function newFunction() {
-   return 'new functionality';
-                |}
- $TRIPLE_TILDE
-                """.trimMargin(),
+        Generate precise code modifications and new files based on requirements:
+        For modifying existing files:
+        - Write efficient, readable, and maintainable code changes
+        - Ensure modifications integrate smoothly with existing code
+        - Follow project coding standards and patterns
+        - Consider dependencies and potential side effects
+        - Provide clear context and rationale for changes
+                      
+        For creating new files:
+        - Choose appropriate file locations and names
+        - Structure code according to project conventions
+        - Include necessary imports and dependencies
+        - Add comprehensive documentation
+        - Ensure no duplication of existing functionality
+                      
+        Provide a clear summary explaining:
+        - What changes were made and why
+        - Any important implementation details
+        - Potential impacts on other code
+        - Required follow-up actions
+                      
+        Response format:
+        For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
+        For new files: Use $TRIPLE_TILDE code blocks with a header specifying the new file path.
+        The diff format should use + for line additions, - for line deletions.
+        Include 2 lines of context before and after every change in diffs.
+        Separate code blocks with a single blank line.
+        For new files, specify the language for syntax highlighting after the opening triple backticks.
+                      
+        Example:
+                      
+        Here are the modifications:
+                      
+        ### src/utils/existingFile.js
+        ${TRIPLE_TILDE}diff
+        // Existing utility functions
+        function existingFunction() {
+        return 'old result';
+        return 'new result';
+        }
+        $TRIPLE_TILDE
+                      
+        ### src/utils/newFile.js
+        ${TRIPLE_TILDE}js
+        // New utility functions
+        function newFunction() {
+         return 'new functionality';
+        }
+        $TRIPLE_TILDE
+        """.trimIndent(),
       model = planSettings.getTaskSettings(TaskType.FileModification).model ?: planSettings.defaultModel,
       temperature = planSettings.temperature,
     )
   }
 
-  override fun promptSegment(): String {
-    return """
- FileModification - Modify existing files or create new files
-   ** For each file, specify the relative file path and the goal of the modification or creation
-   ** List input files/tasks to be examined when designing the modifications or new files
-        """.trimMargin()
-  }
+  override fun promptSegment() = """
+   FileModification - Modify existing files or create new files
+     ** For each file, specify the relative file path and the goal of the modification or creation
+     ** List input files/tasks to be examined when designing the modifications or new files
+  """.trimIndent()
 
   override fun run(
     agent: PlanCoordinator,

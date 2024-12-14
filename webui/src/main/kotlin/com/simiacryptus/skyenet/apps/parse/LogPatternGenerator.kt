@@ -23,7 +23,7 @@ class LogPatternGenerator(
         4. Describe what type of log message the pattern identifies
         
         Return only the regex patterns with descriptions, no matches or analysis.
-    """.trimMargin()
+    """.trimIndent()
 
     fun generatePatterns(api: API, text: String): List<LogDataParsingModel.PatternData> {
         val parser = ParsedActor(

@@ -110,17 +110,10 @@ open class Planner {
     root: Path
   ) = { str: String ->
     listOf(
-      if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
-                                        |Files:
-                                        |${codeFiles.keys.joinToString("\n") { "* $it" }}  
-                                         """.trimMargin() else {
+      if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) "Files:\n${codeFiles.keys.joinToString("\n") { "* $it" }}  " else {
         files.joinToString("\n\n") {
           val path = root.relativize(it.toPath())
-          """
-                        |## $path
-                        |
-                        |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-                        """.trimMargin()
+          "## $path\n\n${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it}\n$TRIPLE_TILDE" }}"
         }
       },
       str

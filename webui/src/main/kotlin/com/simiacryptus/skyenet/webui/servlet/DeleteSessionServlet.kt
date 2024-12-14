@@ -21,20 +21,20 @@ class DeleteSessionServlet(
       //language=HTML
       resp.writer.write(
         """
-                |<html>
-                |<head>
-                |    <title>Delete Session</title>
-                |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-                |</head>
-                |<body>
-                |<form action="${req.contextPath}/delete" method="post">
-                |    <input type="hidden" name="sessionId" value="$session"/>
-                |    CONFIRM: <input type='text' name="confirm" placeholder="Type 'confirm' to delete" />
-                |    <input type="submit" value="Delete"/>
-                |</form>
-                |</body>
-                |</html>
-                """.trimMargin()
+        <html>
+        <head>
+            <title>Delete Session</title>
+            <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+        </head>
+        <body>
+        <form action="${req.contextPath}/delete" method="post">
+            <input type="hidden" name="sessionId" value="$session"/>
+            CONFIRM: <input type='text' name="confirm" placeholder="Type 'confirm' to delete" />
+            <input type="submit" value="Delete"/>
+        </form>
+        </body>
+        </html>
+        """.trimIndent()
       )
     } else {
       resp.status = HttpServletResponse.SC_BAD_REQUEST

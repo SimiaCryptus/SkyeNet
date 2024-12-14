@@ -27,24 +27,22 @@ class SessionSettingsServlet(
         return
       }
       //language=HTML
-      resp.writer.write(
-        """
-                    |<html>
-                    |<head>
-                    |    <title>Settings</title>
-                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-                    |</head>
-                    |<body>
-                    |<form action="${req.contextPath}/settings" method="post">
-                    |    <input type="hidden" name="sessionId" value="$session"/>
-                    |    <input type="hidden" name="action" value="save"/>
-                    |    <textarea name="settings" style="width: 100%; height: 100px;">$json</textarea>
-                    |    <input type="submit" value="Save"/>
-                    |</form>
-                    |</body>
-                    |</html>
-                    """.trimMargin()
-      )
+      resp.writer.write("""
+        <html>
+        <head>
+            <title>Settings</title>
+            <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+        </head>
+        <body>
+        <form action="""".trimIndent() + req.contextPath + """/settings" method="post">
+            <input type="hidden" name="sessionId" value="""" + session + """"/>
+            <input type="hidden" name="action" value="save"/>
+            <textarea name="settings" style="width: 100%; height: 100px;">""" + json + """</textarea>
+            <input type="submit" value="Save"/>
+        </form>
+        </body>
+        </html>
+      """.trimIndent())
     } else {
       resp.status = HttpServletResponse.SC_BAD_REQUEST
       resp.writer.write("Session ID is required")

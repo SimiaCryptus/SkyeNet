@@ -66,19 +66,17 @@ open class ParsedActor<T : Any>(
     val describe = resultClass?.let { describer.describe(it) } ?: ""
     val exceptions = mutableListOf<Exception>()
     val prompt = """
-            |Parse the user's message into a json object described by:
-            |
-            |```yaml
-            |${describe.replace("\n", "\n  ")}
-            |```
-            |
-            |This is an example output:
-            |```json
-            |${JsonUtil.toJson(exampleInstance!!)/*.indent("  ")*/}
-            |```
-            |${promptSuffix?.let { "\n$it" } ?: ""}
-            |
-          """.trimMargin()
+              Parse the user's message into a json object described by:
+              
+              ```yaml
+              """.trimIndent() + describe.replace("\n", "\n  ") + """
+              ```
+              
+              This is an example output:
+              ```json
+              """ + JsonUtil.toJson(exampleInstance!!) + """
+              ```
+              """.trimIndent() + (promptSuffix?.let { "\n$it" } ?: "")
     for (i in 0 until deserializerRetries) {
       try {
         val content = (api as ChatClient).chat(

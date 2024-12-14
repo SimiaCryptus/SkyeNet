@@ -48,13 +48,11 @@ class CodeReviewTask(
         if (focusAreas != null) ". Focus on these areas: $focusAreas" else ""
   }
 
-  override fun promptSegment(): String {
-    return """
- CodeReview - Perform an automated code review and provide suggestions for improvements
-   ** Specify the files to be reviewed
-   ** Optionally provide specific areas of focus for the review
-        """.trimMargin()
-  }
+  override fun promptSegment() = """
+   CodeReview - Perform an automated code review and provide suggestions for improvements
+     ** Specify the files to be reviewed
+     ** Optionally provide specific areas of focus for the review
+  """.trimIndent()
 
 
   companion object {

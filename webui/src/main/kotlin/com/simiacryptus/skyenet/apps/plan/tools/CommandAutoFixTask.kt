@@ -43,7 +43,7 @@ class CommandAutoFixTask(
 
   data class CommandWithWorkingDir(
     @Description("The command to be executed")
-    val command: List<String>,
+    val command: List<String> = emptyList(),
     @Description("The relative path of the working directory")
     val workingDir: String? = null
   )

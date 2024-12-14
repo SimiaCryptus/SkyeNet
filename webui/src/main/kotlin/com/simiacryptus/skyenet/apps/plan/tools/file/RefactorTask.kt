@@ -48,13 +48,11 @@ Use diff format to show the proposed changes clearly.
 
   override fun getAnalysisInstruction(): String = "Refactor the following code"
 
-  override fun promptSegment(): String {
-    return """
-RefactorTask - Analyze and refactor existing code to improve structure, readability, and maintainability
-  ** Specify the files to be refactored
-  ** Optionally provide specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)
-        """.trimMargin()
-  }
+  override fun promptSegment() = """
+    RefactorTask - Analyze and refactor existing code to improve structure, readability, and maintainability
+      ** Specify the files to be refactored
+      ** Optionally provide specific areas of focus for the refactoring (e.g., modularity, design patterns, naming conventions)
+    """.trimIndent()
 
   companion object {
     private val log = LoggerFactory.getLogger(RefactorTask::class.java)

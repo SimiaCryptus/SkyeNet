@@ -129,13 +129,13 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
     val expected = """
-           |line1
-           | lineA
-           | lineB
-           |
-           |line2
-           |line3
-        """.trimMargin()
+           line1
+            lineA
+            lineB
+           
+           line2
+           line3
+        """.trimIndent()
     val result = IterativePatchUtil.applyPatch(source, patch)
     assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
   }
@@ -158,13 +158,13 @@ class IterativePatchUtilTest {
             line3
         """.trimIndent()
     val expected = """
-           |line1
-           | lineA
-           | lineB
-           |
-           |line2
-           |line3
-        """.trimMargin()
+           line1
+            lineA
+            lineB
+           
+           line2
+           line3
+        """.trimIndent()
     val result = IterativePatchUtil.applyPatch(source, patch)
     assertEquals(expected.trim().replace("\r\n", "\n"), result.replace("\r\n", "\n"))
   }
@@ -275,17 +275,17 @@ class IterativePatchUtilTest {
             // Similar changes for black pawns
         """.trimIndent()
     val patch = """
-        | export class StandardChessModel implements GameModel {
-        |     // ... other methods ...
-        |
-        |-    getWinner(): 'white' | 'black' | 'draw' | null {
-        |+    getWinner(): ChessColor | 'draw' | null {
-        |         return null;
-        |     }
-        |
-        |     // ... other methods ...
-        | }
-        """.trimMargin()
+         export class StandardChessModel implements GameModel {
+             // ... other methods ...
+        
+        -    getWinner(): 'white' | 'black' | 'draw' | null {
+        +    getWinner(): ChessColor | 'draw' | null {
+                 return null;
+             }
+        
+             // ... other methods ...
+         }
+        """.trimIndent()
     val expected = """
             export class StandardChessModel implements GameModel {
                 geometry: BoardGeometry;
@@ -332,80 +332,37 @@ class IterativePatchUtilTest {
 
   @Test
   fun testGeneratePatchNoChanges() {
-    val oldCode = """
-            |line1
-            |line2
-            |line3
-        """.trimMargin()
+    val oldCode = "line1\nline2\nline3"
     val newCode = oldCode
     val result = IterativePatchUtil.generatePatch(oldCode, newCode)
-    val expected = """
-        """.trimMargin()
+    val expected = ""
     assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
   }
 
   @Test
   fun testGeneratePatchAddLine() {
-    val oldCode = """
-            |line1
-            |line2
-            |line3
-        """.trimMargin()
-    val newCode = """
-            |line1
-            |line2
-            |newLine
-            |line3
-        """.trimMargin()
+    val oldCode = "line1\nline2\nline3"
+    val newCode = "line1\nline2\nnewLine\nline3"
     val result = IterativePatchUtil.generatePatch(oldCode, newCode)
-    val expected = """
-            |  line1
-            |  line2
-            |+ newLine
-            |  line3
-        """.trimMargin()
+    val expected = "  line1\n  line2\n+ newLine\n  line3"
     assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
   }
 
   @Test
   fun testGeneratePatchRemoveLine() {
-    val oldCode = """
-            line1
-            line2
-            line3
-        """.trimIndent()
-    val newCode = """
-            line1
-            line3
-        """.trimIndent()
+    val oldCode = "line1\nline2\nline3"
+    val newCode = "line1\nline3"
     val result = IterativePatchUtil.generatePatch(oldCode, newCode)
-    val expected = """
-            |  line1
-            |- line2
-            |  line3
-        """.trimMargin()
+    val expected = "  line1\n- line2\n  line3"
     assertEquals(expected.trim().replace("\r\n", "\n"), result.trim().replace("\r\n", "\n"))
   }
 
   @Test
   fun testGeneratePatchModifyLine() {
-    val oldCode = """
-            line1
-            line2
-            line3
-        """.trimIndent()
-    val newCode = """
-            line1
-            modifiedLine2
-            line3
-        """.trimIndent()
+    val oldCode = "line1\nline2\nline3"
+    val newCode = "line1\nmodifiedLine2\nline3"
     val result = IterativePatchUtil.generatePatch(oldCode, newCode)
-    val expected = """
-            |  line1
-            |- line2
-            |+ modifiedLine2
-            |  line3
-        """.trimMargin()
+    val expected = "  line1\n- line2\n+ modifiedLine2\n  line3"
     assertEquals(
       expected.trim().replace("\r\n", "\n"),
       result.trim().replace("\r\n", "\n")
@@ -431,16 +388,16 @@ class IterativePatchUtilTest {
         """.trimIndent()
     val result = IterativePatchUtil.generatePatch(oldCode, newCode)
     val expected = """
-            |  function example() {
-            |-     console.log("Hello");
-            |-     // Some comment
-            |-     return true;
-            |+     console.log("Hello, World!");
-            |+     // Modified comment
-            |+     let x = 5;
-            |+     return x > 0;
-            |  }
-        """.trimMargin()
+              function example() {
+            -     console.log("Hello");
+            -     // Some comment
+            -     return true;
+            +     console.log("Hello, World!");
+            +     // Modified comment
+            +     let x = 5;
+            +     return x > 0;
+              }
+        """.trimIndent()
     assertEquals(
       expected.trim().replace("\r\n", "\n"),
       result.trim().replace("\r\n", "\n")

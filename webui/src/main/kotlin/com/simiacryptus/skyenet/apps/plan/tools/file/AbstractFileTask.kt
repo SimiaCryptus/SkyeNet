@@ -50,13 +50,7 @@ abstract class AbstractFileTask<T : FileTaskConfigBase>(
       .joinToString("\n\n") { relativePath ->
         val file = root.resolve(relativePath).toFile()
         try {
-          """
-                |# $relativePath
-                |
-                |$TRIPLE_TILDE
-                |${codeFiles[file.toPath()] ?: file.readText()}
-                |$TRIPLE_TILDE
-                """.trimMargin()
+          "# $relativePath\n\n$TRIPLE_TILDE\n${codeFiles[file.toPath()] ?: file.readText()}\n$TRIPLE_TILDE"
         } catch (e: Throwable) {
           log.warn("Error reading file: $relativePath", e)
           ""

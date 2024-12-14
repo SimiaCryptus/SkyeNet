@@ -28,11 +28,7 @@ abstract class AbstractTask<T : TaskConfigBase>(
 
   open fun getPriorCode(planProcessingState: PlanProcessingState) =
     taskConfig?.task_dependencies?.joinToString("\n\n\n") { dependency ->
-      """
-        |# $dependency
-        |
-        |${planProcessingState.taskResult[dependency] ?: ""}
-        """.trimMargin()
+      "# $dependency\n\n${planProcessingState.taskResult[dependency] ?: ""}"
     } ?: ""
 
 

@@ -2,14 +2,14 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.simiacryptus.jopenai.describe.AbbrevWhitelistYamlDescriber
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask.CommandAutoFixTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
-import com.simiacryptus.skyenet.apps.plan.tools.PlanningTask.PlanningTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.tools.PlanningTask.TaskBreakdownResult
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTypes
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
-import com.simiacryptus.skyenet.apps.plan.tools.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask
+import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask.CommandAutoFixTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.PlanningTask.PlanningTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.PlanningTask.TaskBreakdownResult
+import com.simiacryptus.skyenet.apps.plan.tools.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 
@@ -21,8 +21,7 @@ open class PlanSettings(
   val budget: Double = 2.0,
   val taskSettings: MutableMap<String, TaskSettingsBase> = TaskType.values().associateWith { taskType ->
     TaskSettingsBase(
-      taskType.name,
-      when (taskType) {
+      taskType.name, when (taskType) {
         TaskType.FileModification, TaskType.Inquiry -> true
         else -> false
       }
@@ -38,8 +37,7 @@ open class PlanSettings(
   var googleSearchEngineId: String? = null,
 ) {
 
-  fun getTaskSettings(taskType: TaskType<*, *>): TaskSettingsBase =
-    taskSettings[taskType.name] ?: TaskSettingsBase(taskType.name)
+  fun getTaskSettings(taskType: TaskType<*, *>): TaskSettingsBase = taskSettings[taskType.name] ?: TaskSettingsBase(taskType.name)
 
   fun setTaskSettings(taskType: TaskType<*, *>, settings: TaskSettingsBase) {
     taskSettings[taskType.name] = settings
@@ -77,24 +75,21 @@ open class PlanSettings(
   fun planningActor(): ParsedActor<TaskBreakdownResult> {
     val planTaskSettings = this.getTaskSettings(TaskType.TaskPlanning)
     val prompt = """
-                    |Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
-                    |
-                    |For each task:
-                    |* Detail files input and output file
-                    |* Describe task execution dependencies and order
-                    |* Provide a brief description of the task
-                    |* Specify important interface and integration details (each task will run independently off of a copy of this plan)
-                    |
-                    |Tasks can be of the following types: 
-                    |${
-      getAvailableTaskTypes(this).joinToString("\n") { taskType ->
-        "* ${getImpl(this, taskType).promptSegment()}"
-      }
-    }
-                    |
-                    |Creating directories and initializing source control are out of scope.
-                    |${if (planTaskSettings.enabled) "Do not start your plan with a plan to plan!\n" else ""}
-                    """.trimMargin()
+                      Given a user request, identify and list smaller, actionable tasks that can be directly implemented in code.
+                      
+                      For each task:
+                      * Detail files input and output file
+                      * Describe task execution dependencies and order
+                      * Provide a brief description of the task
+                      * Specify important interface and integration details (each task will run independently off of a copy of this plan)
+                      
+                      Tasks can be of the following types: 
+                      """.trimIndent() + getAvailableTaskTypes(this).joinToString("\n") { taskType ->
+      "* ${getImpl(this, taskType).promptSegment()}"
+    } + """
+                      
+                      Creating directories and initializing source control are out of scope.
+                      """.trimIndent() + (if (planTaskSettings.enabled) "Do not start your plan with a plan to plan!\n" else "")
     val describer = describer()
     val parserPrompt = """
 Task Subtype Schema:
@@ -139,22 +134,17 @@ ${taskType.name}:
     var exampleInstance = TaskBreakdownResult(
       tasksByID = mapOf(
         "1" to CommandAutoFixTaskConfigData(
-          task_description = "Task 1",
-          task_dependencies = listOf(),
-          commands = listOf(
+          task_description = "Task 1", task_dependencies = listOf(), commands = listOf(
             CommandAutoFixTask.CommandWithWorkingDir(
-              command = listOf("echo", "Hello, World!"),
-              workingDir = "."
+              command = listOf("echo", "Hello, World!"), workingDir = "."
             )
           )
-        ),
-        "2" to FileModificationTaskConfigData(
+        ), "2" to FileModificationTaskConfigData(
           task_description = "Task 2",
           task_dependencies = listOf("1"),
           input_files = listOf("input2.txt"),
           output_files = listOf("output2.txt"),
-        ),
-        "3" to PlanningTaskConfigData(
+        ), "3" to PlanningTaskConfigData(
           task_description = "Task 3",
           task_dependencies = listOf("2"),
         )

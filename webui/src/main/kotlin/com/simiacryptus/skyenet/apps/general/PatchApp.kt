@@ -133,34 +133,19 @@ abstract class PatchApp(
     val output = output(task)
     if (output.exitCode == 0 && settings.exitCodeOption == "nonzero") {
       task.complete(
-        """
-                |<div>
-                |<div><b>Command executed successfully</b></div>
-                |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
-                |</div>
-                |""".trimMargin()
+        "<div>\n<div><b>Command executed successfully</b></div>\n${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}\n</div>"
       )
       return output
     }
     if (settings.exitCodeOption == "zero" && output.exitCode != 0) {
       task.complete(
-        """
-                |<div>
-                |<div><b>Command failed</b></div>
-                |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
-                |</div>
-                |""".trimMargin()
+        "<div>\n<div><b>Command failed</b></div>\n${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}\n</div>"
       )
       return output
     }
     try {
       task.add(
-        """
-                |<div>
-                |<div><b>Command exit code: ${output.exitCode}</b></div>
-                |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
-                |</div>
-                """.trimMargin()
+        "<div>\n<div><b>Command exit code: ${output.exitCode}</b></div>\n${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}\n</div>"
       )
       fixAll(settings, output, task, ui, api)
     } catch (e: Exception) {
@@ -231,33 +216,26 @@ abstract class PatchApp(
           )
         )
       ),
-      prompt = """
-                |You are a helpful AI that helps people with coding.
-                |
-                |You will be answering questions about the following project:
-                |
-                |Project Root: ${settings.workingDirectory?.absolutePath ?: ""}
-                |
-                |Files:
-                |${projectSummary()}
-                |
-                |Given the response of a build/test process, identify one or more distinct errors.
-                |For each error:
-                |   1) predict the files that need to be fixed
-                |   2) predict related files that may be needed to debug the issue
-                |   3) specify a search string to find relevant files - be as specific as possible
-                |${if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""}
-                """.trimMargin(),
-      model = model
+      model = model,
+      prompt = ("""
+        You are a helpful AI that helps people with coding.
+        
+        You will be answering questions about the following project:
+        
+        Project Root: """.trimIndent() + (settings.workingDirectory?.absolutePath ?: "") + """
+        
+        Files:
+        """.trimIndent() + projectSummary() + """
+        
+        Given the response of a build/test process, identify one or more distinct errors.
+        For each error:
+           1) predict the files that need to be fixed
+           2) predict related files that may be needed to debug the issue
+           3) specify a search string to find relevant files - be as specific as possible
+        """.trimIndent() + (if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""))
     ).answer(
       listOf(
-        """
-                |$promptPrefix
-                |
-                |${tripleTilde}
-                |${output.output}
-                |${tripleTilde}
-                """.trimMargin()
+        "$promptPrefix\n\n${tripleTilde}\n${output.output}\n${tripleTilde}"
       ), api = api
     )
     task.add(
@@ -285,11 +263,7 @@ abstract class PatchApp(
       }?.toSet() ?: emptySet()
       task.verbose(
         MarkdownUtil.renderMarkdown(
-          """
-                    |Search results:
-                    |
-                    |${searchResults.joinToString("\n") { "* `$it`" }}
-                    """.trimMargin(), tabs = false, ui = ui
+          "Search results:\n\n${searchResults.joinToString("\n") { "* `$it`" }}", tabs = false, ui = ui
         )
       )
       Retryable(ui, task) { content ->
@@ -331,62 +305,57 @@ abstract class PatchApp(
     val summary = codeSummary(prunedPaths)
     val response = SimpleActor(
       prompt = """
-                    |You are a helpful AI that helps people with coding.
-                    |
-                    |You will be answering questions about the following code:
-                    |
-                    |$summary
-                    |
-                    |
-                    |Response should use one or more code patches in diff format within ${tripleTilde}diff code blocks.
-                    |Each diff should be preceded by a header that identifies the file being modified.
-                    |The diff format should use + for line additions, - for line deletions.
-                    |The diff should include 2 lines of context before and after every change.
-                    |
-                    |Example:
-                    |
-                    |Here are the patches:
-                    |
-                    |### src/utils/exampleUtils.js
-                    |${tripleTilde}diff
-                    | // Utility functions for example feature
-                    | const b = 2;
-                    | function exampleFunction() {
-                    |-   return b + 1;
-                    |+   return b + 2;
-                    | }
-                    |${tripleTilde}
-                    |
-                    |### tests/exampleUtils.test.js
-                    |${tripleTilde}diff
-                    | // Unit tests for exampleUtils
-                    | const assert = require('assert');
-                    | const { exampleFunction } = require('../src/utils/exampleUtils');
-                    | 
-                    | describe('exampleFunction', () => {
-                    |-   it('should return 3', () => {
-                    |+   it('should return 4', () => {
-                    |     assert.equal(exampleFunction(), 3);
-                    |   });
-                    | });
-                    |${tripleTilde}
-                    |
-                    |If needed, new files can be created by using code blocks labeled with the filename in the same manner.
-                    """.trimMargin(),
+        You are a helpful AI that helps people with coding.
+        
+        You will be answering questions about the following code:
+        
+        """.trimIndent() + summary + """
+        
+        
+        Response should use one or more code patches in diff format within """.trimIndent() + tripleTilde + """diff code blocks.
+        Each diff should be preceded by a header that identifies the file being modified.
+        The diff format should use + for line additions, - for line deletions.
+        The diff should include 2 lines of context before and after every change.
+        
+        Example:
+        
+        Here are the patches:
+        
+        ### src/utils/exampleUtils.js
+        """.trimIndent() + tripleTilde + """diff
+         // Utility functions for example feature
+         const b = 2;
+         function exampleFunction() {
+        -   return b + 1;
+        +   return b + 2;
+         }
+        """.trimIndent() + tripleTilde + """
+        
+        ### tests/exampleUtils.test.js
+        """.trimIndent() + tripleTilde + """diff
+         // Unit tests for exampleUtils
+         const assert = require('assert');
+         const { exampleFunction } = require('../src/utils/exampleUtils');
+         
+         describe('exampleFunction', () => {
+        -   it('should return 3', () => {
+        +   it('should return 4', () => {
+             assert.equal(exampleFunction(), 3);
+           });
+         });
+        """.trimIndent() + tripleTilde + """
+        
+        If needed, new files can be created by using code blocks labeled with the filename in the same manner.
+        """.trimIndent(),
       model = model
     ).answer(
       listOf(
-        """
-                |$promptPrefix
-                |
-                |${tripleTilde}
-                |${output.output}
-                |${tripleTilde}
-                |
-                |Focus on and Fix the Error:
-                |  ${error.message?.replace("\n", "\n  ") ?: ""}
-                |${if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""}
-                """.trimMargin()
+        "$promptPrefix\n\n${tripleTilde}\n${output.output}\n${tripleTilde}\n\nFocus on and Fix the Error:\n  ${
+          error.message?.replace(
+            "\n",
+            "\n  "
+          ) ?: ""
+        }\n${if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""}"
       ), api = api
     )
     var markdown = ui.socketManager?.addApplyFileDiffLinks(

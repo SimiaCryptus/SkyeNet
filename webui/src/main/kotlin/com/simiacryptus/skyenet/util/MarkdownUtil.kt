@@ -78,17 +78,15 @@ ${Thread.currentThread().stackTrace.joinToString("\n") { "<li>" + it.toString() 
         log.warn("Failed to render Mermaid diagram", e)
       }
       val replacement = if (tabs) """
-              |<div class="tabs-container" id="${UUID.randomUUID()}">
-              |  <div class="tabs">
-              |    <button class="tab-button active" data-for-tab="1">Diagram</button>
-              |    <button class="tab-button" data-for-tab="2">Source</button>
-              |  </div>
-              |  <div class="tab-content active" data-tab="1">$mermaidDiagramHTML</div>
-              |  <div class="tab-content" data-tab="2"><pre><code class="language-mermaid">$fixedMermaidCode</code></pre></div>
-              |</div>
-              |""".trimMargin() else """
-              |$mermaidDiagramHTML
-              |""".trimMargin()
+        <div class="tabs-container" id="""".trimIndent() + UUID.randomUUID() + """">
+          <div class="tabs">
+            <button class="tab-button active" data-for-tab="1">Diagram</button>
+            <button class="tab-button" data-for-tab="2">Source</button>
+          </div>
+          <div class="tab-content active" data-tab="1">""".trimIndent() + mermaidDiagramHTML + """</div>
+          <div class="tab-content" data-tab="2"><pre><code class="language-mermaid">""".trimIndent() + fixedMermaidCode + """</code></pre></div>
+        </div>
+        """.trimIndent() else mermaidDiagramHTML
       htmlContent = htmlContent.replace(match.value, replacement)
     }
     return htmlContent

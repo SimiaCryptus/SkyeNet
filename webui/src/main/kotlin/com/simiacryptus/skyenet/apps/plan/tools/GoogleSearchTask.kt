@@ -36,10 +36,10 @@ class GoogleSearchTask(
   )
 
   override fun promptSegment() = """
-GoogleSearch - Search Google for web results
-** Specify the search query
-** Specify the number of results to return (max 10)
-""".trimMargin()
+    GoogleSearch - Search Google for web results
+    ** Specify the search query
+    ** Specify the number of results to return (max 10)
+    """.trimIndent()
 
   override fun run(
     agent: PlanCoordinator,

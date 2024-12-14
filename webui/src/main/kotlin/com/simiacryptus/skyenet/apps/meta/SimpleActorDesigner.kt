@@ -44,8 +44,8 @@ class SimpleActorDesigner(
 
         @Language("Markdown")fun exampleSimpleActor() = SimpleActor(
             prompt = "${'"'}"
-            |You are a writing assistant.
-            "${'"'}".trimMargin().trim(),
+            You are a writing assistant.
+            "${'"'}".trimIndent(),
         )
         ```
 

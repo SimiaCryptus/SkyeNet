@@ -36,32 +36,30 @@ class DocumentationTask(
     state = state
   )
 
-  override fun promptSegment(): String {
-    return """
- Documentation - Generate documentation
-   ** List input file names and tasks to be examined
-   ** List topics to document
-   ** List output files to be modified or created with documentation
-            """.trimMargin()
-  }
+  override fun promptSegment() = """
+    Documentation - Generate documentation
+      ** List input file names and tasks to be examined
+      ** List topics to document
+      ** List output files to be modified or created with documentation
+  """.trimIndent()
 
   val documentationGeneratorActor by lazy {
     SimpleActor(
       name = "DocumentationGenerator",
       prompt = """
- Create detailed and clear documentation for the provided code, covering its purpose, functionality, inputs, outputs, and any assumptions or limitations.
- Use a structured and consistent format that facilitates easy understanding and navigation. 
- Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
- Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
- For existing files, provide documentation in the form of comments within the code.
- For new files, create separate markdown files with the documentation.
- Response format:
- For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
- For new files: Use $TRIPLE_TILDE markdown blocks with a header specifying the new file path.
- The diff format should use + for line additions, - for line deletions.
- Include 2 lines of context before and after every change in diffs.
- Separate code blocks with a single blank line.
-                """.trimMargin(),
+       Create detailed and clear documentation for the provided code, covering its purpose, functionality, inputs, outputs, and any assumptions or limitations.
+       Use a structured and consistent format that facilitates easy understanding and navigation. 
+       Include code examples where applicable, and explain the rationale behind key design decisions and algorithm choices.
+       Document any known issues or areas for improvement, providing guidance for future developers on how to extend or maintain the code.
+       For existing files, provide documentation in the form of comments within the code.
+       For new files, create separate markdown files with the documentation.
+       Response format:
+       For existing files: Use ${TRIPLE_TILDE}diff code blocks with a header specifying the file path.
+       For new files: Use $TRIPLE_TILDE markdown blocks with a header specifying the new file path.
+       The diff format should use + for line additions, - for line deletions.
+       Include 2 lines of context before and after every change in diffs.
+       Separate code blocks with a single blank line.
+       """.trimIndent(),
       model = planSettings.getTaskSettings(TaskType.Documentation).model ?: planSettings.defaultModel,
       temperature = planSettings.temperature,
     )

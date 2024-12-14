@@ -43,11 +43,11 @@ class WebSearchAndIndexTask(
   )
 
   override fun promptSegment() = """
-        WebSearchAndIndex - Search web, download content, parse and index for future embedding search
-        ** Specify the search query
-        ** Specify number of results to process (max 10)
-        ** Specify output directory for indexed content
-    """.trimMargin()
+    WebSearchAndIndex - Search web, download content, parse and index for future embedding search
+    ** Specify the search query
+    ** Specify number of results to process (max 10)
+    ** Specify output directory for indexed content
+    """.trimIndent()
 
   override fun run(
     agent: PlanCoordinator,

@@ -29,29 +29,27 @@ class PerformanceAnalysisTask(
 
   override val actorName = "PerformanceAnalysis"
   override val actorPrompt = """
-Analyze the provided code for performance issues and bottlenecks. Focus exclusively on:
-1. Time complexity of algorithms
-2. Memory usage and potential leaks
-3. I/O operations and network calls
-4. Concurrency and parallelism opportunities
-5. Caching and memoization possibilities
-
-Provide detailed explanations for each identified performance issue, including:
- The reason it's a performance concern
- The potential impact on system performance
-- Quantitative estimates of performance impact where possible
-
-Format the response as a markdown document with appropriate headings and code snippets.
-Do not provide code changes, focus on analysis and recommendations.
+      Analyze the provided code for performance issues and bottlenecks. Focus exclusively on:
+      1. Time complexity of algorithms
+      2. Memory usage and potential leaks
+      3. I/O operations and network calls
+      4. Concurrency and parallelism opportunities
+      5. Caching and memoization possibilities
+      
+      Provide detailed explanations for each identified performance issue, including:
+       The reason it's a performance concern
+       The potential impact on system performance
+       Quantitative estimates of performance impact where possible
+      
+      Format the response as a markdown document with appropriate headings and code snippets.
+      Do not provide code changes, focus on analysis and recommendations.
     """.trimIndent()
 
-  override fun promptSegment(): String {
-    return """
-PerformanceAnalysis - Analyze code for performance issues and suggest improvements
-  ** Specify the files to be analyzed
-  ** Optionally provide specific areas of focus for the analysis (e.g., time complexity, memory usage, I/O operations)
-        """.trimMargin()
-  }
+  override fun promptSegment()= """
+    PerformanceAnalysis - Analyze code for performance issues and suggest improvements
+      ** Specify the files to be analyzed
+      ** Optionally provide specific areas of focus for the analysis (e.g., time complexity, memory usage, I/O operations)
+  """.trimIndent()
 
   fun getFiles(): List<String> {
     return taskConfig?.input_files ?: emptyList()

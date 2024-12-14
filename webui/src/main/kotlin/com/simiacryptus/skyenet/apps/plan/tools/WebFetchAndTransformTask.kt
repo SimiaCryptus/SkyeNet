@@ -39,7 +39,7 @@ open class WebFetchAndTransformTask(
         WebFetchAndTransform - Fetch a web page, strip HTML, and transform content
         ** Specify the URL to fetch
         ** Specify the desired format or focus for the transformation
-    """.trimMargin()
+    """.trimIndent()
 
   override fun run(
     agent: PlanCoordinator,
@@ -81,11 +81,7 @@ open class WebFetchAndTransformTask(
       model = planSettings.defaultModel,
     ).answer(
       listOf(
-        """
-              |Transform the following web content according to this goal: $transformationGoal
-              |
-              |$content
-          """.trimMargin(),
+        "Transform the following web content according to this goal: $transformationGoal\n\n$content",
       ), api
     )
   }

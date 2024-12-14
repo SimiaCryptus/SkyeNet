@@ -46,13 +46,11 @@ Use diff format to show the proposed security fixes clearly.
 
   override fun getAnalysisInstruction(): String = "Perform a security audit on the following code"
 
-  override fun promptSegment(): String {
-    return """
-SecurityAudit - Perform an automated security audit and provide suggestions for improving code security
-  ** Specify the files to be audited
-  ** Optionally provide specific areas of focus for the security audit
-        """.trimMargin()
-  }
+  override fun promptSegment() = """
+    SecurityAudit - Perform an automated security audit and provide suggestions for improving code security
+      ** Specify the files to be audited
+      ** Optionally provide specific areas of focus for the security audit
+    """.trimIndent()
 
 
   companion object {
