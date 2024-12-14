@@ -191,7 +191,7 @@ export const ThemeMenu: React.FC = () => {
             // Support both Alt+T (Windows/Linux) and Cmd+T (Mac)
             const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
             const isShortcutTriggered = isMac
-                ? (event.metaKey && event.key.toLowerCase() === 't')
+                ? (event.ctrlKey && event.key.toLowerCase() === 't')
                 : (event.altKey && event.key.toLowerCase() === 't');
             if (isShortcutTriggered) {
                 event.preventDefault();
@@ -209,7 +209,7 @@ export const ThemeMenu: React.FC = () => {
             `;
                 dispatch(showModal('Theme Selection'));
                 dispatch(setModalContent(themeContent));
-                const shortcutKey = isMac ? '⌘+T' : 'Alt+T';
+                const shortcutKey = isMac ? 'Ctrl+T' : 'Alt+T';
                 logDebug(`Theme modal opened via keyboard shortcut (${shortcutKey})`);
             }
         };
