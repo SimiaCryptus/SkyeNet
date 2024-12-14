@@ -188,7 +188,12 @@ export const ThemeMenu: React.FC = () => {
 // Add keyboard shortcut handler
     React.useEffect(() => {
         const handleKeyboardShortcut = (event: KeyboardEvent) => {
-            if (event.altKey && event.key.toLowerCase() === 't') {
+            // Support both Alt+T (Windows/Linux) and Cmd+T (Mac)
+            const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+            const isShortcutTriggered = isMac
+                ? (event.metaKey && event.key.toLowerCase() === 't')
+                : (event.altKey && event.key.toLowerCase() === 't');
+            if (isShortcutTriggered) {
                 event.preventDefault();
                 const themeContent = `
                 <div>
@@ -204,7 +209,8 @@ export const ThemeMenu: React.FC = () => {
             `;
                 dispatch(showModal('Theme Selection'));
                 dispatch(setModalContent(themeContent));
-                logDebug('Theme modal opened via keyboard shortcut (Alt+T)');
+                const shortcutKey = isMac ? '⌘+T' : 'Alt+T';
+                logDebug(`Theme modal opened via keyboard shortcut (${shortcutKey})`);
             }
         };
         document.addEventListener('keydown', handleKeyboardShortcut);

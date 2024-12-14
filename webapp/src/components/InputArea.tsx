@@ -17,8 +17,45 @@ import {
     FaCheckSquare,
     FaImage,
     FaEye,
+    FaChevronUp,
+    FaChevronDown,
     FaEdit
 } from 'react-icons/fa';
+const CollapseButton = styled.button`
+    position: absolute;
+    top: -12px;
+    right: 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: ${({theme}) => theme.colors.surface};
+    border: 1px solid ${({theme}) => theme.colors.border};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: ${({theme}) => theme.colors.text};
+    transition: all 0.2s ease;
+    &:hover {
+        background: ${({theme}) => theme.colors.hover};
+        transform: translateY(-1px);
+    }
+`;
+const CollapsedPlaceholder = styled.div`
+    padding: 0.75rem;
+    background: ${({theme}) => theme.colors.surface}dd;
+    border-top: 1px solid ${({theme}) => theme.colors.border};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: sticky;
+    bottom: 0;
+    backdrop-filter: blur(16px);
+    &:hover {
+        background: ${({theme}) => theme.colors.hover};
+    }
+`;
 // Add preview container styles
 const PreviewContainer = styled.div`
     padding: 0.5rem;
@@ -195,9 +232,17 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
     log('Initializing component');
     const [message, setMessage] = useState('');
     const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const config = useSelector((state: RootState) => state.config);
     const messages = useSelector((state: RootState) => state.messages.messages);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const handleToggleCollapse = useCallback(() => {
+        setIsCollapsed(prev => !prev);
+        if (isCollapsed) {
+            // Focus textarea when expanding
+            setTimeout(() => textAreaRef.current?.focus(), 0);
+        }
+    }, [isCollapsed]);
     const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
     const shouldHideInput = config.singleInput && messages.length > 0;
     // Add syntax highlighting effect
@@ -281,11 +326,27 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
 
 
     return (
+        <>
+        {isCollapsed ? (
+            <CollapsedPlaceholder 
+                onClick={handleToggleCollapse}
+                data-testid="expand-input"
+            >
+                <FaChevronUp /> Click to expand input area
+            </CollapsedPlaceholder>
+        ) : (
         <InputContainer 
             $hide={shouldHideInput}
             data-testid="input-container"
             id="chat-input-container"
         >
+            <CollapseButton
+                onClick={handleToggleCollapse}
+                title="Collapse input area"
+                data-testid="collapse-input"
+            >
+                <FaChevronDown />
+            </CollapseButton>
             <StyledForm onSubmit={handleSubmit}>
                 <div style={{ width: '100%' }}>
                     <EditorToolbar>
@@ -426,6 +487,8 @@ const InputArea = memo(function InputArea({onSendMessage}: InputAreaProps) {
                 </div>
             </StyledForm>
         </InputContainer>
+        )}
+        </>
     );
 });
 
