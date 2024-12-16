@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.apps.general
 
 import com.simiacryptus.jopenai.API
+import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.JsonDescriber
 import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.jopenai.models.OpenAIModels
@@ -21,6 +22,8 @@ import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
 import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
+import java.io.File
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
 open class OutlineApp(
@@ -130,22 +133,30 @@ class OutlineAgent(
     private val tokenizer = GPT4Tokenizer(false)
 
     fun buildMap() {
-        val message = ui.newTask(false)
-        tabbedDisplay["Content"] = message.placeholder
+        val task = ui.newTask(false)
+        val api = (api as ChatClient).getChildClient().apply {
+            val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
+            createFile.second?.apply {
+                logStreams += this.outputStream().buffered()
+                log.debug("Created API log file")
+                task.verbose("API log: <a href=\"file:///$this\">$this</a>")
+            }
+        }
+        tabbedDisplay["Content"] = task.placeholder
         val outlineManager = try {
-            message.echo(renderMarkdown(this.userMessage, ui = ui))
+            task.echo(renderMarkdown(this.userMessage, ui = ui))
             val root = initial.answer(listOf(this.userMessage), api = api)
-            message.add(renderMarkdown(root.text, ui = ui))
-            message.verbose(JsonUtil.toJson(root.obj))
-            message.complete()
+            task.add(renderMarkdown(root.text, ui = ui))
+            task.verbose(JsonUtil.toJson(root.obj))
+            task.complete()
             OutlineManager(OutlineManager.OutlinedText(root.text, root.obj))
         } catch (e: Exception) {
-            message.error(ui, e)
+            task.error(ui, e)
             throw e
         }
 
         if (models.isNotEmpty()) {
-            processRecursive(outlineManager, outlineManager.rootNode, models, message)
+            processRecursive(outlineManager, outlineManager.rootNode, models, task)
             while (activeThreadCounter.get() == 0) Thread.sleep(100) // Wait for at least one thread to start
             while (activeThreadCounter.get() > 0) Thread.sleep(100) // Wait for all threads to finish
         }
@@ -153,51 +164,75 @@ class OutlineAgent(
         val sessionDir = dataStorage.getSessionDir(user, session)
         sessionDir.resolve("nodes.json").writeText(JsonUtil.toJson(outlineManager.nodes))
 
+        val finalOutline = finalOutline(outlineManager, sessionDir)
+
+        if (showProjector) {
+            showProjector(api, outlineManager, finalOutline)
+        }
+
+        if (writeFinalEssay) {
+            finalEssay(finalOutline, outlineManager, sessionDir)
+        }
+        tabbedDisplay.update()
+    }
+
+    private fun finalOutline(
+        outlineManager: OutlineManager,
+        sessionDir: File
+    ): List<OutlineManager.Node> {
         val finalOutlineMessage = ui.newTask(false)
         tabbedDisplay["Outline"] = finalOutlineMessage.placeholder
         finalOutlineMessage.header("Final Outline")
         val finalOutline = outlineManager.buildFinalOutline()
         finalOutlineMessage.verbose(JsonUtil.toJson(finalOutline))
-        val textOutline = finalOutline?.let { NodeList(it) }?.getTextOutline() ?: ""
+        val textOutline = NodeList(finalOutline).getTextOutline()
         finalOutlineMessage.complete(renderMarkdown(textOutline, ui = ui))
         sessionDir.resolve("finalOutline.json").writeText(JsonUtil.toJson(finalOutline))
         sessionDir.resolve("textOutline.md").writeText(textOutline)
+        return finalOutline
+    }
 
-        if (showProjector) {
-            val projectorMessage = ui.newTask(false)
-            tabbedDisplay["Projector"] = projectorMessage.placeholder
-            projectorMessage.header("Embedding Projector")
-            try {
-                val response = TensorflowProjector(
-                    api = api,
-                    dataStorage = dataStorage,
-                    sessionID = session,
-                    session = ui,
-                    userId = user,
-                ).writeTensorflowEmbeddingProjectorHtml(
-                    *outlineManager.getLeafDescriptions(finalOutline?.let { NodeList(it) }!!).toTypedArray()
-                )
-                projectorMessage.complete(response)
-            } catch (e: Exception) {
-                log.warn("Error", e)
-                projectorMessage.error(ui, e)
-            }
+    private fun showProjector(
+        api: ChatClient,
+        outlineManager: OutlineManager,
+        finalOutline: List<OutlineManager.Node>
+    ) {
+        val projectorMessage = ui.newTask(false)
+        tabbedDisplay["Projector"] = projectorMessage.placeholder
+        projectorMessage.header("Embedding Projector")
+        try {
+            val response = TensorflowProjector(
+                api = api,
+                dataStorage = dataStorage,
+                sessionID = session,
+                session = ui,
+                userId = user,
+            ).writeTensorflowEmbeddingProjectorHtml(
+                *outlineManager.getLeafDescriptions(NodeList(finalOutline)).toTypedArray()
+            )
+            projectorMessage.complete(response)
+        } catch (e: Exception) {
+            log.warn("Error", e)
+            projectorMessage.error(ui, e)
         }
+    }
 
-        if (writeFinalEssay) {
-            val finalRenderMessage = ui.newTask(false)
-            tabbedDisplay["Final Essay"] = finalRenderMessage.placeholder
-            finalRenderMessage.header("Final Render")
-            try {
-                val finalEssay = buildFinalEssay(finalOutline?.let { NodeList(it) }!!, outlineManager)
-                sessionDir.resolve("finalEssay.md").writeText(finalEssay)
-                finalRenderMessage.complete(renderMarkdown(finalEssay, ui = ui))
-            } catch (e: Exception) {
-                log.warn("Error", e)
-                finalRenderMessage.error(ui, e)
-            }
+    private fun finalEssay(
+        finalOutline: List<OutlineManager.Node>,
+        outlineManager: OutlineManager,
+        sessionDir: File
+    ) {
+        val finalRenderMessage = ui.newTask(false)
+        tabbedDisplay["Final Essay"] = finalRenderMessage.placeholder
+        finalRenderMessage.header("Final Render")
+        try {
+            val finalEssay = buildFinalEssay(NodeList(finalOutline), outlineManager)
+            sessionDir.resolve("finalEssay.md").writeText(finalEssay)
+            finalRenderMessage.complete(renderMarkdown(finalEssay, ui = ui))
+        } catch (e: Exception) {
+            log.warn("Error", e)
+            finalRenderMessage.error(ui, e)
         }
-        tabbedDisplay.update()
     }
 
     private fun buildFinalEssay(
@@ -226,11 +261,19 @@ class OutlineAgent(
         }
         for ((item, childNode) in terminalNodeMap) {
             activeThreadCounter.incrementAndGet()
-            val message = ui.newTask(false)
-            tabbedDisplay[item] = message.placeholder
+            val task = ui.newTask(false)
+            val api = (api as ChatClient).getChildClient().apply {
+                val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
+                createFile.second?.apply {
+                    logStreams += this.outputStream().buffered()
+                    log.debug("Created API log file")
+                    task.verbose("API log: <a href=\"file:///$this\">$this</a>")
+                }
+            }
+            tabbedDisplay[item] = task.placeholder
             pool.submit {
                 try {
-                    val newNode = processNode(node, item, manager, message, models.first()) ?: return@submit
+                    val newNode = processNode(node, item, manager, task, models.first(), api) ?: return@submit
                     synchronized(manager.expansionMap) {
                         if (!manager.expansionMap.containsKey(childNode)) {
                             manager.expansionMap[childNode] = newNode
@@ -238,13 +281,13 @@ class OutlineAgent(
                             val existingNode = manager.expansionMap[childNode]!!
                             val errorMessage = "Conflict: ${existingNode} vs ${newNode}"
                             log.warn(errorMessage)
-                            message.error(ui, RuntimeException(errorMessage))
+                            task.error(ui, RuntimeException(errorMessage))
                         }
                     }
-                    if (models.size > 1) processRecursive(manager, newNode, models.drop(1), message)
+                    if (models.size > 1) processRecursive(manager, newNode, models.drop(1), task)
                 } catch (e: Exception) {
                     log.warn("Error in processRecursive", e)
-                    message.error(ui, e)
+                    task.error(ui, e)
                 } finally {
                     activeThreadCounter.decrementAndGet()
                 }
@@ -259,6 +302,7 @@ class OutlineAgent(
         outlineManager: OutlineManager,
         message: SessionTask,
         model: ChatModel,
+        api: API,
     ): OutlineManager.OutlinedText? {
         if (tokenizer.estimateTokenCount(parent.text) <= minSize) {
             log.debug("Skipping: ${parent.text}")
@@ -338,7 +382,7 @@ interface OutlineActors {
                 exampleInstance = exampleNodeList(),
             )
 
-        private fun finalWriter(temperature: Double, model: ChatModel, maxIterations: Int = 5) = LargeOutputActor(
+        private fun finalWriter(temperature: Double, model: ChatModel, maxIterations: Int) = LargeOutputActor(
             model = model,
             temperature = temperature,
             maxIterations = maxIterations,

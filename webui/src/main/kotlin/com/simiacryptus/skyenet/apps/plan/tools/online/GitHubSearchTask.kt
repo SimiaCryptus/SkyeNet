@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.plan.tools
+package com.simiacryptus.skyenet.apps.plan.tools.online
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue

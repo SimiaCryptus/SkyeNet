@@ -3,9 +3,9 @@ package com.simiacryptus.skyenet.apps.plan
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask.CommandAutoFixTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.tools.ForeachTask.ForeachTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.tools.GoogleSearchTask.GoogleSearchTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.tools.PlanningTask.PlanningTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.plan.ForeachTask.ForeachTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.online.SimpleGoogleSearchTask.GoogleSearchTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.plan.PlanningTask.PlanningTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.RunShellCommandTask.RunShellCommandTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.file.CodeOptimizationTask.CodeOptimizationTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.file.CodeReviewTask.CodeReviewTaskConfigData
@@ -21,6 +21,12 @@ import com.simiacryptus.skyenet.apps.plan.tools.knowledge.KnowledgeIndexingTask
 import com.simiacryptus.skyenet.apps.plan.tools.knowledge.WebSearchAndIndexTask
 import com.simiacryptus.skyenet.apps.plan.tools.*
 import com.simiacryptus.skyenet.apps.plan.tools.file.*
+import com.simiacryptus.skyenet.apps.plan.tools.online.GitHubSearchTask
+import com.simiacryptus.skyenet.apps.plan.tools.online.SearchAndAnalyzeTask
+import com.simiacryptus.skyenet.apps.plan.tools.online.SimpleGoogleSearchTask
+import com.simiacryptus.skyenet.apps.plan.tools.online.WebFetchAndTransformTask
+import com.simiacryptus.skyenet.apps.plan.tools.plan.ForeachTask
+import com.simiacryptus.skyenet.apps.plan.tools.plan.PlanningTask
 import com.simiacryptus.util.DynamicEnum
 import com.simiacryptus.util.DynamicEnumDeserializer
 import com.simiacryptus.util.DynamicEnumSerializer
@@ -39,7 +45,7 @@ class TaskType<out T : TaskConfigBase, out U : TaskSettingsBase>(
 
     val TaskPlanning = TaskType("TaskPlanning", PlanningTaskConfigData::class.java, TaskSettingsBase::class.java)
     val Inquiry = TaskType("Inquiry", InquiryTaskConfigData::class.java, TaskSettingsBase::class.java)
-    val Search = TaskType("Search", SearchTask.SearchTaskConfigData::class.java, TaskSettingsBase::class.java)
+    val Search = TaskType("Search", FileSearchTask.SearchTaskConfigData::class.java, TaskSettingsBase::class.java)
     val EmbeddingSearch = TaskType("EmbeddingSearch", EmbeddingSearchTask.EmbeddingSearchTaskConfigData::class.java, TaskSettingsBase::class.java)
     val FileModification = TaskType("FileModification", FileModificationTaskConfigData::class.java, TaskSettingsBase::class.java)
     val Documentation = TaskType("Documentation", DocumentationTaskConfigData::class.java, TaskSettingsBase::class.java)
@@ -60,11 +66,13 @@ class TaskType<out T : TaskConfigBase, out U : TaskSettingsBase>(
     val WebSearchAndIndex = TaskType("WebSearchAndIndex", WebSearchAndIndexTask.WebSearchAndIndexTaskConfigData::class.java, TaskSettingsBase::class.java)
     val SeleniumSession = TaskType("SeleniumSession", SeleniumSessionTask.SeleniumSessionTaskConfigData::class.java, TaskSettingsBase::class.java)
     val CommandSession = TaskType("CommandSession", CommandSessionTask.CommandSessionTaskConfigData::class.java, TaskSettingsBase::class.java)
+    val SearchAndAnalyze = TaskType("SearchAndAnalyze", SearchAndAnalyzeTask.SearchAndAnalyzeTaskConfigData::class.java, TaskSettingsBase::class.java)
 
     init {
       registerConstructor(CommandAutoFix) { settings, task -> CommandAutoFixTask(settings, task) }
       registerConstructor(Inquiry) { settings, task -> InquiryTask(settings, task) }
-      registerConstructor(Search) { settings, task -> SearchTask(settings, task) }
+      registerConstructor(Search) { settings, task -> FileSearchTask(settings, task) }
+      registerConstructor(SearchAndAnalyze) { settings, task -> SearchAndAnalyzeTask(settings, task) }
       registerConstructor(EmbeddingSearch) { settings, task -> EmbeddingSearchTask(settings, task) }
       registerConstructor(FileModification) { settings, task -> FileModificationTask(settings, task) }
       registerConstructor(Documentation) { settings, task -> DocumentationTask(settings, task) }
@@ -78,7 +86,7 @@ class TaskType<out T : TaskConfigBase, out U : TaskSettingsBase>(
       registerConstructor(ForeachTask) { settings, task -> ForeachTask(settings, task) }
       registerConstructor(TaskPlanning) { settings, task -> PlanningTask(settings, task) }
       registerConstructor(GitHubSearch) { settings, task -> GitHubSearchTask(settings, task) }
-      registerConstructor(GoogleSearch) { settings, task -> GoogleSearchTask(settings, task) }
+      registerConstructor(GoogleSearch) { settings, task -> SimpleGoogleSearchTask(settings, task) }
       registerConstructor(WebFetchAndTransform) { settings, task -> WebFetchAndTransformTask(settings, task) }
       registerConstructor(KnowledgeIndexing) { settings, task -> KnowledgeIndexingTask(settings, task) }
       registerConstructor(WebSearchAndIndex) { settings, task -> WebSearchAndIndexTask(settings, task) }

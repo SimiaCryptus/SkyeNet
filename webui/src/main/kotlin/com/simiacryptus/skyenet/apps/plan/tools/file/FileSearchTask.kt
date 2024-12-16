@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.plan.tools
+package com.simiacryptus.skyenet.apps.plan.tools.file
 
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.ChatClient
@@ -13,10 +13,10 @@ import java.nio.file.Files
 import java.util.regex.Pattern
 import kotlin.streams.asSequence
 
-class SearchTask(
+class FileSearchTask(
   planSettings: PlanSettings,
   planTask: SearchTaskConfigData?
-) : AbstractTask<SearchTask.SearchTaskConfigData>(planSettings, planTask) {
+) : AbstractTask<FileSearchTask.SearchTaskConfigData>(planSettings, planTask) {
   class SearchTaskConfigData(
     @Description("The search pattern (substring or regex) to look for in the files")
     val search_pattern: String = "",
@@ -129,6 +129,6 @@ class SearchTask(
   )
 
   companion object {
-    private val log = LoggerFactory.getLogger(SearchTask::class.java)
+    private val log = LoggerFactory.getLogger(FileSearchTask::class.java)
   }
 }

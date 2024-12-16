@@ -1,4 +1,4 @@
-package com.simiacryptus.skyenet.apps.plan.tools
+package com.simiacryptus.skyenet.apps.plan.tools.online
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -16,10 +16,10 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
-class GoogleSearchTask(
+class SimpleGoogleSearchTask(
   planSettings: PlanSettings,
   planTask: GoogleSearchTaskConfigData?
-) : AbstractTask<GoogleSearchTask.GoogleSearchTaskConfigData>(planSettings, planTask) {
+) : AbstractTask<SimpleGoogleSearchTask.GoogleSearchTaskConfigData>(planSettings, planTask) {
   class GoogleSearchTaskConfigData(
     @Description("The search query to use for Google search")
     val search_query: String = "",
@@ -89,6 +89,6 @@ class GoogleSearchTask(
   }
 
   companion object {
-    private val log = LoggerFactory.getLogger(GoogleSearchTask::class.java)
+    private val log = LoggerFactory.getLogger(SimpleGoogleSearchTask::class.java)
   }
 }
