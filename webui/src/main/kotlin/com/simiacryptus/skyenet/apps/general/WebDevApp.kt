@@ -3,6 +3,7 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.diff.addApplyFileDiffLinks
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
+import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.jopenai.models.ApiModel.Role
@@ -36,6 +37,7 @@ open class WebDevApp(
   applicationName: String = "Web Dev Assistant v1.2",
   open val symbols: Map<String, Any> = mapOf(),
   val temperature: Double = 0.1,
+  val api2: OpenAIClient,
 ) : ApplicationServer(
   applicationName = applicationName,
   path = "/webdev",
@@ -59,6 +61,7 @@ open class WebDevApp(
       model = settings.model,
       parsingModel = settings.parsingModel,
       root = root,
+      api2 = api2,
     ).start(
       userMessage = userMessage,
     )
@@ -79,6 +82,7 @@ open class WebDevApp(
 
 class WebDevAgent(
   val api: API,
+  val api2: OpenAIClient,
   dataStorage: StorageInterface,
   session: Session,
   user: User?,
@@ -91,90 +95,92 @@ class WebDevAgent(
 //      parserClass = PageResourceListParser::class.java,
       resultClass = ProjectSpec::class.java,
       prompt = """
-                |Translate the user's idea into a detailed architecture for a simple web application. 
-                |          
-                |          List all html, css, javascript, and image files to be created, and for each file:
-                |          1. Mark with <file>filename</file> tags.
-                |          2. Describe the public interface / interaction with other components.
-                |          3. Core functional requirements.
-                |          
-                |Specify user interactions and how the application will respond to them.
-                |Identify key HTML classes and element IDs that will be used to bind the application to the HTML.
-                """.trimMargin(),
+                Translate the user's idea into a detailed architecture for a simple web application. 
+                          
+                          List all html, css, javascript, and image files to be created, and for each file:
+                          1. Mark with <file>filename</file> tags.
+                          2. Describe the public interface / interaction with other components.
+                          3. Core functional requirements.
+                          
+                Specify user interactions and how the application will respond to them.
+                Identify key HTML classes and element IDs that will be used to bind the application to the HTML.
+                """.trimIndent(),
       model = model,
       parsingModel = parsingModel,
     ),
     ActorTypes.CodeReviewer to SimpleActor(
       prompt = """
-                |Analyze the code summarized in the user's header-labeled code blocks.
-                |Review, look for bugs, and provide fixes. 
-                |Provide implementations for missing functions.
-                |
-                |Response should use one or more code patches in diff format within ```diff code blocks.
-                |Each diff should be preceded by a header that identifies the file being modified.
-                |The diff format should use + for line additions, - for line deletions.
-                |The diff should include 2 lines of context before and after every change.
-                |
-                |Example:
-                |
-                |Here are the patches:
-                |
-                |### src/utils/exampleUtils.js
-                |```diff
-                | // Utility functions for example feature
-                | const b = 2;
-                | function exampleFunction() {
-                |-   return b + 1;
-                |+   return b + 2;
-                | }
-                |```
-                |
-                |### tests/exampleUtils.test.js
-                |```diff
-                | // Unit tests for exampleUtils
-                | const assert = require('assert');
-                | const { exampleFunction } = require('../src/utils/exampleUtils');
-                | 
-                | describe('exampleFunction', () => {
-                |-   it('should return 3', () => {
-                |+   it('should return 4', () => {
-                |     assert.equal(exampleFunction(), 3);
-                |   });
-                | });
-                |```
-                """.trimMargin(),
+                Analyze the code summarized in the user's header-labeled code blocks.
+                Review, look for bugs, and provide fixes. 
+                Provide implementations for missing functions.
+                
+                Response should use one or more code patches in diff format within ```diff code blocks.
+                Each diff should be preceded by a header that identifies the file being modified.
+                The diff format should use + for line additions, - for line deletions.
+                The diff should include 2 lines of context before and after every change.
+                
+                Example:
+                
+                Here are the patches:
+                
+                ### src/utils/exampleUtils.js
+                ```diff
+                 // Utility functions for example feature
+                 const b = 2;
+                 function exampleFunction() {
+                -   return b + 1;
+                +   return b + 2;
+                 }
+                ```
+                
+                ### tests/exampleUtils.test.js
+                ```diff
+                 // Unit tests for exampleUtils
+                 const assert = require('assert');
+                 const { exampleFunction } = require('../src/utils/exampleUtils');
+                 
+                 describe('exampleFunction', () => {
+                -   it('should return 3', () => {
+                +   it('should return 4', () => {
+                     assert.equal(exampleFunction(), 3);
+                   });
+                 });
+                ```
+                """.trimIndent(),
       model = model,
     ),
     ActorTypes.HtmlCodingActor to SimpleActor(
       prompt = """
-                |You will translate the user request into a skeleton HTML file for a rich javascript application.
-                |The html file can reference needed CSS and JS files, which are will be located in the same directory as the html file.
-                |Do not output the content of the resource files, only the html file.
-                """.trimMargin(), model = model
+                You will translate the user request into a skeleton HTML file for a rich javascript application.
+                The html file can reference needed CSS and JS files, which are will be located in the same directory as the html file.
+                Do not output the content of the resource files, only the html file.
+                """.trimIndent(), model = model
     ),
     ActorTypes.JavascriptCodingActor to SimpleActor(
       prompt = """
-                |You will translate the user request into a javascript file for use in a rich javascript application.
-                """.trimMargin(), model = model
+                You will translate the user request into a javascript file for use in a rich javascript application.
+                """.trimIndent(), model = model
     ),
     ActorTypes.CssCodingActor to SimpleActor(
       prompt = """
-              |You will translate the user request into a CSS file for use in a rich javascript application.
-              """.trimMargin(), model = model
+              You will translate the user request into a CSS file for use in a rich javascript application.
+              """.trimIndent(), model = model
     ),
     ActorTypes.EtcCodingActor to SimpleActor(
       prompt = """
-              |You will translate the user request into a file for use in a web application.
-            """.trimMargin(),
+              You will translate the user request into a file for use in a web application.
+            """.trimIndent(),
       model = model,
     ),
     ActorTypes.ImageActor to ImageActor(
       prompt = """
-              |You will translate the user request into an image file for use in a web application.
-            """.trimMargin(),
+              You will translate the user request into an image file for use in a web application.
+            """.trimIndent(),
       textModel = model,
       imageModel = ImageModels.DallE3,
-    ),
+    ).apply {
+      setImageAPI(api2)
+    },
   ),
   val root: File,
 ) : ActorSystem<WebDevAgent.ActorTypes>(actorMap.map { it.key.name to it.value }.toMap(), dataStorage, user, session) {
@@ -230,7 +236,7 @@ class WebDevAgent(
       },
       atomicRef = AtomicReference(),
       semaphore = Semaphore(0),
-      heading = userMessage
+      heading = renderMarkdown(userMessage)
     ).call()
 
 
@@ -436,13 +442,14 @@ class WebDevAgent(
               )
             })
               .toTypedArray<ApiModel.ChatMessage>(),
-            input = listOf(element = (request.toList() + userMessages.map {
-              ApiModel.ChatMessage(
-                it.second,
-                it.first.toContentList()
-              )
-            })
-              .joinToString("\n") { it.content?.joinToString() ?: "" }),
+            input = listOf(
+              element = (request.toList() + userMessages.map {
+                ApiModel.ChatMessage(
+                  it.second,
+                  it.first.toContentList()
+                )
+              })
+                .joinToString("\n") { it.content?.joinToString() ?: "" }),
             api = api,
           )
         },
@@ -519,13 +526,14 @@ class WebDevAgent(
               )
             })
               .toTypedArray<ApiModel.ChatMessage>(),
-            input = listOf(element = (request.toList() + userMessages.map {
-              ApiModel.ChatMessage(
-                it.second,
-                it.first.toContentList()
-              )
-            })
-              .joinToString("\n") { it.content?.joinToString() ?: "" }),
+            input = listOf(
+              element = (request.toList() + userMessages.map {
+                ApiModel.ChatMessage(
+                  it.second,
+                  it.first.toContentList()
+                )
+              })
+                .joinToString("\n") { it.content?.joinToString() ?: "" }),
             api = api,
           )
         },

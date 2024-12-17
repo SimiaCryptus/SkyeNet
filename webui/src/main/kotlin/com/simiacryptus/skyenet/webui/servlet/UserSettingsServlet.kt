@@ -41,37 +41,37 @@ class UserSettingsServlet : HttpServlet() {
         //language=HTML
         resp.writer.write(
           """
-                    |<html>
-                    |<head>
-                    |    <title>Settings</title>
-                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-                    |</head>
-                    |<body>
-                    |<form action="/userSettings/" method="post">
-                    |    <input type="hidden" name="action" value="save"/>
-                    |    <textarea name="settings" style="width: 100%; height: 100px;">$json</textarea>
-                    |    <input type="submit" value="Save"/>
-                    |</form>
-                    |</body>
-                    |</html>
-                    """.trimMargin()
+              <html>
+              <head>
+                  <title>Settings</title>
+                  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+              </head>
+              <body>
+              <form action="/userSettings/" method="post">
+                  <input type="hidden" name="action" value="save"/>
+                  <textarea name="settings" style="width: 100%; height: 100px;">""".trimIndent() + json + """</textarea>
+                  <input type="submit" value="Save"/>
+              </form>
+              </body>
+              </html>
+              """.trimIndent()
         )
       } catch (e: Exception) {
         resp.status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
         // HTML error page
         resp.writer.write(
           """
-                    |<html>
-                    |<head>
-                    |    <title>Error</title>
-                    |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-                    |</head>
-                    |<body>
-                    |<h1>Error</h1>
-                    |<pre>${e.message}</pre>
-                    |</body>
-                    |</html>
-                """.trimIndent()
+              <html>
+              <head>
+                  <title>Error</title>
+                  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+              </head>
+              <body>
+              <h1>Error</h1>
+              <pre>""".trimIndent() + e.message + """</pre>
+              </body>
+              </html>
+          """.trimIndent()
         )
         resp
       }

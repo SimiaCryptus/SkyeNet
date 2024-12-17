@@ -2,13 +2,12 @@ package com.simiacryptus.skyenet.webui.application
 
 
 import com.simiacryptus.jopenai.util.ClientUtil
-import com.simiacryptus.util.JsonUtil
 import com.simiacryptus.skyenet.core.OutputInterceptor
 import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.model.ApplicationServicesConfig.isLocked
 import com.simiacryptus.skyenet.webui.chat.ChatServer
 import com.simiacryptus.skyenet.webui.servlet.*
-import com.simiacryptus.skyenet.util.Selenium2S3
+import com.simiacryptus.util.JsonUtil
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.MultipartConfigElement
 import jakarta.servlet.Servlet
@@ -65,21 +64,19 @@ abstract class ApplicationDirectory(
       val encryptedData =
         javaClass.classLoader!!.getResourceAsStream("client_secret_google_oauth.json.kms")?.readAllBytes()
           ?: throw RuntimeException("Unable to load resource: ${"client_secret_google_oauth.json.kms"}")
-      ApplicationServices.cloud!!.decrypt(encryptedData).byteInputStream()
+      val decrypt = ApplicationServices.cloud?.decrypt(encryptedData)
+      decrypt?.byteInputStream()
     }
   )
 
   open fun setupPlatform() {
-    ApplicationServices.seleniumFactory = { pool, cookies ->
-      Selenium2S3(pool, cookies)
-    }
   }
 
   protected open fun _main(args: Array<String>) {
     try {
       log.info("Starting application with args: ${args.joinToString(", ")}")
-      setupPlatform()
       init(args.contains("--server"))
+      setupPlatform()
       if (ClientUtil.keyTxt.isEmpty()) ClientUtil.keyTxt = run {
         try {
           val encryptedData = javaClass.classLoader.getResourceAsStream("openai.key.json.kms")?.readAllBytes()

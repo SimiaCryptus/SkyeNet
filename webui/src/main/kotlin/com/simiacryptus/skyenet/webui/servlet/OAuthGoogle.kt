@@ -44,15 +44,17 @@ open class OAuthGoogle(
 
   private val httpTransport = GoogleNetHttpTransport.newTrustedTransport()
   private val jsonFactory = GsonFactory.getDefaultInstance()
-  private val flow = GoogleAuthorizationCodeFlow.Builder(
-    httpTransport,
-    jsonFactory,
-    GoogleClientSecrets.load(
+  private val flow = key()?.let { inputStream ->
+    GoogleAuthorizationCodeFlow.Builder(
+      httpTransport,
       jsonFactory,
-      InputStreamReader(key()!!)
-    ),
-    scopes
-  ).build()
+      GoogleClientSecrets.load(
+        jsonFactory,
+        InputStreamReader(inputStream)
+      ),
+      scopes
+    ).build()
+  } ?: throw IllegalArgumentException("No key provided")
 
   private inner class LoginServlet : HttpServlet() {
     override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {

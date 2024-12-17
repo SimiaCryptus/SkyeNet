@@ -14,6 +14,7 @@ import org.openqa.selenium.*
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeDriverService
 import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.logging.LogType
 import org.openqa.selenium.remote.RemoteWebDriver
 import java.io.File
 import java.net.URI
@@ -28,32 +29,30 @@ import java.util.concurrent.TimeUnit
 
 open class Selenium2S3(
   val pool: ThreadPoolExecutor = Executors.newCachedThreadPool() as ThreadPoolExecutor,
-  private val cookies: Array<out jakarta.servlet.http.Cookie>?,
+  private val cookies: Array<out jakarta.servlet.http.Cookie>? = null,
+  val driver: RemoteWebDriver = chromeDriver()
 ) : Selenium {
   override fun navigate(url: String) {
     (driver as WebDriver).navigate().to(url)
   }
+
   override fun getPageSource(): String {
     return (driver as WebDriver).pageSource
   }
+
   override fun getCurrentUrl(): String {
     return (driver as WebDriver).currentUrl
   }
+
   override fun executeScript(script: String): Any? {
     return (driver as JavascriptExecutor).executeScript(script)
   }
+
   override fun quit() {
     (driver as WebDriver).quit()
   }
+
   var loadImages: Boolean = false
-  open val driver: RemoteWebDriver by lazy {
-    chromeDriver(loadImages = loadImages).apply {
-      setCookies(
-        this,
-        cookies
-      )
-    }
-  }
 
   private val httpClient by lazy {
     HttpAsyncClientBuilder.create()
@@ -118,9 +117,9 @@ open class Selenium2S3(
     log.debug("Done")
   }
 
-   override fun setScriptTimeout(timeout: Long) {
+  override fun setScriptTimeout(timeout: Long) {
     (driver as WebDriver).manage().timeouts().setScriptTimeout(timeout, TimeUnit.MILLISECONDS)
-   }
+  }
 
   override fun getBrowserInfo(): String {
     return driver.capabilities.browserName
@@ -132,6 +131,10 @@ open class Selenium2S3(
 
   override fun isAlive(): Boolean {
     return driver.sessionId != null
+  }
+
+  override fun getLogs(): String {
+    return driver.manage().logs().get(LogType.BROWSER).all.joinToString("\n")
   }
 
   protected open fun process(
@@ -453,7 +456,8 @@ open class Selenium2S3(
         osname.contains("Linux") -> listOf("/usr/bin/chromedriver")
         else -> throw RuntimeException("Not implemented for $osname")
       }
-      System.setProperty("webdriver.chrome.driver",
+      System.setProperty(
+        "webdriver.chrome.driver",
         chromePath.find { File(it).exists() } ?: throw RuntimeException("Chrome not found"))
       val options = ChromeOptions()
       val args = mutableListOf<String>()

@@ -25,24 +25,24 @@ open class FilePatchTestApp(
     val task = ui.newTask(true)
 
     val source = """
-            |fun main(args: Array<String>) {
-            |    println(${'"'}""
-            |        Hello, World!  
-            |    ${'"'}"")
-            |}
-        """.trimMargin()
+      fun main(args: Array<String>) {
+          println(${'"'}""
+              Hello, World!  
+          ${'"'}"")
+      }
+      """.trimIndent()
     val sourceFile = Files.createTempFile("source", ".txt").toFile()
     sourceFile.writeText(source)
     sourceFile.deleteOnExit()
 
     val patch = """
-            |# ${sourceFile.name}
-            |
-            |```diff
-            |-Hello, World!
-            |+Goodbye, World!
-            |```
-        """.trimMargin()
+      # ${sourceFile.name}
+      
+      ```diff
+      -Hello, World!
+      +Goodbye, World!
+      ```
+      """.trimIndent()
     val newPatch = socketManager.addApplyFileDiffLinks(
       root = sourceFile.toPath().parent,
       response = patch,

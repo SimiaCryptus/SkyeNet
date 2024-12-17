@@ -15,7 +15,7 @@ import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.set
-import com.simiacryptus.skyenet.util.MarkdownUtil
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import com.simiacryptus.util.JsonUtil
@@ -68,15 +68,8 @@ class PlanCoordinator(
         taskBreakdownWithPrompt.plan
       }
       task.add(
-        MarkdownUtil.renderMarkdown(
-          """
-                |## Executing TaskBreakdownWithPrompt
-                |Prompt: ${taskBreakdownWithPrompt.prompt}
-                |Plan Text:
-                |```
-                |${taskBreakdownWithPrompt.planText}
-                |```
-                """.trimMargin(), ui = ui
+        renderMarkdown(
+          "## Executing TaskBreakdownWithPrompt\nPrompt: ${taskBreakdownWithPrompt.prompt}\nPlan Text:\n```\n${taskBreakdownWithPrompt.planText}\n```", ui = ui
         )
       )
       executePlan(plan ?: emptyMap(), task, taskBreakdownWithPrompt.prompt, api, api2)
@@ -86,11 +79,11 @@ class PlanCoordinator(
   }
 
   fun executePlan(
-      plan: Map<String, TaskConfigBase>,
-      task: SessionTask,
-      userMessage: String,
-      api: API,
-      api2: OpenAIClient,
+    plan: Map<String, TaskConfigBase>,
+    task: SessionTask,
+    userMessage: String,
+    api: API,
+    api2: OpenAIClient,
   ): PlanProcessingState {
     val api = (api as ChatClient).getChildClient().apply {
       val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
@@ -105,10 +98,10 @@ class PlanCoordinator(
       executePlan(
         task = task,
         diagramBuffer = diagramTask.add(
-          MarkdownUtil.renderMarkdown(
+          renderMarkdown(
             "## Task Dependency Graph\n${TRIPLE_TILDE}mermaid\n${buildMermaidGraph(planProcessingState.subTasks)}\n$TRIPLE_TILDE",
             ui = ui
-          )
+          ), additionalClasses = "flow-chart"
         ),
         subTasks = planProcessingState.subTasks,
         diagramTask = diagramTask,
@@ -134,17 +127,17 @@ class PlanCoordinator(
     )
 
   fun executePlan(
-      task: SessionTask,
-      diagramBuffer: StringBuilder?,
-      subTasks: Map<String, TaskConfigBase>,
-      diagramTask: SessionTask,
-      planProcessingState: PlanProcessingState,
-      taskIdProcessingQueue: MutableList<String>,
-      pool: ThreadPoolExecutor,
-      userMessage: String,
-      plan: Map<String, TaskConfigBase>,
-      api: API,
-      api2: OpenAIClient,
+    task: SessionTask,
+    diagramBuffer: StringBuilder?,
+    subTasks: Map<String, TaskConfigBase>,
+    diagramTask: SessionTask,
+    planProcessingState: PlanProcessingState,
+    taskIdProcessingQueue: MutableList<String>,
+    pool: ThreadPoolExecutor,
+    userMessage: String,
+    plan: Map<String, TaskConfigBase>,
+    api: API,
+    api2: OpenAIClient,
   ) {
     val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
     val api = (api as ChatClient).getChildClient().apply {
@@ -154,16 +147,11 @@ class PlanCoordinator(
         sessionTask.verbose("API log: <a href=\"file:///$this\">$this</a>")
       }
     }
-    val taskTabs = object : TabbedDisplay(sessionTask) {
+    val taskTabs = object : TabbedDisplay(sessionTask, additionalClasses = "task-tabs") {
       override fun renderTabButtons(): String {
         diagramBuffer?.set(
-          MarkdownUtil.renderMarkdown(
-            """
-                                |## Task Dependency Graph
-                                |${TRIPLE_TILDE}mermaid
-                                |${buildMermaidGraph(subTasks)}
-                                |$TRIPLE_TILDE
-                                """.trimMargin(), ui = ui
+          renderMarkdown(
+            "## Task Dependency Graph\n${TRIPLE_TILDE}mermaid\n${buildMermaidGraph(subTasks)}\n$TRIPLE_TILDE", ui = ui
           )
         )
         diagramTask.complete()
@@ -182,7 +170,7 @@ class PlanCoordinator(
               AbstractTask.TaskState.Pending -> " style='opacity: 30%;'"
               else -> ""
             }
-            append("<label class='tab-button' data-for-tab='${idx}'$style><input type='checkbox' $isChecked disabled /> $taskId</label><br/>\n")
+            append("<label class='tab-button' data-for-tab='${idx}'$style><input type='checkbox' $isChecked disabled />$taskId</label>\n")
           }
           append("</div>")
         }
@@ -227,19 +215,17 @@ class PlanCoordinator(
           )
 
           task1.add(
-            MarkdownUtil.renderMarkdown(
+            renderMarkdown(
               """
-                            |## Task `${taskId}`
-                            |${subTask.task_description ?: ""}
-                            |
-                            |${TRIPLE_TILDE}json
-                            |${JsonUtil.toJson(data = subTask)/*.indent("  ")*/}
-                            |$TRIPLE_TILDE
-                            |
-                            |### Dependencies:
-                            |${dependencies.joinToString("\n") { "- $it" }}
-                            |
-                          """.trimMargin(), ui = ui
+              ## Task `""".trimIndent() + taskId + """`
+              """.trimIndent() + (subTask.task_description ?: "") + """
+              
+              """.trimIndent() + TRIPLE_TILDE + """json
+              """.trimIndent() + JsonUtil.toJson(data = subTask) + """
+              """.trimIndent() + TRIPLE_TILDE + """
+              
+              ### Dependencies:
+              """.trimIndent() + dependencies.joinToString("\n") { "- $it" }, ui = ui
             )
           )
           val api = api.getChildClient().apply {

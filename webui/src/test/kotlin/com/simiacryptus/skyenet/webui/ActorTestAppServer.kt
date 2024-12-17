@@ -11,7 +11,7 @@ import com.simiacryptus.skyenet.apps.parse.ParsingModel
 import com.simiacryptus.skyenet.apps.parse.ParsingModel.DocumentData
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
 import com.simiacryptus.skyenet.apps.plan.PlanUtil.isWindows
-import com.simiacryptus.skyenet.apps.plan.TaskSettings
+import com.simiacryptus.skyenet.apps.plan.TaskSettingsBase
 import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.core.actors.CodingActor
 import com.simiacryptus.skyenet.core.actors.ImageActor
@@ -71,7 +71,9 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
           )
         )
       ),
-      ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = OpenAIModels.GPT4oMini))),
+      ChildWebApp("/images", ImageActorTestApp(ImageActor(textModel = OpenAIModels.GPT4oMini).apply {
+        openAI = OpenAIClient()
+      })),
       ChildWebApp(
         "/test_coding_scala",
         CodingActorTestApp(CodingActor(ScalaLocalInterpreter::class, model = OpenAIModels.GPT4oMini))
@@ -91,25 +93,24 @@ object ActorTestAppServer : com.simiacryptus.skyenet.webui.application.Applicati
           planSettings = PlanSettings(
             defaultModel = OpenAIModels.GPT4o,
             parsingModel = OpenAIModels.GPT4oMini,
-            command = listOf("task"),
+            shellCmd = listOf("task"),
             temperature = 0.2,
             budget = 2.0,
             autoFix = true,
-            commandAutoFixCommands = listOf(
-              "C:\\Program Files\\nodejs\\npx.cmd", "C:\\Program Files\\nodejs\\npm.cmd"
-            ),
             env = mapOf(),
             workingDir = ".",
             language = if (isWindows) "powershell" else "bash",
           ).apply {
             setTaskSettings(
-              TaskType.TaskPlanning, TaskSettings(
+              TaskType.TaskPlanning, TaskSettingsBase(
+                TaskType.TaskPlanning.name,
                 enabled = true,
                 model = OpenAIModels.GPT4o,
               )
             )
             setTaskSettings(
-              TaskType.RunShellCommand, TaskSettings(
+              TaskType.RunShellCommand, TaskSettingsBase(
+                TaskType.RunShellCommand.name,
                 enabled = false,
                 model = OpenAIModels.GPT4o,
               )

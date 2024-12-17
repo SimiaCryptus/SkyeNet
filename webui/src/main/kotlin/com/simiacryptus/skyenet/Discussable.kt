@@ -1,9 +1,9 @@
 package com.simiacryptus.skyenet
 
 import com.simiacryptus.jopenai.models.ApiModel.Role
+import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
-import com.simiacryptus.skyenet.util.MarkdownUtil.renderMarkdown
 import java.util.concurrent.Callable
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -195,7 +195,7 @@ ${textInput(design, tabContent, history, task, feedbackSB, feedbackTask = this)}
   override fun call(): T {
     try {
       //log.info("Calling Discussable with heading: $heading")
-      task.echo(heading)
+      if (heading.isNotBlank()) task.echo(heading)
       val idx = tabs.size
       val newTask = ui.newTask(false)
       val header = newTask.header("Processing...")

@@ -3,7 +3,6 @@ package com.simiacryptus.skyenet.apps.general
 import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.jopenai.models.TextModel
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import java.io.File
@@ -17,7 +16,7 @@ class CommandPatchApp(
   model: ChatModel,
   private val files: Array<out File>?,
   val command: String,
-) : PatchApp(root, session, settings, api, model) {
+) : PatchApp(root, settings, api, model) {
   override fun codeFiles() = getFiles(files)
     .filter { it.toFile().length() < 1024 * 1024 / 2 } // Limit to 0.5MB
     .map { root.toPath().relativize(it) ?: it }.toSet()
@@ -25,12 +24,9 @@ class CommandPatchApp(
   override fun codeSummary(paths: List<Path>): String = paths
     .filter { it.toFile().exists() }
     .joinToString("\n\n") { path ->
-      """
-                |# ${settings.workingDirectory?.toPath()?.relativize(path)}
-                |$tripleTilde${path.toString().split('.').lastOrNull()}
-                |${path.toFile().readText(Charsets.UTF_8)}
-                |$tripleTilde
-            """.trimMargin()
+      "# ${settings.workingDirectory?.toPath()?.relativize(path)}\n$tripleTilde${path.toString().split('.').lastOrNull()}\n${
+        path.toFile().readText(Charsets.UTF_8)
+      }\n$tripleTilde"
     }
 
   override fun output(task: SessionTask) = OutputResult(

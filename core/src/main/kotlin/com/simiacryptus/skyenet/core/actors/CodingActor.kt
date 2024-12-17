@@ -24,7 +24,7 @@ open class CodingActor(
   val symbols: Map<String, Any> = mapOf(),
   val describer: TypeDescriber = AbbrevWhitelistTSDescriber(
     "com.simiacryptus",
-    "com.github.simiacryptus"
+    "com.simiacryptus"
   ),
   name: String? = interpreterClass.simpleName,
   val details: String? = null,
@@ -106,10 +106,7 @@ ${details ?: ""}
     get() = this.symbols.map { (name, utilityObj) ->
       val describe = this.describer.describe(utilityObj.javaClass)
       log.info("Describing $name (${utilityObj.javaClass}) in ${describe.length} characters")
-      """
- $name:
-     ${describe.indent("    ")}
- """.trimMargin().trim()
+      "$name:\n    ${describe.indent("    ")}"
     }.joinToString("\n")
 
 
@@ -163,8 +160,8 @@ ${details ?: ""}
       val blocks = extractTextBlocks(respondWithCode)
       val renderedResponse = getRenderedResponse(blocks)
       val codedInstruction = codeInterceptor(getCode(language, blocks))
-      log.debug("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
-      log.debug("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
+      log.debug("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}")
+      log.debug("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}")
       result = CodeResultImpl(
         *messages,
         input = input,
@@ -254,8 +251,8 @@ ${details ?: ""}
           val codeBlocks = extractTextBlocks(chat(api, request, model))
           val renderedResponse = getRenderedResponse(codeBlocks)
           val codedInstruction = codeInterceptor(getCode(language, codeBlocks))
-          log.debug("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}".trimMargin())
-          log.debug("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}".trimMargin())
+          log.debug("Response: \n\t${renderedResponse.replace("\n", "\n\t", false)}")
+          log.debug("New Code: \n\t${codedInstruction.replace("\n", "\n\t", false)}")
           var workingCode = codedInstruction
           var workingRenderedResponse = renderedResponse
           for (fixAttempt in 0..input.fixIterations) {
@@ -286,16 +283,8 @@ ${TT}
               val codeBlocks = extractTextBlocks(respondWithCode)
               workingRenderedResponse = getRenderedResponse(codeBlocks)
               workingCode = codeInterceptor(getCode(language, codeBlocks))
-              log.debug(
-                "Response: \n\t${
-                  workingRenderedResponse.replace(
-                    "\n",
-                    "\n\t",
-                    false
-                  )
-                }".trimMargin()
-              )
-              log.debug("New Code: \n\t${workingCode.replace("\n", "\n\t", false)}".trimMargin())
+              log.debug("Response: \n\t" + workingRenderedResponse.replace("\n", "\n\t", false))
+              log.debug("New Code: \n\t${workingCode.replace("\n", "\n\t", false)}")
             }
           }
         } catch (ex: FailedToImplementException) {
@@ -424,7 +413,7 @@ Correct the code and try again.
       if (textSegments.size == 1) return textSegments.joinToString("\n") { it.second }
       return textSegments.joinToString("\n") {
         if (it.first.lowercase() == "code" || it.first.lowercase() == language.lowercase()) {
-          it.second.trimMargin().trim()
+          it.second
         } else {
           ""
         }
@@ -487,13 +476,11 @@ Correct the code and try again.
     }
 
     fun errorMessage(ex: ScriptException, code: String) = try {
-      """
-          |${TT}text
-          |${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}
-          |  ${if (ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}
-          |  ${if (ex.columnNumber > 0) " ".repeat(ex.columnNumber - 1) + "^" else ""}
-          |${TT}
-          """.trimMargin().trim()
+      "${TT}text\n${ex.message ?: ""} at line ${ex.lineNumber} column ${ex.columnNumber}\n  ${if (ex.lineNumber > 0) code.split("\n")[ex.lineNumber - 1] else ""}\n  ${
+        if (ex.columnNumber > 0) " ".repeat(
+          ex.columnNumber - 1
+        ) + "^" else ""
+      }\n${TT}".trim()
     } catch (_: Exception) {
       ex.message ?: ""
     }
