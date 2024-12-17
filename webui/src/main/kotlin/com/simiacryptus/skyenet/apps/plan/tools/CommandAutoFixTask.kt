@@ -70,7 +70,7 @@ ${settings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}"
     api2: OpenAIClient,
     planSettings: PlanSettings
   ) {
-    var autoRetries = if(planSettings.autoFix) 5 else 0
+    var autoRetries = if (planSettings.autoFix) 5 else 0
     val semaphore = Semaphore(0)
     val hasError = AtomicBoolean(false)
     val onComplete = { semaphore.release() }
@@ -81,7 +81,7 @@ ${settings.commandAutoFixCommands?.joinToString("\n") { "    * ${File(it).name}"
         val alias = commandWithDir.command.firstOrNull()
         val commandAutoFixCommands = taskConfig.commands.map { it.command.firstOrNull() }
         val cmds = commandAutoFixCommands
-          ?.map { File(it) }?.associateBy { it.name }
+          .map { File(it) }?.associateBy { it.name }
           ?.filterKeys { it.startsWith(alias ?: "") }
           ?: emptyMap()
         var executable = cmds.entries.firstOrNull()?.value

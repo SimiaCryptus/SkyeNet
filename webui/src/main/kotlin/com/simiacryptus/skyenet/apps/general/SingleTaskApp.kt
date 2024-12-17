@@ -7,7 +7,6 @@ import com.simiacryptus.jopenai.models.ChatModel
 import com.simiacryptus.skyenet.Retryable
 import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
-import com.simiacryptus.skyenet.apps.plan.TaskConfigBase
 import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.platform.Session
@@ -62,7 +61,7 @@ open class SingleTaskApp(
     try {
       log.debug("Received user message: ${JsonUtil.toJson(userMessage)}")
       val task = ui.newTask(true)
-      Retryable(ui,task) {
+      Retryable(ui, task) {
         val task = ui.newTask(false)
         ui.socketManager?.pool?.submit {
           run(task, userMessage, api, session, user, ui)

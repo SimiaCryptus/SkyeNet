@@ -79,7 +79,10 @@ abstract class SessionTask(
         send()
       }
     }</span>"""
-    windowBuffer = append("""<$tag class="${(additionalClasses.split(" ").toSet() + setOf("response-message")).joinToString(" ")}">$closeButton$message</$tag>""", showSpinner)
+    windowBuffer = append(
+      """<$tag class="${(additionalClasses.split(" ").toSet() + setOf("response-message")).joinToString(" ")}">$closeButton$message</$tag>""",
+      showSpinner
+    )
     return windowBuffer
   }
 
@@ -126,7 +129,8 @@ abstract class SessionTask(
   ) = hideable(
     ui,
     when {
-      e is ValidatedObject.ValidationError -> renderMarkdown("""
+      e is ValidatedObject.ValidationError -> renderMarkdown(
+        """
         **Data Validation Error** 
         
         """.trimIndent() + e.message + """
@@ -135,10 +139,12 @@ abstract class SessionTask(
         ```text
         """.trimIndent() + e.stackTraceTxt + """
         ```
-      """, ui = ui)
+      """, ui = ui
+      )
 
       e is CodingActor.FailedToImplementException -> renderMarkdown(
-        "**Failed to Implement** \n\n${e.message}\n\nPrefix:\n```${e.language?.lowercase() ?: ""}\n${e.prefix}\n```\n\nImplementation Attempt:\n```${e.language?.lowercase() ?: ""}\n${e.code}\n```\n\n", ui = ui
+        "**Failed to Implement** \n\n${e.message}\n\nPrefix:\n```${e.language?.lowercase() ?: ""}\n${e.prefix}\n```\n\nImplementation Attempt:\n```${e.language?.lowercase() ?: ""}\n${e.code}\n```\n\n",
+        ui = ui
       )
 
       else -> renderMarkdown(
@@ -155,7 +161,11 @@ abstract class SessionTask(
     tag: String = "div",
     @Description("Additional css class(es) to apply to the message")
     additionalClasses: String = ""
-  ) = append(if (message.isNotBlank()) """<$tag class="${(additionalClasses.split(" ").toSet() + setOf("response-message")).joinToString(" ")}">$message</$tag>""" else "", false)
+  ) = append(
+    if (message.isNotBlank()) """<$tag class="${
+      (additionalClasses.split(" ").toSet() + setOf("response-message")).joinToString(" ")
+    }">$message</$tag>""" else "", false
+  )
 
   @Description("Displays an image to the task output.")
   fun image(

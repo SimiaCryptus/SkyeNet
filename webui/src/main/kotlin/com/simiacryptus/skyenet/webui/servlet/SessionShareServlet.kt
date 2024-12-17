@@ -25,7 +25,7 @@ import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import java.io.ByteArrayOutputStream
 import java.net.URI
-import java.util.Base64
+import java.util.*
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.typeOf
 
@@ -42,23 +42,25 @@ class SessionShareServlet(
     val base64Image = Base64.getEncoder().encodeToString(imageBytes)
     return "data:image/png;base64,$base64Image"
   }
-  val defaultFactory: (pool: java.util.concurrent.ThreadPoolExecutor, cookies: Array<out jakarta.servlet.http.Cookie>?) -> com.simiacryptus.skyenet.core.util.Selenium = { pool, cookies ->
-    val chromeOptions = ChromeOptions().apply {
-      addArguments("--headless")
-      addArguments("--disable-gpu")
-      addArguments("--no-sandbox")
-      addArguments("--disable-dev-shm-usage")
+
+  val defaultFactory: (pool: java.util.concurrent.ThreadPoolExecutor, cookies: Array<out jakarta.servlet.http.Cookie>?) -> Selenium =
+    { pool, cookies ->
+      val chromeOptions = ChromeOptions().apply {
+        addArguments("--headless")
+        addArguments("--disable-gpu")
+        addArguments("--no-sandbox")
+        addArguments("--disable-dev-shm-usage")
+      }
+      try {
+        Selenium2S3(
+          pool = pool,
+          cookies = cookies,
+          driver = ChromeDriver(chromeOptions)
+        )
+      } catch (e: Exception) {
+        throw IllegalStateException("Failed to initialize Selenium", e)
+      }
     }
-    try {
-      Selenium2S3(
-        pool = pool,
-        cookies = cookies,
-        driver = ChromeDriver(chromeOptions)
-      )
-    } catch (e: Exception) {
-      throw IllegalStateException("Failed to initialize Selenium", e)
-    }
-  }
 
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
 
@@ -153,7 +155,8 @@ class SessionShareServlet(
         //language=HTML
         shareURL = url(appName, shareId)
         qrCodeDataURL = generateQRCodeDataURL(shareURL)
-        resp.writer.write("""
+        resp.writer.write(
+          """
           <html>
           <head>
               <title>Saving Session</title>

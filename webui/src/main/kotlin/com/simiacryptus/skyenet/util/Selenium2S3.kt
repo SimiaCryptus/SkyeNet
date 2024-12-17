@@ -35,18 +35,23 @@ open class Selenium2S3(
   override fun navigate(url: String) {
     (driver as WebDriver).navigate().to(url)
   }
+
   override fun getPageSource(): String {
     return (driver as WebDriver).pageSource
   }
+
   override fun getCurrentUrl(): String {
     return (driver as WebDriver).currentUrl
   }
+
   override fun executeScript(script: String): Any? {
     return (driver as JavascriptExecutor).executeScript(script)
   }
+
   override fun quit() {
     (driver as WebDriver).quit()
   }
+
   var loadImages: Boolean = false
 
   private val httpClient by lazy {
@@ -112,9 +117,9 @@ open class Selenium2S3(
     log.debug("Done")
   }
 
-   override fun setScriptTimeout(timeout: Long) {
+  override fun setScriptTimeout(timeout: Long) {
     (driver as WebDriver).manage().timeouts().setScriptTimeout(timeout, TimeUnit.MILLISECONDS)
-   }
+  }
 
   override fun getBrowserInfo(): String {
     return driver.capabilities.browserName
@@ -451,7 +456,8 @@ open class Selenium2S3(
         osname.contains("Linux") -> listOf("/usr/bin/chromedriver")
         else -> throw RuntimeException("Not implemented for $osname")
       }
-      System.setProperty("webdriver.chrome.driver",
+      System.setProperty(
+        "webdriver.chrome.driver",
         chromePath.find { File(it).exists() } ?: throw RuntimeException("Chrome not found"))
       val options = ChromeOptions()
       val args = mutableListOf<String>()

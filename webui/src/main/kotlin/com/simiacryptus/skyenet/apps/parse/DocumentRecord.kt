@@ -2,13 +2,7 @@ package com.simiacryptus.skyenet.apps.parse
 
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.util.JsonUtil
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
-import java.io.Serializable
+import java.io.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -19,13 +13,13 @@ data class DocumentRecord(
   val sourcePath: String,
   val jsonPath: String,
   var vector: DoubleArray?,
-) : Serializable { 
+) : Serializable {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
     other as DocumentRecord
     if (text != other.text) return false
-    if (metadata != other.metadata) return false 
+    if (metadata != other.metadata) return false
     if (sourcePath != other.sourcePath) return false
     if (jsonPath != other.jsonPath) return false
     if (vector != null) {
@@ -34,6 +28,7 @@ data class DocumentRecord(
     } else if (other.vector != null) return false
     return true
   }
+
   override fun hashCode(): Int {
     var result = text?.hashCode() ?: 0
     result = 31 * result + (metadata?.hashCode() ?: 0)
@@ -42,6 +37,7 @@ data class DocumentRecord(
     result = 31 * result + (vector?.contentHashCode() ?: 0)
     return result
   }
+
   @Throws(IOException::class)
   fun writeObject(out: ObjectOutputStream) {
     out.writeUTF(text ?: "")

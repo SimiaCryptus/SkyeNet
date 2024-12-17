@@ -61,12 +61,12 @@ abstract class PatchApp(
     val socketManager = super.newSession(user, session)
     val ui = (socketManager as ApplicationSocketManager).applicationInterface
     val task = ui.newTask()
-    lateinit var retry : Retryable
+    lateinit var retry: Retryable
     retry = Retryable(
       ui = ui,
       task = task,
       process = { content ->
-        if(retries < 0) {
+        if (retries < 0) {
           retries = when {
             settings.autoFix -> 3
             else -> 0

@@ -109,12 +109,12 @@ open class WebFetchAndTransformTask(
         if (document.body().html().length > maxLength) return@apply
         // Remove empty elements
         select("*").filter { node, depth ->
-          if(node.text().isBlank() && node.attributes().isEmpty() && !node.hasAttr("img")) NodeFilter.FilterResult.REMOVE else NodeFilter.FilterResult.CONTINUE
+          if (node.text().isBlank() && node.attributes().isEmpty && !node.hasAttr("img")) NodeFilter.FilterResult.REMOVE else NodeFilter.FilterResult.CONTINUE
         }
         if (document.body().html().length > maxLength) return@apply
         // Unwrap single-child elements with no attributes
         select("*").forEach { element ->
-          if (element.childNodes().size == 1 && element.childNodes()[0].nodeName() == "#text" && element.attributes().isEmpty()) {
+          if (element.childNodes().size == 1 && element.childNodes()[0].nodeName() == "#text" && element.attributes().isEmpty) {
             element.unwrap()
           }
         }

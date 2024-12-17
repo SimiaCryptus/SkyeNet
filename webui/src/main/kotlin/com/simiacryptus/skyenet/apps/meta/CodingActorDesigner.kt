@@ -34,7 +34,7 @@ class CodingActorDesigner(
         val symbols: Map<String, Any> = mapOf(),
         val describer: TypeDescriber = AbbrevWhitelistYamlDescriber(
             "com.simiacryptus",
-            "com.github.simiacryptus"
+            "com.simiacryptus"
         ),
         name: String? = interpreterClass.simpleName,
         val details: String? = null,

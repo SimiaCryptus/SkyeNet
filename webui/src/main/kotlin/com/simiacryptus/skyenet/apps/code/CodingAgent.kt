@@ -78,7 +78,7 @@ open class CodingAgent<T : Interpreter>(
     Retryable(ui, newTask) {
       val newTask = ui.newTask(root = false)
       ui.socketManager?.scheduledThreadPoolExecutor!!.schedule({
-        ui.socketManager.pool?.submit {
+        ui.socketManager.pool.submit {
           val statusSB = newTask.add("Running...")
           displayCode(newTask, codeRequest)
           statusSB?.clear()
@@ -219,7 +219,8 @@ open class CodingAgent<T : Interpreter>(
           messages = request.messages + listOf(
             response.code to ApiModel.Role.assistant,
             feedback to ApiModel.Role.user,
-          ).filter { it.first.isNotBlank() }.map { it.first to it.second }), task = task)
+          ).filter { it.first.isNotBlank() }.map { it.first to it.second }), task = task
+      )
     } catch (e: Throwable) {
       log.warn("Error", e)
       task.error(ui, e)
@@ -237,7 +238,8 @@ open class CodingAgent<T : Interpreter>(
         task, codeRequest(
           messages = request.messages + listOf(
             "Running...\n\n$result" to ApiModel.Role.assistant,
-          ).filter { it.first.isNotBlank() }), response)
+          ).filter { it.first.isNotBlank() }), response
+      )
     } catch (e: Throwable) {
       handleExecutionError(e, task, request, response)
     }
@@ -254,10 +256,11 @@ open class CodingAgent<T : Interpreter>(
     task.add(message, true, "div", "error")
     displayCode(
       task, CodingActor.CodeRequest(
-      messages = request.messages + listOf(
-        response.code to ApiModel.Role.assistant,
-        message to ApiModel.Role.system,
-      ).filter { it.first.isNotBlank() }))
+        messages = request.messages + listOf(
+          response.code to ApiModel.Role.assistant,
+          message to ApiModel.Role.system,
+        ).filter { it.first.isNotBlank() })
+    )
   }
 
   fun execute(

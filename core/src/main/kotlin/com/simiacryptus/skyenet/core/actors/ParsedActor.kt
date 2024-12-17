@@ -24,7 +24,7 @@ open class ParsedActor<T : Any>(
   val parsingModel: TextModel = OpenAIModels.GPT4oMini,
   val deserializerRetries: Int = 2,
   open val describer: TypeDescriber = object : AbbrevWhitelistYamlDescriber(
-    "com.simiacryptus", "com.github.simiacryptus"
+    "com.simiacryptus", "com.simiacryptus"
   ) {
     override val includeMethods: Boolean get() = false
   },

@@ -138,23 +138,23 @@ class SeleniumSessionTask(
       
       Active Sessions:
       """.trimIndent() + activeSessions.entries.joinToString("\n") { (id, session: Selenium) ->
-        buildString {
-          append("  ** Session $id:\n")
-          append("     URL: ${session.getCurrentUrl()}\n")
-          try {
-            append("     Title: ${session.executeScript("return document.title;")}\n")
-            val logs = session.getLogs()
-            if (logs.isNotEmpty()) {
-              append("     Recent Logs:\n")
-              logs.takeLast(3).forEach { log ->
-                append("       - $log\n")
-              }
-            }
-          } catch (e: Exception) {
-            append("     Error getting session details: ${e.message}\n")
+    buildString {
+      append("  ** Session $id:\n")
+      append("     URL: ${session.getCurrentUrl()}\n")
+      try {
+        append("     Title: ${session.executeScript("return document.title;")}\n")
+        val logs = session.getLogs()
+        if (logs.isNotEmpty()) {
+          append("     Recent Logs:\n")
+          logs.takeLast(3).forEach { log ->
+            append("       - $log\n")
           }
         }
+      } catch (e: Exception) {
+        append("     Error getting session details: ${e.message}\n")
       }
+    }
+  }
 
   override fun run(
     agent: PlanCoordinator,
@@ -264,7 +264,7 @@ class SeleniumSessionTask(
       appendLine("```javascript")
       appendLine(planTask.commands[index])
       appendLine("```")
-      if(result != "null") {
+      if (result != "null") {
         appendLine("Result:")
         appendLine("```")
         appendLine(result.take(5000)) // Limit result size

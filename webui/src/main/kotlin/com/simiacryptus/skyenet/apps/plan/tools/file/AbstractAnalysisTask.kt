@@ -18,6 +18,13 @@ abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskConfigBase>(
   planTask: T?
 ) : AbstractFileTask<T>(planSettings, planTask) {
 
+  protected fun validateConfig() {
+    requireNotNull(taskConfig) { "Task configuration is required" }
+    require(!((taskConfig.input_files ?: emptyList()) + (taskConfig.output_files ?: emptyList())).isEmpty()) {
+      "At least one input or output file must be specified"
+    }
+  }
+
   abstract val actorName: String
   abstract val actorPrompt: String
 
@@ -40,6 +47,8 @@ abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskConfigBase>(
     api2: OpenAIClient,
     planSettings: PlanSettings
   ) {
+    validateConfig()
+
     val analysisResult = analysisActor.answer(
       messages + listOf(
         getInputFileCode(),
@@ -53,29 +62,34 @@ abstract class AbstractAnalysisTask<T : AbstractFileTask.FileTaskConfigBase>(
   abstract fun getAnalysisInstruction(): String
 
   private fun applyChanges(agent: PlanCoordinator, task: SessionTask, analysisResult: String, api: API) {
-    val outputResult = CommandPatchApp(
-      root = agent.root.toFile(),
-      session = agent.session,
-      settings = PatchApp.Settings(
-        executable = File("dummy"),
-        workingDirectory = agent.root.toFile(),
-        exitCodeOption = "nonzero",
-        additionalInstructions = "",
-        autoFix = agent.planSettings.autoFix
-      ),
-      api = api as ChatClient,
-      model = agent.planSettings.getTaskSettings(TaskType.valueOf(taskConfig?.task_type!!)).model
-        ?: agent.planSettings.defaultModel,
-      files = agent.files,
-      command = analysisResult
-    ).run(
-      ui = agent.ui,
-      task = task
-    )
-    if (outputResult.exitCode == 0) {
-      task.add("${actorName} completed and suggestions have been applied successfully.")
-    } else {
-      task.add("${actorName} completed, but failed to apply suggestions. Exit code: ${outputResult.exitCode}")
+    try {
+      val outputResult = CommandPatchApp(
+        root = agent.root.toFile(),
+        session = agent.session,
+        settings = PatchApp.Settings(
+          executable = File("dummy"),
+          workingDirectory = agent.root.toFile(),
+          exitCodeOption = "nonzero",
+          additionalInstructions = "",
+          autoFix = agent.planSettings.autoFix
+        ),
+        api = api as ChatClient,
+        model = agent.planSettings.getTaskSettings(TaskType.valueOf(taskConfig?.task_type!!)).model
+          ?: agent.planSettings.defaultModel,
+        files = agent.files,
+        command = analysisResult
+      ).run(
+        ui = agent.ui,
+        task = task
+      )
+      if (outputResult.exitCode == 0) {
+        task.add("${actorName} completed and suggestions have been applied successfully.")
+      } else {
+        task.add("${actorName} completed, but failed to apply suggestions. Exit code: ${outputResult.exitCode}")
+      }
+    } catch (e: Exception) {
+      log.error("Error applying changes", e)
+      task.add("Error applying changes: ${e.message}")
     }
   }
 

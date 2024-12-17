@@ -2,11 +2,13 @@ package com.simiacryptus.skyenet.apps.plan
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask
 import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask.CommandAutoFixTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.tools.plan.ForeachTask.ForeachTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.tools.online.SimpleGoogleSearchTask.GoogleSearchTaskConfigData
-import com.simiacryptus.skyenet.apps.plan.tools.plan.PlanningTask.PlanningTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.CommandSessionTask
+import com.simiacryptus.skyenet.apps.plan.tools.RunShellCommandTask
 import com.simiacryptus.skyenet.apps.plan.tools.RunShellCommandTask.RunShellCommandTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.SeleniumSessionTask
+import com.simiacryptus.skyenet.apps.plan.tools.file.*
 import com.simiacryptus.skyenet.apps.plan.tools.file.CodeOptimizationTask.CodeOptimizationTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.file.CodeReviewTask.CodeReviewTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.file.DocumentationTask.DocumentationTaskConfigData
@@ -19,14 +21,15 @@ import com.simiacryptus.skyenet.apps.plan.tools.file.TestGenerationTask.TestGene
 import com.simiacryptus.skyenet.apps.plan.tools.knowledge.EmbeddingSearchTask
 import com.simiacryptus.skyenet.apps.plan.tools.knowledge.KnowledgeIndexingTask
 import com.simiacryptus.skyenet.apps.plan.tools.knowledge.WebSearchAndIndexTask
-import com.simiacryptus.skyenet.apps.plan.tools.*
-import com.simiacryptus.skyenet.apps.plan.tools.file.*
 import com.simiacryptus.skyenet.apps.plan.tools.online.GitHubSearchTask
 import com.simiacryptus.skyenet.apps.plan.tools.online.SearchAndAnalyzeTask
 import com.simiacryptus.skyenet.apps.plan.tools.online.SimpleGoogleSearchTask
+import com.simiacryptus.skyenet.apps.plan.tools.online.SimpleGoogleSearchTask.GoogleSearchTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.online.WebFetchAndTransformTask
 import com.simiacryptus.skyenet.apps.plan.tools.plan.ForeachTask
+import com.simiacryptus.skyenet.apps.plan.tools.plan.ForeachTask.ForeachTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.plan.PlanningTask
+import com.simiacryptus.skyenet.apps.plan.tools.plan.PlanningTask.PlanningTaskConfigData
 import com.simiacryptus.util.DynamicEnum
 import com.simiacryptus.util.DynamicEnumDeserializer
 import com.simiacryptus.util.DynamicEnumSerializer

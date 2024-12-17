@@ -53,7 +53,8 @@ open class AutoPlanChatApp(
     private val currentUserMessages = mutableMapOf<String, AtomicReference<String?>>()
     private val runningStates = mutableMapOf<String, Boolean>()
     private val executionRecordMap = mutableMapOf<String, MutableList<ExecutionRecord>>()
-    private val thinkingStatuses = mutableMapOf<String, AtomicReference<ThinkingStatus?>>();
+    private val thinkingStatuses = mutableMapOf<String, AtomicReference<ThinkingStatus?>>()
+
     @Synchronized
     private fun getState(sessionId: String): Triple<AtomicReference<String?>, Boolean, MutableList<ExecutionRecord>> {
       return Triple(
@@ -62,6 +63,7 @@ open class AutoPlanChatApp(
         executionRecordMap.getOrPut(sessionId) { mutableListOf() }
       )
     }
+
     @Synchronized
     private fun setState(sessionId: String, running: Boolean) {
       runningStates[sessionId] = running
@@ -168,7 +170,7 @@ open class AutoPlanChatApp(
     api: API
   ) {
     logDebug("Starting auto plan chat with initial message", userMessage)
-    val thinkingStatus = thinkingStatuses.computeIfAbsent(session.sessionId) { AtomicReference<ThinkingStatus?>(null) };
+    val thinkingStatus = thinkingStatuses.computeIfAbsent(session.sessionId) { AtomicReference<ThinkingStatus?>(null) }
     val task = ui.newTask(true)
     val (currentUserMessage, _, executionRecords) = getState(session.sessionId)
     val api = (api as ChatClient).getChildClient().apply {
@@ -308,7 +310,7 @@ open class AutoPlanChatApp(
         log.error("Error in startAutoPlanChat", e)
       } finally {
         logDebug("Finalizing auto plan chat")
-      setState(session.sessionId, false)
+        setState(session.sessionId, false)
         val summaryTask = ui.newTask(false).apply { tabbedDisplay["Summary"] = placeholder }
         summaryTask.add(
           renderMarkdown(
@@ -348,14 +350,14 @@ open class AutoPlanChatApp(
       agent = coordinator.copy(
         planSettings = coordinator.planSettings.copy(
           taskSettings = coordinator.planSettings.taskSettings.toList().toTypedArray().toMap().toMutableMap().apply {
-            this["TaskPlanning"] = TaskSettingsBase(task_type = TaskType.TaskPlanning.name ,enabled = false, model = null)
+            this["TaskPlanning"] = TaskSettingsBase(task_type = TaskType.TaskPlanning.name, enabled = false, model = null)
           }
         )
       ),
       messages = listOf(
         userMessage,
         "Current thinking status:\n${formatThinkingStatus(thinkingStatus!!)}"
-      ) + formatEvalRecords(session=session),
+      ) + formatEvalRecords(session = session),
       task = taskExecutionTask,
       api = api,
       resultFn = { result.append(it) },
@@ -421,7 +423,7 @@ open class AutoPlanChatApp(
                                                             If there are no tasks to execute, return {}.
                                                         """.trimIndent()
           )
-          + formatEvalRecords(session=session), api
+          + formatEvalRecords(session = session), api
     ).obj.tasks?.map { task ->
       task to (if (task.task_type == null) {
         null

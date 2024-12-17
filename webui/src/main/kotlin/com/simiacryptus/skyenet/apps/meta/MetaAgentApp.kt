@@ -548,7 +548,10 @@ open class MetaAgentAgent(
         Retryable(ui, message) {
           try {
             code = execWrap {
-              flowStepDesigner.answer(CodingActor.CodeRequest(messages = listOf(userMessage to Role.user,
+              flowStepDesigner.answer(
+                CodingActor.CodeRequest(
+                messages = listOf(
+                  userMessage to Role.user,
                 design.text to Role.assistant,
                 "Implement `fun ${(logicFlowItem.name!!).camelCase()}(${
                   logicFlowItem.inputs?.joinToString(", ") { (it.name ?: "") + " : " + (it.type ?: "") } ?: ""

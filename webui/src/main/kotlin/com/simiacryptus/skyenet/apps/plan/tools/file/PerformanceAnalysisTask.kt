@@ -45,7 +45,7 @@ class PerformanceAnalysisTask(
       Do not provide code changes, focus on analysis and recommendations.
     """.trimIndent()
 
-  override fun promptSegment()= """
+  override fun promptSegment() = """
     PerformanceAnalysis - Analyze code for performance issues and suggest improvements
       ** Specify the files to be analyzed
       ** Optionally provide specific areas of focus for the analysis (e.g., time complexity, memory usage, I/O operations)

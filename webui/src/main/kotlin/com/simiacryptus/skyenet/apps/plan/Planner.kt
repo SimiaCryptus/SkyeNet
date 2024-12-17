@@ -5,13 +5,12 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
-import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 
 open class Planner {
 
@@ -88,7 +87,8 @@ open class Planner {
           planText = it.text
         )
       }
-    }  }
+    }
+  }
 
   open fun newPlan(
     api: API,

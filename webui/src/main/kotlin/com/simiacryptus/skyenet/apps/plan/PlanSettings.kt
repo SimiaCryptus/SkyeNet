@@ -7,9 +7,9 @@ import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getAvailableTaskTyp
 import com.simiacryptus.skyenet.apps.plan.TaskType.Companion.getImpl
 import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask
 import com.simiacryptus.skyenet.apps.plan.tools.CommandAutoFixTask.CommandAutoFixTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.tools.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.plan.PlanningTask.PlanningTaskConfigData
 import com.simiacryptus.skyenet.apps.plan.tools.plan.PlanningTask.TaskBreakdownResult
-import com.simiacryptus.skyenet.apps.plan.tools.file.FileModificationTask.FileModificationTaskConfigData
 import com.simiacryptus.skyenet.core.actors.ParsedActor
 
 
@@ -117,7 +117,7 @@ ${taskType.name}:
   }
 
   open fun describer() = object : AbbrevWhitelistYamlDescriber(
-    "com.simiacryptus", "com.github.simiacryptus"
+    "com.simiacryptus", "com.simiacryptus"
   ) {
     override val includeMethods: Boolean get() = false
 

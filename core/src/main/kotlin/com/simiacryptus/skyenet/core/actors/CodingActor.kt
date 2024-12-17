@@ -24,7 +24,7 @@ open class CodingActor(
   val symbols: Map<String, Any> = mapOf(),
   val describer: TypeDescriber = AbbrevWhitelistTSDescriber(
     "com.simiacryptus",
-    "com.github.simiacryptus"
+    "com.simiacryptus"
   ),
   name: String? = interpreterClass.simpleName,
   val details: String? = null,

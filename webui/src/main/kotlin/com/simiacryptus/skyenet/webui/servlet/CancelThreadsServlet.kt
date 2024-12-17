@@ -21,7 +21,8 @@ class CancelThreadsServlet(
     if (req.parameterMap.containsKey("sessionId")) {
       val session = Session(req.getParameter("sessionId"))
       //language=HTML
-      resp.writer.write("""
+      resp.writer.write(
+        """
         <html>
         <head>
             <title>Cancel Session</title>

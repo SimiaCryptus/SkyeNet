@@ -1,8 +1,6 @@
 package com.simiacryptus.skyenet.apps.plan.tools.file
 
-import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.skyenet.apps.plan.PlanSettings
-import com.simiacryptus.skyenet.apps.plan.TRIPLE_TILDE
 import com.simiacryptus.skyenet.apps.plan.TaskType
 import com.simiacryptus.skyenet.apps.plan.tools.file.TestGenerationTask.TestGenerationTaskConfigData
 import org.slf4j.LoggerFactory

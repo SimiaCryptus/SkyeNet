@@ -442,13 +442,14 @@ class WebDevAgent(
               )
             })
               .toTypedArray<ApiModel.ChatMessage>(),
-            input = listOf(element = (request.toList() + userMessages.map {
-              ApiModel.ChatMessage(
-                it.second,
-                it.first.toContentList()
-              )
-            })
-              .joinToString("\n") { it.content?.joinToString() ?: "" }),
+            input = listOf(
+              element = (request.toList() + userMessages.map {
+                ApiModel.ChatMessage(
+                  it.second,
+                  it.first.toContentList()
+                )
+              })
+                .joinToString("\n") { it.content?.joinToString() ?: "" }),
             api = api,
           )
         },
@@ -525,13 +526,14 @@ class WebDevAgent(
               )
             })
               .toTypedArray<ApiModel.ChatMessage>(),
-            input = listOf(element = (request.toList() + userMessages.map {
-              ApiModel.ChatMessage(
-                it.second,
-                it.first.toContentList()
-              )
-            })
-              .joinToString("\n") { it.content?.joinToString() ?: "" }),
+            input = listOf(
+              element = (request.toList() + userMessages.map {
+                ApiModel.ChatMessage(
+                  it.second,
+                  it.first.toContentList()
+                )
+              })
+                .joinToString("\n") { it.content?.joinToString() ?: "" }),
             api = api,
           )
         },

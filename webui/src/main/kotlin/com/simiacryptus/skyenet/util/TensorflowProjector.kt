@@ -11,9 +11,8 @@ import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.util.JsonUtil
-import java.util.UUID
 import java.io.IOException
-import kotlin.jvm.Throws
+import java.util.*
 
 class TensorflowProjector(
   val api: API,

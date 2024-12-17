@@ -388,7 +388,7 @@ private fun SocketManagerBase.renderDiffBlock(
     try {
       originalCode = load(filepath)
       newCode = patch(originalCode, diffVal)
-      filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+      filepath.toFile().writeText(newCode.newCode, Charsets.UTF_8)
       handle(mapOf(relativize to newCode.newCode))
       hrefLink.set("<div class=\"cmd-button\">Diff Applied</div>$revert")
       applydiffTask.complete()
@@ -495,7 +495,7 @@ Please provide a fix for the diff above in the form of a diff patch.
         val diffLines = diffVal.reverseLines()
         val patch1 = patch(originalLines, diffLines)
         val newCode2 = patch1.newCode.reverseLines()
-        filepath.toFile()?.writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
+        filepath.toFile().writeText(newCode2, Charsets.UTF_8) ?: log.warn("File not found: $filepath")
         handle(mapOf(relativize to newCode2))
         hrefLink.set("""<div class="cmd-button">Diff Applied (Bottom to Top)</div>""" + revert)
         applydiffTask.complete()
@@ -507,7 +507,7 @@ Please provide a fix for the diff above in the form of a diff patch.
     // Create "Revert" button
     revert = hrefLink("Revert", classname = "href-link cmd-button") {
       try {
-        filepath.toFile()?.writeText(originalCode, Charsets.UTF_8)
+        filepath.toFile().writeText(originalCode, Charsets.UTF_8)
         handle(mapOf(relativize to originalCode))
         hrefLink.set("""<div class="cmd-button">Reverted</div>""" + apply1 + apply2)
         applydiffTask.complete()

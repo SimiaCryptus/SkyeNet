@@ -79,11 +79,11 @@ class PlanCoordinator(
   }
 
   fun executePlan(
-      plan: Map<String, TaskConfigBase>,
-      task: SessionTask,
-      userMessage: String,
-      api: API,
-      api2: OpenAIClient,
+    plan: Map<String, TaskConfigBase>,
+    task: SessionTask,
+    userMessage: String,
+    api: API,
+    api2: OpenAIClient,
   ): PlanProcessingState {
     val api = (api as ChatClient).getChildClient().apply {
       val createFile = task.createFile(".logs/api-${UUID.randomUUID()}.log")
@@ -127,17 +127,17 @@ class PlanCoordinator(
     )
 
   fun executePlan(
-      task: SessionTask,
-      diagramBuffer: StringBuilder?,
-      subTasks: Map<String, TaskConfigBase>,
-      diagramTask: SessionTask,
-      planProcessingState: PlanProcessingState,
-      taskIdProcessingQueue: MutableList<String>,
-      pool: ThreadPoolExecutor,
-      userMessage: String,
-      plan: Map<String, TaskConfigBase>,
-      api: API,
-      api2: OpenAIClient,
+    task: SessionTask,
+    diagramBuffer: StringBuilder?,
+    subTasks: Map<String, TaskConfigBase>,
+    diagramTask: SessionTask,
+    planProcessingState: PlanProcessingState,
+    taskIdProcessingQueue: MutableList<String>,
+    pool: ThreadPoolExecutor,
+    userMessage: String,
+    plan: Map<String, TaskConfigBase>,
+    api: API,
+    api2: OpenAIClient,
   ) {
     val sessionTask = ui.newTask(false).apply { task.add(placeholder) }
     val api = (api as ChatClient).getChildClient().apply {

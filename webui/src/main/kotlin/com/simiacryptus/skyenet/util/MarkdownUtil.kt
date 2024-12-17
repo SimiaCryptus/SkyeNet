@@ -19,12 +19,12 @@ object MarkdownUtil {
   ) = renderMarkdown(rawMarkdown, options, tabs, ui) { it }
 
   fun renderMarkdown(
-      rawMarkdown: String,
-      options: MutableDataSet = defaultOptions(),
-      tabs: Boolean = true,
-      ui: ApplicationInterface? = null,
-      markdownEditor: (String) -> String,
-    ): String {
+    rawMarkdown: String,
+    options: MutableDataSet = defaultOptions(),
+    tabs: Boolean = true,
+    ui: ApplicationInterface? = null,
+    markdownEditor: (String) -> String,
+  ): String {
     val markdown = markdownEditor(rawMarkdown)
     val stackInfo = """
 <ol style="visibility: hidden; height: 0;">

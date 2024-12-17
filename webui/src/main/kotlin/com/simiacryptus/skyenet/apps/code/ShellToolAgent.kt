@@ -231,7 +231,7 @@ abstract class ShellToolAgent<T : Interpreter>(
   ) {
     override val describer: TypeDescriber
       get() = object : AbbrevWhitelistYamlDescriber(
-        //"com.simiacryptus", "com.github.simiacryptus"
+        //"com.simiacryptus", "com.simiacryptus"
       ) {
         override val includeMethods: Boolean get() = false
       }
@@ -244,7 +244,7 @@ abstract class ShellToolAgent<T : Interpreter>(
       "req" to Request(null, null),
       "resp" to Response(null, null),
     ), describer = object : AbbrevWhitelistYamlDescriber(
-      "com.simiacryptus", "com.github.simiacryptus"
+      "com.simiacryptus", "com.simiacryptus"
     ) {
       override fun describe(
         rawType: Class<in Nothing>, stackMax: Int, describedTypes: MutableSet<String>

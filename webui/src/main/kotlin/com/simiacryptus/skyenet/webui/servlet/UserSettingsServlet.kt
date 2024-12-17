@@ -60,7 +60,7 @@ class UserSettingsServlet : HttpServlet() {
         resp.status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
         // HTML error page
         resp.writer.write(
-        """
+          """
               <html>
               <head>
                   <title>Error</title>

@@ -21,7 +21,7 @@ class SearchAndAnalyzeTask(
   planSettings: PlanSettings,
   planTask: SearchAndAnalyzeTaskConfigData?
 ) : AbstractTask<SearchAndAnalyzeTask.SearchAndAnalyzeTaskConfigData>(planSettings, planTask) {
-  
+
   class SearchAndAnalyzeTaskConfigData(
     @Description("The search query to use for Google search")
     val search_query: String = "",
@@ -58,18 +58,18 @@ class SearchAndAnalyzeTask(
     // First perform Google search
     val searchResults = performGoogleSearch(planSettings)
     val searchData: Map<String, Any> = ObjectMapper().readValue(searchResults)
-    
+
     // Process each result
     val items = (searchData["items"] as List<Map<String, Any>>?)?.take(taskConfig?.num_results ?: 3)
     val analysisResults = buildString {
       appendLine("# Analysis of Search Results")
       appendLine()
-      
+
       items?.forEachIndexed { index, item ->
         val url = item["link"] as String
         appendLine("## ${index + 1}. [${item["title"]}]($url)")
         appendLine()
-        
+
         try {
           // Fetch and transform content for each result
           val content = WebFetchAndTransformTask.scrubHtml(fetchContent(url))
@@ -98,7 +98,7 @@ class SearchAndAnalyzeTask(
     val client = HttpClient.newBuilder().build()
     val encodedQuery = URLEncoder.encode(taskConfig?.search_query, "UTF-8")
     val uriBuilder = "https://www.googleapis.com/customsearch/v1?key=${planSettings.googleApiKey}" +
-            "&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${taskConfig?.num_results}"
+        "&cx=${planSettings.googleSearchEngineId}&q=$encodedQuery&num=${taskConfig?.num_results}"
     val request = HttpRequest.newBuilder().uri(URI.create(uriBuilder)).GET().build()
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
     if (response.statusCode() != 200) {
@@ -116,7 +116,7 @@ class SearchAndAnalyzeTask(
       
       Analysis:
     """.trimIndent()
-    
+
     return SimpleActor(
       prompt = prompt,
       model = planSettings.defaultModel,

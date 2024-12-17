@@ -27,7 +27,8 @@ class SessionSettingsServlet(
         return
       }
       //language=HTML
-      resp.writer.write("""
+      resp.writer.write(
+        """
         <html>
         <head>
             <title>Settings</title>
@@ -42,7 +43,8 @@ class SessionSettingsServlet(
         </form>
         </body>
         </html>
-      """.trimIndent())
+      """.trimIndent()
+      )
     } else {
       resp.status = HttpServletResponse.SC_BAD_REQUEST
       resp.writer.write("Session ID is required")

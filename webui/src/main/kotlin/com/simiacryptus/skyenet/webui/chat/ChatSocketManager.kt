@@ -73,8 +73,8 @@ open class ChatSocketManager(
   }
 
   open fun respond(
-      api: ChatClient,
-      messagesCopy: List<ApiModel.ChatMessage>
+    api: ChatClient,
+    messagesCopy: List<ApiModel.ChatMessage>
   ): String {
     return (api.chat(
       ApiModel.ChatRequest(
