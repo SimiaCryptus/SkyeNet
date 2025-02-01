@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory
 open class ImageActorTestApp(
   private val actor: ImageActor,
   applicationName: String = "ImageActorTest_" + actor.javaClass.simpleName,
-  temperature: Double = 0.3,
 ) : ApplicationServer(
   applicationName = applicationName,
   path = "/imageActorTest",

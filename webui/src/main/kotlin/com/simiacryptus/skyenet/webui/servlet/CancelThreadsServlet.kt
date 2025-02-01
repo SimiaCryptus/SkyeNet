@@ -6,15 +6,12 @@ import com.simiacryptus.skyenet.core.platform.ApplicationServices.clientManager
 import com.simiacryptus.skyenet.core.platform.ClientManager.RecordingThreadFactory
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface
-import com.simiacryptus.skyenet.webui.application.ApplicationServer
 import com.simiacryptus.skyenet.webui.application.ApplicationServer.Companion.getCookie
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 
-class CancelThreadsServlet(
-  private val server: ApplicationServer,
-) : HttpServlet() {
+class CancelThreadsServlet : HttpServlet() {
   override fun doGet(req: HttpServletRequest, resp: HttpServletResponse) {
     resp.contentType = "text/html"
     resp.status = HttpServletResponse.SC_OK
@@ -23,20 +20,20 @@ class CancelThreadsServlet(
       //language=HTML
       resp.writer.write(
         """
-        |<html>
-        |<head>
-        |    <title>Cancel Session</title>
-        |    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-        |</head>
-        |<body>
-        |<form action="${req.contextPath}/cancel" method="post">
-        |    <input type="hidden" name="sessionId" value="$session"/>
-        |    CONFIRM: <input type='text' name="confirm" placeholder="Type 'confirm' to cancel" />
-        |    <input type="submit" value="Cancel"/>
-        |</form>
-        |</body>
-        |</html>
-        """.trimMargin()
+        <html>
+        <head>
+            <title>Cancel Session</title>
+            <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+        </head>
+        <body>
+        <form action="""".trimIndent() + req.contextPath + """/cancel" method="post">
+            <input type="hidden" name="sessionId" value="""".trimIndent() + session + """"/>
+            CONFIRM: <input type='text' name="confirm" placeholder="Type 'confirm' to cancel" />
+            <input type="submit" value="Cancel"/>
+        </form>
+        </body>
+        </html>
+        """.trimIndent()
       )
     } else {
       resp.status = HttpServletResponse.SC_BAD_REQUEST

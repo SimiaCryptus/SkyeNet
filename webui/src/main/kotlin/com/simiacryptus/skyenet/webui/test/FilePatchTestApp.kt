@@ -1,6 +1,7 @@
 package com.simiacryptus.skyenet.webui.test
 
-import com.simiacryptus.diff.addApplyFileDiffLinks
+import com.simiacryptus.diff.AddApplyFileDiffLinks
+
 import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.skyenet.core.platform.Session
@@ -25,25 +26,26 @@ open class FilePatchTestApp(
     val task = ui.newTask(true)
 
     val source = """
-            |fun main(args: Array<String>) {
-            |    println(${'"'}""
-            |        Hello, World!  
-            |    ${'"'}"")
-            |}
-        """.trimMargin()
+      fun main(args: Array<String>) {
+          println(${'"'}""
+              Hello, World!  
+          ${'"'}"")
+      }
+      """.trimIndent()
     val sourceFile = Files.createTempFile("source", ".txt").toFile()
     sourceFile.writeText(source)
     sourceFile.deleteOnExit()
 
     val patch = """
-            |# ${sourceFile.name}
-            |
-            |```diff
-            |-Hello, World!
-            |+Goodbye, World!
-            |```
-        """.trimMargin()
-    val newPatch = socketManager.addApplyFileDiffLinks(
+      # ${sourceFile.name}
+      
+      ```diff
+      -Hello, World!
+      +Goodbye, World!
+      ```
+      """.trimIndent()
+    val newPatch = AddApplyFileDiffLinks.instrumentFileDiffs(
+      socketManager,
       root = sourceFile.toPath().parent,
       response = patch,
       ui = ui,

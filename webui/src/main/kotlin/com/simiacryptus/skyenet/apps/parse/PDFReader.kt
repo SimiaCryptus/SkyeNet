@@ -1,5 +1,6 @@
 package com.simiacryptus.skyenet.apps.parse
 
+import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.rendering.PDFRenderer
 import org.apache.pdfbox.text.PDFTextStripper
@@ -7,7 +8,7 @@ import java.awt.image.BufferedImage
 import java.io.File
 
 class PDFReader(pdfFile: File) : DocumentParserApp.DocumentReader {
-  private val document: PDDocument = PDDocument.load(pdfFile)
+  private val document: PDDocument = Loader.loadPDF(pdfFile)
   private val renderer: PDFRenderer = PDFRenderer(document)
 
   override fun getPageCount(): Int = document.numberOfPages

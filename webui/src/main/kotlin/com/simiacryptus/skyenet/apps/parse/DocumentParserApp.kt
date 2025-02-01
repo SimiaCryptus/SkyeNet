@@ -99,7 +99,7 @@ open class DocumentParserApp(
         throw IllegalArgumentException("No input files provided")
       }
 
-      mainTask.header("PDF Extractor")
+      mainTask.header("Knowledge Extractor")
       val api = (api as ChatClient).getChildClient().apply {
         val createFile = mainTask.createFile(".logs/api-${UUID.randomUUID()}.log")
         createFile.second?.apply {
@@ -148,21 +148,25 @@ open class DocumentParserApp(
                 val pageTabs = TabbedDisplay(pageTask.apply<SessionTask> { pageTabs[label] = placeholder })
                 if (settings.showImages) {
                   for (pageIndex in batchStart until batchEnd) {
-                    val image = reader.renderImage(pageIndex, settings.dpi)
-                    ui.newTask(false).apply<SessionTask> {
-                      pageTabs["Image ${1 + (pageIndex - batchStart)}"] = placeholder
-                      image(image)
-                    }
-                    if (settings.saveImageFiles) {
-                      val imageFile =
-                        outputDir.resolve("page_${pageIndex}.${settings.outputFormat.lowercase(Locale.getDefault())}")
-                      when (settings.outputFormat.uppercase(Locale.getDefault())) {
-                        "PNG" -> ImageIO.write(image, "PNG", imageFile)
-                        "JPEG", "JPG" -> ImageIO.write(image, "JPEG", imageFile)
-                        "GIF" -> ImageIO.write(image, "GIF", imageFile)
-                        "BMP" -> ImageIO.write(image, "BMP", imageFile)
-                        else -> throw IllegalArgumentException("Unsupported output format: ${settings.outputFormat}")
+                    try {
+                      val image = reader.renderImage(pageIndex, settings.dpi)
+                      ui.newTask(false).apply<SessionTask> {
+                        pageTabs["Image ${1 + (pageIndex - batchStart)}"] = placeholder
+                        image(image)
                       }
+                      if (settings.saveImageFiles) {
+                        val imageFile =
+                          outputDir.resolve("page_${pageIndex}.${settings.outputFormat.lowercase(Locale.getDefault())}")
+                        when (settings.outputFormat.uppercase(Locale.getDefault())) {
+                          "PNG" -> ImageIO.write(image, "PNG", imageFile)
+                          "JPEG", "JPG" -> ImageIO.write(image, "JPEG", imageFile)
+                          "GIF" -> ImageIO.write(image, "GIF", imageFile)
+                          "BMP" -> ImageIO.write(image, "BMP", imageFile)
+                          else -> throw IllegalArgumentException("Unsupported output format: ${settings.outputFormat}")
+                        }
+                      }
+                    } catch (e: Throwable) {
+                      log.info("Error rendering image for page $pageIndex", e)
                     }
                   }
                 }
@@ -175,23 +179,10 @@ open class DocumentParserApp(
                 }
                 val promptList = mutableListOf<String>()
                 promptList.add(
-                  """
-                                    |# Prior Text
-                                    |
-                                    |FOR INFORMATIVE CONTEXT ONLY. DO NOT COPY TO OUTPUT.
-                                    |```text
-                                    |$previousPageText
-                                    |```
-                                    |""".trimMargin()
+                  "# Prior Text\n\nFOR INFORMATIVE CONTEXT ONLY. DO NOT COPY TO OUTPUT.\n```text\n$previousPageText\n```"
                 )
                 promptList.add(
-                  """
-                                    |# Current Page
-                                    |
-                                    |```text
-                                    |$text
-                                    |```
-                                    """.trimMargin()
+                  "# Current Page\n\n```text\n$text\n```"
                 )
                 previousPageText = text
                 if (fastMode) {
@@ -220,26 +211,14 @@ open class DocumentParserApp(
             { runningDocument, it -> parsingModel.merge(runningDocument, it) }
             docTask.add(
               MarkdownUtil.renderMarkdown(
-                """
-                                |## Document JSON
-                                |
-                                |```json
-                                |${JsonUtil.toJson(finalDocument)}
-                                |```
-                                |
-                                |Extracted files are saved in: ${outputDir.absolutePath}
-                                """.trimMargin(), ui = ui
+                "## Document JSON\n\n```json\n${JsonUtil.toJson(finalDocument)}\n```\n\nExtracted files are saved in: ${outputDir.absolutePath}", ui = ui
               )
             )
             if (settings.saveFinalJson) {
-              val finalJsonFile = file.parentFile.resolve(file.name.reversed().split(delimiters = arrayOf("."), false, 2).joinToString("_").reversed() + ".parsed.json")
+              val finalJsonFile =
+                file.parentFile.resolve(file.name.reversed().split(delimiters = arrayOf("."), false, 2).joinToString("_").reversed() + ".parsed.json")
               finalJsonFile.writeText(JsonUtil.toJson(finalDocument))
-              docTask.add(
-                MarkdownUtil.renderMarkdown(
-                  "Final JSON saved to: ${finalJsonFile.absolutePath}",
-                  ui = ui
-                )
-              )
+              docTask.add(MarkdownUtil.renderMarkdown("Final JSON saved to: ${finalJsonFile.absolutePath}", ui = ui))
             }
           }
         }

@@ -6,4 +6,4 @@ include("scala")
 include("kotlin")
 include("webui")
 
-//includeBuild("../jo-penai/")
+includeBuild("../jo-penai/")

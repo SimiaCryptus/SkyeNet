@@ -4,8 +4,11 @@ import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.skyenet.apps.plan.*
-import com.simiacryptus.skyenet.apps.plan.file.InquiryTask.InquiryTaskConfigData
+import com.simiacryptus.skyenet.apps.plan.PlanCoordinator
+import com.simiacryptus.skyenet.apps.plan.PlanSettings
+import com.simiacryptus.skyenet.apps.plan.TaskBreakdownWithPrompt
+import com.simiacryptus.skyenet.apps.plan.TaskConfigBase
+import com.simiacryptus.skyenet.apps.plan.tools.file.InquiryTask.InquiryTaskConfigData
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.util.MarkdownUtil
@@ -79,7 +82,7 @@ open class PlanChatApp(
         val planSettings = (getSettings(session, user, PlanSettings::class.java) ?: PlanSettings(
           defaultModel = model,
           parsingModel = parsingModel,
-          command = planSettings.command,
+          shellCmd = planSettings.shellCmd,
           temperature = planSettings.temperature,
           workingDir = planSettings.workingDir,
           env = planSettings.env,
@@ -95,7 +98,7 @@ open class PlanChatApp(
           session = session,
           dataStorage = dataStorage,
           ui = ui,
-          root = planSettings?.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
+          root = planSettings.workingDir?.let { File(it).toPath() } ?: dataStorage.getDataDir(user, session).toPath(),
           planSettings = planSettings
         )
         val mainTask = ui.newTask()
@@ -125,7 +128,7 @@ open class PlanChatApp(
           api = api,
           api2 = api2,
         )
-        val response = planProcessingState.taskResult["respond_to_chat"] as? String
+        val response = planProcessingState.taskResult["respond_to_chat"]
         if (response != null) {
           mainTask.add(MarkdownUtil.renderMarkdown(response, ui = ui))
           messageHistory.add(response)
@@ -143,7 +146,7 @@ open class PlanChatApp(
   }
 
   protected open fun addRespondToChatTask(plan: Map<String, TaskConfigBase>): Map<String, TaskConfigBase> {
-    val tasksByID = plan?.toMutableMap() ?: mutableMapOf()
+    val tasksByID = plan.toMutableMap()
     val respondTaskId = "respond_to_chat"
 
     tasksByID[respondTaskId] = InquiryTaskConfigData(

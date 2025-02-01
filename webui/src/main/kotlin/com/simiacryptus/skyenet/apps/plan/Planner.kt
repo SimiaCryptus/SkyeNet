@@ -5,13 +5,12 @@ import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ApiModel
 import com.simiacryptus.skyenet.Discussable
 import com.simiacryptus.skyenet.core.actors.ParsedResponse
-import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 
 open class Planner {
 
@@ -33,10 +32,11 @@ open class Planner {
       }
     }
     val toInput = inputFn(codeFiles, files, root)
+    task.echo(userMessage)
     return if (planSettings.allowBlocking)
       Discussable(
         task = task,
-        heading = MarkdownUtil.renderMarkdown(userMessage, ui = ui),
+        heading = "",
         userMessage = { userMessage },
         initialResponse = {
           newPlan(
@@ -75,16 +75,18 @@ open class Planner {
           planText = it.text
         )
       }
-    else newPlan(
-      api,
-      planSettings,
-      toInput(userMessage)
-    ).let {
-      TaskBreakdownWithPrompt(
-        prompt = userMessage,
-        plan = PlanUtil.filterPlan { it.obj } ?: emptyMap(),
-        planText = it.text
-      )
+    else {
+      newPlan(
+        api,
+        planSettings,
+        toInput(userMessage)
+      ).let {
+        TaskBreakdownWithPrompt(
+          prompt = userMessage,
+          plan = PlanUtil.filterPlan { it.obj } ?: emptyMap(),
+          planText = it.text
+        )
+      }
     }
   }
 
@@ -108,17 +110,10 @@ open class Planner {
     root: Path
   ) = { str: String ->
     listOf(
-      if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) """
-                                        |Files:
-                                        |${codeFiles.keys.joinToString("\n") { "* $it" }}  
-                                         """.trimMargin() else {
+      if (!codeFiles.all { it.key.toFile().isFile } || codeFiles.size > 2) "Files:\n${codeFiles.keys.joinToString("\n") { "* $it" }}  " else {
         files.joinToString("\n\n") {
           val path = root.relativize(it.toPath())
-          """
-                        |## $path
-                        |
-                        |${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it/*.indent("  ")*/}\n$TRIPLE_TILDE" }}
-                        """.trimMargin()
+          "## $path\n\n${(codeFiles[path] ?: "").let { "$TRIPLE_TILDE\n${it}\n$TRIPLE_TILDE" }}"
         }
       },
       str

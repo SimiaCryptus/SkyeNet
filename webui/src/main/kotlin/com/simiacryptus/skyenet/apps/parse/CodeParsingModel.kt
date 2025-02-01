@@ -46,13 +46,13 @@ open class CodeParsingModel(
   )
 
   open val promptSuffix = """
-Parse the code into a structured format that describes its components:
-1. Separate the content into sections, paragraphs, statements, etc.
-2. All source content should be included in the output, with paraphrasing, corrections, and context as needed
-3. Each content leaf node text should be simple and self-contained
-4. Assign relevant tags to each node to improve searchability and categorization
-5. Track line numbers and character positions for each content node when possible
-        """.trimMargin()
+    Parse the code into a structured format that describes its components:
+    1. Separate the content into sections, paragraphs, statements, etc.
+    2. All source content should be included in the output, with paraphrasing, corrections, and context as needed
+    3. Each content leaf node text should be simple and self-contained
+    4. Assign relevant tags to each node to improve searchability and categorization
+    5. Track line numbers and character positions for each content node when possible
+  """.trimIndent()
 
   open val exampleInstance = CodeData()
 

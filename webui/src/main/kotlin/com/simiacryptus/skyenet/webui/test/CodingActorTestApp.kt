@@ -23,42 +23,26 @@ open class CodingActorTestApp(
   path = "/codingActorTest",
 ) {
   override fun userMessage(
-    session: Session,
-    user: User?,
-    userMessage: String,
-    ui: ApplicationInterface,
-    api: API
+    session: Session, user: User?, userMessage: String, ui: ApplicationInterface, api: API
   ) {
     (api as ChatClient).budget = 2.00
     val message = ui.newTask()
     try {
       message.echo(renderMarkdown(userMessage, ui = ui))
       val response = actor.answer(CodingActor.CodeRequest(listOf(userMessage to ApiModel.Role.user)), api = api)
-      val canPlay = ApplicationServices.authorizationManager.isAuthorized(
-        this::class.java,
-        user,
-        OperationType.Execute
-      )
+      val canPlay = ApplicationServices.authorizationManager.isAuthorized(this::class.java, user, OperationType.Execute)
       val playLink = if (!canPlay) "" else {
         ui.hrefLink("▶", "href-link play-button") {
           message.add("Running...")
           val result = response.result
           message.complete(
-            """
-                                        |<pre>${result.resultValue}</pre>
-                                        |<pre>${result.resultOutput}</pre>
-                                        """.trimMargin()
+            "<pre>${result.resultValue}</pre>\n<pre>${result.resultOutput}</pre>"
           )
         }
       }
       message.complete(
         renderMarkdown(
-          """
-                    |```${actor.language.lowercase(Locale.getDefault())}
-                    |${/*escapeHtml4*/(response.code)/*.indent("  ")*/}
-                    |```
-                    |$playLink
-                    """.trimMargin().trim(), ui = ui
+          "```${actor.language.lowercase(Locale.getDefault())}\n${response.code}\n```\n$playLink".trim(), ui = ui
         )
       )
     } catch (e: Throwable) {

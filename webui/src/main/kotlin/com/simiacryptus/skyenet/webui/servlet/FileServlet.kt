@@ -86,7 +86,7 @@ abstract class FileServlet : HttpServlet() {
             getZipLink(req, pathSegments.drop(1).joinToString("/")),
             folders,
             files
-          ).trimMargin()
+          )
         )
       }
     }

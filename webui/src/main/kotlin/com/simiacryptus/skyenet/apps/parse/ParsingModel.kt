@@ -7,9 +7,11 @@ interface ParsingModel<T : ParsingModel.DocumentData> {
   fun getFastParser(api: API): (String) -> T = { prompt ->
     getSmartParser(api)(newDocument(), prompt)
   }
+
   fun getSmartParser(api: API): (T, String) -> T = { runningDocument, prompt ->
     getFastParser(api)(prompt)
   }
+
   fun newDocument(): T
 
   interface ContentData {

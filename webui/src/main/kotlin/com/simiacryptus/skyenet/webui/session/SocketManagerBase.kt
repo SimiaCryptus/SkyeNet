@@ -1,7 +1,8 @@
 package com.simiacryptus.skyenet.webui.session
 
-import com.simiacryptus.skyenet.core.platform.*
+import com.simiacryptus.skyenet.core.platform.ApplicationServices
 import com.simiacryptus.skyenet.core.platform.ApplicationServices.clientManager
+import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.AuthenticationInterface
 import com.simiacryptus.skyenet.core.platform.model.AuthorizationInterface.OperationType
 import com.simiacryptus.skyenet.core.platform.model.StorageInterface
@@ -68,9 +69,25 @@ abstract class SocketManagerBase(
     spinner: String = SessionTask.spinner,
     private val buffer: MutableList<StringBuilder> = mutableListOf(StringBuilder(responseContents))
   ) : SessionTask(
-    operationID = operationID, buffer = buffer, spinner = spinner
+    messageID = operationID, buffer = buffer, spinner = spinner
   ) {
 
+    override fun hrefLink(
+      linkText: String,
+      classname: String,
+      id: String?,
+      handler: Consumer<Unit>
+    ): String {
+      log.debug("Creating href link with text: {}", linkText)
+      val operationID = randomID()
+      linkTriggers[operationID] = handler
+      return """<a class="$classname" data-id="$operationID"${
+        when {
+          id != null -> """ id="$id""""
+          else -> ""
+        }
+      }>$linkText</a>"""
+    }
     override fun send(html: String) = this@SocketManagerBase.send(html)
     override fun saveFile(relativePath: String, data: ByteArray): String {
       log.debug("Saving file at path: {}", relativePath)
@@ -96,7 +113,7 @@ abstract class SocketManagerBase(
 
   fun send(out: String) {
     try {
-      log.debug("Sending message: {}", out)
+      //log.debug("Sending message: {}", out)
       val split = out.split(',', ignoreCase = false, limit = 2)
       val messageID = split[0]
       var newValue = split[1]
@@ -114,7 +131,7 @@ abstract class SocketManagerBase(
       try {
         val ver = messageVersions[messageID]?.get()
         val v = messageStates[messageID]
-        log.debug("Publish Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
+//        log.debug("Publish Msg: {} - {} - {} - {} bytes", session, messageID, ver, v?.length)
         sockets.keys.toTypedArray<ChatSocket>().forEach<ChatSocket> { chatSocket ->
           try {
             val deque = sendQueues.computeIfAbsent(chatSocket) { ConcurrentLinkedDeque() }
@@ -129,7 +146,7 @@ abstract class SocketManagerBase(
                     val v = messageStates[messageID]
                     msg = "$messageID,$ver,$v"
                   } finally {
-                    log.debug("Sending message: {} to socket: {}", msg, chatSocket)
+//                    log.debug("Sending message: {} to socket: {}", msg, chatSocket)
                     synchronized(chatSocket) {
                       chatSocket.remote.sendString(msg)
                     }
@@ -160,7 +177,7 @@ abstract class SocketManagerBase(
   }
 
   private fun setMessage(key: String, value: String): Int {
-    log.debug("Setting message - Key: {}, Value: {}", key, value)
+//    log.debug("Setting message - Key: {}, Value: {}", key, value)
     if (messageStates.containsKey(key)) {
       if (messageStates[key] == value) {
         return -1
@@ -170,14 +187,14 @@ abstract class SocketManagerBase(
     messageStates.put(key, value)
     val incrementAndGet = synchronized(messageVersions)
     { messageVersions.getOrPut(key) { AtomicInteger(0) } }.incrementAndGet()
-    log.debug("Setting message - Key: {}, v{}, Value: {} bytes", key, incrementAndGet, value.length)
+//    log.debug("Setting message - Key: {}, v{}, Value: {} bytes", key, incrementAndGet, value.length)
     return incrementAndGet
   }
 
   final override fun onWebSocketText(socket: ChatSocket, message: String) {
     log.debug("Received WebSocket message: {} from socket: {}", message, socket)
     if (canWrite(socket.user)) pool.submit {
-      log.debug("{} - Received message: {}", session, message)
+//      log.debug("{} - Received message: {}", session, message)
       try {
         val opCmdPattern = """![a-z]{3,7},.*""".toRegex()
         if (opCmdPattern.matches(message)) {

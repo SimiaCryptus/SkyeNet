@@ -43,19 +43,7 @@ open class ProcessInterpreter(
       throw RuntimeException("Timeout; output: $output; error: $error")
     } else if (error.isNotEmpty()) {
       //throw RuntimeException(error)
-      return (
-          """
-        |ERROR:
-        |```text
-        |$error
-        |```
-        |
-        |OUTPUT:
-        |```text
-        |$output
-        |```
-        """.trimMargin()
-          )
+      return "ERROR:\n```text\n$error\n```\n\nOUTPUT:\n```text\n$output\n```"
     } else {
       return output
     }

@@ -15,12 +15,7 @@ object PlanUtil {
     ui: ApplicationInterface,
     taskMap: Map<String, TaskConfigBase>
   ) = MarkdownUtil.renderMarkdown(
-    """
-            |## Sub-Plan Task Dependency Graph
-            |${TRIPLE_TILDE}mermaid
-            |${buildMermaidGraph(taskMap)}
-            |$TRIPLE_TILDE
-            """.trimMargin(),
+    "## Sub-Plan Task Dependency Graph\n${TRIPLE_TILDE}mermaid\n${buildMermaidGraph(taskMap)}\n$TRIPLE_TILDE",
     ui = ui
   )
 
@@ -160,9 +155,9 @@ object PlanUtil {
   }
 
   fun getAllDependencies(
-      subPlanTask: TaskConfigBase,
-      subTasks: Map<String, TaskConfigBase>,
-      visited: MutableSet<String>
+    subPlanTask: TaskConfigBase,
+    subTasks: Map<String, TaskConfigBase>,
+    visited: MutableSet<String>
   ): List<String> {
     val dependencies = subPlanTask.task_dependencies?.toMutableList() ?: mutableListOf()
     subPlanTask.task_dependencies?.forEach { dep ->

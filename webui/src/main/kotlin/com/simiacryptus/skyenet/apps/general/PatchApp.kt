@@ -1,7 +1,6 @@
 package com.simiacryptus.skyenet.apps.general
 
-import com.simiacryptus.diff.FileValidationUtils
-import com.simiacryptus.diff.addApplyFileDiffLinks
+import com.simiacryptus.diff.AddApplyFileDiffLinks
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.describe.Description
 import com.simiacryptus.jopenai.models.ChatModel
@@ -11,6 +10,8 @@ import com.simiacryptus.skyenet.core.actors.ParsedActor
 import com.simiacryptus.skyenet.core.actors.SimpleActor
 import com.simiacryptus.skyenet.core.platform.Session
 import com.simiacryptus.skyenet.core.platform.model.User
+import com.simiacryptus.skyenet.core.util.FileValidationUtils
+import com.simiacryptus.skyenet.core.util.SimpleDiffApplier
 import com.simiacryptus.skyenet.util.MarkdownUtil
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.skyenet.webui.application.ApplicationServer
@@ -25,7 +26,6 @@ import java.util.*
 
 abstract class PatchApp(
   override val root: File,
-  private val session: Session,
   protected val settings: Settings,
   private val api: ChatClient,
   private val model: ChatModel,
@@ -35,6 +35,9 @@ abstract class PatchApp(
   path = "/fixCmd",
   showMenubar = false,
 ) {
+
+  data class OutputResult(val exitCode: Int, val output: String)
+
   companion object {
     private val log = LoggerFactory.getLogger(PatchApp::class.java)
     const val tripleTilde = "`" + "``" // This is a workaround for the markdown parser when editing this file
@@ -45,31 +48,45 @@ abstract class PatchApp(
     log.info("$event: ${JsonUtil.toJson(data)}")
   }
 
-  data class OutputResult(val exitCode: Int, val output: String)
-
   abstract fun codeFiles(): Set<Path>
   abstract fun codeSummary(paths: List<Path>): String
-  abstract fun output(task: SessionTask): OutputResult
+  abstract fun output(task: SessionTask, settings: Settings): OutputResult
   abstract fun searchFiles(searchStrings: List<String>): Set<Path>
   override val singleInput = true
   override val stickyInput = false
   override fun newSession(user: User?, session: Session): SocketManager {
+    var retries: Int = -1
     val socketManager = super.newSession(user, session)
     val ui = (socketManager as ApplicationSocketManager).applicationInterface
     val task = ui.newTask()
-    lateinit var retry : Retryable
-    var retries = 3
+    var retryOnOffButton: StringBuilder? = null
+    val disableButton = task.hrefLink("Disable Auto-Retry") {
+      retries = 0
+      retryOnOffButton?.clear()
+      task.update()
+    }
+    if(settings.autoFix && settings.maxRetries > 0) {
+      retryOnOffButton = task.add(disableButton)
+    }
+    lateinit var retry: Retryable
     retry = Retryable(
       ui = ui,
       task = task,
       process = { content ->
+        if (retries < 0) {
+          retries = when {
+            settings.autoFix -> settings.maxRetries
+            else -> 0
+          }
+        }
         val newTask = ui.newTask(false)
         newTask.add("Running Command")
         Thread {
           val result = run(ui, newTask)
-          if (result.exitCode != 0 && retries-- > 0) {
+          if (result.exitCode != 0 && retries > 0) {
             retry.retry()
           }
+          retries -= 1
         }.start()
         newTask.placeholder
       }
@@ -108,49 +125,52 @@ abstract class PatchApp(
   )
 
   data class Settings(
+    var commands: List<CommandSettings> = listOf(),
+    val autoFix: Boolean = false,
+    val maxRetries: Int = 3,
+    var exitCodeOption: String = "nonzero",
+  ) {
+    // For backwards compatibility and convenience
+    var workingDirectory: File?
+      get() = commands.firstOrNull()?.workingDirectory
+      set(value) {
+        commands.forEach { it.workingDirectory = value }
+      }
+    var additionalInstructions: String
+      get() = commands.firstOrNull()?.additionalInstructions ?: ""
+      set(value) {
+        commands.forEach { it.additionalInstructions = value }
+      }
+  }
+
+  data class CommandSettings(
     var executable: File,
     var arguments: String = "",
     var workingDirectory: File? = null,
-    var exitCodeOption: String = "nonzero",
     var additionalInstructions: String = "",
-    val autoFix: Boolean
   )
 
   fun run(
     ui: ApplicationInterface,
     task: SessionTask,
   ): OutputResult {
-    val output = output(task)
+    // Execute each command in sequence
+    val output = output(task, settings)
     if (output.exitCode == 0 && settings.exitCodeOption == "nonzero") {
       task.complete(
-        """
-                |<div>
-                |<div><b>Command executed successfully</b></div>
-                |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
-                |</div>
-                |""".trimMargin()
+        "<div>\n<div><b>Command executed successfully</b></div>\n${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}\n</div>"
       )
       return output
     }
     if (settings.exitCodeOption == "zero" && output.exitCode != 0) {
       task.complete(
-        """
-                |<div>
-                |<div><b>Command failed</b></div>
-                |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
-                |</div>
-                |""".trimMargin()
+        "<div>\n<div><b>Command failed</b></div>\n${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}\n</div>"
       )
       return output
     }
     try {
       task.add(
-        """
-                |<div>
-                |<div><b>Command exit code: ${output.exitCode}</b></div>
-                |${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}
-                |</div>
-                """.trimMargin()
+        "<div>\n<div><b>Command exit code: ${output.exitCode}</b></div>\n${MarkdownUtil.renderMarkdown("${tripleTilde}\n${output.output}\n${tripleTilde}")}\n</div>"
       )
       fixAll(settings, output, task, ui, api)
     } catch (e: Exception) {
@@ -221,33 +241,26 @@ abstract class PatchApp(
           )
         )
       ),
-      prompt = """
-                |You are a helpful AI that helps people with coding.
-                |
-                |You will be answering questions about the following project:
-                |
-                |Project Root: ${settings.workingDirectory?.absolutePath ?: ""}
-                |
-                |Files:
-                |${projectSummary()}
-                |
-                |Given the response of a build/test process, identify one or more distinct errors.
-                |For each error:
-                |   1) predict the files that need to be fixed
-                |   2) predict related files that may be needed to debug the issue
-                |   3) specify a search string to find relevant files - be as specific as possible
-                |${if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""}
-                """.trimMargin(),
-      model = model
+      model = model,
+      prompt = ("""
+        You are a helpful AI that helps people with coding.
+        
+        You will be answering questions about the following project:
+        
+        Project Root: """.trimIndent() + (settings.workingDirectory?.absolutePath ?: "") + """
+        
+        Files:
+        """.trimIndent() + projectSummary() + """
+        
+        Given the response of a build/test process, identify one or more distinct errors.
+        For each error:
+           1) predict the files that need to be fixed
+           2) predict related files that may be needed to debug the issue
+           3) specify a search string to find relevant files - be as specific as possible
+        """.trimIndent() + (if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""))
     ).answer(
       listOf(
-        """
-                |$promptPrefix
-                |
-                |${tripleTilde}
-                |${output.output}
-                |${tripleTilde}
-                """.trimMargin()
+        "$promptPrefix\n\n${tripleTilde}\n${output.output}\n${tripleTilde}"
       ), api = api
     )
     task.add(
@@ -275,11 +288,7 @@ abstract class PatchApp(
       }?.toSet() ?: emptySet()
       task.verbose(
         MarkdownUtil.renderMarkdown(
-          """
-                    |Search results:
-                    |
-                    |${searchResults.joinToString("\n") { "* `$it`" }}
-                    """.trimMargin(), tabs = false, ui = ui
+          "Search results:\n\n${searchResults.joinToString("\n") { "* `$it`" }}", tabs = false, ui = ui
         )
       )
       Retryable(ui, task) { content ->
@@ -321,65 +330,27 @@ abstract class PatchApp(
     val summary = codeSummary(prunedPaths)
     val response = SimpleActor(
       prompt = """
-                    |You are a helpful AI that helps people with coding.
-                    |
-                    |You will be answering questions about the following code:
-                    |
-                    |$summary
-                    |
-                    |
-                    |Response should use one or more code patches in diff format within ${tripleTilde}diff code blocks.
-                    |Each diff should be preceded by a header that identifies the file being modified.
-                    |The diff format should use + for line additions, - for line deletions.
-                    |The diff should include 2 lines of context before and after every change.
-                    |
-                    |Example:
-                    |
-                    |Here are the patches:
-                    |
-                    |### src/utils/exampleUtils.js
-                    |${tripleTilde}diff
-                    | // Utility functions for example feature
-                    | const b = 2;
-                    | function exampleFunction() {
-                    |-   return b + 1;
-                    |+   return b + 2;
-                    | }
-                    |${tripleTilde}
-                    |
-                    |### tests/exampleUtils.test.js
-                    |${tripleTilde}diff
-                    | // Unit tests for exampleUtils
-                    | const assert = require('assert');
-                    | const { exampleFunction } = require('../src/utils/exampleUtils');
-                    | 
-                    | describe('exampleFunction', () => {
-                    |-   it('should return 3', () => {
-                    |+   it('should return 4', () => {
-                    |     assert.equal(exampleFunction(), 3);
-                    |   });
-                    | });
-                    |${tripleTilde}
-                    |
-                    |If needed, new files can be created by using code blocks labeled with the filename in the same manner.
-                    """.trimMargin(),
+        You are a helpful AI that helps people with coding.
+        
+        You will be answering questions about the following code:
+        
+        """.trimIndent() + summary + "\n" + SimpleDiffApplier.patchEditorPrompt + """
+        
+        If needed, new files can be created by using code blocks labeled with the filename in the same manner.
+        """.trimIndent(),
       model = model
     ).answer(
       listOf(
-        """
-                |$promptPrefix
-                |
-                |${tripleTilde}
-                |${output.output}
-                |${tripleTilde}
-                |
-                |Focus on and Fix the Error:
-                |  ${error.message?.replace("\n", "\n  ") ?: ""}
-                |${if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""}
-                """.trimMargin()
+        "$promptPrefix\n\n${tripleTilde}\n${output.output}\n${tripleTilde}\n\nFocus on and Fix the Error:\n  ${
+          error.message?.replace(
+            "\n",
+            "\n  "
+          ) ?: ""
+        }\n${if (settings.additionalInstructions.isNotBlank()) "Additional Instructions:\n  ${settings.additionalInstructions}\n" else ""}"
       ), api = api
     )
-    var markdown = ui.socketManager?.addApplyFileDiffLinks(
+    var markdown = AddApplyFileDiffLinks.instrumentFileDiffs(
+      ui.socketManager!!,
       root = root.toPath(),
       response = response,
       ui = ui,

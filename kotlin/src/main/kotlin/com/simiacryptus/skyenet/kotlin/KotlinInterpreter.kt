@@ -75,10 +75,7 @@ open class KotlinInterpreter(
   override fun run(code: String): Any? {
     val wrappedCode = wrapCode(code)
     log.debug(
-      """
-      |Running:
-      |   ${wrappedCode.trimIndent().replace("\n", "\n\t")}
-      |""".trimMargin().trim()
+      "Running:\n   ${wrappedCode.trimIndent().replace("\n", "\n\t")}"
     )
     val bindings: Bindings?
     val compile: CompiledScript
@@ -143,13 +140,11 @@ open class KotlinInterpreter(
       line: Int,
       column: Int,
       message: String
-    ) = """
-        |```text
-        |$message at line ${line} column ${column}
-        |  ${if (line < 0) "" else code.split("\n")[line - 1]}
-        |  ${if (column < 0) "" else " ".repeat(column - 1) + "^"}
-        |```
-        """.trimMargin().trim()
+    ) = "```text\n$message at line ${line} column ${column}\n  ${if (line < 0) "" else code.split("\n")[line - 1]}\n  ${
+      if (column < 0) "" else " ".repeat(
+        column - 1
+      ) + "^"
+    }\n```".trim()
 
     // TODO: Make this threadlocal with wrapper methods
     var classLoader: ClassLoader? = KotlinInterpreter::class.java.classLoader

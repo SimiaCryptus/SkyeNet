@@ -15,7 +15,7 @@ class TextReader(private val textFile: File) : DocumentParserApp.DocumentReader 
   override fun getText(startPage: Int, endPage: Int): String {
     val text = pages.subList(startPage, endPage.coerceAtMost(pages.size)).joinToString("\n")
     return if (settings.addLineNumbers) {
-      text.lines().mapIndexed { index, line -> 
+      text.lines().mapIndexed { index, line ->
         "${(index + 1).toString().padStart(6)}: $line"
       }.joinToString("\n")
     } else text

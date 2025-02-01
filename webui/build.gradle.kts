@@ -33,24 +33,35 @@ kotlin {
 val kotlin_version = "2.0.20"
 val jetty_version = "11.0.24"
 val jackson_version = "2.17.2"
+val graal_version = "24.1.1"
 
 dependencies {
+  compileOnly("org.jetbrains.kotlin:kotlin-compiler:$kotlin_version")
+  compileOnly("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version")
+  compileOnly("org.jetbrains.kotlin:kotlin-scripting-compiler:$kotlin_version")
+  compileOnly("org.eclipse.jdt:org.eclipse.jdt.core:3.36.0")
+  compileOnly("org.graalvm.js:js:$graal_version")
+  compileOnly("org.graalvm.js:js-language:$graal_version")
 
-  implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.12") {
+  implementation(group = "com.simiacryptus", name = "jo-penai", version = "1.1.13") {
     exclude(group = "org.slf4j")
   }
 
   implementation(project(":core"))
   implementation(project(":kotlin"))
+  implementation("org.apache.pdfbox:pdfbox:3.0.3")
 
-  implementation("org.apache.pdfbox:pdfbox:2.0.27")
-  compileOnly("org.seleniumhq.selenium:selenium-chrome-driver:4.16.1")
+  implementation("org.seleniumhq.selenium:selenium-java:4.27.0") {
+    exclude(group = "com.intellij.remoterobot", module = "remote-robot")
+  }
+  implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
   implementation("org.jsoup:jsoup:1.18.1")
 
   implementation("com.google.zxing:core:3.5.3")
   implementation("com.google.zxing:javase:3.5.3")
 
   compileOnly(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
+  testImplementation(group = "software.amazon.awssdk", name = "aws-sdk-java", version = "2.27.23")
 
   compileOnly("org.openapitools:openapi-generator:7.3.0") {
     exclude(group = "org.slf4j")
@@ -91,16 +102,24 @@ dependencies {
 
 
   implementation(group = "com.google.guava", name = "guava", version = "32.1.3-jre")
+
+  implementation("com.google.api-client:google-api-client:2.2.0")
+  implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
+  implementation("com.google.apis:google-api-services-oauth2:v2-rev20200213-2.0.0")
+  implementation("com.google.http-client:google-http-client-gson:1.43.3")
+
+
 //    implementation(group = "com.google.apis", name = "google-api-services-customsearch", version = "v1-rev20230702-2.0.0")
-  compileOnly(group = "com.google.api-client", name = "google-api-client", version = "1.35.2" /*"1.35.2"*/)
-  compileOnly(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
-  compileOnly(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
+//  compileOnly(group = "com.google.api-client", name = "google-api-client", version = "1.35.2")
+//  compileOnly(group = "com.google.oauth-client", name = "google-oauth-client-jetty", version = "1.34.1")
+//  compileOnly(group = "com.google.apis", name = "google-api-services-oauth2", version = "v2-rev157-1.25.0")
+
   implementation(group = "commons-io", name = "commons-io", version = "2.15.0")
   implementation(group = "commons-codec", name = "commons-codec", version = "1.16.0")
 
   implementation(group = "org.slf4j", name = "slf4j-api", version = "2.0.16")
-  runtimeOnly(group = "ch.qos.logback", name = "logback-classic", version = "1.5.8")
-  runtimeOnly(group = "ch.qos.logback", name = "logback-core", version = "1.5.8")
+  runtimeOnly(group = "ch.qos.logback", name = "logback-classic", version = "1.5.13")
+  runtimeOnly(group = "ch.qos.logback", name = "logback-core", version = "1.5.13")
 
   testImplementation(kotlin("script-runtime"))
   testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api", version = "5.10.1")

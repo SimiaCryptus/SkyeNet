@@ -13,10 +13,13 @@ import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.UsageInterface
 import com.simiacryptus.skyenet.core.platform.model.UserSettingsInterface
 import com.simiacryptus.skyenet.core.util.Selenium
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.ThreadPoolExecutor
 
 object ApplicationServices {
+  private val log = LoggerFactory.getLogger(ApplicationServices::class.java)
+
   var authorizationManager: AuthorizationInterface = AuthorizationManager()
     set(value) {
       require(!isLocked) { "ApplicationServices is locked" }
@@ -48,11 +51,6 @@ object ApplicationServices {
       field = value
     }
   var cloud: CloudPlatformInterface? = AwsPlatform.get()
-    set(value) {
-      require(!isLocked) { "ApplicationServices is locked" }
-      field = value
-    }
-  var seleniumFactory: ((ThreadPoolExecutor, Array<out jakarta.servlet.http.Cookie>?) -> Selenium)? = null
     set(value) {
       require(!isLocked) { "ApplicationServices is locked" }
       field = value

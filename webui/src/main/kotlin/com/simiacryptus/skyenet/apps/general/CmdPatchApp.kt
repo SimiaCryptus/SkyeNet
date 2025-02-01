@@ -1,10 +1,9 @@
 package com.simiacryptus.skyenet.apps.general
 
 
-import com.simiacryptus.diff.FileValidationUtils
 import com.simiacryptus.jopenai.ChatClient
 import com.simiacryptus.jopenai.models.ChatModel
-import com.simiacryptus.skyenet.core.platform.Session
+import com.simiacryptus.skyenet.core.util.FileValidationUtils
 import com.simiacryptus.skyenet.set
 import com.simiacryptus.skyenet.webui.session.SessionTask
 import org.slf4j.LoggerFactory
@@ -14,12 +13,13 @@ import java.util.concurrent.TimeUnit
 
 class CmdPatchApp(
   root: Path,
-  session: Session,
   settings: Settings,
   api: ChatClient,
   val files: Array<out File>?,
   model: ChatModel
-) : PatchApp(root.toFile(), session, settings, api, model) {
+) : PatchApp(root.toFile(), settings, api, model) {
+  private var stopRequested = false
+
   companion object {
     private val log = LoggerFactory.getLogger(CmdPatchApp::class.java)
 
@@ -39,8 +39,6 @@ class CmdPatchApp(
       }
       return returnVal
     }
-
-
   }
 
   private fun getFiles(
@@ -70,12 +68,9 @@ class CmdPatchApp(
     }
     .joinToString("\n\n") { path ->
       try {
-        """
-                |# ${path}
-                |${tripleTilde}${path.toString().split('.').lastOrNull()}
-                |${settings.workingDirectory?.resolve(path.toFile())?.readText(Charsets.UTF_8)}
-                |${tripleTilde}
-                """.trimMargin()
+        "# ${path}\n${tripleTilde}${path.toString().split('.').lastOrNull()}\n${
+          settings.workingDirectory?.resolve(path.toFile())?.readText(Charsets.UTF_8)
+        }\n${tripleTilde}"
       } catch (e: Exception) {
         log.warn("Error reading file", e)
         "Error reading file `${path}` - ${e.message}"
@@ -86,61 +81,71 @@ class CmdPatchApp(
     val codeFiles = codeFiles()
     val str = codeFiles
       .asSequence()
-      .filter { settings.workingDirectory?.toPath()?.resolve(it)?.toFile()?.exists() == true }
+      .filter { root.toPath().resolve(it).toFile().exists() }
       .distinct().sorted()
       .joinToString("\n") { path ->
         "* ${path} - ${
-          settings.workingDirectory?.toPath()?.resolve(path)?.toFile()?.length() ?: "?"
+          root.toPath().resolve(path).toFile().length() ?: "?"
         } bytes".trim()
       }
     return str
   }
 
-  override fun output(task: SessionTask): OutputResult = run {
-    val command = listOf(settings.executable.absolutePath) + settings.arguments.split(" ").filter(String::isNotBlank)
-    val processBuilder = ProcessBuilder(command).directory(settings.workingDirectory)
-    // Pass the current environment to the subprocess
-    processBuilder.environment().putAll(System.getenv())
-    val buffer = StringBuilder()
-    val taskOutput = task.add("")
-    val process = processBuilder.start()
-    Thread {
-      var lastUpdate = 0L
-      process.errorStream.bufferedReader().use { reader ->
+  override fun output(task: SessionTask, settings: Settings): OutputResult = run {
+    var exitCode = 0
+    lateinit var buffer: StringBuilder
+    for ((index, cmdSettings) in settings.commands.withIndex()) {
+      buffer = StringBuilder()
+      val processBuilder = ProcessBuilder(
+        listOf(cmdSettings.executable.absolutePath) +
+            cmdSettings.arguments.split(" ").filter(String::isNotBlank)
+      ).directory(cmdSettings.workingDirectory)
+      processBuilder.environment().putAll(System.getenv())
+      task.header(processBuilder.command().joinToString(" "))
+      val taskOutput = task.add("Executing command ${index + 1}/${settings.commands.size}")
+      val process = processBuilder.start()
+      Thread {
+        var lastUpdate = 0L
+        process.errorStream.bufferedReader().use { reader ->
+          var line: String?
+          while (reader.readLine().also { line = it } != null) {
+            buffer.append(line).append("\n")
+            if (lastUpdate + TimeUnit.SECONDS.toMillis(15) < System.currentTimeMillis()) {
+              taskOutput?.set("<pre>\n${truncate(buffer.toString())}\n</pre>")
+              task.update()
+              lastUpdate = System.currentTimeMillis()
+            }
+          }
+          task.update()
+        }
+      }.start()
+      process.inputStream.bufferedReader().use { reader ->
         var line: String?
+        var lastUpdate = 0L
         while (reader.readLine().also { line = it } != null) {
           buffer.append(line).append("\n")
           if (lastUpdate + TimeUnit.SECONDS.toMillis(15) < System.currentTimeMillis()) {
-            taskOutput?.set("<pre>\n${truncate(buffer.toString()).htmlEscape}\n</pre>")
-            task.append("", true)
+            taskOutput?.set("<pre>\n${truncate(buffer.toString())}\n</pre>")
+            task.update()
             lastUpdate = System.currentTimeMillis()
           }
         }
-        task.append("", true)
+        task.update()
       }
-    }.start()
-    process.inputStream.bufferedReader().use { reader ->
-      var line: String?
-      var lastUpdate = 0L
-      while (reader.readLine().also { line = it } != null) {
-        buffer.append(line).append("\n")
-        if (lastUpdate + TimeUnit.SECONDS.toMillis(15) < System.currentTimeMillis()) {
-          taskOutput?.set("<pre>\n${outputString(buffer).htmlEscape}\n</pre>")
-          task.append("", true)
-          lastUpdate = System.currentTimeMillis()
-        }
+      if (!process.waitFor(5, TimeUnit.MINUTES)) {
+        process.destroy()
+        throw RuntimeException("Process timed out")
       }
-      task.append("", true)
+      exitCode = process.exitValue()
+      if (exitCode != 0) break
     }
-    task.append("", false)
-    if (!process.waitFor(5, TimeUnit.MINUTES)) {
-      process.destroy()
-      throw RuntimeException("Process timed out")
-    }
-    val exitCode = process.exitValue()
-    var output = outputString(buffer)
-    taskOutput?.clear()
-    OutputResult(exitCode, output)
+    task.complete()
+    val output = outputString(buffer)
+    return OutputResult(exitCode, output)
+  }
+
+  fun stop() {
+    stopRequested = true
   }
 
   private fun outputString(buffer: StringBuilder): String {
@@ -150,13 +155,11 @@ class CmdPatchApp(
     return output
   }
 
-  override fun searchFiles(searchStrings: List<String>): Set<Path> {
-    return searchStrings.flatMap { searchString ->
-      FileValidationUtils.filteredWalk(settings.workingDirectory!!) { !FileValidationUtils.isGitignore(it.toPath()) }
-        .filter { FileValidationUtils.isLLMIncludableFile(it) }
-        .filter { it.readText().contains(searchString, ignoreCase = true) }
-        .map { it.toPath() }
-        .toList()
-    }.toSet()
-  }
+  override fun searchFiles(searchStrings: List<String>) = searchStrings.flatMap { searchString ->
+    FileValidationUtils.filteredWalk(settings.workingDirectory!!) { !FileValidationUtils.isGitignore(it.toPath()) }
+      .filter { FileValidationUtils.isLLMIncludableFile(it) }
+      .filter { it.readText().contains(searchString, ignoreCase = true) }
+      .map { it.toPath() }
+      .toList()
+  }.toSet()
 }

@@ -1,6 +1,5 @@
 package com.simiacryptus.skyenet.util
 
-import com.simiacryptus.jopenai.API
 import com.simiacryptus.jopenai.OpenAIClient
 import com.simiacryptus.jopenai.models.ApiModel.EmbeddingRequest
 import com.simiacryptus.jopenai.models.EmbeddingModels
@@ -11,12 +10,11 @@ import com.simiacryptus.skyenet.core.platform.model.StorageInterface
 import com.simiacryptus.skyenet.core.platform.model.User
 import com.simiacryptus.skyenet.webui.application.ApplicationInterface
 import com.simiacryptus.util.JsonUtil
-import java.util.UUID
 import java.io.IOException
-import kotlin.jvm.Throws
+import java.util.*
 
 class TensorflowProjector(
-  val api: API,
+  val api: OpenAIClient,
   val dataStorage: StorageInterface,
   val sessionID: Session,
   val session: ApplicationInterface,
@@ -34,7 +32,7 @@ class TensorflowProjector(
   @Throws(IOException::class)
   private fun toVectorMap(vararg words: String): Map<String, DoubleArray> {
     val vectors = words.map { word ->
-      word to (api as OpenAIClient).createEmbedding(
+      word to api.createEmbedding(
         EmbeddingRequest(
           model = EmbeddingModels.AdaEmbedding.modelName,
           input = word.trim(),
